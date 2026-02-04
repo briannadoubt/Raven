@@ -1,10 +1,12 @@
 name: Bundle Size Check
 
+# Temporarily disabled until TodoApp example package is set up
 on:
-  pull_request:
-    branches: [main, develop]
-  push:
-    branches: [main, develop]
+  workflow_dispatch:  # Manual trigger only
+  # pull_request:
+  #   branches: [main, develop]
+  # push:
+  #   branches: [main, develop]
 
 permissions:
   contents: read
