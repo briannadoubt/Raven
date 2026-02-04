@@ -16,7 +16,7 @@ import Foundation
 /// This view wraps the content and attaches transition information that
 /// will be used by the rendering system to generate appropriate CSS
 /// animations when the view is inserted or removed.
-public struct _TransitionView<Content: View>: View, Sendable {
+public struct _TransitionView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let transition: AnyTransition
 

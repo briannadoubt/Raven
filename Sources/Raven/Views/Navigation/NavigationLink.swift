@@ -23,7 +23,7 @@ import Foundation
 ///
 /// For Phase 4, `NavigationLink` implements basic navigation with an in-memory stack.
 /// Future phases will integrate with the browser's HTML5 History API for URL-based routing.
-public struct NavigationLink<Label: View, Destination: View>: View, Sendable {
+public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The label content to display

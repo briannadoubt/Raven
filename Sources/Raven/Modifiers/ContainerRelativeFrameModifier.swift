@@ -102,7 +102,7 @@ public struct ContainerRelativeFrameModifier: Sendable, Hashable {
 ///
 /// This view wraps content and applies sizing based on container dimensions using
 /// CSS custom properties and calc() expressions.
-public struct _ContainerRelativeFrameView<Content: View>: View, Sendable {
+public struct _ContainerRelativeFrameView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let axes: Axis.Set
     let alignment: Alignment

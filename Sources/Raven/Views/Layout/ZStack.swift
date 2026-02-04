@@ -167,7 +167,7 @@ import Foundation
 /// - Parameters:
 ///   - alignment: The alignment guide for positioning child views. Defaults to `.center`.
 ///   - content: A view builder that creates the child views.
-public struct ZStack<Content: View>: View, Sendable {
+public struct ZStack<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The alignment of child views within the stack

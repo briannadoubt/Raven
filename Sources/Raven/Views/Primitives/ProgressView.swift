@@ -132,7 +132,7 @@ import Foundation
 ///
 /// Because `ProgressView` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct ProgressView: View, Sendable {
+public struct ProgressView: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The current value of the progress (nil for indeterminate)

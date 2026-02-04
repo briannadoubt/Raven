@@ -149,7 +149,7 @@ import Foundation
 ///
 /// Because `Stepper` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Stepper<Label: View>: View, Sendable {
+public struct Stepper<Label: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The binding to the stepper's value

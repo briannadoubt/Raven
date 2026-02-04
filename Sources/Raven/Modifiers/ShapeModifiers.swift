@@ -242,7 +242,7 @@ extension Shape {
 /// A view that strokes a shape with a style and full stroke configuration.
 ///
 /// This view is created by the `stroke(_:style:)` modifier on shapes.
-public struct _ShapeStyledStrokeView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeStyledStrokeView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let strokeStyle: StrokeStyle
@@ -362,7 +362,7 @@ extension Shape {
 /// A view that displays a trimmed portion of a shape.
 ///
 /// This view is created by the `trim(from:to:)` modifier on shapes.
-public struct _ShapeTrimView<S: Shape>: View, Sendable {
+public struct _ShapeTrimView<S: Shape>: View, PrimitiveView, Sendable {
     let shape: S
     let from: CGFloat
     let to: CGFloat
@@ -433,7 +433,7 @@ extension _ShapeFillView {
 }
 
 /// A view that displays a trimmed portion of a filled shape.
-public struct _ShapeTrimmedFillView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeTrimmedFillView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let from: CGFloat
@@ -507,7 +507,7 @@ extension _ShapeStrokeView {
 }
 
 /// A view that displays a trimmed portion of a stroked shape.
-public struct _ShapeTrimmedStrokeView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeTrimmedStrokeView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let lineWidth: CGFloat
@@ -583,7 +583,7 @@ extension _ShapeStyledStrokeView {
 }
 
 /// A view that displays a trimmed portion of a styled-stroked shape.
-public struct _ShapeTrimmedStyledStrokeView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeTrimmedStyledStrokeView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let strokeStyle: StrokeStyle

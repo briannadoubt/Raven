@@ -293,4 +293,44 @@ final class TextModifiersTests: XCTestCase {
         // The outer node should be the truncation wrapper
         XCTAssertNotNil(node.props["text-overflow"], "Combined modifiers should include truncation")
     }
+
+    // MARK: - Dynamic Type Scaling Tests (4 tests)
+
+    func testFontScalingWithDefaultSize() {
+        // Test that default size category (1.0) produces correct font size
+        let font = Font.body
+        let (_, size, _) = font.cssProperties(scale: 1.0)
+        XCTAssertEqual(size, "17.0px", "Body font at default scale should be 17px")
+    }
+
+    func testFontScalingWithLargerSize() {
+        // Test that larger size category scales the font
+        let font = Font.body
+        let scale = ContentSizeCategory.extraLarge.scaleFactor
+        let (_, size, _) = font.cssProperties(scale: scale)
+
+        // extraLarge has scale factor 1.12, so 17 * 1.12 = 19.04 (approximately)
+        // Due to floating point precision, check that it starts with "19.04"
+        XCTAssertTrue(size.hasPrefix("19.04"), "Body font at extraLarge scale should be approximately 19.04px, got \(size)")
+    }
+
+    func testFontScalingWithAccessibilitySize() {
+        // Test that accessibility sizes produce significantly larger fonts
+        let font = Font.caption
+        let scale = ContentSizeCategory.accessibilityLarge.scaleFactor
+        let (_, size, _) = font.cssProperties(scale: scale)
+
+        // Caption is 12px, accessibilityLarge has scale factor 1.90, so 12 * 1.90 = 22.8
+        XCTAssertTrue(size.hasPrefix("22.8"), "Caption font at accessibilityLarge should be approximately 22.8px, got \(size)")
+    }
+
+    func testFixedSizeFontDoesNotScale() {
+        // Test that fixed size fonts don't scale with ContentSizeCategory
+        let font = Font.custom("Helvetica", fixedSize: 20)
+        let scale = ContentSizeCategory.extraExtraLarge.scaleFactor
+        let (_, size, _) = font.cssProperties(scale: scale)
+
+        // Fixed size fonts should not scale
+        XCTAssertEqual(size, "20.0px", "Fixed size fonts should not scale with ContentSizeCategory")
+    }
 }

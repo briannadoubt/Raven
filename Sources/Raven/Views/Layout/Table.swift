@@ -112,7 +112,7 @@ import Foundation
 /// - ``TableRow``
 /// - ``KeyPathComparator``
 /// - ``SortOrder``
-public struct Table<RowValue, Columns>: View, Sendable
+public struct Table<RowValue, Columns>: View, PrimitiveView, Sendable
 where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
 {
     public typealias Body = Never
@@ -123,8 +123,11 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     /// The column definitions
     let columns: Columns
 
-    /// Optional selection binding
+    /// Optional single selection binding
     let selection: Binding<RowValue.ID?>?
+
+    /// Optional multi-selection binding
+    let multiSelection: Binding<Set<RowValue.ID>>?
 
     /// Optional sort order binding
     let sortOrder: Binding<[SortDescriptor<RowValue>]>?
@@ -146,6 +149,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         self.data = data
         self.columns = columns()
         self.selection = nil
+        self.multiSelection = nil
         self.sortOrder = nil
         self.id = UUID().uuidString
     }
@@ -164,6 +168,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         self.data = data
         self.columns = columns()
         self.selection = selection
+        self.multiSelection = nil
         self.sortOrder = nil
         self.id = UUID().uuidString
     }
@@ -182,6 +187,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         self.data = data
         self.columns = columns()
         self.selection = nil
+        self.multiSelection = nil
         self.sortOrder = sortOrder
         self.id = UUID().uuidString
     }
@@ -202,6 +208,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         self.data = data
         self.columns = columns()
         self.selection = selection
+        self.multiSelection = nil
         self.sortOrder = sortOrder
         self.id = UUID().uuidString
     }
@@ -216,11 +223,15 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     /// - Full ARIA attributes for accessibility
     /// - Sort indicators in column headers
     /// - Selection state management
+    /// - Checkbox column for multi-selection (if enabled)
     ///
     /// - Returns: A VNode configured as a table element.
     @MainActor public func toVNode() -> VNode {
+        // Determine if multi-selection is active
+        let hasMultiSelection = multiSelection != nil
+
         // Table container props
-        let tableProps: [String: VProperty] = [
+        var tableProps: [String: VProperty] = [
             // Accessibility
             "role": .attribute(name: "role", value: "table"),
             "aria-label": .attribute(name: "aria-label", value: "Data table"),
@@ -232,12 +243,30 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
             "background-color": .style(name: "background-color", value: "white"),
         ]
 
+        // Add multi-selectable ARIA attribute if multi-selection is enabled
+        if hasMultiSelection {
+            tableProps["aria-multiselectable"] = .attribute(name: "aria-multiselectable", value: "true")
+        }
+
         // Extract column information (this would be done by the RenderCoordinator)
         // For now, we return a skeleton structure
 
         // Create thead section
         let theadProps: [String: VProperty] = [:]
-        let thead = VNode.element("thead", props: theadProps, children: [])
+        var headerChildren: [VNode] = []
+
+        // Add checkbox column header for multi-selection
+        if hasMultiSelection {
+            let checkboxHeaderProps: [String: VProperty] = [
+                "width": .style(name: "width", value: "40px"),
+            ]
+            let checkboxHeaderCell = VNode.element("th", props: checkboxHeaderProps, children: [
+                VNode.text("") // Empty header for checkbox column
+            ])
+            headerChildren.append(checkboxHeaderCell)
+        }
+
+        let thead = VNode.element("thead", props: theadProps, children: headerChildren)
 
         // Create tbody section
         let tbodyProps: [String: VProperty] = [:]
@@ -271,20 +300,63 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     /// - Parameter rowID: The ID of the row to check.
     /// - Returns: True if the row is selected, false otherwise.
     @MainActor internal func isRowSelected(_ rowID: RowValue.ID) -> Bool {
-        selection?.wrappedValue == rowID
+        if let multiSelection = multiSelection {
+            return multiSelection.wrappedValue.contains(rowID)
+        } else if let selection = selection {
+            return selection.wrappedValue == rowID
+        }
+        return false
     }
 
-    /// Handles row selection.
+    /// Handles row selection (single or multi-selection).
     ///
     /// - Parameter rowID: The ID of the row that was selected.
     @MainActor internal func selectRow(_ rowID: RowValue.ID) {
-        guard let selection = selection else { return }
-        if selection.wrappedValue == rowID {
-            // Deselect if already selected
-            selection.wrappedValue = nil
-        } else {
-            selection.wrappedValue = rowID
+        if let multiSelection = multiSelection {
+            // Multi-selection: toggle the row in the set
+            var current = multiSelection.wrappedValue
+            if current.contains(rowID) {
+                current.remove(rowID)
+            } else {
+                current.insert(rowID)
+            }
+            multiSelection.wrappedValue = current
+        } else if let selection = selection {
+            // Single selection: toggle or replace
+            if selection.wrappedValue == rowID {
+                // Deselect if already selected
+                selection.wrappedValue = nil
+            } else {
+                selection.wrappedValue = rowID
+            }
         }
+    }
+
+    /// Toggles the selection state of a row (multi-selection only).
+    ///
+    /// - Parameter rowID: The ID of the row to toggle.
+    @MainActor internal func toggleRow(_ rowID: RowValue.ID) {
+        guard let multiSelection = multiSelection else { return }
+        var current = multiSelection.wrappedValue
+        if current.contains(rowID) {
+            current.remove(rowID)
+        } else {
+            current.insert(rowID)
+        }
+        multiSelection.wrappedValue = current
+    }
+
+    /// Selects all rows in the table (multi-selection only).
+    @MainActor internal func selectAll() {
+        guard let multiSelection = multiSelection else { return }
+        let allIDs = Set(data.map { $0.id })
+        multiSelection.wrappedValue = allIDs
+    }
+
+    /// Deselects all rows in the table (multi-selection only).
+    @MainActor internal func deselectAll() {
+        guard let multiSelection = multiSelection else { return }
+        multiSelection.wrappedValue = []
     }
 
     /// Handles column header click for sorting.
@@ -321,8 +393,26 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
 
 // MARK: - Multi-Selection Support
 
+/// Extension to Table that adds multi-selection support.
+///
+/// Multi-selection allows users to select multiple rows in a table using checkboxes.
+/// The selection state is controlled through a binding that stores a set of selected row IDs.
+///
+/// ## Usage Example
+///
+/// ```swift
+/// @State private var selection = Set<UUID>()
+///
+/// Table(items, selection: $selection) {
+///     TableColumn("Name", value: \.name)
+///     TableColumn("Age", value: \.age)
+/// }
+/// ```
 extension Table {
     /// Creates a table with multiple row selection.
+    ///
+    /// This initializer enables multi-selection support with a checkbox column
+    /// for selecting multiple rows at once.
     ///
     /// - Parameters:
     ///   - data: The collection of data to display.
@@ -333,16 +423,18 @@ extension Table {
         selection: Binding<Set<RowValue.ID>>,
         @ViewBuilder columns: () -> Columns
     ) where RowValue.ID: Hashable {
-        // For now, we'll implement multi-selection as a future enhancement
-        // This initializer exists for API compatibility
         self.data = data
         self.columns = columns()
-        self.selection = nil // Multi-selection would need different handling
+        self.selection = nil
+        self.multiSelection = selection
         self.sortOrder = nil
         self.id = UUID().uuidString
     }
 
     /// Creates a table with multiple row selection and sorting.
+    ///
+    /// This initializer enables both multi-selection and column sorting,
+    /// adding a checkbox column and sortable column headers.
     ///
     /// - Parameters:
     ///   - data: The collection of data to display.
@@ -355,10 +447,10 @@ extension Table {
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
         @ViewBuilder columns: () -> Columns
     ) where RowValue.ID: Hashable {
-        // For now, we'll implement multi-selection as a future enhancement
         self.data = data
         self.columns = columns()
-        self.selection = nil // Multi-selection would need different handling
+        self.selection = nil
+        self.multiSelection = selection
         self.sortOrder = sortOrder
         self.id = UUID().uuidString
     }
@@ -379,6 +471,7 @@ extension Table {
         self.data = Array(data)
         self.columns = columns()
         self.selection = nil
+        self.multiSelection = nil
         self.sortOrder = nil
         self.id = UUID().uuidString
     }
@@ -397,6 +490,7 @@ extension Table {
         self.data = Array(data)
         self.columns = columns()
         self.selection = selection
+        self.multiSelection = nil
         self.sortOrder = nil
         self.id = UUID().uuidString
     }
@@ -415,6 +509,7 @@ extension Table {
         self.data = Array(data)
         self.columns = columns()
         self.selection = nil
+        self.multiSelection = nil
         self.sortOrder = sortOrder
         self.id = UUID().uuidString
     }
@@ -435,6 +530,7 @@ extension Table {
         self.data = Array(data)
         self.columns = columns()
         self.selection = selection
+        self.multiSelection = nil
         self.sortOrder = sortOrder
         self.id = UUID().uuidString
     }

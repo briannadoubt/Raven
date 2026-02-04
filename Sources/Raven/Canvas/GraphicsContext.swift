@@ -190,9 +190,10 @@ public struct GraphicsContext: Sendable {
     // MARK: - Pattern Creation
 
     private func createPattern(_ pattern: CanvasPattern) -> JSValue? {
-        // Pattern creation would require image loading support
-        // For now, return nil and fall back to solid color
-        return nil
+        guard let jsPattern = pattern.createJSPattern(context: jsContext) else {
+            return nil
+        }
+        return .object(jsPattern)
     }
 
     // MARK: - Transformations

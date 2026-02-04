@@ -31,7 +31,7 @@ import Foundation
 ///     .blur(radius: 2)
 ///     .brightness(1.2)
 /// ```
-public struct _BlurView<Content: View>: View, Sendable {
+public struct _BlurView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let radius: CGFloat
 
@@ -85,7 +85,7 @@ public struct _BlurView<Content: View>: View, Sendable {
 /// Text("Highlighted")
 ///     .brightness(1.5)  // 150% brightness (brighter)
 /// ```
-public struct _BrightnessView<Content: View>: View, Sendable {
+public struct _BrightnessView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let amount: Double
 
@@ -138,7 +138,7 @@ public struct _BrightnessView<Content: View>: View, Sendable {
 /// Text("Low contrast")
 ///     .contrast(0.7)  // Decrease contrast
 /// ```
-public struct _ContrastView<Content: View>: View, Sendable {
+public struct _ContrastView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let amount: Double
 
@@ -191,7 +191,7 @@ public struct _ContrastView<Content: View>: View, Sendable {
 /// Image("photo")
 ///     .saturation(1.5)  // Vibrant colors
 /// ```
-public struct _SaturationView<Content: View>: View, Sendable {
+public struct _SaturationView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let amount: Double
 
@@ -250,7 +250,7 @@ public struct _SaturationView<Content: View>: View, Sendable {
 ///     .brightness(1.1)
 ///     .contrast(1.2)
 /// ```
-public struct _GrayscaleView<Content: View>: View, Sendable {
+public struct _GrayscaleView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let amount: Double
 
@@ -311,7 +311,7 @@ public struct _GrayscaleView<Content: View>: View, Sendable {
 ///     .fill(Color.red)
 ///     .hueRotation(Angle(degrees: 45))
 /// ```
-public struct _HueRotationView<Content: View>: View, Sendable {
+public struct _HueRotationView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let angle: Angle
 

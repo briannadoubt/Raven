@@ -128,7 +128,7 @@ struct ScrollTransitionConfiguration: Sendable {
 ///     }
 /// }
 /// ```
-public struct _ScrollTransitionView<Content: View>: View, Sendable {
+public struct _ScrollTransitionView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let configuration: ScrollTransitionConfiguration
     // Note: The transition closure itself cannot be stored in Sendable context

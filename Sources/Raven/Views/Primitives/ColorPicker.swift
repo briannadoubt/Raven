@@ -168,7 +168,7 @@ import Foundation
 ///
 /// Because `ColorPicker` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct ColorPicker: View, Sendable {
+public struct ColorPicker: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The label to display for the picker

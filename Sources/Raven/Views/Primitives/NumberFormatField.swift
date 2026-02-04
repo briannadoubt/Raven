@@ -237,7 +237,7 @@ import Foundation
 /// - ``NumberFormatter``
 /// - ``CurrencyField``
 /// - ``TextField``
-public struct NumberFormatField: View, Sendable {
+public struct NumberFormatField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The placeholder text to display when the field is empty

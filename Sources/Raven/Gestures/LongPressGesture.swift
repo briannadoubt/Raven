@@ -399,3 +399,35 @@ public struct _UpdatingGestureModifier<State: Sendable, Value: Sendable>: Sendab
         self.body = body
     }
 }
+
+// MARK: - Modified Gesture Extensions
+
+extension _ModifiedGesture {
+    /// Adds an action to perform when the gesture ends.
+    ///
+    /// - Parameter action: The action to perform when the gesture ends.
+    /// - Returns: A gesture that triggers the action when it ends.
+    @MainActor
+    public func onEnded(
+        _ action: @escaping @MainActor @Sendable (Value) -> Void
+    ) -> _ModifiedGesture<_ModifiedGesture<G, M>, _EndedGestureModifier<Value>> {
+        _ModifiedGesture<_ModifiedGesture<G, M>, _EndedGestureModifier<Value>>(
+            gesture: self,
+            modifier: _EndedGestureModifier(action: action)
+        )
+    }
+
+    /// Adds an action to perform as the gesture changes.
+    ///
+    /// - Parameter action: The action to perform as the gesture changes.
+    /// - Returns: A gesture that triggers the action as it changes.
+    @MainActor
+    public func onChanged(
+        _ action: @escaping @MainActor @Sendable (Value) -> Void
+    ) -> _ModifiedGesture<_ModifiedGesture<G, M>, _ChangedGestureModifier<Value>> {
+        _ModifiedGesture<_ModifiedGesture<G, M>, _ChangedGestureModifier<Value>>(
+            gesture: self,
+            modifier: _ChangedGestureModifier(action: action)
+        )
+    }
+}

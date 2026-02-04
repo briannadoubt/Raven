@@ -197,7 +197,7 @@ extension Shape {
 /// A view that fills a shape with a style.
 ///
 /// This view is created by the `fill(_:)` modifier on shapes.
-public struct _ShapeFillView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeFillView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
 
@@ -246,7 +246,7 @@ public struct _ShapeFillView<S: Shape, Style: ShapeStyle>: View, Sendable {
 /// A view that strokes a shape with a style.
 ///
 /// This view is created by the `stroke(_:lineWidth:)` modifier on shapes.
-public struct _ShapeStrokeView<S: Shape, Style: ShapeStyle>: View, Sendable {
+public struct _ShapeStrokeView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let lineWidth: CGFloat

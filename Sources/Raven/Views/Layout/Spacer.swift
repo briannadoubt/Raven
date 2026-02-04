@@ -27,7 +27,7 @@ import Foundation
 ///
 /// - Parameters:
 ///   - minLength: The minimum length this spacer can be shrunk to. Defaults to `nil` (no minimum).
-public struct Spacer: View, Sendable {
+public struct Spacer: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The minimum length this spacer can be shrunk to, in pixels

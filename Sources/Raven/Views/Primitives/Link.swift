@@ -139,7 +139,7 @@ import Foundation
 ///
 /// Because `Link` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Link<Label: View>: View, Sendable {
+public struct Link<Label: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The destination URL for navigation

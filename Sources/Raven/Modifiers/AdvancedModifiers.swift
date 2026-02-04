@@ -33,15 +33,20 @@ public struct ModifierAlignment: Sendable, Hashable {
 /// A view wrapper that applies a font to its content.
 ///
 /// The font modifier sets the text font for the view and its children.
-public struct _FontView<Content: View>: View, Sendable {
+public struct _FontView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let font: Font
+
+    @Environment(\.sizeCategory) private var sizeCategory
 
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Convert Font to CSS properties using the new cssProperties() method
-        let (family, size, weight) = font.cssProperties()
+        // Get the scale factor from the environment
+        let scale = sizeCategory.scaleFactor
+
+        // Convert Font to CSS properties with the scale applied
+        let (family, size, weight) = font.cssProperties(scale: scale)
 
         let props: [String: VProperty] = [
             "font-family": .style(name: "font-family", value: family),
@@ -62,7 +67,7 @@ public struct _FontView<Content: View>: View, Sendable {
 /// A view wrapper that applies a background view to its content.
 ///
 /// The background is positioned behind the content, aligned according to the specified alignment.
-public struct _BackgroundView<Content: View, Background: View>: View, Sendable {
+public struct _BackgroundView<Content: View, Background: View>: View, PrimitiveView, Sendable {
     let content: Content
     let background: Background
     let alignment: ModifierAlignment
@@ -89,7 +94,7 @@ public struct _BackgroundView<Content: View, Background: View>: View, Sendable {
 /// A view wrapper that applies a background color to its content.
 ///
 /// This is a convenience variant that uses a Color as the background.
-public struct _BackgroundColorView<Content: View>: View, Sendable {
+public struct _BackgroundColorView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let color: Color
 
@@ -111,7 +116,7 @@ public struct _BackgroundColorView<Content: View>: View, Sendable {
 /// A view wrapper that applies an overlay view on top of its content.
 ///
 /// The overlay is positioned on top of the content, aligned according to the specified alignment.
-public struct _OverlayView<Content: View, Overlay: View>: View, Sendable {
+public struct _OverlayView<Content: View, Overlay: View>: View, PrimitiveView, Sendable {
     let content: Content
     let overlay: Overlay
     let alignment: ModifierAlignment
@@ -140,7 +145,7 @@ public struct _OverlayView<Content: View, Overlay: View>: View, Sendable {
 /// A view wrapper that applies a drop shadow to its content.
 ///
 /// The shadow is rendered using CSS box-shadow.
-public struct _ShadowView<Content: View>: View, Sendable {
+public struct _ShadowView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let color: Color
     let radius: CGFloat
@@ -168,7 +173,7 @@ public struct _ShadowView<Content: View>: View, Sendable {
 /// A view wrapper that applies rounded corners to its content.
 ///
 /// The corner radius is rendered using CSS border-radius.
-public struct _CornerRadiusView<Content: View>: View, Sendable {
+public struct _CornerRadiusView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let radius: CGFloat
 
@@ -191,7 +196,7 @@ public struct _CornerRadiusView<Content: View>: View, Sendable {
 /// A view wrapper that applies opacity to its content.
 ///
 /// The opacity is rendered using CSS opacity property.
-public struct _OpacityView<Content: View>: View, Sendable {
+public struct _OpacityView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let opacity: Double
 
@@ -216,7 +221,7 @@ public struct _OpacityView<Content: View>: View, Sendable {
 /// A view wrapper that applies a position offset to its content.
 ///
 /// The offset is rendered using CSS transform translateX/translateY.
-public struct _OffsetView<Content: View>: View, Sendable {
+public struct _OffsetView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let x: CGFloat
     let y: CGFloat
@@ -241,7 +246,7 @@ public struct _OffsetView<Content: View>: View, Sendable {
 /// A view wrapper that applies a rotation transform to its content.
 ///
 /// The rotation is rendered using CSS transform rotate.
-public struct _RotationEffectView<Content: View>: View, Sendable {
+public struct _RotationEffectView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let angle: Angle
 
@@ -265,7 +270,7 @@ public struct _RotationEffectView<Content: View>: View, Sendable {
 /// A view wrapper that applies a scale transform to its content.
 ///
 /// The scale is rendered using CSS transform scale.
-public struct _ScaleEffectView<Content: View>: View, Sendable {
+public struct _ScaleEffectView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let scale: CGFloat
 

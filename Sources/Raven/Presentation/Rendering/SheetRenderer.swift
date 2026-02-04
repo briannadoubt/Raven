@@ -139,15 +139,7 @@ public struct SheetRenderer: Sendable {
     /// - Parameter content: The AnyView content to render
     /// - Returns: A VNode representing the content
     private static func renderContent(_ content: AnyView) -> VNode {
-        // Placeholder for content rendering
-        // In a complete implementation, this would convert the view to VNodes
-        return VNode.element(
-            "div",
-            props: [
-                "class": .attribute(name: "class", value: "raven-presentation-content")
-            ],
-            children: []
-        )
+        return content.render()
     }
 
     /// Calculates the maximum height for a detent.

@@ -230,7 +230,7 @@ public struct GeometryReader<Content: View>: View, Sendable {
 ///
 /// This is a primitive view that renders to a div element and uses JavaScriptKit
 /// to measure its size and position in the DOM.
-internal struct _GeometryReaderContainer<Content: View>: View, Sendable {
+internal struct _GeometryReaderContainer<Content: View>: View, PrimitiveView, Sendable {
     typealias Body = Never
 
     let content: @Sendable @MainActor (GeometryProxy) -> Content

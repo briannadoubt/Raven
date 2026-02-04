@@ -227,23 +227,11 @@ public struct DialogRenderer: Sendable {
     /// Renders the content view into a VNode.
     ///
     /// This method converts the AnyView content into a VNode tree.
-    /// For now, it creates a placeholder element that will be filled
-    /// by the render system.
     ///
     /// - Parameter content: The AnyView content to render
     /// - Returns: A VNode representing the content
     private static func renderContent(_ content: AnyView) -> VNode {
-        // In a complete implementation, this would traverse the view
-        // hierarchy and convert it to VNodes. For now, we create a
-        // placeholder that the render coordinator will populate.
-        return VNode.element(
-            "div",
-            props: [
-                "class": .attribute(name: "class", value: "raven-presentation-content"),
-                "data-content-placeholder": .attribute(name: "data-content-placeholder", value: "true")
-            ],
-            children: []
-        )
+        return content.render()
     }
 
     /// Extracts text content from a Text view if possible.

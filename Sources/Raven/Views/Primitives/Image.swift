@@ -13,7 +13,7 @@ import Foundation
 ///
 /// Because `Image` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Image: View, Sendable {
+public struct Image: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The source of the image

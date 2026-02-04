@@ -20,7 +20,7 @@ import Foundation
 /// In a horizontal stack (HStack), it can also be used to create a visual break.
 ///
 /// The divider automatically adapts to the available space and styling of its container.
-public struct Divider: View, Sendable {
+public struct Divider: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     // MARK: - Initializers

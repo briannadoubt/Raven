@@ -54,7 +54,7 @@ public enum BounceBehavior: Sendable, Hashable {
 /// - Safari: 16+
 ///
 /// For older browsers, the property is ignored and default scroll behavior applies.
-public struct _ScrollBounceBehaviorView<Content: View>: View, Sendable {
+public struct _ScrollBounceBehaviorView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let behavior: BounceBehavior
     let axes: Axis.Set
@@ -143,7 +143,7 @@ public struct _ScrollBounceBehaviorView<Content: View>: View, Sendable {
 /// ## Browser Compatibility
 ///
 /// Uses standard CSS overflow properties, supported in all modern browsers.
-public struct _ScrollClipDisabledView<Content: View>: View, Sendable {
+public struct _ScrollClipDisabledView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let disabled: Bool
 

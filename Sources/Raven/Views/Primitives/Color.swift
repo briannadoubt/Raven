@@ -78,7 +78,7 @@ public struct RadialGradient: Sendable, Hashable {
 /// Color.rgb(255, 0, 0)
 /// Color.hex("#FF0000")
 /// ```
-public struct Color: View, Sendable, Hashable {
+public struct Color: View, PrimitiveView, Sendable, Hashable {
     public typealias Body = Never
 
     /// The underlying color representation

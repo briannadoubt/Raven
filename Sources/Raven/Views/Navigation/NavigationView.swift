@@ -63,7 +63,7 @@ public struct NavigationView<Content: View>: View, Sendable {
 /// This view is responsible for creating the DOM structure for navigation,
 /// including the navigation bar and content area.
 @MainActor
-private struct NavigationContainer<Content: View>: View, Sendable {
+private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable {
     typealias Body = Never
 
     /// The content to display in the navigation view
@@ -76,8 +76,7 @@ private struct NavigationContainer<Content: View>: View, Sendable {
     /// - Content area for the current view
     ///
     /// - Returns: A VNode representation of the navigation container.
-    @MainActor
-    func toVNode() -> VNode {
+    @MainActor public func toVNode() -> VNode {
         // Create navigation bar
         let navBar = createNavigationBar()
 

@@ -49,7 +49,7 @@ import Foundation
 ///   - spacing: The spacing between rows and columns. Defaults to `nil` (no explicit spacing).
 ///   - pinnedViews: The kinds of child views to pin. Currently unused but included for API compatibility.
 ///   - content: A view builder that creates the child views.
-public struct LazyHGrid<Content: View>: View, Sendable {
+public struct LazyHGrid<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The row definitions for this grid

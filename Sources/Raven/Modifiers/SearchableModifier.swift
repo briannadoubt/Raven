@@ -99,7 +99,7 @@ public enum SearchFieldPlacement: Sendable, Hashable {
 ///     }
 /// }
 /// ```
-public struct _SearchableView<Content: View, Suggestions: View>: View, Sendable {
+public struct _SearchableView<Content: View, Suggestions: View>: View, PrimitiveView, Sendable {
     let content: Content
     let text: Binding<String>
     let placement: SearchFieldPlacement

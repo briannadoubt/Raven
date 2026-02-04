@@ -123,7 +123,7 @@ extension InsettableShape {
 ///
 /// This view is created by the `strokeBorder(_:lineWidth:)` modifier on
 /// insettable shapes.
-public struct _StrokeBorderView<S: InsettableShape, Style: ShapeStyle>: View, Sendable {
+public struct _StrokeBorderView<S: InsettableShape, Style: ShapeStyle>: View, PrimitiveView, Sendable {
     let shape: S
     let style: Style
     let lineWidth: CGFloat

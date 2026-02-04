@@ -106,7 +106,7 @@ import Foundation
 ///
 /// Because `Slider` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Slider: View, Sendable {
+public struct Slider: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The binding to the slider's current value

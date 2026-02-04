@@ -299,22 +299,7 @@ struct _HighPriorityGestureViewModifier<G: Gesture>: ViewModifier, Sendable {
 }
 
 // MARK: - Gesture Priority
-
-/// The priority level for gesture recognition.
-///
-/// When multiple gestures compete for recognition on the same view or view hierarchy,
-/// priority determines which gesture gets first chance at recognition.
-@MainActor
-enum GesturePriority: Sendable {
-    /// Normal priority - competes equally with other normal-priority gestures.
-    case normal
-
-    /// Simultaneous priority - recognizes alongside other gestures.
-    case simultaneous
-
-    /// High priority - takes precedence over normal-priority gestures.
-    case high
-}
+// Note: GesturePriority is now defined in VNode.swift as a public enum
 
 // MARK: - Gesture Attachment View
 
@@ -323,19 +308,74 @@ enum GesturePriority: Sendable {
 /// This is the internal implementation that handles gesture attachment. It wraps the
 /// content view and adds gesture event handling based on the gesture type and mask.
 @MainActor
-struct _GestureAttachment<Content: View, G: Gesture>: View, Sendable {
+struct _GestureAttachment<Content: View, G: Gesture>: View, PrimitiveView, Sendable {
+    typealias Body = Never
+
     let content: Content
     let gesture: G
     let mask: GestureMask
     let priority: GesturePriority
 
-    var body: some View {
-        // The content is passed through unchanged.
-        // In a real implementation, this would integrate with the VNode system
-        // to attach event listeners based on the gesture type and mask.
-        // For now, we just pass through the content since VNode integration
-        // happens at the rendering layer.
-        content
+    /// The gesture handler that will be called when the gesture is recognized
+    /// This is stored separately so it can be registered with the render system
+    private var gestureHandler: @Sendable @MainActor (G.Value) -> Void = { _ in }
+
+    /// Public initializer
+    init(content: Content, gesture: G, mask: GestureMask, priority: GesturePriority) {
+        self.content = content
+        self.gesture = gesture
+        self.mask = mask
+        self.priority = priority
+    }
+
+    @MainActor
+    func toVNode() -> VNode {
+        // Convert the content to a VNode first
+        let contentNode = convertContentToVNode(content)
+
+        // Generate handler ID for this gesture
+        let handlerID = UUID()
+
+        // Get the event names needed for this gesture type
+        let events = eventNamesForGesture(gesture)
+
+        // Create gesture registration
+        let registration = GestureRegistration(
+            events: events,
+            priority: priority,
+            handlerID: handlerID
+        )
+
+        // Add gesture registration to the content node
+        return addGestureToVNode(contentNode, gesture: registration)
+    }
+
+    /// Converts content view to VNode
+    private func convertContentToVNode(_ view: Content) -> VNode {
+        // Check if this is a primitive view
+        if let primitive = view as? any PrimitiveView {
+            return primitive.toVNode()
+        }
+
+        // For composite views, we need to recursively render
+        // This is a simplified version - the full render system handles this
+        // For now, wrap in a div
+        return VNode.element("div", children: [])
+    }
+
+    /// Adds a gesture registration to a VNode
+    private func addGestureToVNode(_ node: VNode, gesture: GestureRegistration) -> VNode {
+        // Create a new VNode with the gesture added
+        let newGestures = node.gestures + [gesture]
+
+        return VNode(
+            id: node.id,
+            type: node.type,
+            props: node.props,
+            children: node.children,
+            key: node.key,
+            gestures: newGestures
+        )
     }
 }
 

@@ -44,7 +44,7 @@ import Foundation
 /// Image("photo")
 ///     .clipShape(StarShape(), style: FillStyle(rule: .evenOdd))
 /// ```
-public struct _ClipShapeView<Content: View, ClipShape: Shape>: View, Sendable {
+public struct _ClipShapeView<Content: View, ClipShape: Shape>: View, PrimitiveView, Sendable {
     let content: Content
     let shape: ClipShape
     let style: FillStyle

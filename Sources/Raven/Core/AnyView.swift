@@ -1,3 +1,5 @@
+// MARK: - AnyView
+
 /// A type-erased view.
 ///
 /// `AnyView` wraps any view and erases its specific type, allowing you to return
@@ -84,7 +86,7 @@
 ///
 /// - ``View/eraseToAnyView()``
 /// - ``ViewBuilder``
-public struct AnyView: View, Sendable {
+public struct AnyView: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The type-erased rendering closure.
@@ -108,11 +110,9 @@ public struct AnyView: View, Sendable {
     ///
     /// - Parameter view: The view to wrap.
     @MainActor public init<Content: View>(_ view: Content) {
-        // Capture the view in the closure
+        // Capture the view in the closure and use recursive rendering
         self._render = { @MainActor in
-            // This will be implemented by the rendering system
-            // For now, we create a placeholder VNode
-            VNode.component(key: String(describing: type(of: view)))
+            renderView(view)
         }
     }
 
@@ -122,6 +122,46 @@ public struct AnyView: View, Sendable {
     /// DOM representation of the wrapped view.
     @MainActor public func render() -> VNode {
         _render()
+    }
+
+    /// Converts this type-erased view into a virtual DOM node.
+    ///
+    /// This is required by the PrimitiveView protocol and delegates to the render() method.
+    ///
+    /// - Returns: A VNode representing this view's DOM structure.
+    @MainActor public func toVNode() -> VNode {
+        render()
+    }
+}
+
+// MARK: - Recursive View Rendering
+
+/// Recursively renders a view to a VNode.
+///
+/// This function handles both primitive views (with `Body == Never`) and
+/// composite views (which have a body property). For primitive views, it
+/// attempts to call `toVNode()` if the view conforms to `PrimitiveView`.
+/// For composite views, it recursively renders the body.
+///
+/// - Parameter view: The view to render.
+/// - Returns: A VNode representing the view.
+@MainActor internal func renderView<V: View>(_ view: V) -> VNode {
+    // Check if this is a primitive view (Body == Never)
+    if V.Body.self == Never.self {
+        // Try to cast to PrimitiveView and call toVNode()
+        if let primitive = view as? any PrimitiveView {
+            return primitive.toVNode()
+        }
+
+        // Fallback for primitive views that don't conform to PrimitiveView yet
+        // This shouldn't happen in practice, but provides a safe fallback
+        return VNode.element("div", props: [:], children: [
+            VNode.text("AnyView: primitive view without toVNode()")
+        ])
+    } else {
+        // Composite view - recursively render its body
+        let body = view.body
+        return renderView(body)
     }
 }
 

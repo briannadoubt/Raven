@@ -23,7 +23,7 @@ import Foundation
 ///
 /// - Note: The form element prevents default submission behavior and handles
 ///   all interactions through Swift event handlers.
-public struct Form<Content: View>: View, Sendable {
+public struct Form<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The child views contained in the form

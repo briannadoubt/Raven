@@ -26,7 +26,7 @@ public struct PaddingModifier: BasicViewModifier, Sendable {
 }
 
 /// Internal view that applies padding by wrapping content in a div with padding styles.
-public struct _PaddingView<Content: View>: View, Sendable {
+public struct _PaddingView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let padding: EdgeInsets
 
@@ -79,7 +79,7 @@ public struct FrameModifier: BasicViewModifier, Sendable {
 }
 
 /// Internal view that applies frame sizing by wrapping content in a div with size styles.
-public struct _FrameView<Content: View>: View, Sendable {
+public struct _FrameView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let width: Double?
     let height: Double?
@@ -124,7 +124,7 @@ public struct ForegroundColorModifier: BasicViewModifier, Sendable {
 }
 
 /// Internal view that applies foreground color by wrapping content in a div with color style.
-public struct _ForegroundColorView<Content: View>: View, Sendable {
+public struct _ForegroundColorView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let color: Color
 

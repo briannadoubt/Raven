@@ -126,7 +126,7 @@ import Foundation
 ///
 /// Because `Picker` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Picker<Selection: Hashable, Content: View>: View, Sendable where Selection: Sendable {
+public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, Sendable where Selection: Sendable {
     public typealias Body = Never
 
     /// The label for the picker

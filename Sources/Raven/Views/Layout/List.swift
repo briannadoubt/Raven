@@ -42,7 +42,7 @@ import Foundation
 /// }
 /// .virtualized()
 /// ```
-public struct List<Content: View>: View, Sendable {
+public struct List<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The child views to display in the list

@@ -148,7 +148,7 @@ import Foundation
 ///   - alignment: The vertical alignment of child views. Defaults to `.center`.
 ///   - spacing: The horizontal spacing between child views in pixels. Defaults to `nil` (no explicit spacing).
 ///   - content: A view builder that creates the child views.
-public struct HStack<Content: View>: View, Sendable {
+public struct HStack<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The vertical alignment of child views

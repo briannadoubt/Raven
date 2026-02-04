@@ -98,6 +98,46 @@ public protocol View: Sendable {
     @ViewBuilder @MainActor var body: Body { get }
 }
 
+// MARK: - Primitive View Protocol
+
+/// A protocol for views that render directly to DOM elements without composition.
+///
+/// Primitive views implement their own `toVNode()` method to convert themselves
+/// directly into virtual DOM nodes, rather than composing other views. These are
+/// the building blocks of the view hierarchy.
+///
+/// ## Overview
+///
+/// Conforming to `PrimitiveView` marks a view as a leaf node in the view tree
+/// that handles its own DOM rendering. Primitive views must:
+/// - Have `Body` type of `Never`
+/// - Implement `toVNode()` to produce a `VNode`
+///
+/// ## Example
+///
+/// ```swift
+/// public struct Text: View, PrimitiveView {
+///     public typealias Body = Never
+///
+///     @MainActor public func toVNode() -> VNode {
+///         // Direct DOM rendering logic
+///         return VNode.element("span", content: text)
+///     }
+/// }
+/// ```
+///
+/// - Note: This protocol is used by the rendering system to identify views
+///   that can be directly converted to DOM elements without recursion.
+public protocol PrimitiveView: View where Body == Never {
+    /// Converts this primitive view into a virtual DOM node.
+    ///
+    /// This method is called by the rendering system to produce the actual
+    /// DOM representation of the view.
+    ///
+    /// - Returns: A VNode representing this view's DOM structure.
+    @MainActor func toVNode() -> VNode
+}
+
 // MARK: - Never Extension
 
 extension Never: View {

@@ -199,38 +199,46 @@ public struct Font: Sendable, Hashable {
 
     /// Converts this font to CSS font properties.
     ///
+    /// - Parameter scale: The scale factor to apply to font sizes. Defaults to 1.0.
     /// - Returns: A tuple of CSS font-family and font-size values.
-    internal func cssProperties() -> (family: String, size: String, weight: String) {
+    internal func cssProperties(scale: Double = 1.0) -> (family: String, size: String, weight: String) {
+        let baseProperties: (family: String, size: Double, weight: String)
+
         switch descriptor {
         case .system(let size, let weight, let design):
-            return (family: design.cssFontFamily, size: "\(size)px", weight: weight.cssValue)
+            baseProperties = (family: design.cssFontFamily, size: size, weight: weight.cssValue)
         case .custom(let name, let size):
-            return (family: "'\(name)', sans-serif", size: "\(size)px", weight: "400")
+            baseProperties = (family: "'\(name)', sans-serif", size: size, weight: "400")
         case .customFixed(let name, let fixedSize):
+            // Fixed size fonts don't scale
             return (family: "'\(name)', sans-serif", size: "\(fixedSize)px", weight: "400")
         case .largeTitle:
-            return (family: Design.default.cssFontFamily, size: "34px", weight: "700")
+            baseProperties = (family: Design.default.cssFontFamily, size: 34, weight: "700")
         case .title:
-            return (family: Design.default.cssFontFamily, size: "28px", weight: "700")
+            baseProperties = (family: Design.default.cssFontFamily, size: 28, weight: "700")
         case .title2:
-            return (family: Design.default.cssFontFamily, size: "22px", weight: "700")
+            baseProperties = (family: Design.default.cssFontFamily, size: 22, weight: "700")
         case .title3:
-            return (family: Design.default.cssFontFamily, size: "20px", weight: "600")
+            baseProperties = (family: Design.default.cssFontFamily, size: 20, weight: "600")
         case .headline:
-            return (family: Design.default.cssFontFamily, size: "17px", weight: "600")
+            baseProperties = (family: Design.default.cssFontFamily, size: 17, weight: "600")
         case .subheadline:
-            return (family: Design.default.cssFontFamily, size: "15px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 15, weight: "400")
         case .body:
-            return (family: Design.default.cssFontFamily, size: "17px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 17, weight: "400")
         case .callout:
-            return (family: Design.default.cssFontFamily, size: "16px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 16, weight: "400")
         case .footnote:
-            return (family: Design.default.cssFontFamily, size: "13px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 13, weight: "400")
         case .caption:
-            return (family: Design.default.cssFontFamily, size: "12px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 12, weight: "400")
         case .caption2:
-            return (family: Design.default.cssFontFamily, size: "11px", weight: "400")
+            baseProperties = (family: Design.default.cssFontFamily, size: 11, weight: "400")
         }
+
+        // Apply scale factor to the size
+        let scaledSize = baseProperties.size * scale
+        return (family: baseProperties.family, size: "\(scaledSize)px", weight: baseProperties.weight)
     }
 
     // MARK: - Private Helpers

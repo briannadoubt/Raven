@@ -23,7 +23,7 @@ import Foundation
 /// Each row includes appropriate ARIA attributes to ensure proper accessibility
 /// for screen readers and assistive technologies. Rows are marked with `role="row"`
 /// and include selection state information when applicable.
-public struct TableRow<RowValue: Sendable, Content: View>: View, Sendable {
+public struct TableRow<RowValue: Sendable, Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The row data

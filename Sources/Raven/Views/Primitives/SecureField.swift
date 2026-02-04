@@ -24,7 +24,7 @@ import Foundation
 ///
 /// Because `SecureField` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct SecureField: View, Sendable {
+public struct SecureField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The placeholder text to display when the field is empty

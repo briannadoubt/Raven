@@ -165,7 +165,7 @@ import Foundation
 ///
 /// Because `DatePicker` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct DatePicker: View, Sendable {
+public struct DatePicker: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The label to display for the picker

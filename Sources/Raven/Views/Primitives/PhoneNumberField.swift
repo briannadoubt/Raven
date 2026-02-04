@@ -153,7 +153,7 @@ import Foundation
 /// - ``PhoneNumberFormatter``
 /// - ``TextField``
 /// - ``NumberFormatField``
-public struct PhoneNumberField: View, Sendable {
+public struct PhoneNumberField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The placeholder text to display when the field is empty

@@ -41,6 +41,35 @@ public enum VProperty: Hashable, Sendable {
     case boolAttribute(name: String, value: Bool)
 }
 
+/// Gesture registration metadata for attaching gestures to DOM elements
+public struct GestureRegistration: Hashable, Sendable {
+    /// The DOM event names this gesture needs to listen to
+    public let events: [String]
+
+    /// The priority of this gesture
+    public let priority: GesturePriority
+
+    /// Unique identifier for the gesture handler
+    public let handlerID: UUID
+
+    /// Creates a gesture registration
+    public init(events: [String], priority: GesturePriority, handlerID: UUID) {
+        self.events = events
+        self.priority = priority
+        self.handlerID = handlerID
+    }
+}
+
+/// Priority level for gesture recognition
+public enum GesturePriority: String, Hashable, Sendable {
+    /// Normal priority - competes equally with other normal-priority gestures
+    case normal
+    /// Simultaneous priority - recognizes alongside other gestures
+    case simultaneous
+    /// High priority - takes precedence over normal-priority gestures
+    case high
+}
+
 /// Virtual DOM node representing a tree structure for efficient diffing
 public struct VNode: Hashable, Sendable {
     /// Unique identifier for this node
@@ -58,6 +87,9 @@ public struct VNode: Hashable, Sendable {
     /// Optional key for stable identity across renders
     public let key: String?
 
+    /// Gestures attached to this node
+    public let gestures: [GestureRegistration]
+
     /// Initialize a virtual node
     /// - Parameters:
     ///   - id: Unique identifier (auto-generated if not provided)
@@ -65,18 +97,21 @@ public struct VNode: Hashable, Sendable {
     ///   - props: Properties dictionary
     ///   - children: Child nodes
     ///   - key: Optional key for stable identity
+    ///   - gestures: Gesture registrations for this node
     public init(
         id: NodeID = NodeID(),
         type: NodeType,
         props: [String: VProperty] = [:],
         children: [VNode] = [],
-        key: String? = nil
+        key: String? = nil,
+        gestures: [GestureRegistration] = []
     ) {
         self.id = id
         self.type = type
         self.props = props
         self.children = children
         self.key = key
+        self.gestures = gestures
     }
 }
 
@@ -89,18 +124,21 @@ extension VNode {
     ///   - props: Properties dictionary
     ///   - children: Child nodes
     ///   - key: Optional key for stable identity
+    ///   - gestures: Gesture registrations for this element
     /// - Returns: VNode configured as an element
     public static func element(
         _ tag: String,
         props: [String: VProperty] = [:],
         children: [VNode] = [],
-        key: String? = nil
+        key: String? = nil,
+        gestures: [GestureRegistration] = []
     ) -> VNode {
         VNode(
             type: .element(tag: tag),
             props: props,
             children: children,
-            key: key
+            key: key,
+            gestures: gestures
         )
     }
 

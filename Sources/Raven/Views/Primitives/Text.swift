@@ -101,7 +101,7 @@ import Foundation
 ///
 /// Because `Text` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Text: View, Sendable {
+public struct Text: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The string content to display

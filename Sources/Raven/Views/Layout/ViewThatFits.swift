@@ -172,7 +172,7 @@ import Foundation
 /// - Parameters:
 ///   - axes: The axes to consider when determining if a view fits. Defaults to `.vertical`.
 ///   - content: A view builder that provides the view options to choose from.
-public struct ViewThatFits<Content: View>: View, Sendable {
+public struct ViewThatFits<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The axes to measure for fitting

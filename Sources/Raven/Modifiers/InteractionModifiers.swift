@@ -6,7 +6,7 @@ import Foundation
 ///
 /// The disabled modifier prevents user interaction by setting CSS pointer-events to none,
 /// reducing opacity, and changing the cursor style.
-public struct _DisabledView<Content: View>: View, Sendable {
+public struct _DisabledView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let disabled: Bool
 
@@ -33,7 +33,7 @@ public struct _DisabledView<Content: View>: View, Sendable {
 /// A view wrapper that handles tap/click events.
 ///
 /// The onTapGesture modifier adds a click event handler to the view.
-public struct _OnTapGestureView<Content: View>: View, Sendable {
+public struct _OnTapGestureView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let count: Int
     let action: @Sendable @MainActor () -> Void
@@ -64,7 +64,7 @@ public struct _OnTapGestureView<Content: View>: View, Sendable {
 ///
 /// The onAppear modifier uses IntersectionObserver or mount callbacks to detect
 /// when the view becomes visible in the DOM.
-public struct _OnAppearView<Content: View>: View, Sendable {
+public struct _OnAppearView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let action: @Sendable @MainActor () -> Void
 
@@ -92,7 +92,7 @@ public struct _OnAppearView<Content: View>: View, Sendable {
 ///
 /// The onDisappear modifier uses IntersectionObserver or unmount callbacks to detect
 /// when the view is removed from the DOM.
-public struct _OnDisappearView<Content: View>: View, Sendable {
+public struct _OnDisappearView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let action: @Sendable @MainActor () -> Void
 
@@ -131,7 +131,7 @@ public struct OnChangeAction<V: Equatable & Sendable>: Sendable {
 /// A view wrapper that monitors value changes and runs an action.
 ///
 /// The onChange modifier watches a value and triggers an action when it changes.
-public struct _OnChangeView<Content: View, V: Equatable & Sendable>: View, Sendable {
+public struct _OnChangeView<Content: View, V: Equatable & Sendable>: View, PrimitiveView, Sendable {
     let content: Content
     let value: V
     let action: @Sendable @MainActor (V) -> Void

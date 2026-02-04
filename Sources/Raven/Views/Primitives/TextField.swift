@@ -22,7 +22,7 @@ import Foundation
 ///
 /// Because `TextField` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct TextField: View, Sendable {
+public struct TextField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The placeholder text to display when the field is empty
@@ -154,7 +154,7 @@ public struct TextField: View, Sendable {
 ///     }
 /// }
 /// ```
-public struct TextEditor: View, Sendable {
+public struct TextEditor: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// Two-way binding to the text value

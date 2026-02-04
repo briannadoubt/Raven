@@ -120,7 +120,7 @@ import Foundation
 ///
 /// Because `Button` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Button<Label: View>: View, Sendable {
+public struct Button<Label: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The action to perform when the button is clicked

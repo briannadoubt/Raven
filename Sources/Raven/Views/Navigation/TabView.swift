@@ -233,7 +233,7 @@ extension TabView where SelectionValue == Int {
 
 /// Internal container that renders the tab view structure.
 @MainActor
-private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, Sendable where SelectionValue: Sendable {
+private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, PrimitiveView, Sendable where SelectionValue: Sendable {
     typealias Body = Never
 
     /// The selection binding
@@ -256,7 +256,7 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
     }
 
     /// Converts this container to a virtual DOM node.
-    @MainActor func toVNode() -> VNode {
+    @MainActor public func toVNode() -> VNode {
         // Extract tabs from content
         let tabs = extractTabs(from: content)
 

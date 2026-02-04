@@ -54,7 +54,7 @@ import Foundation
 /// - ``Animation``
 /// - ``withAnimation(_:_:)``
 /// - ``AnyTransition``
-public struct _AnimationView<Content: View>: View, Sendable {
+public struct _AnimationView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let animation: Animation?
 
@@ -129,7 +129,7 @@ public struct _AnimationView<Content: View>: View, Sendable {
 /// - ``Animation``
 /// - ``_AnimationView``
 /// - ``withAnimation(_:_:)``
-public struct _ValueAnimationView<Content: View, V: Equatable & Sendable>: View, Sendable {
+public struct _ValueAnimationView<Content: View, V: Equatable & Sendable>: View, PrimitiveView, Sendable {
     let content: Content
     let animation: Animation?
     let value: V

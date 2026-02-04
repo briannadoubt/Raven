@@ -20,7 +20,7 @@ import Foundation
 ///
 /// - Note: The Section view provides semantic grouping and improved accessibility
 ///   by using appropriate HTML structural elements.
-public struct Section<Content: View, Header: View, Footer: View>: View, Sendable {
+public struct Section<Content: View, Header: View, Footer: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The child views contained in the section

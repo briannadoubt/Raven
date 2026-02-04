@@ -24,7 +24,7 @@ public enum ContentMode: Sendable, Hashable {
 ///
 /// Use the clipped modifier to prevent content from drawing outside its frame.
 /// This is rendered using CSS `overflow: hidden`.
-public struct _ClippedView<Content: View>: View, Sendable {
+public struct _ClippedView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
 
     public typealias Body = Never
@@ -46,7 +46,7 @@ public struct _ClippedView<Content: View>: View, Sendable {
 ///
 /// The aspect ratio modifier ensures the view maintains a specific width-to-height ratio.
 /// It uses modern CSS `aspect-ratio` property with a fallback for older browsers.
-public struct _AspectRatioView<Content: View>: View, Sendable {
+public struct _AspectRatioView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let aspectRatio: CGFloat?
     let contentMode: ContentMode
@@ -87,7 +87,7 @@ public struct _AspectRatioView<Content: View>: View, Sendable {
 ///
 /// The fixed size modifier prevents the view from being resized along specified axes.
 /// It uses CSS `width: fit-content` and `height: fit-content` to achieve this.
-public struct _FixedSizeView<Content: View>: View, Sendable {
+public struct _FixedSizeView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let horizontal: Bool
     let vertical: Bool

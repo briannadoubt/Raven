@@ -26,7 +26,7 @@ import Foundation
 ///
 /// Because `Toggle` is a primitive view with `Body == Never`, it converts directly
 /// to a VNode without further composition.
-public struct Toggle<Label: View>: View, Sendable {
+public struct Toggle<Label: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     /// The binding to the toggle's state
@@ -37,6 +37,9 @@ public struct Toggle<Label: View>: View, Sendable {
 
     /// Optional identifier for the toggle
     private let id: String?
+
+    /// The toggle style from the environment
+    @Environment(\.toggleStyle) private var toggleStyle
 
     // MARK: - Initializers
 
@@ -72,12 +75,26 @@ public struct Toggle<Label: View>: View, Sendable {
     /// This method is used internally by the rendering system to convert
     /// the Toggle primitive into its VNode representation.
     ///
-    /// The toggle is rendered as a label element containing:
-    /// - An input[type="checkbox"] element with change event handler
-    /// - The label content
+    /// The toggle can be rendered as either:
+    /// - A checkbox (DefaultToggleStyle)
+    /// - A switch (SwitchToggleStyle)
+    ///
+    /// - Returns: A VNode representing the toggle with the current style.
+    @MainActor public func toVNode() -> VNode {
+        // Check if we should render as a switch style
+        let isSwitchStyle = toggleStyle is SwitchToggleStyle
+
+        if isSwitchStyle {
+            return renderSwitchStyle()
+        } else {
+            return renderCheckboxStyle()
+        }
+    }
+
+    /// Renders the toggle as a checkbox (default style).
     ///
     /// - Returns: A label element VNode containing the checkbox and label content.
-    @MainActor public func toVNode() -> VNode {
+    @MainActor private func renderCheckboxStyle() -> VNode {
         // Generate unique IDs for this toggle
         let toggleID = id ?? UUID().uuidString
         let handlerID = UUID()
@@ -129,6 +146,96 @@ public struct Toggle<Label: View>: View, Sendable {
 
         // Combine input and label nodes as children of the label element
         let children = [inputNode] + labelNodes
+
+        return VNode.element(
+            "label",
+            props: labelProps,
+            children: children
+        )
+    }
+
+    /// Renders the toggle as an iOS-style switch.
+    ///
+    /// Creates a custom switch appearance using a hidden checkbox and styled elements.
+    /// The switch consists of:
+    /// - A hidden checkbox input for state management
+    /// - A visual switch track
+    /// - A switch thumb that slides on/off
+    ///
+    /// - Returns: A label element VNode containing the switch and label content.
+    @MainActor private func renderSwitchStyle() -> VNode {
+        // Generate unique IDs for this toggle
+        let toggleID = id ?? UUID().uuidString
+        let handlerID = UUID()
+
+        // Create the hidden checkbox input
+        var inputProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "checkbox"),
+            "id": .attribute(name: "id", value: toggleID),
+            "role": .attribute(name: "role", value: "switch"),
+            "class": .attribute(name: "class", value: "raven-switch-input")
+        ]
+
+        // Set checked state
+        inputProps["checked"] = .boolAttribute(name: "checked", value: isOn.wrappedValue)
+
+        // Add change event handler
+        inputProps["onChange"] = .eventHandler(event: "change", handlerID: handlerID)
+
+        // Add ARIA attributes for accessibility
+        inputProps["aria-checked"] = .attribute(
+            name: "aria-checked",
+            value: isOn.wrappedValue ? "true" : "false"
+        )
+
+        let inputNode = VNode.element(
+            "input",
+            props: inputProps,
+            children: []
+        )
+
+        // Create the visual switch track
+        let trackProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-switch-track")
+        ]
+
+        // Create the switch thumb (the sliding circle)
+        let thumbProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-switch-thumb")
+        ]
+
+        let thumbNode = VNode.element(
+            "span",
+            props: thumbProps,
+            children: []
+        )
+
+        let trackNode = VNode.element(
+            "span",
+            props: trackProps,
+            children: [thumbNode]
+        )
+
+        // Convert label to VNode
+        let labelNodes: [VNode]
+        if let textLabel = label as? Text {
+            // Optimize for simple text labels
+            labelNodes = [textLabel.toVNode()]
+        } else {
+            // For complex labels, we'll need to render them
+            // For now, create a placeholder that will be handled by the render system
+            // This will be properly implemented when the render system is connected
+            labelNodes = []
+        }
+
+        // Create label element wrapping the switch and label content
+        let labelProps: [String: VProperty] = [
+            "for": .attribute(name: "for", value: toggleID),
+            "class": .attribute(name: "class", value: "raven-toggle raven-toggle-switch")
+        ]
+
+        // Combine input, track, and label nodes as children of the label element
+        let children = [inputNode, trackNode] + labelNodes
 
         return VNode.element(
             "label",
@@ -277,6 +384,20 @@ public struct SwitchToggleStyle: ToggleStyle {
     }
 }
 
+// MARK: - Toggle Style Environment
+
+/// Environment key for toggle style.
+private struct ToggleStyleEnvironmentKey: EnvironmentKey {
+    static let defaultValue: any ToggleStyle = DefaultToggleStyle()
+}
+
+extension EnvironmentValues {
+    var toggleStyle: any ToggleStyle {
+        get { self[ToggleStyleEnvironmentKey.self] }
+        set { self[ToggleStyleEnvironmentKey.self] = newValue }
+    }
+}
+
 // MARK: - Toggle Style Modifier
 
 extension View {
@@ -285,9 +406,6 @@ extension View {
     /// - Parameter style: The toggle style to apply.
     /// - Returns: A view with the specified toggle style.
     @MainActor public func toggleStyle<S: ToggleStyle>(_ style: S) -> some View {
-        // This would be implemented as a view modifier that applies
-        // the toggle style to child toggles through the environment
-        // For now, return self as a placeholder
-        self
+        environment(\.toggleStyle, style)
     }
 }

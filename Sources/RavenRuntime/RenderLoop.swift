@@ -33,6 +33,12 @@ public final class RenderCoordinator: Sendable {
     /// Event handler registry mapping UUIDs to action closures
     private var eventHandlerRegistry: [UUID: @Sendable @MainActor () -> Void] = [:]
 
+    /// Gesture handler registry for tracking gesture state
+    private var gestureHandlerRegistry: [UUID: @Sendable @MainActor (Any) -> Void] = [:]
+
+    /// Gesture state tracking for ongoing gestures
+    private var gestureStates: [UUID: Any] = [:]
+
     /// Stored reference to the current root view for re-rendering
     /// This is a type-erased closure that re-renders the current view
     private var rerenderClosure: (@MainActor () async -> Void)?
@@ -644,6 +650,11 @@ public final class RenderCoordinator: Sendable {
                 await applyProperty(property, to: domNode)
             }
 
+            // Attach gesture event listeners
+            for gestureReg in node.gestures {
+                await attachGestureListeners(gestureReg, to: domNode)
+            }
+
             // Create and append children
             for child in node.children {
                 let childDOMNode = await createDOMNode(child)
@@ -792,6 +803,83 @@ public final class RenderCoordinator: Sendable {
             // This is simplified; in a real implementation, we'd track property types
             await DOMBridge.shared.removeAttribute(element: element, name: key)
         }
+    }
+
+    // MARK: - Gesture Support
+
+    /// Attach gesture event listeners to a DOM element
+    /// - Parameters:
+    ///   - registration: Gesture registration with event names and handler ID
+    ///   - element: DOM element to attach listeners to
+    private func attachGestureListeners(_ registration: GestureRegistration, to element: JSObject) async {
+        // For each event the gesture needs, attach a listener
+        for eventName in registration.events {
+            // Create a handler that will process the gesture event
+            let handler: @Sendable @MainActor () -> Void = { [weak self] in
+                guard let self = self else { return }
+                Task { @MainActor in
+                    await self.handleGestureEvent(
+                        handlerID: registration.handlerID,
+                        eventName: eventName,
+                        priority: registration.priority
+                    )
+                }
+            }
+
+            // Register with DOMBridge
+            await DOMBridge.shared.addEventListener(
+                element: element,
+                event: eventName,
+                handlerID: registration.handlerID,
+                handler: handler
+            )
+        }
+    }
+
+    /// Handle a gesture event
+    /// - Parameters:
+    ///   - handlerID: ID of the gesture handler
+    ///   - eventName: Name of the DOM event that triggered
+    ///   - priority: Priority of the gesture
+    private func handleGestureEvent(
+        handlerID: UUID,
+        eventName: String,
+        priority: GesturePriority
+    ) async {
+        // Look up the gesture handler
+        guard let handler = gestureHandlerRegistry[handlerID] else {
+            return
+        }
+
+        // Create a placeholder gesture value
+        // In a real implementation, this would extract event data from the DOM event
+        // and convert it to the appropriate gesture value type
+        let gestureValue: Any = ()
+
+        // Invoke the handler
+        handler(gestureValue)
+
+        // Trigger re-render if needed
+        if let rerender = rerenderClosure {
+            await rerender()
+        }
+    }
+
+    /// Register a gesture handler
+    /// - Parameters:
+    ///   - id: Unique identifier for the gesture
+    ///   - handler: Handler closure that processes gesture values
+    public func registerGestureHandler<Value>(
+        id: UUID,
+        handler: @escaping @Sendable @MainActor (Value) -> Void
+    ) {
+        // Type-erase the handler
+        let anyHandler: @Sendable @MainActor (Any) -> Void = { value in
+            if let typedValue = value as? Value {
+                handler(typedValue)
+            }
+        }
+        gestureHandlerRegistry[id] = anyHandler
     }
 }
 

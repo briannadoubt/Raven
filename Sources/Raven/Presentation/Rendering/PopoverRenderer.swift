@@ -152,14 +152,7 @@ public struct PopoverRenderer: Sendable {
     /// - Parameter content: The AnyView content to render
     /// - Returns: A VNode representing the content
     private static func renderContent(_ content: AnyView) -> VNode {
-        // Placeholder for content rendering
-        return VNode.element(
-            "div",
-            props: [
-                "class": .attribute(name: "class", value: "raven-presentation-content")
-            ],
-            children: []
-        )
+        return content.render()
     }
 
     /// Converts an edge to a CSS class name.

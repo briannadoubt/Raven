@@ -50,7 +50,7 @@ public enum TruncationMode: Sendable, Hashable {
 /// A view wrapper that limits the number of lines for text.
 ///
 /// The line limit is rendered using CSS -webkit-line-clamp with display: -webkit-box.
-public struct _LineLimitView<Content: View>: View, Sendable {
+public struct _LineLimitView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let lineLimit: Int?
 
@@ -80,7 +80,7 @@ public struct _LineLimitView<Content: View>: View, Sendable {
 /// A view wrapper that sets text alignment for multiline text.
 ///
 /// The text alignment is rendered using CSS text-align property.
-public struct _MultilineTextAlignmentView<Content: View>: View, Sendable {
+public struct _MultilineTextAlignmentView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let alignment: TextAlignment
 
@@ -102,7 +102,7 @@ public struct _MultilineTextAlignmentView<Content: View>: View, Sendable {
 /// A view wrapper that sets the truncation mode for text.
 ///
 /// The truncation mode is rendered using CSS text-overflow, overflow, and direction properties.
-public struct _TruncationModeView<Content: View>: View, Sendable {
+public struct _TruncationModeView<Content: View>: View, PrimitiveView, Sendable {
     let content: Content
     let mode: TruncationMode
 
