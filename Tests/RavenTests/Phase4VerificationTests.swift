@@ -527,7 +527,7 @@ final class Phase4VerificationTests: XCTestCase {
     }
 
     func testRotationEffectModifier() async throws {
-        let view = _RotationEffectView(content: Text("Content"), angle: .degrees(45))
+        let view = _RotationEffectView(content: Text("Content"), angle: Angle(degrees: 45))
         let vnode = view.toVNode()
 
         XCTAssertTrue(vnode.isElement(tag: "div"))
@@ -559,7 +559,7 @@ final class Phase4VerificationTests: XCTestCase {
     func testLinearGradient() async throws {
         let gradient = LinearGradient(
             colors: [.red, .blue],
-            angle: .degrees(90)
+            angle: Angle(degrees: 90)
         )
 
         let cssValue = gradient.cssValue
@@ -634,11 +634,11 @@ final class Phase4VerificationTests: XCTestCase {
     }
 
     func testAngleConversions() async throws {
-        let degreesAngle = Angle.degrees(180)
+        let degreesAngle = Angle(degrees: 180)
         XCTAssertEqual(degreesAngle.degrees, 180, accuracy: 0.01)
         XCTAssertEqual(degreesAngle.radians, .pi, accuracy: 0.01)
 
-        let radiansAngle = Angle.radians(.pi / 2)
+        let radiansAngle = Angle(radians: .pi / 2)
         XCTAssertEqual(radiansAngle.degrees, 90, accuracy: 0.01)
         XCTAssertEqual(radiansAngle.radians, .pi / 2, accuracy: 0.01)
     }

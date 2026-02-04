@@ -73,6 +73,12 @@ public struct CGRect: Sendable, Hashable {
     /// The height of the rectangle.
     public var height: Double { size.height }
 
+    /// The x-coordinate of the rectangle's center.
+    public var midX: Double { origin.x + size.width / 2 }
+
+    /// The y-coordinate of the rectangle's center.
+    public var midY: Double { origin.y + size.height / 2 }
+
     /// The rectangle at the origin with zero width and height.
     public static let zero = CGRect(origin: .zero, size: .zero)
 

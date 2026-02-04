@@ -32,9 +32,11 @@ Whether you're building interactive web applications, creating cross-platform to
 - **Complete Build Tooling** - CLI tools for creating, building, and serving applications
 - **No Combine Dependency** - Linux and WASM compatible with custom publisher implementation
 - **Rich UI Components** - Text, Button, Image, TextField, Toggle, List, ContentUnavailableView, and more
+- **Shape System** - Shape protocol, 5 built-in shapes, Path for custom drawing, SVG rendering
 - **Layout System** - VStack, HStack, ZStack, LazyVGrid, LazyHGrid, GeometryReader with advanced modifiers
 - **Navigation** - NavigationLink and navigation state management
-- **Comprehensive View Modifiers** - Layout, interaction, text styling, and custom modifiers
+- **Visual Effects** - 7 GPU-accelerated effects (blur, brightness, contrast, saturation, grayscale, hue rotation, shadow)
+- **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, and visual effects
 - **Environment Values** - Propagate configuration through the view hierarchy
 
 ## Quick Start
@@ -79,31 +81,38 @@ cd MyApp
 # Output will be in dist/
 ```
 
-## What's New in v0.3.0 (Phase 9)
+## What's New in v0.4.0 (Phase 10)
 
-Raven v0.3.0 brings modern state management and enhanced UI capabilities:
+Raven v0.4.0 introduces comprehensive shape system and visual effects:
 
-**Modern State Management**
-- `@Observable` macro for streamlined observable classes (iOS 17+ API)
-- `@Bindable` property wrapper for creating bindings to observable objects
-- Migration path from `ObservableObject` to `@Observable`
+**Shape System**
+- `Shape` protocol for creating custom 2D graphics
+- 5 built-in shapes: `Circle`, `Rectangle`, `RoundedRectangle`, `Capsule`, `Ellipse`
+- `Path` type for custom drawing with lines, curves, and arcs
+- SVG-based rendering for resolution-independent graphics
 
-**Empty State UI**
-- `ContentUnavailableView` for polished empty states
-- Built-in `.search` variant for empty search results
-- Customizable with icons, descriptions, and actions
+**Shape Modifiers**
+- `.fill()` for filling shapes with colors and gradients
+- `.stroke()` for outlining shapes with customizable styles
+- `.trim()` for partial shape rendering (progress indicators)
+- `StrokeStyle` with line caps, joins, and dashed patterns
 
-**10 New View Modifiers**
-- **Interaction:** `.disabled()`, `.onTapGesture()`, `.onAppear()`, `.onDisappear()`, `.onChange(of:)`
-- **Layout:** `.clipped()`, `.aspectRatio(_:contentMode:)`, `.fixedSize()`
-- **Text:** `.lineLimit()`, `.multilineTextAlignment()`, `.truncationMode()`
+**Visual Effects (7 modifiers)**
+- `.blur()`, `.brightness()`, `.contrast()`, `.saturation()`
+- `.grayscale()`, `.hueRotation()`, `.shadow()`
+- GPU-accelerated CSS filters for optimal performance
+
+**Clipping**
+- `.clipShape()` for masking content with any shape
+- SVG clipPath implementation
 
 **Testing & Quality**
-- 159+ comprehensive tests covering all Phase 9 features
-- Working examples demonstrating real-world usage
+- 162+ comprehensive tests across all Phase 10 features
+- ~2,941 lines of production code, ~2,167 lines of test code
 - Full DocC documentation for all new APIs
+- API coverage increased from ~60% to ~70%
 
-See [CHANGELOG.md](CHANGELOG.md) for complete details and migration guides.
+See [CHANGELOG.md](CHANGELOG.md) and [Phase 10 Documentation](Documentation/Phase10.md) for complete details.
 
 ## Example Code
 
@@ -182,6 +191,7 @@ Raven is being developed in phases, each delivering complete, tested functionali
 | **Phase 7** | Production Ready | ⏳ Planned | Performance optimization, accessibility, comprehensive examples |
 | **Phase 8** | Advanced Components | ⏳ Planned | Animations, gestures, advanced navigation, custom layouts |
 | **Phase 9** | Modern State & UI | ✅ Complete | @Observable, @Bindable, ContentUnavailableView, 10 new modifiers |
+| **Phase 10** | Shapes & Visual Effects | ✅ Complete | Shape system, Path, visual effects, clipping, 162+ tests |
 
 ## Architecture
 

@@ -2,6 +2,21 @@
 
 Welcome to the Raven API documentation. This guide provides a comprehensive overview of Raven's public APIs for building web applications using SwiftUI-style declarative syntax.
 
+## What's New in v0.4.0 (Phase 10)
+
+Phase 10 introduces a comprehensive shape system and visual effects:
+
+- **Shape System** - Shape protocol, 5 built-in shapes (Circle, Rectangle, RoundedRectangle, Capsule, Ellipse)
+- **Path API** - Custom drawing with lines, curves, arcs, and transformations
+- **Shape Modifiers** - .fill(), .stroke(), .trim() with full styling support
+- **7 Visual Effects** - .blur(), .brightness(), .contrast(), .saturation(), .grayscale(), .hueRotation(), .shadow()
+- **Clipping** - .clipShape() for masking content with shapes
+- **162+ Tests** - Comprehensive test coverage
+- **SVG Rendering** - Resolution-independent vector graphics
+- **API Coverage** - Increased from ~60% to ~70%
+
+See [Phase 10 Documentation](Phase10.md) for detailed information.
+
 ## What's New in v0.3.0 (Phase 9)
 
 Phase 9 brings modern state management and enhanced UI capabilities:
@@ -24,6 +39,8 @@ See [Phase 9 Documentation](Phase9.md) for detailed information.
 - [API Reference](#api-reference)
   - [Core Types](#core-types)
   - [State Management](#state-management)
+  - [Shapes](#shapes)
+  - [Path](#path)
   - [Primitive Views](#primitive-views)
   - [Layout Views](#layout-views)
   - [Navigation](#navigation)
@@ -347,6 +364,143 @@ class AppState: ObservableObject {
 **Important:** Always call `setupPublished()` in your initializer.
 
 **See:** `Sources/Raven/State/ObservableObject.swift`
+
+---
+
+### Shapes
+
+#### Shape Protocol (New in v0.4.0)
+
+The foundation for all 2D shapes in Raven.
+
+```swift
+public protocol Shape: View {
+    @MainActor func path(in rect: CGRect) -> Path
+}
+```
+
+**Key Features:**
+- Resolution-independent vector graphics
+- SVG-based rendering
+- Automatic View conformance
+- Composable with view modifiers
+
+**See:** `Sources/Raven/Drawing/Shape.swift`, [Phase 10 Documentation](Phase10.md)
+
+---
+
+#### Circle (New in v0.4.0)
+
+A perfect circular shape.
+
+```swift
+Circle()
+    .fill(Color.blue)
+    .frame(width: 100, height: 100)
+
+Circle()
+    .stroke(Color.red, lineWidth: 3)
+```
+
+**See:** `Sources/Raven/Drawing/Shapes/Circle.swift`
+
+---
+
+#### Rectangle (New in v0.4.0)
+
+A rectangular shape with sharp corners.
+
+```swift
+Rectangle()
+    .fill(Color.gray)
+    .frame(width: 200, height: 100)
+```
+
+**See:** `Sources/Raven/Drawing/Shapes/Rectangle.swift`
+
+---
+
+#### RoundedRectangle (New in v0.4.0)
+
+A rectangle with rounded corners.
+
+```swift
+RoundedRectangle(cornerRadius: 10)
+    .fill(Color.blue)
+    .frame(width: 200, height: 100)
+```
+
+**See:** `Sources/Raven/Drawing/Shapes/RoundedRectangle.swift`
+
+---
+
+#### Capsule (New in v0.4.0)
+
+A rounded rectangle with fully circular ends.
+
+```swift
+Capsule()
+    .fill(Color.green)
+    .frame(width: 200, height: 50)
+```
+
+**See:** `Sources/Raven/Drawing/Shapes/Capsule.swift`
+
+---
+
+#### Ellipse (New in v0.4.0)
+
+An elliptical shape.
+
+```swift
+Ellipse()
+    .fill(Color.purple)
+    .frame(width: 150, height: 100)
+```
+
+**See:** `Sources/Raven/Drawing/Shapes/Ellipse.swift`
+
+---
+
+### Path
+
+#### Path Type (New in v0.4.0)
+
+A flexible API for creating custom shapes.
+
+```swift
+var path = Path()
+path.move(to: CGPoint(x: 50, y: 0))
+path.addLine(to: CGPoint(x: 100, y: 100))
+path.addLine(to: CGPoint(x: 0, y: 100))
+path.closeSubpath()
+```
+
+**Drawing Commands:**
+- `move(to:)` - Move without drawing
+- `addLine(to:)` - Draw straight line
+- `addRect(_:)` - Add rectangle
+- `addRoundedRect(in:cornerRadius:)` - Add rounded rectangle
+- `addEllipse(in:)` - Add ellipse
+- `addQuadCurve(to:control:)` - Add quadratic curve
+- `addCurve(to:control1:control2:)` - Add cubic curve
+- `addArc(center:radius:startAngle:endAngle:clockwise:)` - Add arc
+- `closeSubpath()` - Close current path
+
+**Convenience Initializers:**
+```swift
+Path(CGRect(...))
+Path(roundedRect:cornerRadius:)
+Path(ellipseIn:)
+```
+
+**Transformations:**
+```swift
+path.offsetBy(x:y:)
+path.applying(CGAffineTransform)
+```
+
+**See:** `Sources/Raven/Drawing/Path.swift`, [Phase 10 Documentation](Phase10.md)
 
 ---
 
@@ -704,7 +858,25 @@ View modifiers customize the appearance and behavior of views.
 - `.onDisappear(perform:)` - Run action when view disappears (New in v0.3.0)
 - `.onChange(of:perform:)` - React to value changes (New in v0.3.0)
 
-**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [Phase 9 Documentation](Phase9.md)
+**Shape Modifiers (New in v0.4.0):**
+- `.fill(_:)` - Fill shape with color or gradient
+- `.stroke(_:lineWidth:)` - Stroke shape outline
+- `.stroke(_:style:)` - Stroke with advanced StrokeStyle
+- `.trim(from:to:)` - Trim shape path (progress indicators)
+
+**Visual Effects (New in v0.4.0):**
+- `.blur(radius:)` - Apply Gaussian blur
+- `.brightness(_:)` - Adjust brightness (0.0-∞)
+- `.contrast(_:)` - Adjust contrast (0.0-∞)
+- `.saturation(_:)` - Adjust color saturation (0.0-∞)
+- `.grayscale(_:)` - Convert to grayscale (0.0-1.0)
+- `.hueRotation(_:)` - Rotate hues (Angle)
+- `.shadow(color:radius:x:y:)` - Apply drop shadow
+
+**Clipping (New in v0.4.0):**
+- `.clipShape(_:style:)` - Clip content to shape bounds
+
+**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [ShapeModifiers.swift](../Sources/Raven/Modifiers/ShapeModifiers.swift), [VisualEffectModifiers.swift](../Sources/Raven/Modifiers/VisualEffectModifiers.swift), [ClipShapeModifier.swift](../Sources/Raven/Modifiers/ClipShapeModifier.swift), [Phase 9 Documentation](Phase9.md), [Phase 10 Documentation](Phase10.md)
 
 ---
 

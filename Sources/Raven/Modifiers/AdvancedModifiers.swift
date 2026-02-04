@@ -28,51 +28,6 @@ public struct ModifierAlignment: Sendable, Hashable {
     public static let bottomTrailing = ModifierAlignment(horizontal: .trailing, vertical: .bottom)
 }
 
-// MARK: - Angle
-
-/// Represents an angle for rotation transformations.
-///
-/// Angle can be specified in degrees or radians and is used by rotation modifiers.
-public struct Angle: Sendable, Hashable {
-    /// The angle value in radians
-    public let radians: Double
-
-    /// Creates an angle from radians.
-    ///
-    /// - Parameter radians: The angle in radians.
-    public init(radians: Double) {
-        self.radians = radians
-    }
-
-    /// Creates an angle from degrees.
-    ///
-    /// - Parameter degrees: The angle in degrees.
-    public init(degrees: Double) {
-        self.radians = degrees * .pi / 180.0
-    }
-
-    /// Creates an angle from degrees.
-    ///
-    /// - Parameter degrees: The angle in degrees.
-    /// - Returns: An angle representing the specified degrees.
-    public static func degrees(_ degrees: Double) -> Angle {
-        Angle(degrees: degrees)
-    }
-
-    /// Creates an angle from radians.
-    ///
-    /// - Parameter radians: The angle in radians.
-    /// - Returns: An angle representing the specified radians.
-    public static func radians(_ radians: Double) -> Angle {
-        Angle(radians: radians)
-    }
-
-    /// The angle value in degrees.
-    public var degrees: Double {
-        radians * 180.0 / .pi
-    }
-}
-
 // MARK: - Font Modifier
 
 /// A view wrapper that applies a font to its content.

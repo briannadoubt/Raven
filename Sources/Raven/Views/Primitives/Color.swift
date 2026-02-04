@@ -10,7 +10,7 @@ import Foundation
 /// ```swift
 /// LinearGradient(
 ///     colors: [.red, .blue],
-///     angle: .degrees(45)
+///     angle: Angle(degrees: 45)
 /// )
 /// ```
 public struct LinearGradient: Sendable, Hashable {
@@ -25,7 +25,7 @@ public struct LinearGradient: Sendable, Hashable {
     /// - Parameters:
     ///   - colors: The colors to transition between.
     ///   - angle: The angle of the gradient line. Defaults to vertical (180 degrees).
-    public init(colors: [Color], angle: Angle = .degrees(180)) {
+    public init(colors: [Color], angle: Angle = Angle(degrees: 180)) {
         self.colors = colors
         self.angle = angle
     }
@@ -323,11 +323,11 @@ public struct Color: View, Sendable, Hashable {
                 blue: min(blue + 0.2, 1.0),
                 opacity: opacity
             )
-            return LinearGradient(colors: [lighterColor, self], angle: .degrees(180))
+            return LinearGradient(colors: [lighterColor, self], angle: Angle(degrees: 180))
         default:
             // For other color types, create a simple gradient with the same color
             // This won't be as visually interesting but maintains consistency
-            return LinearGradient(colors: [self, self], angle: .degrees(180))
+            return LinearGradient(colors: [self, self], angle: Angle(degrees: 180))
         }
     }
 
