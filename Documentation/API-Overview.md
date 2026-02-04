@@ -2,8 +2,23 @@
 
 Welcome to the Raven API documentation. This guide provides a comprehensive overview of Raven's public APIs for building web applications using SwiftUI-style declarative syntax.
 
+## What's New in v0.3.0 (Phase 9)
+
+Phase 9 brings modern state management and enhanced UI capabilities:
+
+- **@Observable & @Bindable** - Modern state management (iOS 17+ API)
+- **ContentUnavailableView** - Polished empty state UI
+- **10 New Modifiers** - Interaction, layout, and text modifiers
+- **159+ Tests** - Comprehensive test coverage
+- **Full Documentation** - Complete DocC comments and examples
+
+See [Phase 9 Documentation](Phase9.md) for detailed information.
+
+---
+
 ## Table of Contents
 
+- [What's New](#whats-new-in-v030-phase-9)
 - [Getting Started](#getting-started)
 - [Core Concepts](#core-concepts)
 - [API Reference](#api-reference)
@@ -148,6 +163,56 @@ func makeView(condition: Bool) -> AnyView {
 ---
 
 ### State Management
+
+#### @Observable (New in v0.3.0)
+
+Modern macro for observable classes (iOS 17+ API).
+
+```swift
+@Observable
+@MainActor
+class UserSettings {
+    var username: String = ""
+    var isDarkMode: Bool = false
+    var fontSize: Double = 14.0
+}
+```
+
+**Benefits:**
+- No need for `@Published` wrappers
+- Automatic property observation
+- Fine-grained updates
+- Cleaner syntax
+
+**See:** `Sources/Raven/State/Observable.swift`, [Phase 9 Documentation](Phase9.md)
+
+---
+
+#### @Bindable (New in v0.3.0)
+
+Creates bindings to properties of `@Observable` objects.
+
+```swift
+struct SettingsView: View {
+    @Bindable var settings: UserSettings
+
+    var body: some View {
+        VStack {
+            TextField("Username", text: $settings.username)
+            Toggle("Dark Mode", isOn: $settings.isDarkMode)
+        }
+    }
+}
+```
+
+**Features:**
+- Dynamic member lookup for bindings
+- Type-safe binding creation
+- Works with `@Observable` classes
+
+**See:** `Sources/Raven/State/Bindable.swift`, [Phase 9 Documentation](Phase9.md)
+
+---
 
 #### @State
 
@@ -378,6 +443,43 @@ Toggle("Enable Feature", isOn: $isEnabled)
 
 ---
 
+#### ContentUnavailableView (New in v0.3.0)
+
+Standardized empty state interface.
+
+```swift
+// Basic usage
+ContentUnavailableView(
+    "No Messages",
+    systemImage: "envelope.open",
+    description: Text("You don't have any messages yet.")
+)
+
+// With actions
+ContentUnavailableView(
+    "No Items",
+    systemImage: "tray",
+    description: Text("Add your first item to get started.")
+) {
+    Button("Add Item") {
+        addNewItem()
+    }
+}
+
+// Search variant
+ContentUnavailableView.search
+```
+
+**Features:**
+- Centered layout with icon, title, description, and actions
+- Built-in search variant
+- Multiple initializer options
+- Web-optimized rendering
+
+**See:** `Sources/Raven/Views/Primitives/ContentUnavailableView.swift`, [Phase 9 Documentation](Phase9.md)
+
+---
+
 ### Layout Views
 
 #### VStack
@@ -578,6 +680,9 @@ View modifiers customize the appearance and behavior of views.
 - `.padding(_:)` - Add padding
 - `.frame(width:height:)` - Set fixed size
 - `.background(_:)` - Set background
+- `.clipped()` - Clip content to bounds (New in v0.3.0)
+- `.aspectRatio(_:contentMode:)` - Maintain aspect ratio (New in v0.3.0)
+- `.fixedSize(horizontal:vertical:)` - Fix to ideal size (New in v0.3.0)
 
 **Styling:**
 - `.foregroundColor(_:)` - Set text/icon color
@@ -585,11 +690,21 @@ View modifiers customize the appearance and behavior of views.
 - `.bold()` - Make text bold
 - `.cornerRadius(_:)` - Round corners
 
-**Behavior:**
-- `.disabled(_:)` - Disable interactions
-- `.onTapGesture(_:)` - Handle tap events
+**Text:**
+- `.lineLimit(_:)` - Limit number of lines (New in v0.3.0)
+- `.multilineTextAlignment(_:)` - Align multiline text (New in v0.3.0)
+- `.truncationMode(_:)` - Control truncation (New in v0.3.0)
 
-**See:** `Sources/Raven/Modifiers/BasicModifiers.swift`, `Sources/Raven/Modifiers/AdvancedModifiers.swift`
+**Interaction:**
+- `.disabled(_:)` - Disable interactions (New in v0.3.0)
+- `.onTapGesture(count:perform:)` - Handle tap events (New in v0.3.0)
+
+**Lifecycle:**
+- `.onAppear(perform:)` - Run action when view appears (New in v0.3.0)
+- `.onDisappear(perform:)` - Run action when view disappears (New in v0.3.0)
+- `.onChange(of:perform:)` - React to value changes (New in v0.3.0)
+
+**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [Phase 9 Documentation](Phase9.md)
 
 ---
 

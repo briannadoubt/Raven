@@ -142,6 +142,16 @@ public struct Text: View, Sendable {
         self.isLocalized = false
     }
 
+    // MARK: - Internal Access
+
+    /// Provides access to the text content for internal use.
+    ///
+    /// This is used by other components like Picker to extract the text
+    /// content for rendering purposes.
+    internal var textContent: String {
+        content
+    }
+
     // MARK: - VNode Conversion
 
     /// Converts this Text view to a virtual DOM node.

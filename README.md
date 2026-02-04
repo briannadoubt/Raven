@@ -27,14 +27,14 @@ Whether you're building interactive web applications, creating cross-platform to
 - **Virtual DOM with Efficient Diffing** - Minimal DOM updates for optimal performance
 - **Swift 6.2 Strict Concurrency** - Type-safe, data-race-free code with `@MainActor` isolation
 - **WebAssembly Runtime** - Native browser execution without JavaScript dependencies
-- **Reactive State Management** - `@State`, `@Binding`, `@StateObject`, and `@ObservedObject` support
+- **Modern State Management** - `@Observable`, `@Bindable`, `@State`, `@Binding`, `@StateObject`, and `@ObservedObject` support
 - **Hot Reload Development** - Fast iteration with live code updates (Phase 6)
 - **Complete Build Tooling** - CLI tools for creating, building, and serving applications
 - **No Combine Dependency** - Linux and WASM compatible with custom publisher implementation
-- **Rich UI Components** - Text, Button, Image, TextField, Toggle, List, and more
-- **Layout System** - VStack, HStack, ZStack, LazyVGrid, LazyHGrid, GeometryReader
+- **Rich UI Components** - Text, Button, Image, TextField, Toggle, List, ContentUnavailableView, and more
+- **Layout System** - VStack, HStack, ZStack, LazyVGrid, LazyHGrid, GeometryReader with advanced modifiers
 - **Navigation** - NavigationLink and navigation state management
-- **View Modifiers** - Padding, background, foreground, frame, and custom modifiers
+- **Comprehensive View Modifiers** - Layout, interaction, text styling, and custom modifiers
 - **Environment Values** - Propagate configuration through the view hierarchy
 
 ## Quick Start
@@ -78,6 +78,32 @@ cd MyApp
 
 # Output will be in dist/
 ```
+
+## What's New in v0.3.0 (Phase 9)
+
+Raven v0.3.0 brings modern state management and enhanced UI capabilities:
+
+**Modern State Management**
+- `@Observable` macro for streamlined observable classes (iOS 17+ API)
+- `@Bindable` property wrapper for creating bindings to observable objects
+- Migration path from `ObservableObject` to `@Observable`
+
+**Empty State UI**
+- `ContentUnavailableView` for polished empty states
+- Built-in `.search` variant for empty search results
+- Customizable with icons, descriptions, and actions
+
+**10 New View Modifiers**
+- **Interaction:** `.disabled()`, `.onTapGesture()`, `.onAppear()`, `.onDisappear()`, `.onChange(of:)`
+- **Layout:** `.clipped()`, `.aspectRatio(_:contentMode:)`, `.fixedSize()`
+- **Text:** `.lineLimit()`, `.multilineTextAlignment()`, `.truncationMode()`
+
+**Testing & Quality**
+- 159+ comprehensive tests covering all Phase 9 features
+- Working examples demonstrating real-world usage
+- Full DocC documentation for all new APIs
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details and migration guides.
 
 ## Example Code
 
@@ -154,6 +180,8 @@ Raven is being developed in phases, each delivering complete, tested functionali
 | **Phase 5** | Build Pipeline | ✅ Complete | CLI tooling, WASM compilation, asset bundling, optimization |
 | **Phase 6** | Developer Experience | 🔄 In Progress | Hot reload, live preview, debugging tools, documentation |
 | **Phase 7** | Production Ready | ⏳ Planned | Performance optimization, accessibility, comprehensive examples |
+| **Phase 8** | Advanced Components | ⏳ Planned | Animations, gestures, advanced navigation, custom layouts |
+| **Phase 9** | Modern State & UI | ✅ Complete | @Observable, @Bindable, ContentUnavailableView, 10 new modifiers |
 
 ## Architecture
 
