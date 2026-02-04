@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img width="384" height="384" alt="Raven@0 5" src="https://github.com/user-attachments/assets/8d0656c7-de7a-4ff8-8953-67affd5427fa" />
+
 **SwiftUI for the Web**
 
 Cross-compile SwiftUI applications to WebAssembly and run them natively in modern browsers.
