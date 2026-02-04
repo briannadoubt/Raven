@@ -42,6 +42,12 @@ public struct SheetModifier<SheetContent: View>: ViewModifier, PresentationModif
     /// The presentation coordinator from environment
     @Environment(\.presentationCoordinator) private var coordinator
 
+    /// Presentation detents from environment
+    @Environment(\.presentationDetents) private var presentationDetents
+
+    /// Interactive dismiss disabled flag from environment
+    @Environment(\.isInteractiveDismissDisabled) private var isInteractiveDismissDisabled
+
     /// Creates a sheet modifier with a boolean binding.
     ///
     /// - Parameters:
@@ -63,13 +69,19 @@ public struct SheetModifier<SheetContent: View>: ViewModifier, PresentationModif
     public func register(with coordinator: PresentationCoordinator) -> UUID? {
         guard isPresented else { return nil }
 
+        // Create metadata dictionary with configuration values
+        var metadata: [String: any Sendable] = [:]
+        metadata["presentationDetents"] = presentationDetents
+        metadata["isInteractiveDismissDisabled"] = isInteractiveDismissDisabled
+
         let id = coordinator.present(
             type: .sheet,
             content: AnyView(content()),
             onDismiss: { @MainActor [onDismiss] in
                 isPresented = false
                 onDismiss?()
-            }
+            },
+            metadata: metadata
         )
         return id
     }
@@ -189,6 +201,12 @@ public struct ItemSheetModifier<Item: Identifiable & Sendable & Equatable, Sheet
     /// The presentation coordinator from environment
     @Environment(\.presentationCoordinator) private var coordinator
 
+    /// Presentation detents from environment
+    @Environment(\.presentationDetents) private var presentationDetents
+
+    /// Interactive dismiss disabled flag from environment
+    @Environment(\.isInteractiveDismissDisabled) private var isInteractiveDismissDisabled
+
     /// The last presented item (to detect changes)
     @State private var lastItem: Item?
 
@@ -213,13 +231,19 @@ public struct ItemSheetModifier<Item: Identifiable & Sendable & Equatable, Sheet
     public func register(with coordinator: PresentationCoordinator) -> UUID? {
         guard let currentItem = item else { return nil }
 
+        // Create metadata dictionary with configuration values
+        var metadata: [String: any Sendable] = [:]
+        metadata["presentationDetents"] = presentationDetents
+        metadata["isInteractiveDismissDisabled"] = isInteractiveDismissDisabled
+
         let id = coordinator.present(
             type: .sheet,
             content: AnyView(content(currentItem)),
             onDismiss: { @MainActor [onDismiss] in
                 item = nil
                 onDismiss?()
-            }
+            },
+            metadata: metadata
         )
         return id
     }

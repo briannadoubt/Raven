@@ -138,6 +138,9 @@ public struct Picker<Selection: Hashable, Content: View>: View, Sendable where S
     /// The content containing tagged options
     private let content: Content
 
+    /// The picker style from the environment
+    @Environment(\.pickerStyle) private var pickerStyle
+
     // MARK: - Initializers
 
     /// Creates a picker with a label and selection binding.
@@ -190,6 +193,32 @@ public struct Picker<Selection: Hashable, Content: View>: View, Sendable where S
 
     /// Converts this Picker to a virtual DOM node.
     ///
+    /// The Picker is rendered based on the current picker style:
+    /// - MenuPickerStyle: `select` element with dropdown options
+    /// - InlinePickerStyle: Radio buttons with fieldset layout
+    /// - SegmentedPickerStyle: Segmented control with connected buttons
+    /// - WheelPickerStyle: Scrollable wheel picker with snap points
+    ///
+    /// - Returns: A VNode configured according to the current picker style.
+    @MainActor public func toVNode() -> VNode {
+        // Branch on the picker style type
+        switch pickerStyle {
+        case is MenuPickerStyle:
+            return renderMenuPickerStyle()
+        case is InlinePickerStyle:
+            return renderInlinePickerStyle()
+        case is SegmentedPickerStyle:
+            return renderSegmentedPickerStyle()
+        case is WheelPickerStyle:
+            return renderWheelPickerStyle()
+        default:
+            // Fallback to menu style for unknown styles
+            return renderMenuPickerStyle()
+        }
+    }
+
+    /// Renders the picker in menu/dropdown style.
+    ///
     /// The Picker is rendered as a `select` element with:
     /// - `aria-label` attribute for accessibility
     /// - `change` event handler for two-way data binding
@@ -199,7 +228,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, Sendable where S
     /// to the binding, which can cause the view to re-render.
     ///
     /// - Returns: A VNode configured as a select element with event handlers.
-    @MainActor public func toVNode() -> VNode {
+    @MainActor private func renderMenuPickerStyle() -> VNode {
         // Generate a unique ID for the change event handler
         let handlerID = UUID()
 
@@ -233,7 +262,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, Sendable where S
             // Accessibility label
             "aria-label": .attribute(name: "aria-label", value: label),
 
-            // Change event handler for two-way binding
+            // Change event handler for two-way data binding
             "onChange": .eventHandler(event: "change", handlerID: handlerID),
 
             // Default styling
@@ -249,6 +278,266 @@ public struct Picker<Selection: Hashable, Content: View>: View, Sendable where S
             "select",
             props: props,
             children: optionNodes
+        )
+    }
+
+    /// Renders the picker in inline style with radio buttons.
+    ///
+    /// The Picker is rendered as a `fieldset` element with:
+    /// - `legend` element for the label
+    /// - Radio buttons wrapped in `label` elements for each option
+    /// - `change` event handlers for two-way data binding
+    ///
+    /// When the user selects a radio button, the change event triggers an update
+    /// to the binding, which can cause the view to re-render.
+    ///
+    /// - Returns: A VNode configured as a fieldset with radio inputs.
+    @MainActor private func renderInlinePickerStyle() -> VNode {
+        // Generate a unique name for the radio group
+        let radioGroupName = "picker-\(UUID().uuidString)"
+
+        // Extract options from the content
+        let options = extractOptions(from: content)
+
+        // Create legend element for the label
+        let legendNode = VNode.element(
+            "legend",
+            props: [:],
+            children: [VNode.text(label)]
+        )
+
+        // Create label+input pairs for each option
+        let radioNodes: [VNode] = options.map { option in
+            // Generate a unique handler ID for this radio button
+            let handlerID = UUID()
+
+            // Check if this option is selected
+            let isSelected = option.value == selection.wrappedValue
+
+            // Create input properties
+            var inputProps: [String: VProperty] = [
+                "type": .attribute(name: "type", value: "radio"),
+                "name": .attribute(name: "name", value: radioGroupName),
+                "value": .attribute(name: "value", value: option.id),
+                "onChange": .eventHandler(event: "change", handlerID: handlerID)
+            ]
+
+            if isSelected {
+                inputProps["checked"] = .boolAttribute(name: "checked", value: true)
+            }
+
+            // Create the input element
+            let inputNode = VNode.element(
+                "input",
+                props: inputProps,
+                children: []
+            )
+
+            // Create text node for the label
+            let textNode = VNode.text(" \(option.label)")
+
+            // Create label element wrapping the input and text
+            return VNode.element(
+                "label",
+                props: [
+                    "display": .style(name: "display", value: "block"),
+                    "margin-bottom": .style(name: "margin-bottom", value: "8px"),
+                    "cursor": .style(name: "cursor", value: "pointer")
+                ],
+                children: [inputNode, textNode]
+            )
+        }
+
+        // Combine legend and radio buttons
+        let children = [legendNode] + radioNodes
+
+        // Create properties for the fieldset element
+        let props: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-picker-inline"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "padding": .style(name: "padding", value: "12px")
+        ]
+
+        return VNode.element(
+            "fieldset",
+            props: props,
+            children: children
+        )
+    }
+
+    /// Renders the picker in segmented style with connected button group.
+    ///
+    /// The Picker is rendered as a `div` element with role="radiogroup" containing:
+    /// - Button elements for each option with role="radio"
+    /// - `aria-checked` attributes to indicate selection state
+    /// - `data-value` attributes to store option IDs
+    /// - `click` event handlers for two-way data binding
+    ///
+    /// When the user clicks a button, the click event triggers an update
+    /// to the binding, which can cause the view to re-render.
+    ///
+    /// - Returns: A VNode configured as a segmented button group.
+    @MainActor private func renderSegmentedPickerStyle() -> VNode {
+        // Extract options from the content
+        let options = extractOptions(from: content)
+
+        // Create button elements for each option
+        let buttonNodes: [VNode] = options.enumerated().map { index, option in
+            // Generate a unique handler ID for this button
+            let handlerID = UUID()
+
+            // Check if this option is selected
+            let isSelected = option.value == selection.wrappedValue
+
+            // Determine if this is the last button
+            let isLastButton = index == options.count - 1
+
+            // Create button properties
+            var buttonProps: [String: VProperty] = [
+                "role": .attribute(name: "role", value: "radio"),
+                "aria-checked": .attribute(name: "aria-checked", value: isSelected ? "true" : "false"),
+                "data-value": .attribute(name: "data-value", value: option.id),
+                "onClick": .eventHandler(event: "click", handlerID: handlerID),
+
+                // Base button styles
+                "padding": .style(name: "padding", value: "8px 16px"),
+                "border": .style(name: "border", value: "1px solid #ccc"),
+                "background-color": .style(name: "background-color", value: isSelected ? "#007AFF" : "white"),
+                "color": .style(name: "color", value: isSelected ? "white" : "#333"),
+                "font-size": .style(name: "font-size", value: "14px"),
+                "cursor": .style(name: "cursor", value: "pointer"),
+                "transition": .style(name: "transition", value: "all 0.2s ease"),
+                "outline": .style(name: "outline", value: "none"),
+                "user-select": .style(name: "user-select", value: "none"),
+                "-webkit-user-select": .style(name: "-webkit-user-select", value: "none")
+            ]
+
+            // Remove right border for all buttons except the last one
+            if !isLastButton {
+                buttonProps["border-right"] = .style(name: "border-right", value: "none")
+            }
+
+            // Create text node for button label
+            let textNode = VNode.text(option.label)
+
+            return VNode.element(
+                "button",
+                props: buttonProps,
+                children: [textNode]
+            )
+        }
+
+        // Create properties for the container div
+        let props: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-picker-segmented"),
+            "role": .attribute(name: "role", value: "radiogroup"),
+            "aria-label": .attribute(name: "aria-label", value: label),
+
+            // Container styles
+            "display": .style(name: "display", value: "inline-flex"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "overflow": .style(name: "overflow", value: "hidden")
+        ]
+
+        return VNode.element(
+            "div",
+            props: props,
+            children: buttonNodes
+        )
+    }
+
+    /// Renders the picker in wheel style with a scrollable container.
+    ///
+    /// The Picker is rendered as a scrollable wheel with:
+    /// - A container div with class "raven-picker-wheel"
+    /// - A scroller div with class "raven-picker-wheel-scroller"
+    /// - Option divs for each item with class "raven-picker-wheel-option"
+    /// - Selected option marked with "raven-picker-wheel-option-selected"
+    /// - Data attributes storing tag values for event handling
+    /// - Scroll event handler for detecting selection changes
+    ///
+    /// The wheel uses CSS scroll-snap to provide a native wheel-picker feel.
+    /// When the user scrolls, the scroll event handler updates the selection
+    /// based on which option is centered in the viewport.
+    ///
+    /// - Returns: A VNode configured as a wheel picker with scroll handling.
+    @MainActor private func renderWheelPickerStyle() -> VNode {
+        // Generate a unique ID for the scroll event handler
+        let handlerID = UUID()
+
+        // Extract options from the content
+        let options = extractOptions(from: content)
+
+        // Create option divs for each picker option
+        let optionNodes: [VNode] = options.map { option in
+            let isSelected = option.value == selection.wrappedValue
+
+            // Build classes for the option div
+            var classes = "raven-picker-wheel-option"
+            if isSelected {
+                classes += " raven-picker-wheel-option-selected"
+            }
+
+            // Create properties for the option div
+            var optionProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: classes),
+                // Store the option ID as a data attribute for event handling
+                "data-option-id": .attribute(name: "data-option-id", value: option.id),
+                // Styling for option
+                "padding": .style(name: "padding", value: "12px 16px"),
+                "text-align": .style(name: "text-align", value: "center"),
+                "font-size": .style(name: "font-size", value: "16px"),
+                "cursor": .style(name: "cursor", value: "pointer"),
+                "user-select": .style(name: "user-select", value: "none"),
+                "scroll-snap-align": .style(name: "scroll-snap-align", value: "center")
+            ]
+
+            // Create text node for option label
+            let textNode = VNode.text(option.label)
+
+            return VNode.element(
+                "div",
+                props: optionProps,
+                children: [textNode]
+            )
+        }
+
+        // Create the scroller container
+        let scrollerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-picker-wheel-scroller"),
+            // Scroll event handler for detecting selection changes
+            "onScroll": .eventHandler(event: "scroll", handlerID: handlerID),
+            // Styling for scroller
+            "overflow-y": .style(name: "overflow-y", value: "auto"),
+            "scroll-snap-type": .style(name: "scroll-snap-type", value: "y mandatory"),
+            "height": .style(name: "height", value: "150px"),
+            "-webkit-overflow-scrolling": .style(name: "-webkit-overflow-scrolling", value: "touch")
+        ]
+
+        let scrollerNode = VNode.element(
+            "div",
+            props: scrollerProps,
+            children: optionNodes
+        )
+
+        // Create properties for the wheel container
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-picker-wheel"),
+            "aria-label": .attribute(name: "aria-label", value: label),
+            "role": .attribute(name: "role", value: "listbox"),
+            // Styling for container
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "8px"),
+            "background-color": .style(name: "background-color", value: "white"),
+            "position": .style(name: "position", value: "relative"),
+            "overflow": .style(name: "overflow", value: "hidden")
+        ]
+
+        return VNode.element(
+            "div",
+            props: containerProps,
+            children: [scrollerNode]
         )
     }
 

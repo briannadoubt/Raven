@@ -140,11 +140,10 @@ public struct SegmentedPickerStyle: PickerStyle {
 
     /// Creates the segmented control appearance.
     ///
-    /// - Note: Currently falls back to menu style. Full implementation
-    ///   will be added in a future update.
+    /// - Note: The actual rendering is handled in Picker's toVNode() method.
+    ///   This protocol method is provided for SwiftUI compatibility.
     @MainActor public func makeBody(configuration: Configuration) -> some View {
-        // TODO: Implement segmented control appearance
-        // For now, fall back to menu style
+        // Rendering is handled in Picker.toVNode() via renderSegmentedPickerStyle()
         configuration.content
     }
 }
@@ -187,11 +186,10 @@ public struct WheelPickerStyle: PickerStyle {
 
     /// Creates the wheel picker appearance.
     ///
-    /// - Note: Currently falls back to menu style. Full implementation
-    ///   will be added in a future update.
+    /// - Note: The actual rendering is handled in Picker's toVNode() method.
+    ///   This protocol method is provided for SwiftUI compatibility.
     @MainActor public func makeBody(configuration: Configuration) -> some View {
-        // TODO: Implement wheel picker appearance
-        // For now, fall back to menu style
+        // Rendering is handled in Picker.toVNode() via renderWheelPickerStyle()
         configuration.content
     }
 }
@@ -234,11 +232,10 @@ public struct InlinePickerStyle: PickerStyle {
 
     /// Creates the inline picker appearance.
     ///
-    /// - Note: Currently falls back to menu style. Full implementation
-    ///   will be added in a future update.
+    /// - Note: The actual rendering is handled in Picker's toVNode() method.
+    ///   This protocol method is provided for SwiftUI compatibility.
     @MainActor public func makeBody(configuration: Configuration) -> some View {
-        // TODO: Implement inline picker appearance (radio buttons)
-        // For now, fall back to menu style
+        // Rendering is handled in Picker.toVNode() via renderInlinePickerStyle()
         configuration.content
     }
 }
@@ -269,11 +266,7 @@ extension View {
     /// - Parameter style: The picker style to apply.
     /// - Returns: A view with the specified picker style.
     @MainActor public func pickerStyle<S: PickerStyle>(_ style: S) -> some View {
-        // For now, return self as the default picker implementation
-        // already renders in the desired style. In the future, this
-        // could be implemented using environment values to pass the
-        // style down the view hierarchy.
-        self
+        environment(\.pickerStyle, style)
     }
 }
 
@@ -318,5 +311,18 @@ extension PickerStyle where Self == InlinePickerStyle {
     /// - Note: Currently falls back to menu style.
     public static var inline: InlinePickerStyle {
         InlinePickerStyle()
+    }
+}
+
+// MARK: - Environment Key
+
+private struct PickerStyleEnvironmentKey: EnvironmentKey {
+    static let defaultValue: any PickerStyle = MenuPickerStyle()
+}
+
+extension EnvironmentValues {
+    var pickerStyle: any PickerStyle {
+        get { self[PickerStyleEnvironmentKey.self] }
+        set { self[PickerStyleEnvironmentKey.self] = newValue }
     }
 }

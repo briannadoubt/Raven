@@ -49,6 +49,9 @@ public struct PresentationEntry: Sendable, Identifiable {
     /// Optional callback when the presentation is dismissed
     public let onDismiss: (@MainActor @Sendable () -> Void)?
 
+    /// Metadata for presentation configuration
+    public let metadata: [String: any Sendable]
+
     /// Creates a new presentation entry.
     ///
     /// - Parameters:
@@ -57,18 +60,21 @@ public struct PresentationEntry: Sendable, Identifiable {
     ///   - content: The view to present
     ///   - zIndex: The z-index for layering
     ///   - onDismiss: Optional callback when dismissed
+    ///   - metadata: Additional metadata for presentation configuration
     public init(
         id: UUID = UUID(),
         type: PresentationType,
         content: AnyView,
         zIndex: Int,
-        onDismiss: (@MainActor @Sendable () -> Void)? = nil
+        onDismiss: (@MainActor @Sendable () -> Void)? = nil,
+        metadata: [String: any Sendable] = [:]
     ) {
         self.id = id
         self.type = type
         self.content = content
         self.zIndex = zIndex
         self.onDismiss = onDismiss
+        self.metadata = metadata
     }
 }
 
@@ -135,6 +141,7 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
     ///   - type: The presentation type (sheet, alert, etc.)
     ///   - content: The view to present
     ///   - onDismiss: Optional callback when the presentation is dismissed
+    ///   - metadata: Additional metadata for presentation configuration
     /// - Returns: The unique identifier for this presentation
     ///
     /// Example:
@@ -142,21 +149,24 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
     /// let id = coordinator.present(
     ///     type: .sheet,
     ///     content: AnyView(MySheetView()),
-    ///     onDismiss: { print("Sheet dismissed") }
+    ///     onDismiss: { print("Sheet dismissed") },
+    ///     metadata: ["detents": detents, "dismissDisabled": true]
     /// )
     /// ```
     @discardableResult
     public func present(
         type: PresentationType,
         content: AnyView,
-        onDismiss: (@MainActor @Sendable () -> Void)? = nil
+        onDismiss: (@MainActor @Sendable () -> Void)? = nil,
+        metadata: [String: any Sendable] = [:]
     ) -> UUID {
         let zIndex = calculateZIndex()
         let entry = PresentationEntry(
             type: type,
             content: content,
             zIndex: zIndex,
-            onDismiss: onDismiss
+            onDismiss: onDismiss,
+            metadata: metadata
         )
         presentations.append(entry)
         return entry.id

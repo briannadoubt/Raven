@@ -62,7 +62,7 @@ public struct SheetRenderer: Sendable {
         coordinator: PresentationCoordinator
     ) -> VNode {
         // Check if interactive dismiss is disabled from environment
-        let dismissDisabled = false // TODO: Read from entry metadata
+        let dismissDisabled = (entry.metadata["isInteractiveDismissDisabled"] as? Bool) ?? false
 
         // Create dismiss handler
         let dismissHandler = dismissDisabled ? nil : DialogRenderer.createBackdropClickHandler(
@@ -83,8 +83,8 @@ public struct SheetRenderer: Sendable {
         var props: [String: VProperty] = [:]
 
         // Add detent styling if specified
-        // TODO: Extract detents from entry metadata
-        let detent: PresentationDetent = .large
+        let detents = (entry.metadata["presentationDetents"] as? Set<PresentationDetent>) ?? [.large]
+        let detent = detents.first ?? .large
         let maxHeight = calculateMaxHeight(for: detent)
         props["style_max-height"] = .style(name: "max-height", value: "\(Int(maxHeight * 100))vh")
 

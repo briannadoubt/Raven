@@ -258,10 +258,6 @@ public final class IndexedDB: @unchecked Sendable {
     ///   - storeName: Name of the object store
     ///   - key: Key to retrieve
     /// - Returns: The stored value or empty dictionary if not found
-    // TEMPORARILY COMMENTED OUT: Swift compiler issue with JSClosure trailing closure syntax.
-    // JSClosure conforms to ExpressibleByDictionaryLiteral, causing ambiguity.
-    // See: https://github.com/swiftwasm/JavaScriptKit/issues
-    /*
     public func get(from storeName: String, key: String) async throws -> [String: Any] {
         guard let db = database else {
             throw IndexedDBError.notOpen
@@ -276,13 +272,15 @@ public final class IndexedDB: @unchecked Sendable {
             }
             let request = getFn(key)
 
-            let successHandler = JSClosure { [] args -> JSValue in
-                guard let event = args.first?.object else{
+            // Use closure function to avoid ExpressibleByDictionaryLiteral ambiguity
+            let successClosure: (sending [JSValue]) -> JSValue = { args in
+                guard let event = args.first else{
                     continuation.resume(returning: [:])
                     return .undefined
                 }
 
-                let result = event.target.result
+                let target: JSValue = event[dynamicMember: "target"]
+                let result: JSValue = target[dynamicMember: "result"]
 
                 if result.isUndefined || result.isNull {
                     continuation.resume(returning: [:])
@@ -292,17 +290,20 @@ public final class IndexedDB: @unchecked Sendable {
 
                 return .undefined
             }
+            let successHandler = JSClosure(successClosure)
 
-            let errorHandler = JSClosure { [] _ in
+            let errorClosure: (sending [JSValue]) -> JSValue = { _ in
                 continuation.resume(throwing: IndexedDBError.operationFailed)
                 return .undefined
             }
+            let errorHandler = JSClosure(errorClosure)
 
-            request.onsuccess = JSValue(successHandler)
-            request.onerror = JSValue(errorHandler)
+            if let addEventListenerFunc = request.addEventListener.function {
+                _ = addEventListenerFunc("success", successHandler)
+                _ = addEventListenerFunc("error", errorHandler)
+            }
         }
     }
-    */
 
     /// Get all values from an object store
     /// - Parameter storeName: Name of the object store
