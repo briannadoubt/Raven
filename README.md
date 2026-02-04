@@ -33,8 +33,11 @@ Whether you're building interactive web applications, creating cross-platform to
 - **No Combine Dependency** - Linux and WASM compatible with custom publisher implementation
 - **Rich UI Components** - Text, Button, Image, TextField, Toggle, List, ContentUnavailableView, and more
 - **Shape System** - Shape protocol, 5 built-in shapes, Path for custom drawing, SVG rendering
+- **Modern Layout APIs** - containerRelativeFrame(), ViewThatFits for responsive, adaptive layouts
 - **Layout System** - VStack, HStack, ZStack, LazyVGrid, LazyHGrid, GeometryReader with advanced modifiers
 - **Navigation** - NavigationLink and navigation state management
+- **Scroll Features** - Advanced scroll behavior and scroll-based animations
+- **Search** - Built-in searchable modifier with suggestions and filtering
 - **Visual Effects** - 7 GPU-accelerated effects (blur, brightness, contrast, saturation, grayscale, hue rotation, shadow)
 - **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, and visual effects
 - **Environment Values** - Propagate configuration through the view hierarchy
@@ -81,38 +84,36 @@ cd MyApp
 # Output will be in dist/
 ```
 
-## What's New in v0.4.0 (Phase 10)
+## What's New in v0.5.0 (Phase 11)
 
-Raven v0.4.0 introduces comprehensive shape system and visual effects:
+Raven v0.5.0 introduces modern layout APIs, enhanced scroll features, and search functionality:
 
-**Shape System**
-- `Shape` protocol for creating custom 2D graphics
-- 5 built-in shapes: `Circle`, `Rectangle`, `RoundedRectangle`, `Capsule`, `Ellipse`
-- `Path` type for custom drawing with lines, curves, and arcs
-- SVG-based rendering for resolution-independent graphics
+**Modern Layout APIs**
+- `containerRelativeFrame()` for responsive sizing relative to containers
+- `ViewThatFits` for adaptive layouts that adjust to available space
+- Modern alternative to GeometryReader with cleaner syntax
+- CSS container queries for efficient responsive design
 
-**Shape Modifiers**
-- `.fill()` for filling shapes with colors and gradients
-- `.stroke()` for outlining shapes with customizable styles
-- `.trim()` for partial shape rendering (progress indicators)
-- `StrokeStyle` with line caps, joins, and dashed patterns
+**Scroll Enhancements (3 modifiers)**
+- `.scrollBounceBehavior()` - Control bounce/overscroll behavior
+- `.scrollClipDisabled()` - Allow content to overflow (shadows, glows)
+- `.scrollTransition()` - Animate content based on scroll position
+- IntersectionObserver-based scroll animations
 
-**Visual Effects (7 modifiers)**
-- `.blur()`, `.brightness()`, `.contrast()`, `.saturation()`
-- `.grayscale()`, `.hueRotation()`, `.shadow()`
-- GPU-accelerated CSS filters for optimal performance
-
-**Clipping**
-- `.clipShape()` for masking content with any shape
-- SVG clipPath implementation
+**Search Functionality**
+- `.searchable()` modifier with suggestions and filtering
+- Real-time search with two-way binding
+- Search field placement options (navigation, sidebar, toolbar)
+- Native HTML search input with keyboard shortcuts
 
 **Testing & Quality**
-- 162+ comprehensive tests across all Phase 10 features
-- ~2,941 lines of production code, ~2,167 lines of test code
+- 102+ comprehensive tests across all Phase 11 features
+- Plus integration tests for real-world scenarios
+- ~1,796 lines of production code, ~2,172 lines of test code
 - Full DocC documentation for all new APIs
-- API coverage increased from ~60% to ~70%
+- API coverage increased from ~70% to ~80%
 
-See [CHANGELOG.md](CHANGELOG.md) and [Phase 10 Documentation](Documentation/Phase10.md) for complete details.
+See [CHANGELOG.md](CHANGELOG.md) and [Phase 11 Documentation](Documentation/Phase11.md) for complete details.
 
 ## Example Code
 
@@ -192,6 +193,7 @@ Raven is being developed in phases, each delivering complete, tested functionali
 | **Phase 8** | Advanced Components | ⏳ Planned | Animations, gestures, advanced navigation, custom layouts |
 | **Phase 9** | Modern State & UI | ✅ Complete | @Observable, @Bindable, ContentUnavailableView, 10 new modifiers |
 | **Phase 10** | Shapes & Visual Effects | ✅ Complete | Shape system, Path, visual effects, clipping, 162+ tests |
+| **Phase 11** | Modern Layout & Search | ✅ Complete | containerRelativeFrame, ViewThatFits, scroll features, searchable, 102+ tests |
 
 ## Architecture
 

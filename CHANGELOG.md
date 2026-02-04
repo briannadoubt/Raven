@@ -5,6 +5,320 @@ All notable changes to Raven will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-03 - Phase 11: Modern Layout & Search
+
+### Added
+
+#### Modern Layout APIs
+
+- **`containerRelativeFrame()` Modifier** - Responsive sizing relative to containers
+  - Modern alternative to `GeometryReader` with cleaner syntax
+  - CSS container queries for efficient responsive design
+  - Closure-based API: `.containerRelativeFrame(.horizontal) { width, _ in width * 0.8 }`
+  - Grid-based API: `.containerRelativeFrame(.horizontal, count: 3, span: 1, spacing: 16)`
+  - Support for horizontal, vertical, and both axes
+  - Alignment options for positioning within container
+  - CSS custom properties (`--container-width`, `--container-height`) for sizing
+  - `calc()` expressions for precise calculations
+  - Works with all view types
+
+- **`ViewThatFits` Container** - Adaptive layouts based on available space
+  - Automatically selects first child view that fits
+  - Axis control: check horizontal, vertical, or both axes
+  - Ideal for responsive navigation and adaptive UIs
+  - No explicit breakpoints needed
+  - CSS-based measurement using `max-content` and container queries
+  - Graceful fallback to last option if none fit
+  - Perfect for desktop/mobile layout variations
+  - Multiple layout options with ordered preference
+
+#### Scroll Enhancement Modifiers
+
+- **`.scrollBounceBehavior()` Modifier** - Control scroll bounce/overscroll behavior
+  - `.automatic` - System default behavior
+  - `.always` - Always allow bounce
+  - `.basedOnSize` - Bounce only when content exceeds container
+  - `.never` - Disable bounce entirely
+  - Per-axis control (horizontal, vertical, or both)
+  - CSS `overscroll-behavior` implementation
+  - Prevents unwanted scroll chaining
+  - Ideal for nested scrollable areas
+
+- **`.scrollClipDisabled()` Modifier** - Allow scroll content to overflow
+  - Disables clipping of scroll content
+  - Perfect for shadows, glows, and overlapping effects
+  - Boolean parameter to enable/disable
+  - CSS `overflow: visible` implementation
+  - Works with all scrollable containers
+  - Maintains scroll functionality while showing overflow
+
+- **`.scrollTransition()` Modifier** - Animate content based on scroll position
+  - IntersectionObserver-based implementation
+  - Smooth animations as content enters/leaves viewport
+  - Configuration options:
+    - `topLeading` - Trigger at top/leading edge
+    - `center` - Trigger when centered in viewport
+    - `bottomTrailing` - Trigger at bottom/trailing edge
+  - Phase-based transitions:
+    - `.identity` - Fully visible (0% out of view)
+    - `.topLeading`, `.bottomTrailing` - Entering/exiting states
+  - Transform effects (scale, rotation, translation)
+  - Opacity animations
+  - Smooth CSS transitions
+  - Configurable threshold for trigger points
+  - Ideal for scroll-based reveals and parallax effects
+
+#### Search Functionality
+
+- **`.searchable()` Modifier** - Add search functionality to views
+  - Two-way binding with `Binding<String>`
+  - Customizable placeholder text
+  - Search suggestions support with ViewBuilder
+  - Multiple placement options:
+    - `.automatic` - Default top placement
+    - `.navigationBarDrawer` - Navigation-integrated
+    - `.sidebar` - Sidebar-optimized
+    - `.toolbar` - Inline toolbar placement
+  - HTML `<input type="search">` implementation
+  - Native browser features:
+    - Built-in clear button (x)
+    - Search icon indicator
+    - Autocomplete support
+  - Keyboard shortcuts (Cmd+F to focus)
+  - ARIA attributes for accessibility:
+    - `role="search"` container
+    - `aria-label` for screen readers
+    - Proper label association
+  - Real-time filtering and updates
+  - Suggestions dropdown with custom content
+  - Styled for web with responsive design
+
+#### Supporting Types
+
+- **`Axis.Set`** - Used by containerRelativeFrame and ViewThatFits
+  - `.horizontal`, `.vertical`, or both
+  - Bitmask-based set operations
+
+- **`ScrollBounceBehavior`** - Scroll bounce configuration
+  - `.automatic`, `.always`, `.basedOnSize`, `.never`
+  - Per-axis application
+
+- **`ScrollTransitionConfiguration`** - Scroll animation config
+  - `topLeading`, `center`, `bottomTrailing`
+  - Threshold customization
+
+- **`ScrollTransitionPhase`** - Scroll position state
+  - `.identity`, `.topLeading`, `.bottomTrailing`
+  - Used by transition effects
+
+- **`SearchFieldPlacement`** - Search field positioning
+  - `.automatic`, `.navigationBarDrawer`, `.sidebar`, `.toolbar`
+
+#### Testing & Quality
+
+- 102+ comprehensive tests covering all Phase 11 features
+  - containerRelativeFrame tests (20+ tests)
+  - ViewThatFits tests (25+ tests)
+  - Scroll behavior tests (18+ tests)
+  - Scroll transition tests (20+ tests)
+  - Searchable tests (28+ tests)
+  - Integration tests for real-world scenarios
+
+- Working examples demonstrating usage
+  - Responsive dashboard layouts
+  - Adaptive navigation patterns
+  - Scroll-based animations
+  - Search with filtering and suggestions
+
+### Changed
+
+- **API Coverage** - Increased from ~70% to ~80%
+  - Modern layout APIs aligned with SwiftUI iOS 17+
+  - Enhanced scroll capabilities
+  - Search functionality matching native patterns
+  - Better responsive design support
+
+- **Layout System** - Enhanced responsive capabilities
+  - Easier responsive layouts without GeometryReader
+  - More declarative approach to adaptive UIs
+  - Better container-relative sizing patterns
+
+### Migration Guide
+
+#### From GeometryReader to containerRelativeFrame
+
+The new `containerRelativeFrame()` modifier provides a cleaner alternative to `GeometryReader` for responsive sizing:
+
+**Before (GeometryReader):**
+```swift
+GeometryReader { geometry in
+    Image("hero")
+        .frame(width: geometry.size.width * 0.8)
+}
+```
+
+**After (containerRelativeFrame):**
+```swift
+Image("hero")
+    .containerRelativeFrame(.horizontal) { width, _ in
+        width * 0.8
+    }
+```
+
+**Benefits:**
+- No wrapper container needed
+- Cleaner, more readable syntax
+- Better performance with CSS container queries
+- Alignment support built-in
+- Works with grid-based layouts
+
+**When to Use Each:**
+- Use `containerRelativeFrame()` for simple proportional sizing
+- Use `GeometryReader` when you need full geometry information or complex calculations
+- Both can coexist in the same application
+
+### Statistics
+
+- **Files Added:** 5 new files
+  - ContainerRelativeFrameModifier.swift (349 lines)
+  - ViewThatFits.swift (304 lines)
+  - ScrollBehaviorModifiers.swift (262 lines)
+  - ScrollTransitionModifier.swift (342 lines)
+  - SearchableModifier.swift (539 lines)
+
+- **Lines of Code:** ~1,796 lines of production code
+- **Test Coverage:** 102+ tests across 5 test files
+- **Test Code:** ~2,172 lines of test code
+- **Test/Code Ratio:** 1.21 (excellent coverage)
+
+### Documentation
+
+- Added [Documentation/Phase11.md](Documentation/Phase11.md) - Comprehensive Phase 11 guide
+  - Modern layout APIs overview and usage
+  - Migration guide from GeometryReader
+  - ViewThatFits patterns and examples
+  - Scroll enhancement documentation
+  - Search functionality guide
+  - Web implementation details
+  - Browser compatibility matrix
+  - Performance optimization tips
+  - Complete real-world examples
+
+- Updated [README.md](README.md)
+  - "What's New in v0.5.0" section
+  - Enhanced feature list with modern layout and search
+  - Updated development phases table
+  - API coverage updated to ~80%
+
+- Updated [Documentation/API-Overview.md](Documentation/API-Overview.md)
+  - Added containerRelativeFrame to modifiers section
+  - Added ViewThatFits to layout containers
+  - Added scroll modifiers section
+  - Added searchable modifier documentation
+  - Cross-references to Phase11.md
+
+- Enhanced inline documentation
+  - Full DocC comments for all new APIs
+  - Comprehensive code examples in documentation
+  - Web implementation notes
+  - Browser compatibility information
+  - Performance considerations
+
+### Browser Compatibility
+
+All Phase 11 features support modern browsers:
+
+- **CSS Container Queries:** Chrome 105+, Firefox 110+, Safari 16+, Edge 105+
+- **IntersectionObserver:** Chrome 51+, Firefox 55+, Safari 12.1+, Edge 15+
+- **CSS overscroll-behavior:** Chrome 63+, Firefox 59+, Safari 16+, Edge 79+
+- **HTML Search Input:** All modern browsers
+- **CSS calc():** All modern browsers
+- **CSS Custom Properties:** All modern browsers
+
+**Fallbacks:**
+- Container queries gracefully degrade to percentage-based sizing
+- IntersectionObserver has polyfill support for older browsers
+- Search inputs fall back to standard text inputs in older browsers
+
+### Performance Notes
+
+- **Container Queries:** Efficiently handled by browser layout engine
+- **IntersectionObserver:** Passive observation with minimal performance impact
+- **Scroll Animations:** CSS transitions for GPU acceleration
+- **Search Filtering:** Debounced for optimal performance with large lists
+- **ViewThatFits:** Measurement cached to avoid redundant calculations
+
+### Real-World Use Cases
+
+**Responsive Dashboard:**
+```swift
+VStack {
+    ViewThatFits {
+        // Wide layout - 3 columns
+        HStack {
+            DashboardCard("Sales")
+            DashboardCard("Users")
+            DashboardCard("Revenue")
+        }
+
+        // Medium layout - 2 columns
+        VStack {
+            HStack {
+                DashboardCard("Sales")
+                DashboardCard("Users")
+            }
+            DashboardCard("Revenue")
+        }
+
+        // Narrow layout - 1 column
+        VStack {
+            DashboardCard("Sales")
+            DashboardCard("Users")
+            DashboardCard("Revenue")
+        }
+    }
+}
+```
+
+**Search with Filtering:**
+```swift
+struct ItemList: View {
+    @State private var searchText = ""
+
+    var filteredItems: [Item] {
+        if searchText.isEmpty { return items }
+        return items.filter { $0.name.contains(searchText) }
+    }
+
+    var body: some View {
+        List(filteredItems) { item in
+            ItemRow(item: item)
+                .scrollTransition { content, phase in
+                    content
+                        .opacity(phase.isIdentity ? 1 : 0.5)
+                        .scaleEffect(phase.isIdentity ? 1 : 0.95)
+                }
+        }
+        .searchable(text: $searchText, prompt: "Search items") {
+            ForEach(suggestions) { suggestion in
+                Text(suggestion.name)
+                    .searchCompletion(suggestion.name)
+            }
+        }
+    }
+}
+```
+
+**Responsive Grid:**
+```swift
+LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))]) {
+    ForEach(items) { item in
+        ItemCard(item: item)
+            .containerRelativeFrame(.horizontal, count: 3, span: 1, spacing: 16)
+    }
+}
+```
+
 ## [0.4.0] - 2026-02-03 - Phase 10: Shapes & Visual Effects
 
 ### Added

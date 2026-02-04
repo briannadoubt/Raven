@@ -2,6 +2,19 @@
 
 Welcome to the Raven API documentation. This guide provides a comprehensive overview of Raven's public APIs for building web applications using SwiftUI-style declarative syntax.
 
+## What's New in v0.5.0 (Phase 11)
+
+Phase 11 introduces modern layout APIs, enhanced scroll features, and search functionality:
+
+- **Modern Layout APIs** - containerRelativeFrame() and ViewThatFits for responsive, adaptive layouts
+- **Scroll Enhancements** - .scrollBounceBehavior(), .scrollClipDisabled(), .scrollTransition() for advanced scroll control
+- **Search** - .searchable() modifier with suggestions, filtering, and placement options
+- **102+ Tests** - Comprehensive test coverage
+- **Web Platform** - CSS container queries, IntersectionObserver, native HTML search
+- **API Coverage** - Increased from ~70% to ~80%
+
+See [Phase 11 Documentation](Phase11.md) for detailed information.
+
 ## What's New in v0.4.0 (Phase 10)
 
 Phase 10 introduces a comprehensive shape system and visual effects:
@@ -696,6 +709,63 @@ ZStack(alignment: .topLeading) {
 
 ---
 
+#### ViewThatFits (New in v0.5.0)
+
+Adaptive container that selects the first child view that fits in available space.
+
+```swift
+ViewThatFits {
+    // Desktop layout
+    HStack {
+        Image("logo")
+        Text("My Application")
+        Spacer()
+        Button("Sign In") { }
+        Button("Sign Up") { }
+    }
+
+    // Mobile layout - fallback
+    VStack {
+        HStack {
+            Image("logo")
+            Text("My App")
+        }
+        HStack {
+            Button("Sign In") { }
+            Button("Sign Up") { }
+        }
+    }
+}
+
+// Control which axes to check
+ViewThatFits(in: .horizontal) {
+    WideLayout()
+    NarrowLayout()
+}
+
+ViewThatFits(in: [.horizontal, .vertical]) {
+    LargeLayout()
+    CompactLayout()
+}
+```
+
+**Features:**
+- Automatic layout selection based on available space
+- Axis control (horizontal, vertical, or both)
+- Perfect for responsive navigation and adaptive UIs
+- No explicit breakpoints needed
+- CSS container query implementation
+
+**Common Uses:**
+- Responsive navigation (full menu vs. hamburger)
+- Adaptive dashboards (multi-column vs. single column)
+- Form layouts (horizontal vs. vertical)
+- Content cards (expanded vs. compact)
+
+**See:** `Sources/Raven/Views/Layout/ViewThatFits.swift`, [Phase 11 Documentation](Phase11.md)
+
+---
+
 #### List
 
 Scrollable list of content.
@@ -837,6 +907,7 @@ View modifiers customize the appearance and behavior of views.
 - `.clipped()` - Clip content to bounds (New in v0.3.0)
 - `.aspectRatio(_:contentMode:)` - Maintain aspect ratio (New in v0.3.0)
 - `.fixedSize(horizontal:vertical:)` - Fix to ideal size (New in v0.3.0)
+- `.containerRelativeFrame(_:alignment:length:)` - Size relative to container (New in v0.5.0)
 
 **Styling:**
 - `.foregroundColor(_:)` - Set text/icon color
@@ -876,7 +947,203 @@ View modifiers customize the appearance and behavior of views.
 **Clipping (New in v0.4.0):**
 - `.clipShape(_:style:)` - Clip content to shape bounds
 
-**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [ShapeModifiers.swift](../Sources/Raven/Modifiers/ShapeModifiers.swift), [VisualEffectModifiers.swift](../Sources/Raven/Modifiers/VisualEffectModifiers.swift), [ClipShapeModifier.swift](../Sources/Raven/Modifiers/ClipShapeModifier.swift), [Phase 9 Documentation](Phase9.md), [Phase 10 Documentation](Phase10.md)
+**Scroll Modifiers (New in v0.5.0):**
+- `.scrollBounceBehavior(_:axes:)` - Control scroll bounce/overscroll behavior
+- `.scrollClipDisabled(_:)` - Allow scroll content to overflow
+- `.scrollTransition(_:transition:)` - Animate content based on scroll position
+
+**Search (New in v0.5.0):**
+- `.searchable(text:placement:prompt:)` - Add search functionality with suggestions
+
+**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [ShapeModifiers.swift](../Sources/Raven/Modifiers/ShapeModifiers.swift), [VisualEffectModifiers.swift](../Sources/Raven/Modifiers/VisualEffectModifiers.swift), [ClipShapeModifier.swift](../Sources/Raven/Modifiers/ClipShapeModifier.swift), [ContainerRelativeFrameModifier.swift](../Sources/Raven/Modifiers/ContainerRelativeFrameModifier.swift), [ScrollBehaviorModifiers.swift](../Sources/Raven/Modifiers/ScrollBehaviorModifiers.swift), [ScrollTransitionModifier.swift](../Sources/Raven/Modifiers/ScrollTransitionModifier.swift), [SearchableModifier.swift](../Sources/Raven/Modifiers/SearchableModifier.swift), [Phase 9 Documentation](Phase9.md), [Phase 10 Documentation](Phase10.md), [Phase 11 Documentation](Phase11.md)
+
+---
+
+### Modern Layout Modifiers (New in v0.5.0)
+
+#### containerRelativeFrame()
+
+Size views relative to their container using CSS container queries.
+
+```swift
+// Closure-based sizing
+Image("hero")
+    .containerRelativeFrame(.horizontal) { width, _ in
+        width * 0.8
+    }
+
+// Grid-based sizing
+ItemCard()
+    .containerRelativeFrame(.horizontal, count: 3, span: 1, spacing: 16)
+
+// Both axes with alignment
+Rectangle()
+    .containerRelativeFrame(
+        [.horizontal, .vertical],
+        alignment: .center
+    ) { length, axis in
+        switch axis {
+        case .horizontal: return length * 0.8
+        case .vertical: return length * 0.5
+        }
+    }
+```
+
+**Parameters:**
+- `axes` - Axes to apply frame to (.horizontal, .vertical, or both)
+- `alignment` - Alignment within container
+- `length` - Closure that calculates size for each axis
+- `count` - (Grid mode) Total number of grid columns/rows
+- `span` - (Grid mode) Number of cells to span
+- `spacing` - (Grid mode) Gap between items
+
+**Benefits:**
+- Modern alternative to GeometryReader
+- Cleaner syntax
+- CSS container query implementation
+- No wrapper views needed
+
+**See:** `Sources/Raven/Modifiers/ContainerRelativeFrameModifier.swift`, [Phase 11 Documentation](Phase11.md#containerrelativeframe)
+
+---
+
+### Scroll Modifiers (New in v0.5.0)
+
+#### scrollBounceBehavior()
+
+Control scroll bounce/overscroll behavior.
+
+```swift
+ScrollView {
+    Content()
+}
+.scrollBounceBehavior(.never)  // Disable bounce
+
+ScrollView(.horizontal) {
+    Content()
+}
+.scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+```
+
+**Behaviors:**
+- `.automatic` - System default
+- `.always` - Always allow bounce
+- `.basedOnSize` - Bounce only if content exceeds container
+- `.never` - Disable bounce
+
+**See:** `Sources/Raven/Modifiers/ScrollBehaviorModifiers.swift`, [Phase 11 Documentation](Phase11.md#scrollbouncebehavior)
+
+---
+
+#### scrollClipDisabled()
+
+Allow scroll content to overflow (for shadows, glows).
+
+```swift
+ScrollView {
+    ForEach(items) { item in
+        ItemCard(item: item)
+            .shadow(radius: 8)  // Shadow won't be clipped
+    }
+}
+.scrollClipDisabled(true)
+```
+
+**See:** `Sources/Raven/Modifiers/ScrollBehaviorModifiers.swift`, [Phase 11 Documentation](Phase11.md#scrollclipdisabled)
+
+---
+
+#### scrollTransition()
+
+Animate content based on scroll position.
+
+```swift
+ScrollView {
+    ForEach(items) { item in
+        ItemRow(item: item)
+            .scrollTransition { content, phase in
+                content
+                    .opacity(phase.isIdentity ? 1 : 0.5)
+                    .scaleEffect(phase.isIdentity ? 1 : 0.95)
+            }
+    }
+}
+
+// With configuration
+.scrollTransition(.topLeading) { content, phase in
+    content
+        .offset(y: phase.isIdentity ? 0 : 50)
+        .opacity(phase.isIdentity ? 1 : 0)
+}
+```
+
+**Configurations:**
+- `.topLeading` - Trigger at top/leading edge
+- `.center` - Trigger when centered (default)
+- `.bottomTrailing` - Trigger at bottom/trailing edge
+
+**Phases:**
+- `.identity` - Fully visible
+- `.topLeading` - Entering from top/leading
+- `.bottomTrailing` - Exiting to bottom/trailing
+
+**See:** `Sources/Raven/Modifiers/ScrollTransitionModifier.swift`, [Phase 11 Documentation](Phase11.md#scrolltransition)
+
+---
+
+### Search Modifier (New in v0.5.0)
+
+#### searchable()
+
+Add search functionality to views.
+
+```swift
+struct ItemList: View {
+    @State private var searchText = ""
+
+    var filteredItems: [Item] {
+        if searchText.isEmpty { return items }
+        return items.filter { $0.name.contains(searchText) }
+    }
+
+    var body: some View {
+        List(filteredItems) { item in
+            ItemRow(item: item)
+        }
+        .searchable(text: $searchText, prompt: "Search items")
+    }
+}
+
+// With suggestions
+.searchable(text: $searchText, prompt: "Search") {
+    ForEach(suggestions) { suggestion in
+        Text(suggestion.name)
+            .searchCompletion(suggestion.name)
+    }
+}
+
+// With placement
+.searchable(
+    text: $searchText,
+    placement: .navigationBarDrawer,
+    prompt: "Search"
+)
+```
+
+**Placement Options:**
+- `.automatic` - Default top placement
+- `.navigationBarDrawer` - Navigation-integrated
+- `.sidebar` - Sidebar-optimized
+- `.toolbar` - Inline toolbar
+
+**Features:**
+- Two-way binding with `Binding<String>`
+- Search suggestions with ViewBuilder
+- Native HTML search input
+- Keyboard shortcuts (Cmd+F)
+- ARIA accessibility
+
+**See:** `Sources/Raven/Modifiers/SearchableModifier.swift`, [Phase 11 Documentation](Phase11.md#search-functionality)
 
 ---
 
