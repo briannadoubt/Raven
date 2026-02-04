@@ -284,4 +284,82 @@ final class AlertTests: XCTestCase {
 
         XCTAssertEqual(alert.message, "")
     }
+
+    // MARK: - Alert Renderer Extraction Tests
+
+    func testExtractAlertDataWithTitleOnly() {
+        // Create an alert content view with just a title
+        let content = AnyView(VStack {
+            Text("Alert Title")
+            Button("OK") { }
+        })
+
+        let extracted = AlertRenderer.extractAlertData(from: content)
+
+        XCTAssertNotNil(extracted)
+        XCTAssertEqual(extracted?.title, "Alert Title")
+        XCTAssertNil(extracted?.message)
+        XCTAssertEqual(extracted?.buttons.count, 1)
+        XCTAssertEqual(extracted?.buttons.first?.label, "OK")
+    }
+
+    func testExtractAlertDataWithTitleAndMessage() {
+        // Create an alert content view with title and message
+        let content = AnyView(VStack {
+            Text("Alert Title")
+            Text("This is a message")
+            Button("OK") { }
+        })
+
+        let extracted = AlertRenderer.extractAlertData(from: content)
+
+        XCTAssertNotNil(extracted)
+        XCTAssertEqual(extracted?.title, "Alert Title")
+        XCTAssertEqual(extracted?.message, "This is a message")
+        XCTAssertEqual(extracted?.buttons.count, 1)
+    }
+
+    func testExtractAlertDataWithMultipleButtons() {
+        // Create an alert content view with multiple buttons
+        let content = AnyView(VStack {
+            Text("Confirm Action")
+            Text("Are you sure?")
+            Button("Delete") { }
+            Button("Cancel") { }
+        })
+
+        let extracted = AlertRenderer.extractAlertData(from: content)
+
+        XCTAssertNotNil(extracted)
+        XCTAssertEqual(extracted?.title, "Confirm Action")
+        XCTAssertEqual(extracted?.message, "Are you sure?")
+        XCTAssertEqual(extracted?.buttons.count, 2)
+        XCTAssertEqual(extracted?.buttons[0].label, "Delete")
+        XCTAssertEqual(extracted?.buttons[1].label, "Cancel")
+    }
+
+    func testExtractAlertDataWithNoButtons() {
+        // Create an alert content view with no buttons
+        let content = AnyView(VStack {
+            Text("Alert Title")
+            Text("This is a message")
+        })
+
+        let extracted = AlertRenderer.extractAlertData(from: content)
+
+        XCTAssertNotNil(extracted)
+        XCTAssertEqual(extracted?.title, "Alert Title")
+        XCTAssertEqual(extracted?.message, "This is a message")
+        XCTAssertEqual(extracted?.buttons.count, 0)
+    }
+
+    func testExtractAlertDataWithEmptyContent() {
+        // Create an empty content view
+        let content = AnyView(VStack { })
+
+        let extracted = AlertRenderer.extractAlertData(from: content)
+
+        // Should return nil for empty content
+        XCTAssertNil(extracted)
+    }
 }

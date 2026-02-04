@@ -104,9 +104,10 @@ public final class MediaStream: Sendable {
     // MARK: - Initialization
 
     /// Creates an empty media stream
-    public init() {
+    /// - Throws: MediaStreamError if stream creation fails
+    public init() throws {
         guard let stream = JSObject.global.MediaStream.call().object else {
-            fatalError("Failed to create MediaStream")
+            throw MediaStreamError.streamCreationFailed("Failed to create MediaStream")
         }
         self.jsStream = stream
         setupEventHandlers()
@@ -115,15 +116,16 @@ public final class MediaStream: Sendable {
     /// Creates a media stream from tracks
     ///
     /// - Parameter tracks: Array of media stream tracks
-    public init(tracks: [MediaStreamTrack]) {
+    /// - Throws: MediaStreamError if stream creation fails
+    public init(tracks: [MediaStreamTrack]) throws {
         guard let jsTracks = JSObject.global.Array.call().object else {
-            fatalError("Failed to create array")
+            throw MediaStreamError.trackArrayCreationFailed("Failed to create array")
         }
         for (index, track) in tracks.enumerated() {
             jsTracks[index] = .object(track.jsTrack)
         }
         guard let stream = JSObject.global.MediaStream.call(jsTracks).object else {
-            fatalError("Failed to create MediaStream from tracks")
+            throw MediaStreamError.streamCreationFailed("Failed to create MediaStream from tracks")
         }
         self.jsStream = stream
         setupEventHandlers()
@@ -284,9 +286,10 @@ public final class MediaStream: Sendable {
     /// Clone this media stream
     ///
     /// - Returns: New stream with cloned tracks
-    public func clone() -> MediaStream {
+    /// - Throws: MediaStreamError if cloning fails
+    public func clone() throws -> MediaStream {
         guard let clonedStream = jsStream.clone.call().object else {
-            fatalError("Failed to clone MediaStream")
+            throw MediaStreamError.cloneFailed("Failed to clone MediaStream")
         }
         return MediaStream(jsStream: clonedStream)
     }
@@ -374,9 +377,10 @@ public final class MediaStreamTrack: Sendable {
     /// Clone the track
     ///
     /// - Returns: New track with same source
-    public func clone() -> MediaStreamTrack {
+    /// - Throws: MediaStreamError if cloning fails
+    public func clone() throws -> MediaStreamTrack {
         guard let cloned = jsTrack.clone.call().object else {
-            fatalError("Failed to clone MediaStreamTrack")
+            throw MediaStreamError.cloneFailed("Failed to clone MediaStreamTrack")
         }
         return MediaStreamTrack(jsTrack: cloned)
     }
@@ -592,4 +596,7 @@ public enum MediaStreamError: Error, Sendable {
     case notSupported
     case notFound
     case unknown
+    case streamCreationFailed(String)
+    case trackArrayCreationFailed(String)
+    case cloneFailed(String)
 }

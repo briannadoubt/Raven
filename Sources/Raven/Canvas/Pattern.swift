@@ -1,6 +1,12 @@
 import Foundation
 import JavaScriptKit
 
+// MARK: - Global Pattern Cache
+
+/// Global cache for loaded image patterns
+@MainActor
+private let globalPatternCache = PatternCache()
+
 /// A repeating pattern for filling or stroking canvas paths.
 ///
 /// `CanvasPattern` represents a tiled pattern created from an image or another canvas.
@@ -15,9 +21,9 @@ import JavaScriptKit
 ///
 /// ```swift
 /// Canvas { context, size in
-///     // Create a pattern from an image (when image support is added)
-///     // let pattern = CanvasPattern(imageURL: "texture.png", repetition: .repeat)
-///     // context.fill(Path(CGRect(origin: .zero, size: size)), with: .pattern(pattern))
+///     // Create a pattern from an image
+///     let pattern = CanvasPattern(imageURL: "texture.png", repetition: .repeat)
+///     context.fill(Path(CGRect(origin: .zero, size: size)), with: .pattern(pattern))
 /// }
 /// ```
 ///
@@ -43,6 +49,16 @@ public struct CanvasPattern: Sendable {
 
     /// How the pattern repeats
     let repetition: Repetition
+
+
+    // MARK: - Error Types
+
+    /// Errors that can occur during pattern creation
+    public enum PatternError: Error, Sendable {
+        case imageCreationFailed
+        case imageLoadFailed(String)
+        case patternCreationFailed
+    }
 
     // MARK: - Pattern Source
 
@@ -99,44 +115,103 @@ public struct CanvasPattern: Sendable {
 
     // MARK: - JavaScript Conversion
 
-    /// Creates a JavaScript CanvasPattern object.
+    /// Creates a JavaScript CanvasPattern object synchronously.
+    ///
+    /// For image patterns, this returns a cached pattern if available, or nil if not yet loaded.
+    /// Use `preloadPattern(context:)` to load image patterns asynchronously before drawing.
     ///
     /// - Parameter context: The canvas 2D context.
-    /// - Returns: A JavaScript pattern object, or nil if creation fails.
+    /// - Returns: A JavaScript pattern object, or nil if creation fails or image not loaded.
     @MainActor
     internal func createJSPattern(context: JSObject) -> JSObject? {
         switch source {
         case .image(let url):
-            // Image loading would require async handling
-            // For now, this is a placeholder
-            return createImagePattern(context: context, url: url)
+            // Try to get cached pattern first
+            let cacheKey = PatternCache.CacheKey(url: url, repetition: repetition, contextID: getContextID(context))
+            if let cached = globalPatternCache.get(key: cacheKey) {
+                return cached
+            }
+            // Image not loaded yet - caller should use preloadPattern first
+            return nil
 
         case .drawing(let size, let renderer):
             return createDrawingPattern(context: context, size: size, renderer: renderer)
         }
     }
 
+    /// Preloads and caches an image pattern asynchronously.
+    ///
+    /// Call this before drawing to ensure image patterns are ready.
+    ///
+    /// - Parameter context: The canvas 2D context.
+    /// - Returns: The loaded JavaScript pattern object.
+    /// - Throws: `PatternError` if loading or pattern creation fails.
     @MainActor
-    private func createImagePattern(context: JSObject, url: String) -> JSObject? {
-        // Image pattern creation would require:
-        // 1. Loading the image asynchronously
-        // 2. Creating a pattern from the loaded image
-        // 3. Managing image lifecycle
-        //
-        // This is a placeholder implementation
-        guard let image = JSObject.global.Image.function?.new() else {
-            return nil
+    public func preloadPattern(context: JSObject) async throws -> JSObject {
+        switch source {
+        case .image(let url):
+            let cacheKey = PatternCache.CacheKey(url: url, repetition: repetition, contextID: getContextID(context))
+
+            // Check cache first
+            if let cached = globalPatternCache.get(key: cacheKey) {
+                return cached
+            }
+
+            // Load and create pattern
+            let pattern = try await createImagePatternAsync(context: context, url: url)
+
+            // Cache it
+            globalPatternCache.set(key: cacheKey, value: pattern)
+
+            return pattern
+
+        case .drawing(let size, let renderer):
+            guard let pattern = createDrawingPattern(context: context, size: size, renderer: renderer) else {
+                throw PatternError.patternCreationFailed
+            }
+            return pattern
         }
+    }
 
-        image.src = .string(url)
+    @MainActor
+    private func createImagePatternAsync(context: JSObject, url: String) async throws -> JSObject {
+        return try await withCheckedThrowingContinuation { @MainActor continuation in
+            guard let image = JSObject.global.Image.function?.new() else {
+                continuation.resume(throwing: PatternError.imageCreationFailed)
+                return
+            }
 
-        // Wait for image to load (this is synchronous, but should be async)
-        // In a real implementation, this would use a completion handler
-        guard let pattern = context.createPattern!(image, repetition.rawValue).object else {
-            return nil
+            // Set up load handler
+            let onloadClosure = JSClosure { @MainActor _ in
+                if let pattern = context.createPattern!(image, self.repetition.rawValue).object {
+                    continuation.resume(returning: pattern)
+                } else {
+                    continuation.resume(throwing: PatternError.patternCreationFailed)
+                }
+                return .undefined
+            }
+            image.onload = .object(onloadClosure)
+
+            // Set up error handler
+            let onerrorClosure = JSClosure { @MainActor _ in
+                continuation.resume(throwing: PatternError.imageLoadFailed(url))
+                return .undefined
+            }
+            image.onerror = .object(onerrorClosure)
+
+            // Start loading
+            image.src = .string(url)
         }
+    }
 
-        return pattern
+    /// Gets a unique identifier for a canvas context.
+    @MainActor
+    private func getContextID(_ context: JSObject) -> String {
+        // Use the canvas element's identity as a unique ID
+        if let canvas = context.canvas.object {
+            return String(describing: canvas.jsValue)
+        }
+        return "default"
     }
 
     @MainActor
@@ -322,5 +397,35 @@ extension CanvasPattern {
 
             context.stroke(hPath, with: .color(lineColor), lineWidth: lineWidth)
         }
+    }
+}
+
+// MARK: - Pattern Cache
+
+/// Thread-safe cache for loaded patterns.
+@MainActor
+private final class PatternCache {
+    struct CacheKey: Hashable, Sendable {
+        let url: String
+        let repetition: CanvasPattern.Repetition
+        let contextID: String
+    }
+
+    private var cache: [CacheKey: JSObject] = [:]
+
+    func get(key: CacheKey) -> JSObject? {
+        return cache[key]
+    }
+
+    func set(key: CacheKey, value: JSObject) {
+        cache[key] = value
+    }
+
+    func clear() {
+        cache.removeAll()
+    }
+
+    func remove(url: String) {
+        cache = cache.filter { $0.key.url != url }
     }
 }

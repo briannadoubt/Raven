@@ -72,8 +72,9 @@ public final class AudioStream: Sendable {
     /// Creates an audio stream from audio tracks
     ///
     /// - Parameter tracks: Array of audio tracks
-    public init(tracks: [MediaStreamTrack]) {
-        self.mediaStream = MediaStream(tracks: tracks)
+    /// - Throws: MediaStreamError if stream creation fails
+    public init(tracks: [MediaStreamTrack]) throws {
+        self.mediaStream = try MediaStream(tracks: tracks)
         self.isMuted = false
         setupAudioProcessing()
     }

@@ -117,13 +117,14 @@ public final class RTCPeerConnection: Sendable {
     /// Creates a new peer connection with the specified configuration
     ///
     /// - Parameter configuration: Configuration for ICE servers and policies
-    public init(configuration: RTCConfiguration = .default) {
+    /// - Throws: RTCError if connection creation fails
+    public init(configuration: RTCConfiguration = .default) throws {
         self.configuration = configuration
 
         // Convert configuration to JavaScript object
         let configDict = configuration.toJSDictionary()
         guard let jsConfig = JSObject.global.Object.call().object else {
-            fatalError("Failed to create config object")
+            throw RTCError.configurationFailed("Failed to create config object")
         }
 
         for (key, value) in configDict {
@@ -145,7 +146,7 @@ public final class RTCPeerConnection: Sendable {
 
         // Create RTCPeerConnection
         guard let connection = JSObject.global.RTCPeerConnection.call(jsConfig).object else {
-            fatalError("Failed to create RTCPPeerConnection")
+            throw RTCError.connectionCreationFailed("Failed to create RTCPeerConnection")
         }
         self.jsConnection = connection
 
@@ -438,18 +439,22 @@ public final class RTCPeerConnection: Sendable {
     /// - Throws: RTCError if setting fails
     public func setLocalDescription(_ description: SessionDescription) async throws {
         return try await withCheckedThrowingContinuation { continuation in
-            let jsDesc = description.toJSObject()
-            let promise = jsConnection.setLocalDescription.call(jsDesc)
+            do {
+                let jsDesc = try description.toJSObject()
+                let promise = jsConnection.setLocalDescription.call(jsDesc)
 
-            _ = promise.then.call(JSClosure { _ in
-                continuation.resume()
-                return .undefined
-            })
+                _ = promise.then.call(JSClosure { _ in
+                    continuation.resume()
+                    return .undefined
+                })
 
-            _ = promise.catch.call(JSClosure { _ in
-                continuation.resume(throwing: RTCError.setLocalDescriptionFailed)
-                return .undefined
-            })
+                _ = promise.catch.call(JSClosure { _ in
+                    continuation.resume(throwing: RTCError.setLocalDescriptionFailed)
+                    return .undefined
+                })
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 
@@ -459,18 +464,22 @@ public final class RTCPeerConnection: Sendable {
     /// - Throws: RTCError if setting fails
     public func setRemoteDescription(_ description: SessionDescription) async throws {
         return try await withCheckedThrowingContinuation { continuation in
-            let jsDesc = description.toJSObject()
-            let promise = jsConnection.setRemoteDescription.call(jsDesc)
+            do {
+                let jsDesc = try description.toJSObject()
+                let promise = jsConnection.setRemoteDescription.call(jsDesc)
 
-            _ = promise.then.call(JSClosure { _ in
-                continuation.resume()
-                return .undefined
-            })
+                _ = promise.then.call(JSClosure { _ in
+                    continuation.resume()
+                    return .undefined
+                })
 
-            _ = promise.catch.call(JSClosure { _ in
-                continuation.resume(throwing: RTCError.setRemoteDescriptionFailed)
-                return .undefined
-            })
+                _ = promise.catch.call(JSClosure { _ in
+                    continuation.resume(throwing: RTCError.setRemoteDescriptionFailed)
+                    return .undefined
+                })
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 
@@ -674,9 +683,9 @@ public struct SessionDescription: Sendable {
         self.sdp = jsObject.sdp.string ?? ""
     }
 
-    internal func toJSObject() -> JSObject {
+    internal func toJSObject() throws -> JSObject {
         guard let obj = JSObject.global.Object.call().object else {
-            fatalError("Failed to create JavaScript object for SessionDescription")
+            throw RTCError.sessionDescriptionCreationFailed("Failed to create JavaScript object for SessionDescription")
         }
         obj.type = .string(type.rawValue)
         obj.sdp = .string(sdp)
@@ -784,6 +793,9 @@ public enum RTCError: Error, Sendable {
     case addICECandidateFailed
     case dataChannelCreationFailed
     case invalidState
+    case configurationFailed(String)
+    case connectionCreationFailed(String)
+    case sessionDescriptionCreationFailed(String)
 }
 
 // MARK: - Helper Functions

@@ -329,7 +329,7 @@ public final class VideoRecorder: Sendable {
         }
 
         guard let recorder = mediaRecorderConstructor(stream.jsObject, options).object else {
-            fatalError("Failed to create MediaRecorder")
+            throw VideoRecorderError.recorderCreationFailed("Failed to create MediaRecorder")
         }
         self.mediaRecorder = recorder
 
@@ -450,6 +450,7 @@ public final class VideoRecorder: Sendable {
 public enum VideoRecorderError: Error, Sendable {
     case notSupported
     case recordingFailed
+    case recorderCreationFailed(String)
 }
 
 // MARK: - Video Snapshot

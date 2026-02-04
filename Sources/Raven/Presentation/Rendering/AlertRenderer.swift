@@ -62,33 +62,27 @@ public struct AlertRenderer: Sendable {
         coordinator: PresentationCoordinator
     ) -> VNode {
         // Extract alert data from content
-        // In a real implementation, we'd parse the AnyView to extract alert details
-        // For now, we create a basic structure
-
-        // Create alert content
-        let content = createAlertContent(title: "Alert", message: nil)
-
-        // Create alert actions
-        let actions = createAlertActions(
-            buttons: [],
-            presentationId: entry.id,
-            coordinator: coordinator
-        )
-
-        // Build children
-        let children = [content, actions]
-
-        // Create dialog
-        return DialogRenderer.createDialog(
-            type: "alert",
-            zIndex: entry.zIndex,
-            dismissHandler: nil, // Alerts should only dismiss via button actions
-            children: children,
-            additionalProps: [
-                "role": .attribute(name: "role", value: "alertdialog"),
-                "aria-modal": .attribute(name: "aria-modal", value: "true")
-            ]
-        )
+        if let alertData = extractAlertData(from: entry.content) {
+            // Use extracted data to render the alert
+            return renderAlert(
+                title: alertData.title,
+                message: alertData.message,
+                buttons: alertData.buttons,
+                zIndex: entry.zIndex,
+                presentationId: entry.id,
+                coordinator: coordinator
+            )
+        } else {
+            // Fallback: create a basic alert if extraction fails
+            return renderAlert(
+                title: "Alert",
+                message: nil,
+                buttons: [],
+                zIndex: entry.zIndex,
+                presentationId: entry.id,
+                coordinator: coordinator
+            )
+        }
     }
 
     /// Renders an alert with explicit configuration.
@@ -374,14 +368,170 @@ extension AlertRenderer {
     /// This method attempts to extract alert details (title, message, buttons)
     /// from an AnyView that contains alert content.
     ///
+    /// The expected structure is:
+    /// - VStack containing:
+    ///   - Text (title - first text node)
+    ///   - Text or other views (message - optional subsequent text)
+    ///   - Button elements (actions)
+    ///
     /// - Parameter content: The AnyView to extract from
     /// - Returns: An optional tuple of (title, message, buttons)
     public static func extractAlertData(
         from content: AnyView
     ) -> (title: String, message: String?, buttons: [ButtonConfiguration])? {
-        // In a complete implementation, this would use reflection or
-        // a visitor pattern to extract data from the view hierarchy.
-        // For now, return nil to indicate extraction is not implemented.
+        // Render the AnyView to a VNode to examine its structure
+        let vnode = content.render()
+
+        // Extract components from the VNode tree
+        guard let components = extractComponentsFromVNode(vnode) else {
+            return nil
+        }
+
+        return (
+            title: components.title,
+            message: components.message,
+            buttons: components.buttons
+        )
+    }
+
+    /// Internal structure for extracted alert components
+    private struct AlertComponents {
+        let title: String
+        let message: String?
+        let buttons: [ButtonConfiguration]
+    }
+
+    /// Extracts alert components from a VNode tree.
+    ///
+    /// This method parses the VNode structure to extract:
+    /// - First text content as title
+    /// - Subsequent text content as message (optional)
+    /// - Button elements as actions
+    ///
+    /// - Parameter vnode: The VNode to parse
+    /// - Returns: Optional AlertComponents if extraction succeeds
+    private static func extractComponentsFromVNode(_ vnode: VNode) -> AlertComponents? {
+        var textNodes: [String] = []
+        var buttons: [ButtonConfiguration] = []
+
+        // Recursively collect text and buttons from the VNode tree
+        collectNodes(from: vnode, texts: &textNodes, buttons: &buttons)
+
+        // We need at least a title
+        guard !textNodes.isEmpty else {
+            return nil
+        }
+
+        // First text is the title
+        let title = textNodes[0]
+
+        // Second text (if present) is the message
+        let message = textNodes.count > 1 ? textNodes[1] : nil
+
+        return AlertComponents(
+            title: title,
+            message: message,
+            buttons: buttons
+        )
+    }
+
+    /// Recursively collects text and button nodes from a VNode tree.
+    ///
+    /// - Parameters:
+    ///   - vnode: The VNode to traverse
+    ///   - texts: Array to accumulate text content
+    ///   - buttons: Array to accumulate button configurations
+    private static func collectNodes(
+        from vnode: VNode,
+        texts: inout [String],
+        buttons: inout [ButtonConfiguration]
+    ) {
+        // Check the node type
+        switch vnode.type {
+        case .text(let content):
+            // Collect text content
+            if !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                texts.append(content)
+            }
+
+        case .element(let tag):
+            // Check if this is a button element
+            if tag == "button" {
+                // Extract button label from children
+                let label = extractButtonLabel(from: vnode.children)
+
+                // Try to determine button role from props
+                let role = extractButtonRole(from: vnode.props)
+
+                // Note: We cannot extract the action closure from the VNode,
+                // so buttons will have nil actions. The coordinator will need
+                // to handle button dismissal separately.
+                buttons.append(ButtonConfiguration(
+                    label: label,
+                    role: role,
+                    action: nil
+                ))
+            } else {
+                // Recursively process children
+                for child in vnode.children {
+                    collectNodes(from: child, texts: &texts, buttons: &buttons)
+                }
+            }
+
+        case .fragment:
+            // Process fragment children
+            for child in vnode.children {
+                collectNodes(from: child, texts: &texts, buttons: &buttons)
+            }
+
+        case .component:
+            // Process component children
+            for child in vnode.children {
+                collectNodes(from: child, texts: &texts, buttons: &buttons)
+            }
+        }
+    }
+
+    /// Extracts button label text from child VNodes.
+    ///
+    /// - Parameter children: The button's child VNodes
+    /// - Returns: The extracted label text or "Button" as fallback
+    private static func extractButtonLabel(from children: [VNode]) -> String {
+        for child in children {
+            // Check if this is a text node
+            if let content = child.textContent {
+                return content
+            }
+            // Recursively check nested children
+            if case .element = child.type {
+                let nestedLabel = extractButtonLabel(from: child.children)
+                if !nestedLabel.isEmpty && nestedLabel != "Button" {
+                    return nestedLabel
+                }
+            }
+        }
+        return "Button"
+    }
+
+    /// Attempts to extract button role from VNode properties.
+    ///
+    /// This checks for CSS classes or other markers that indicate button role.
+    ///
+    /// - Parameter props: The button's VNode properties
+    /// - Returns: Optional ButtonRole if detected
+    private static func extractButtonRole(from props: [String: VProperty]) -> ButtonRole? {
+        // Check for class attributes that might indicate role
+        if let classProperty = props["class"],
+           case .attribute(_, let value) = classProperty {
+            if value.contains("destructive") {
+                return .destructive
+            }
+            if value.contains("cancel") {
+                return .cancel
+            }
+        }
+
+        // No role detected
         return nil
     }
 }
