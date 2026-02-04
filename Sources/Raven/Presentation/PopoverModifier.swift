@@ -144,6 +144,32 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
             }
         }
     }
+
+    // MARK: - VNode Rendering
+
+    /// Converts this popover modifier to a VNode for DOM rendering.
+    ///
+    /// This method creates a dialog element with popover positioning.
+    ///
+    /// - Returns: A VNode representing the popover
+    @MainActor func toVNode() -> VNode? {
+        guard isPresented, let presentationId = presentationId else {
+            return nil
+        }
+
+        // Find the presentation entry in the coordinator
+        guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
+            return nil
+        }
+
+        // Use PopoverRenderer to create the VNode
+        return PopoverRenderer.render(
+            entry: entry,
+            anchor: attachmentAnchor,
+            edge: arrowEdge,
+            coordinator: coordinator
+        )
+    }
 }
 
 // MARK: - Popover Modifier (item)
@@ -300,6 +326,32 @@ struct PopoverItemModifier<Item: Identifiable & Sendable, PopoverContent: View>:
         if item != nil {
             presentationId = register(with: coordinator)
         }
+    }
+
+    // MARK: - VNode Rendering
+
+    /// Converts this popover modifier to a VNode for DOM rendering.
+    ///
+    /// This method creates a dialog element with popover positioning.
+    ///
+    /// - Returns: A VNode representing the popover
+    @MainActor func toVNode() -> VNode? {
+        guard item != nil, let presentationId = presentationId else {
+            return nil
+        }
+
+        // Find the presentation entry in the coordinator
+        guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
+            return nil
+        }
+
+        // Use PopoverRenderer to create the VNode
+        return PopoverRenderer.render(
+            entry: entry,
+            anchor: attachmentAnchor,
+            edge: arrowEdge,
+            coordinator: coordinator
+        )
     }
 }
 

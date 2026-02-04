@@ -84,10 +84,16 @@ private struct NavigationContainer<Content: View>: View, Sendable {
         // Create content area
         let contentArea = createContentArea()
 
-        // Create the main navigation container
-        let props: [String: VProperty] = [
+        // Create the main navigation container with proper ARIA landmark
+        var props: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-navigation-view")
         ]
+
+        // Add ARIA attributes for navigation landmark (WCAG 2.1 requirement)
+        // The <nav> element already has implicit role="navigation", but we can add
+        // aria-label for clarity
+        props["role"] = .attribute(name: "role", value: "navigation")
+        props["aria-label"] = .attribute(name: "aria-label", value: "Main navigation")
 
         return VNode.element(
             "nav",
@@ -160,9 +166,13 @@ private struct NavigationContainer<Content: View>: View, Sendable {
     /// - Returns: A VNode for the content area.
     @MainActor
     private func createContentArea() -> VNode {
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-navigation-content")
         ]
+
+        // Add ARIA attributes for main landmark (WCAG 2.1 requirement)
+        // The <main> element has implicit role="main" which marks primary content
+        props["role"] = .attribute(name: "role", value: "main")
 
         // The content will be rendered by the rendering system
         // For now, create a placeholder that will be populated during rendering

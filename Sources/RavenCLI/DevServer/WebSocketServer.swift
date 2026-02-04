@@ -257,6 +257,15 @@ actor WebSocketServer {
         await broadcast("reload")
     }
 
+    /// Send reload notification with metadata
+    /// - Parameters:
+    ///   - buildTime: Time taken to build in seconds
+    ///   - changeDescription: Description of what changed
+    func sendReloadWithMetrics(buildTime: Double, changeDescription: String = "Source files") async {
+        let message = "reload_metrics:\(buildTime):\(changeDescription)"
+        await broadcast(message)
+    }
+
     /// Send error message to all clients
     /// - Parameter error: Error message to send
     func sendError(_ error: String) async {
@@ -267,6 +276,12 @@ actor WebSocketServer {
             .replacingOccurrences(of: "\n", with: "\\n")
 
         await broadcast("error:\(escapedError)")
+    }
+
+    /// Send notification message to clients
+    /// - Parameter message: Notification message
+    func sendNotification(_ message: String) async {
+        await broadcast("notification:\(message)")
     }
 
     /// Get the number of connected clients

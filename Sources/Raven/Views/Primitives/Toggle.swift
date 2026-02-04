@@ -82,20 +82,22 @@ public struct Toggle<Label: View>: View, Sendable {
         let toggleID = id ?? UUID().uuidString
         let handlerID = UUID()
 
-        // Create the checkbox input element
+        // Create the checkbox input element with proper ARIA switch role
         var inputProps: [String: VProperty] = [
             "type": .attribute(name: "type", value: "checkbox"),
             "id": .attribute(name: "id", value: toggleID),
+            // Use switch role for toggle-style controls (WCAG 2.1 requirement)
             "role": .attribute(name: "role", value: "switch"),
         ]
 
-        // Set checked state
+        // Set checked state (both as HTML attribute and ARIA state)
         inputProps["checked"] = .boolAttribute(name: "checked", value: isOn.wrappedValue)
 
         // Add change event handler
         inputProps["onChange"] = .eventHandler(event: "change", handlerID: handlerID)
 
-        // Add ARIA attributes for accessibility
+        // Add ARIA attributes for accessibility (WCAG 2.1 AA compliance)
+        // aria-checked is essential for switch role
         inputProps["aria-checked"] = .attribute(
             name: "aria-checked",
             value: isOn.wrappedValue ? "true" : "false"

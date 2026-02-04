@@ -25,10 +25,23 @@ import Foundation
 ///         PhotoView(photo: photo)
 ///     }
 /// }
+///
+/// // For large datasets, use virtualization
+/// LazyHGrid(rows: rows) {
+///     ForEach(0..<10000) { index in
+///         CellView(index: index)
+///     }
+/// }
+/// .virtualized(estimatedItemHeight: 100)
 /// ```
 ///
 /// The grid renders as a CSS Grid layout with `auto-flow: column`, meaning items
 /// flow into columns automatically.
+///
+/// ## Performance Optimization
+///
+/// For grids with thousands of items, use the `.virtualized()` modifier to enable
+/// virtual scrolling and significantly improve rendering performance.
 ///
 /// - Parameters:
 ///   - rows: An array of `GridItem` that describe the rows of the grid.

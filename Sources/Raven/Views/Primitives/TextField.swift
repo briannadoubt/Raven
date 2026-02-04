@@ -92,7 +92,7 @@ public struct TextField: View, Sendable {
         let handlerID = UUID()
 
         // Create properties for the input element
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             // Input type
             "type": .attribute(name: "type", value: "text"),
 
@@ -111,6 +111,13 @@ public struct TextField: View, Sendable {
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
         ]
+
+        // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
+        // Use placeholder as aria-label if no explicit label is provided
+        props["aria-label"] = .attribute(name: "aria-label", value: placeholder)
+
+        // Mark as textbox role for clarity
+        props["role"] = .attribute(name: "role", value: "textbox")
 
         return VNode.element(
             "input",
@@ -185,7 +192,7 @@ public struct TextEditor: View, Sendable {
         let handlerID = UUID()
 
         // Create properties for the textarea element
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             // Input event handler for two-way binding
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
 
@@ -198,6 +205,10 @@ public struct TextEditor: View, Sendable {
             "resize": .style(name: "resize", value: "vertical"),
             "min-height": .style(name: "min-height", value: "100px"),
         ]
+
+        // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
+        props["role"] = .attribute(name: "role", value: "textbox")
+        props["aria-multiline"] = .attribute(name: "aria-multiline", value: "true")
 
         // Create a text node with the current value
         let textNode = VNode.text(text.wrappedValue)

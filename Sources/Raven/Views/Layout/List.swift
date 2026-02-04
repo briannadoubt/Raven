@@ -20,10 +20,28 @@ import Foundation
 ///         Text(item.name)
 ///     }
 /// }
+///
+/// // For large datasets, use virtualization for better performance
+/// List(0..<10000) { index in
+///     Text("Item \(index)")
+/// }
+/// .virtualized(estimatedItemHeight: 44)
 /// ```
 ///
 /// The List view integrates seamlessly with ForEach for rendering dynamic collections
 /// and provides proper accessibility attributes for screen readers and assistive technologies.
+///
+/// ## Performance Optimization
+///
+/// For lists with thousands of items, use the `.virtualized()` modifier to enable
+/// virtual scrolling. This renders only visible items, dramatically improving performance:
+///
+/// ```swift
+/// List(largeDataset) { item in
+///     ItemView(item: item)
+/// }
+/// .virtualized()
+/// ```
 public struct List<Content: View>: View, Sendable {
     public typealias Body = Never
 
@@ -68,8 +86,8 @@ public struct List<Content: View>: View, Sendable {
     ///
     /// - Returns: A VNode configured as a list container with ARIA attributes.
     @MainActor public func toVNode() -> VNode {
-        let props: [String: VProperty] = [
-            // ARIA role for accessibility
+        var props: [String: VProperty] = [
+            // ARIA role for accessibility (WCAG 2.1 requirement)
             "role": .attribute(name: "role", value: "list"),
 
             // Layout styles
@@ -82,6 +100,13 @@ public struct List<Content: View>: View, Sendable {
             // Default styling
             "width": .style(name: "width", value: "100%"),
         ]
+
+        // Additional ARIA attributes can be set via accessibility modifiers:
+        // - aria-label: Descriptive label for the list
+        // - aria-describedby: Reference to element describing the list
+        // List items should have role="listitem" and optionally:
+        // - aria-posinset: Position in the set (1-based index)
+        // - aria-setsize: Total number of items in the set
 
         // Return element with empty children - the RenderCoordinator will populate them
         return VNode.element(

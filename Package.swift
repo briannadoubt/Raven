@@ -39,12 +39,24 @@ let package = Package(
         .target(
             name: "Raven",
             dependencies: [
-                .product(name: "JavaScriptKit", package: "JavaScriptKit")
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
             path: "Sources/Raven",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
-                .enableExperimentalFeature("AccessLevelOnImport")
+                .enableExperimentalFeature("AccessLevelOnImport"),
+                // Size optimization for release builds
+                .unsafeFlags(["-Osize"], .when(configuration: .release)),
+                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
+            ],
+            linkerSettings: [
+                // Link-time optimization for smaller binaries
+                .unsafeFlags(["-Xlinker", "--lto-O3"], .when(configuration: .release)),
+                // Dead code elimination
+                .unsafeFlags(["-Xlinker", "--gc-sections"], .when(configuration: .release)),
+                // Strip debug info in release
+                .unsafeFlags(["-Xlinker", "--strip-debug"], .when(configuration: .release))
             ]
         ),
 
@@ -58,7 +70,18 @@ let package = Package(
             path: "Sources/RavenRuntime",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
-                .enableExperimentalFeature("AccessLevelOnImport")
+                .enableExperimentalFeature("AccessLevelOnImport"),
+                // Size optimization for release builds
+                .unsafeFlags(["-Osize"], .when(configuration: .release)),
+                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
+            ],
+            linkerSettings: [
+                // Link-time optimization for smaller binaries
+                .unsafeFlags(["-Xlinker", "--lto-O3"], .when(configuration: .release)),
+                // Dead code elimination
+                .unsafeFlags(["-Xlinker", "--gc-sections"], .when(configuration: .release)),
+                // Strip debug info in release
+                .unsafeFlags(["-Xlinker", "--strip-debug"], .when(configuration: .release))
             ]
         ),
 

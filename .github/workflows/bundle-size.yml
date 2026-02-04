@@ -1,0 +1,197 @@
+name: Bundle Size Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  bundle-size:
+    name: Check Bundle Size
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "6.2"
+
+      - name: Install SwiftWasm
+        run: |
+          curl -L https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.0-SNAPSHOT-2024-03-30-a/swift-wasm-6.0-SNAPSHOT-2024-03-30-a-ubuntu22.04-x86_64.tar.gz -o swift-wasm.tar.gz
+          tar xzf swift-wasm.tar.gz
+          echo "$PWD/swift-wasm-6.0-SNAPSHOT-2024-03-30-a/usr/bin" >> $GITHUB_PATH
+
+      - name: Install Carton
+        run: |
+          curl -L https://github.com/swiftwasm/carton/releases/latest/download/carton-linux-x86_64.tar.gz -o carton.tar.gz
+          tar xzf carton.tar.gz
+          chmod +x carton
+          sudo mv carton /usr/local/bin/
+
+      - name: Install optimization tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binaryen wabt brotli
+
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            .build
+            Examples/TodoApp/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build CLI
+        run: swift build -c release
+
+      - name: Build TodoApp example (optimized)
+        working-directory: Examples/TodoApp
+        run: |
+          ../../.build/release/raven build \
+            --optimize-size \
+            --optimize \
+            --compress \
+            --report-size
+
+      - name: Analyze bundle size
+        id: analyze
+        working-directory: Examples/TodoApp
+        run: |
+          OUTPUT_JSON=1 ../../scripts/analyze-bundle.sh dist/app.wasm
+
+          # Read sizes
+          SIZE=$(stat -c%s dist/app.wasm)
+          SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $SIZE/1024}")
+
+          # Export for later steps
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+          echo "size_kb=$SIZE_KB" >> $GITHUB_OUTPUT
+
+          # Check if compressed file exists
+          if [ -f dist/app.wasm.br ]; then
+            BR_SIZE=$(stat -c%s dist/app.wasm.br)
+            BR_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $BR_SIZE/1024}")
+            echo "brotli_size=$BR_SIZE" >> $GITHUB_OUTPUT
+            echo "brotli_size_kb=$BR_SIZE_KB" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Track bundle size history
+        id: track
+        working-directory: Examples/TodoApp
+        run: |
+          # Create history directory
+          mkdir -p .bundle-size-history
+
+          # Track size (don't fail on increase for now)
+          FAIL_ON_INCREASE=0 ../../scripts/track-bundle-size.sh dist/app.wasm
+
+      - name: Upload bundle size artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-size-report
+          path: |
+            Examples/TodoApp/dist/app.wasm
+            Examples/TodoApp/dist/app.wasm.br
+            Examples/TodoApp/dist/app.wasm.size.json
+          retention-days: 30
+
+      - name: Check bundle size target
+        run: |
+          SIZE=${{ steps.analyze.outputs.size }}
+          TARGET=512000  # 500KB
+
+          if [ $SIZE -le $TARGET ]; then
+            echo "✅ Bundle size target met! (${{ steps.analyze.outputs.size_kb }}KB < 500KB)"
+            exit 0
+          else
+            OVER=$((SIZE - TARGET))
+            OVER_KB=$(awk "BEGIN {printf \"%.1f\", $OVER/1024}")
+            echo "⚠️ Bundle size exceeds target by ${OVER_KB}KB"
+            echo "Current: ${{ steps.analyze.outputs.size_kb }}KB"
+            echo "Target: 500KB"
+
+            # Don't fail yet - this is a warning
+            exit 0
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const size = '${{ steps.analyze.outputs.size_kb }}';
+            const brotliSize = '${{ steps.analyze.outputs.brotli_size_kb }}';
+            const target = 500;
+            const meetsTarget = parseFloat(size) <= target;
+
+            let body = `## 📦 Bundle Size Report\n\n`;
+            body += `| Metric | Size |\n`;
+            body += `|--------|------|\n`;
+            body += `| Uncompressed | ${size} KB |\n`;
+
+            if (brotliSize) {
+              const ratio = ((parseFloat(brotliSize) / parseFloat(size)) * 100).toFixed(1);
+              body += `| Brotli Compressed | ${brotliSize} KB (${ratio}%) |\n`;
+            }
+
+            body += `| Target | 500 KB |\n`;
+            body += `| Status | ${meetsTarget ? '✅ Met' : '⚠️ Over'} |\n\n`;
+
+            if (!meetsTarget) {
+              const over = (parseFloat(size) - target).toFixed(1);
+              body += `⚠️ Bundle size exceeds target by **${over} KB**\n\n`;
+              body += `### Optimization Tips\n`;
+              body += `- Ensure \`--optimize-size\` flag is used\n`;
+              body += `- Run \`wasm-opt -Oz\` for additional optimization\n`;
+              body += `- Analyze with \`twiggy top dist/app.wasm\` to identify large components\n`;
+              body += `- Review dependencies for unused code\n`;
+            } else {
+              const under = (target - parseFloat(size)).toFixed(1);
+              body += `✅ Bundle size is **${under} KB** under target!\n`;
+            }
+
+            body += `\n---\n`;
+            body += `*Built with [Raven](https://github.com/yourusername/Raven) • Bundle size tracking enabled*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Create status check
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const size = parseFloat('${{ steps.analyze.outputs.size_kb }}');
+            const target = 500;
+            const meetsTarget = size <= target;
+
+            const conclusion = meetsTarget ? 'success' : 'neutral';
+            const title = meetsTarget
+              ? `Bundle size: ${size}KB (✅ under 500KB)`
+              : `Bundle size: ${size}KB (⚠️ over 500KB)`;
+
+            github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Bundle Size',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: title,
+                summary: `Current bundle size is ${size}KB (target: 500KB)`
+              }
+            });

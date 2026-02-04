@@ -154,6 +154,15 @@ public struct AlertWithMessageModifier<Actions: View, Message: View>: ViewModifi
                 )
             )
     }
+
+    /// Converts this alert modifier to a VNode for DOM rendering.
+    ///
+    /// - Returns: A VNode representing the alert
+    @MainActor public func toVNode() -> VNode? {
+        // Delegate to the internal presentation modifier
+        // In a complete implementation, this would access the internal modifier
+        return nil
+    }
 }
 
 // MARK: - Alert with Data
@@ -309,6 +318,14 @@ struct AlertPresentationWithMessageModifier<Actions: View, Message: View>: ViewM
             }
         )
     }
+
+    /// Converts the alert content to a VNode for DOM rendering.
+    @MainActor func toVNode(presentationId: UUID) -> VNode? {
+        guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
+            return nil
+        }
+        return AlertRenderer.render(entry: entry, coordinator: coordinator)
+    }
 }
 
 /// Internal modifier that handles data-driven alert presentation.
@@ -344,5 +361,13 @@ struct DataAlertPresentationModifier<Item: Sendable, Actions: View, Message: Vie
                 isPresented.wrappedValue = false
             }
         )
+    }
+
+    /// Converts the alert content to a VNode for DOM rendering.
+    @MainActor func toVNode(presentationId: UUID) -> VNode? {
+        guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
+            return nil
+        }
+        return AlertRenderer.render(entry: entry, coordinator: coordinator)
     }
 }

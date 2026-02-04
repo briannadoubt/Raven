@@ -26,6 +26,7 @@ struct BuildConfig: Sendable {
     enum OptimizationLevel: String, Sendable {
         case debug = "debug"
         case release = "release"
+        case size = "size"  // Optimize for size (-Osize)
 
         var swiftFlag: String {
             switch self {
@@ -33,6 +34,8 @@ struct BuildConfig: Sendable {
                 return "-Onone"
             case .release:
                 return "-O"
+            case .size:
+                return "-Osize"
             }
         }
 
@@ -40,8 +43,19 @@ struct BuildConfig: Sendable {
             switch self {
             case .debug:
                 return "--debug"
-            case .release:
+            case .release, .size:
                 return "--release"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .debug:
+                return "Debug (no optimization)"
+            case .release:
+                return "Release (speed optimization)"
+            case .size:
+                return "Size (binary size optimization)"
             }
         }
     }
@@ -116,6 +130,19 @@ struct BuildConfig: Sendable {
             sourceDirectory: sourceDirectory,
             outputDirectory: outputDirectory,
             optimizationLevel: .release,
+            targetTriple: targetTriple,
+            additionalFlags: additionalFlags,
+            debugSymbols: false,
+            verbose: verbose
+        )
+    }
+
+    /// Creates a size-optimized build configuration
+    func asSize() -> BuildConfig {
+        BuildConfig(
+            sourceDirectory: sourceDirectory,
+            outputDirectory: outputDirectory,
+            optimizationLevel: .size,
             targetTriple: targetTriple,
             additionalFlags: additionalFlags,
             debugSymbols: false,

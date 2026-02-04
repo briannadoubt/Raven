@@ -90,6 +90,33 @@ public struct SheetModifier<SheetContent: View>: ViewModifier, PresentationModif
         return false
     }
 
+    // MARK: - VNode Rendering
+
+    /// Converts this sheet modifier to a VNode for DOM rendering.
+    ///
+    /// This method creates a dialog element using the HTML5 dialog API
+    /// with sheet-specific styling and animations.
+    ///
+    /// - Returns: A VNode representing the sheet presentation
+    @MainActor public func toVNode() -> VNode? {
+        guard isPresented, let presentationId = presentationId else {
+            return nil
+        }
+
+        // Create a presentation entry for rendering
+        let entry = PresentationEntry(
+            id: presentationId,
+            type: .sheet,
+            content: AnyView(content()),
+            zIndex: coordinator.presentations.firstIndex(where: { $0.id == presentationId })
+                .map { coordinator.presentations.count - $0 } ?? 1000,
+            onDismiss: onDismiss
+        )
+
+        // Use SheetRenderer to create the VNode
+        return SheetRenderer.render(entry: entry, coordinator: coordinator)
+    }
+
     // MARK: - ViewModifier
 
     public func body(content: Content) -> some View {
@@ -219,6 +246,33 @@ public struct ItemSheetModifier<Item: Identifiable & Sendable & Equatable, Sheet
         }
 
         return false
+    }
+
+    // MARK: - VNode Rendering
+
+    /// Converts this sheet modifier to a VNode for DOM rendering.
+    ///
+    /// This method creates a dialog element using the HTML5 dialog API
+    /// with sheet-specific styling and animations.
+    ///
+    /// - Returns: A VNode representing the sheet presentation
+    @MainActor public func toVNode() -> VNode? {
+        guard let currentItem = item, let presentationId = presentationId else {
+            return nil
+        }
+
+        // Create a presentation entry for rendering
+        let entry = PresentationEntry(
+            id: presentationId,
+            type: .sheet,
+            content: AnyView(content(currentItem)),
+            zIndex: coordinator.presentations.firstIndex(where: { $0.id == presentationId })
+                .map { coordinator.presentations.count - $0 } ?? 1000,
+            onDismiss: onDismiss
+        )
+
+        // Use SheetRenderer to create the VNode
+        return SheetRenderer.render(entry: entry, coordinator: coordinator)
     }
 
     // MARK: - ViewModifier

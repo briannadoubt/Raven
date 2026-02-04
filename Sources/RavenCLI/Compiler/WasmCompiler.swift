@@ -5,6 +5,7 @@ import Foundation
 actor WasmCompiler {
     private let config: BuildConfig
     private let toolchainDetector: ToolchainDetector
+    private let errorReporter: EnhancedErrorReporter
 
     enum CompilationError: Error, CustomStringConvertible {
         case toolchainNotFound
@@ -32,6 +33,7 @@ actor WasmCompiler {
     init(config: BuildConfig) {
         self.config = config
         self.toolchainDetector = ToolchainDetector()
+        self.errorReporter = EnhancedErrorReporter()
     }
 
     /// Compiles the Swift package to WASM
@@ -117,7 +119,8 @@ actor WasmCompiler {
 
         guard exitCode == 0 else {
             let errorMessage = error.isEmpty ? output : error
-            throw CompilationError.processError(exitCode, errorMessage)
+            let enhancedMessage = enhanceCompilerOutput(errorMessage)
+            throw CompilationError.processError(exitCode, enhancedMessage)
         }
 
         if config.verbose && !output.isEmpty {
@@ -187,7 +190,8 @@ actor WasmCompiler {
 
         guard exitCode == 0 else {
             let errorMessage = error.isEmpty ? output : error
-            throw CompilationError.processError(exitCode, errorMessage)
+            let enhancedMessage = enhanceCompilerOutput(errorMessage)
+            throw CompilationError.processError(exitCode, enhancedMessage)
         }
 
         if config.verbose && !output.isEmpty {
@@ -262,6 +266,25 @@ actor WasmCompiler {
         return (process.terminationStatus, stdout, stderr)
     }
 
+    /// Enhances compiler output with better error messages and suggestions
+    private func enhanceCompilerOutput(_ output: String) -> String {
+        let errors = parseCompilationErrors(output)
+
+        if errors.isEmpty {
+            // No structured errors found, return original output
+            return output
+        }
+
+        var enhancedOutput = ""
+
+        for error in errors {
+            let enhanced = errorReporter.enhanceError(error)
+            enhancedOutput += errorReporter.formatError(enhanced)
+        }
+
+        return enhancedOutput
+    }
+
     /// Parses compilation errors from output
     func parseCompilationErrors(_ output: String) -> [CompilationErrorMessage] {
         var errors: [CompilationErrorMessage] = []
@@ -319,7 +342,7 @@ actor WasmCompiler {
 }
 
 /// Represents a compilation error message
-struct CompilationErrorMessage: Sendable {
+public struct CompilationErrorMessage: Sendable {
     enum Severity: String, Sendable {
         case error
         case warning

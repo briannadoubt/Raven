@@ -22,6 +22,18 @@ struct BuildCommand: ParsableCommand {
     @Flag(name: .long, help: "Optimize WASM binary with wasm-opt (requires binaryen)")
     var optimize: Bool = false
 
+    @Flag(name: .long, help: "Use -Osize optimization for smallest binary size")
+    var optimizeSize: Bool = false
+
+    @Flag(name: .long, help: "Strip debug symbols with wasm-strip (requires wabt)")
+    var stripDebug: Bool = true
+
+    @Flag(name: .long, help: "Generate Brotli compressed bundle (.br)")
+    var compress: Bool = false
+
+    @Flag(name: .long, help: "Show detailed bundle size report")
+    var reportSize: Bool = true
+
     func run() throws {
         let startTime = Date()
 
@@ -33,11 +45,19 @@ struct BuildCommand: ParsableCommand {
         if verbose {
             print("  Input: \(inputPath)")
             print("  Output: \(outputPath)")
-            print("  Configuration: \(debug ? "debug" : "release")")
+            print("  Configuration: \(debug ? "debug" : (optimizeSize ? "size" : "release"))")
+            print("  Optimize: \(optimize)")
+            print("  Strip debug: \(stripDebug)")
+            print("  Compress: \(compress)")
         }
 
         // Determine number of steps
-        let totalSteps = optimize ? 8 : 7
+        var stepCount = 7
+        if optimize { stepCount += 1 }
+        if stripDebug { stepCount += 1 }
+        if compress { stepCount += 1 }
+        if reportSize { stepCount += 1 }
+        let totalSteps = stepCount
 
         // Step 1: Validate project structure
         print("\n[1/\(totalSteps)] Validating project structure...")
@@ -48,30 +68,57 @@ struct BuildCommand: ParsableCommand {
         let wasmPath = try compileToWasm(projectPath: inputPath, outputPath: outputPath)
 
         // Step 3: Copy WASM to dist/
-        print("[3/\(totalSteps)] Copying WASM binary...")
+        var currentStep = 3
+        print("[\(currentStep)/\(totalSteps)] Copying WASM binary...")
         let wasmOutputPath = (outputPath as NSString).appendingPathComponent("app.wasm")
         try copyWasmBinary(from: wasmPath.path, to: wasmOutputPath)
 
-        // Step 4: Optimize WASM (if requested)
+        // Step 4: Strip debug symbols (if requested)
+        if stripDebug && !debug {
+            currentStep += 1
+            print("[\(currentStep)/\(totalSteps)] Stripping debug symbols...")
+            try stripDebugSymbols(at: wasmOutputPath)
+        }
+
+        // Step 5: Optimize WASM (if requested)
         if optimize {
-            print("[4/\(totalSteps)] Optimizing WASM binary...")
+            currentStep += 1
+            print("[\(currentStep)/\(totalSteps)] Optimizing WASM binary...")
             try optimizeWasm(at: wasmOutputPath)
         }
 
-        // Step 5: Generate index.html
-        print("[\(optimize ? 5 : 4)/\(totalSteps)] Generating index.html...")
+        // Step 6: Generate index.html
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Generating index.html...")
         try generateHTML(outputPath: outputPath, projectPath: inputPath)
 
-        // Step 6: Copy runtime.js to dist/
-        print("[\(optimize ? 6 : 5)/\(totalSteps)] Copying runtime.js...")
+        // Step 7: Copy runtime.js to dist/
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Copying runtime.js...")
         try copyRuntimeJS(to: outputPath)
 
-        // Step 7: Copy Public/ assets to dist/
-        print("[\(optimize ? 7 : 6)/\(totalSteps)] Copying assets...")
+        // Step 8: Copy Public/ assets to dist/
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Copying assets...")
         try bundleAssets(from: inputPath, to: outputPath)
 
-        // Step 8: Show success message
-        print("[\(totalSteps)/\(totalSteps)] Finalizing build...")
+        // Step 9: Compress (if requested)
+        if compress {
+            currentStep += 1
+            print("[\(currentStep)/\(totalSteps)] Compressing bundle...")
+            try compressBundle(at: wasmOutputPath)
+        }
+
+        // Step 10: Generate bundle size report (if requested)
+        if reportSize {
+            currentStep += 1
+            print("[\(currentStep)/\(totalSteps)] Analyzing bundle size...")
+            try analyzeBundleSize(at: wasmOutputPath)
+        }
+
+        // Final step: Show success message
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Finalizing build...")
 
         let duration = Date().timeIntervalSince(startTime)
 
@@ -111,7 +158,16 @@ struct BuildCommand: ParsableCommand {
         let sourceDir = URL(fileURLWithPath: projectPath)
         let outputDir = URL(fileURLWithPath: outputPath)
 
-        let optimizationLevel: BuildConfig.OptimizationLevel = debug ? .debug : .release
+        // Determine optimization level based on flags
+        let optimizationLevel: BuildConfig.OptimizationLevel
+        if debug {
+            optimizationLevel = .debug
+        } else if optimizeSize {
+            optimizationLevel = .size
+        } else {
+            optimizationLevel = .release
+        }
+
         let config = BuildConfig(
             sourceDirectory: sourceDir,
             outputDirectory: outputDir,
@@ -244,7 +300,9 @@ struct BuildCommand: ParsableCommand {
     }
 
     private func optimizeWasm(at wasmPath: String) throws {
-        let optimizer = WasmOptimizer(verbose: verbose, optimizationLevel: .o3)
+        // Use -Oz for size optimization if --optimize-size is set
+        let level: WasmOptimizer.OptimizationLevel = optimizeSize ? .oz : .o3
+        let optimizer = WasmOptimizer(verbose: verbose, optimizationLevel: level)
 
         let result = try runAsync {
             try await optimizer.optimize(wasmPath: wasmPath)
@@ -258,6 +316,129 @@ struct BuildCommand: ParsableCommand {
         } else {
             print("  ℹ Optimization skipped (wasm-opt not available)")
             print("  ℹ Install with: brew install binaryen")
+        }
+    }
+
+    private func stripDebugSymbols(at wasmPath: String) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["wasm-strip", wasmPath]
+
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+
+        // Get original size
+        let originalSize = try? FileManager.default.attributesOfItem(atPath: wasmPath)[.size] as? Int64
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            if process.terminationStatus == 0 {
+                // Get new size after stripping
+                if let original = originalSize,
+                   let newSize = try? FileManager.default.attributesOfItem(atPath: wasmPath)[.size] as? Int64 {
+                    let saved = original - newSize
+                    let percent = (Double(saved) / Double(original)) * 100.0
+                    if !verbose {
+                        print("  ✓ Debug symbols stripped")
+                        print("    Saved: \(formatBytes(saved)) (\(String(format: "%.1f%%", percent)))")
+                    }
+                } else if verbose {
+                    print("  ✓ Debug symbols stripped")
+                }
+            } else {
+                print("  ℹ Debug symbol stripping skipped (wasm-strip not available)")
+                print("  ℹ Install with: brew install wabt")
+            }
+        } catch {
+            print("  ℹ Debug symbol stripping skipped (wasm-strip not available)")
+            print("  ℹ Install with: brew install wabt")
+        }
+    }
+
+    private func compressBundle(at wasmPath: String) throws {
+        let brotliPath = wasmPath + ".br"
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["brotli", "-f", "-q", "11", "-o", brotliPath, wasmPath]
+
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+
+        let originalSize = try? FileManager.default.attributesOfItem(atPath: wasmPath)[.size] as? Int64
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            if process.terminationStatus == 0,
+               let original = originalSize,
+               let compressed = try? FileManager.default.attributesOfItem(atPath: brotliPath)[.size] as? Int64 {
+                let ratio = (Double(compressed) / Double(original)) * 100.0
+                if !verbose {
+                    print("  ✓ Brotli compressed: \(formatBytes(compressed)) (\(String(format: "%.1f%%", ratio)))")
+                }
+            } else {
+                print("  ℹ Compression skipped (brotli not available)")
+                print("  ℹ Install with: brew install brotli")
+            }
+        } catch {
+            print("  ℹ Compression skipped (brotli not available)")
+            print("  ℹ Install with: brew install brotli")
+        }
+    }
+
+    private func analyzeBundleSize(at wasmPath: String) throws {
+        let analyzer = BundleSizeAnalyzer(verbose: verbose)
+
+        let report = try runAsync {
+            try await analyzer.analyze(wasmPath: wasmPath)
+        }
+
+        if !verbose {
+            print("")
+            print("═══════════════════════════════════════")
+            print("           Bundle Size Report          ")
+            print("═══════════════════════════════════════")
+            print("")
+            print("  Uncompressed: \(formatBytes(report.uncompressedSize))")
+
+            if let brotli = report.brotliSize {
+                let ratio = (Double(brotli) / Double(report.uncompressedSize)) * 100.0
+                print("  Brotli:       \(formatBytes(brotli)) (\(String(format: "%.1f%%", ratio)))")
+            }
+
+            if let gzip = report.gzipSize {
+                let ratio = (Double(gzip) / Double(report.uncompressedSize)) * 100.0
+                print("  Gzip:         \(formatBytes(gzip)) (\(String(format: "%.1f%%", ratio)))")
+            }
+
+            print("")
+
+            // Check against target
+            let targetSize: Int64 = 500_000  // 500KB
+            if report.uncompressedSize <= targetSize {
+                let under = targetSize - report.uncompressedSize
+                print("  ✓ Target met! Under by \(formatBytes(under))")
+            } else {
+                let over = report.uncompressedSize - targetSize
+                print("  ⚠ Over target by \(formatBytes(over))")
+                print("")
+                print("  Consider:")
+                print("    • Using --optimize-size flag")
+                print("    • Enabling wasm-opt with --optimize")
+                print("    • Analyzing with: twiggy top \(wasmPath)")
+            }
+
+            print("")
+            print("═══════════════════════════════════════")
+            print("")
         }
     }
 
@@ -317,7 +498,28 @@ struct BuildCommand: ParsableCommand {
         print("  \(outputPath)/")
         print("  ├── index.html")
         print("  ├── app.wasm (\(formatBytes(wasmSize)))")
+
+        // Check for compressed bundle
+        let fileManager = FileManager.default
+        let brotliPath = (outputPath as NSString).appendingPathComponent("app.wasm.br")
+        if fileManager.fileExists(atPath: brotliPath),
+           let brotliSize = try? fileManager.attributesOfItem(atPath: brotliPath)[.size] as? Int64 {
+            print("  ├── app.wasm.br (\(formatBytes(brotliSize)))")
+        }
+
         print("  └── runtime.js")
+
+        print("\nBuild configuration:")
+        print("  Optimization: \(debug ? "debug" : (optimizeSize ? "size (-Osize)" : "release (-O)"))")
+        if optimize {
+            print("  wasm-opt: enabled")
+        }
+        if stripDebug && !debug {
+            print("  Debug symbols: stripped")
+        }
+        if compress && fileManager.fileExists(atPath: brotliPath) {
+            print("  Compression: Brotli")
+        }
 
         print("\nBuild time: \(String(format: "%.2fs", duration))")
         print("\nTo serve the app, run:")

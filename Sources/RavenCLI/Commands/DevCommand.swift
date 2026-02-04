@@ -84,12 +84,15 @@ struct DevCommand: ParsableCommand {
             let rebuildStart = Date()
 
             do {
+                // Send notification that build started
+                await hotReloadServer.sendNotification("Building...")
+
                 try await self.performBuild(inputPath: inputPath, outputPath: outputPath, incremental: true)
                 let rebuildTime = Date().timeIntervalSince(rebuildStart)
                 print("  ✓ Rebuild complete (\(String(format: "%.2fs", rebuildTime)))")
 
-                // Broadcast reload to clients
-                await hotReloadServer.sendReload()
+                // Broadcast reload to clients with metrics
+                await hotReloadServer.sendReloadWithMetrics(buildTime: rebuildTime, changeDescription: "Source files")
             } catch {
                 let errorMessage = error.localizedDescription
                 print("  ✗ Build failed: \(errorMessage)")

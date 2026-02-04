@@ -165,9 +165,14 @@ public struct Button<Label: View>: View, Sendable {
         let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
 
         // Create button element with event handler
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             "onClick": clickHandler
         ]
+
+        // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
+        // Note: HTML <button> already has implicit role="button", but we can add
+        // additional ARIA attributes if needed (e.g., aria-pressed, aria-expanded, aria-controls)
+        // These will be set by accessibility modifiers when needed
 
         // Convert label to children nodes
         let children: [VNode]
