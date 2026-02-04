@@ -154,7 +154,7 @@ public struct SortComparator<Root: Sendable>: Sendable {
 /// `SortDescriptor` is used by Table to track which columns are being used for
 /// sorting and in what order. It's part of the sortOrder binding that allows
 /// external control of table sorting.
-public struct SortDescriptor<Root: Sendable>: Sendable, Identifiable {
+public struct SortDescriptor<Root: Sendable>: Sendable, Identifiable, Equatable {
     /// Unique identifier for this sort descriptor
     public let id: String
 
@@ -181,6 +181,12 @@ public struct SortDescriptor<Root: Sendable>: Sendable, Identifiable {
     /// - Returns: True if lhs should come before rhs in the sort order.
     public func compare(_ lhs: Root, _ rhs: Root) -> Bool {
         comparator.compare(lhs, rhs)
+    }
+
+    // MARK: - Equatable
+
+    public static func == (lhs: SortDescriptor<Root>, rhs: SortDescriptor<Root>) -> Bool {
+        lhs.id == rhs.id && lhs.order == rhs.order
     }
 }
 

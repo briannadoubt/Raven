@@ -266,8 +266,8 @@ public struct Font: Sendable, Hashable {
 /// Content size categories for Dynamic Type support.
 ///
 /// These categories represent different text size preferences for accessibility.
-/// Full Dynamic Type scaling is not yet implemented but this infrastructure
-/// enables future support.
+/// Dynamic Type scaling is fully implemented and applied via the environment.
+/// Use `.environment(\.sizeCategory, .extraLarge)` to test different sizes.
 public enum ContentSizeCategory: String, Sendable, CaseIterable {
     case extraSmall
     case small
