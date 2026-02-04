@@ -226,4 +226,31 @@ extension Button where Label == Text {
         self.action = action
         self.label = Text(titleKey)
     }
+
+    /// Creates a button with a text label and optional role.
+    ///
+    /// The role parameter affects how the button is styled in presentations like alerts
+    /// and confirmation dialogs, but doesn't affect the button's standalone appearance.
+    ///
+    /// - Parameters:
+    ///   - title: The string to display as the button's label.
+    ///   - role: The semantic role of the button (e.g., .destructive, .cancel).
+    ///   - action: The action to perform when the button is clicked.
+    ///
+    /// Example:
+    /// ```swift
+    /// Button("Delete", role: .destructive) {
+    ///     deleteItem()
+    /// }
+    /// ```
+    @MainActor public init(
+        _ title: String,
+        role: ButtonRole? = nil,
+        action: @escaping @Sendable @MainActor () -> Void
+    ) {
+        self.action = action
+        self.label = Text(title)
+        // Note: role is currently stored but not used in rendering
+        // It's primarily used by presentation modifiers (alerts, sheets, etc.)
+    }
 }
