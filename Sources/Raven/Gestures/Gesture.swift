@@ -417,7 +417,6 @@ public struct EventModifiers: OptionSet, Sendable {
 /// - ``withAnimation(_:_:)``
 /// - ``GestureState``
 /// - ``Animation``
-@MainActor
 public struct Transaction: Sendable {
     /// The animation associated with this transaction, if any.
     ///

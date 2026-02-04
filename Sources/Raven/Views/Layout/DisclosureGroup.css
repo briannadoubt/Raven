@@ -1,0 +1,126 @@
+/* DisclosureGroup CSS Styles for Raven */
+
+/* Outer container */
+.raven-disclosure-group {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin: 4px 0;
+    overflow: hidden;
+}
+
+/* Header - Interactive button area */
+.raven-disclosure-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.raven-disclosure-header:hover {
+    background-color: #eeeeee;
+}
+
+.raven-disclosure-header:active {
+    background-color: #e0e0e0;
+}
+
+.raven-disclosure-header:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: -2px;
+}
+
+/* Chevron indicator */
+.raven-disclosure-chevron {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.raven-disclosure-chevron-collapsed {
+    transform: rotate(0deg);
+}
+
+.raven-disclosure-chevron-expanded {
+    transform: rotate(90deg);
+}
+
+/* Label container */
+.raven-disclosure-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Content area */
+.raven-disclosure-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.raven-disclosure-content.raven-disclosure-collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+.raven-disclosure-content.raven-disclosure-expanded {
+    max-height: 1000px; /* Adjust based on expected content height */
+    opacity: 1;
+    padding: 12px 16px;
+}
+
+/* Nested disclosure groups */
+.raven-disclosure-content .raven-disclosure-group {
+    margin: 8px 0;
+    border: 1px solid #d0d0d0;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    .raven-disclosure-group {
+        border-color: #404040;
+    }
+
+    .raven-disclosure-header {
+        background-color: #2a2a2a;
+    }
+
+    .raven-disclosure-header:hover {
+        background-color: #333333;
+    }
+
+    .raven-disclosure-header:active {
+        background-color: #3a3a3a;
+    }
+
+    .raven-disclosure-header:focus {
+        outline-color: #4d94ff;
+    }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+    .raven-disclosure-group {
+        border-width: 2px;
+    }
+
+    .raven-disclosure-header:focus {
+        outline-width: 3px;
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .raven-disclosure-chevron,
+    .raven-disclosure-content,
+    .raven-disclosure-header {
+        transition: none;
+    }
+}
