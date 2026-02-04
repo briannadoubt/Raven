@@ -2,6 +2,21 @@
 
 Welcome to the Raven API documentation. This guide provides a comprehensive overview of Raven's public APIs for building web applications using SwiftUI-style declarative syntax.
 
+## What's New in v0.6.0 (Phase 12)
+
+Phase 12 introduces a comprehensive animation system with full SwiftUI compatibility:
+
+- **Animation System** - Complete animation curve support (linear, ease, spring, custom timing)
+- **.animation() Modifier** - Implicit, value-based animations for smooth property changes
+- **withAnimation()** - Explicit animation blocks with completion handlers
+- **Transition System** - 8 transition types (opacity, scale, slide, move, push, offset, custom, asymmetric)
+- **keyframeAnimator()** - Multi-step animations with precise timing control (iOS 17+)
+- **50+ Tests** - Comprehensive integration and unit test coverage
+- **GPU Acceleration** - CSS-based animations with hardware acceleration for 60fps
+- **API Coverage** - Increased from ~80% to ~85%
+
+See [Phase 12 Documentation](Phase12.md) for detailed information.
+
 ## What's New in v0.5.0 (Phase 11)
 
 Phase 11 introduces modern layout APIs, enhanced scroll features, and search functionality:
@@ -955,7 +970,12 @@ View modifiers customize the appearance and behavior of views.
 **Search (New in v0.5.0):**
 - `.searchable(text:placement:prompt:)` - Add search functionality with suggestions
 
-**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [ShapeModifiers.swift](../Sources/Raven/Modifiers/ShapeModifiers.swift), [VisualEffectModifiers.swift](../Sources/Raven/Modifiers/VisualEffectModifiers.swift), [ClipShapeModifier.swift](../Sources/Raven/Modifiers/ClipShapeModifier.swift), [ContainerRelativeFrameModifier.swift](../Sources/Raven/Modifiers/ContainerRelativeFrameModifier.swift), [ScrollBehaviorModifiers.swift](../Sources/Raven/Modifiers/ScrollBehaviorModifiers.swift), [ScrollTransitionModifier.swift](../Sources/Raven/Modifiers/ScrollTransitionModifier.swift), [SearchableModifier.swift](../Sources/Raven/Modifiers/SearchableModifier.swift), [Phase 9 Documentation](Phase9.md), [Phase 10 Documentation](Phase10.md), [Phase 11 Documentation](Phase11.md)
+**Animation (New in v0.6.0):**
+- `.animation(_:value:)` - Implicit animations triggered by value changes
+- `.transition(_:)` - View insertion/removal animations
+- `.keyframeAnimator(initialValue:trigger:content:keyframes:)` - Multi-step keyframe animations
+
+**See:** `Sources/Raven/Modifiers/` - [BasicModifiers.swift](../Sources/Raven/Modifiers/BasicModifiers.swift), [InteractionModifiers.swift](../Sources/Raven/Modifiers/InteractionModifiers.swift), [LayoutModifiers.swift](../Sources/Raven/Modifiers/LayoutModifiers.swift), [TextModifiers.swift](../Sources/Raven/Modifiers/TextModifiers.swift), [ShapeModifiers.swift](../Sources/Raven/Modifiers/ShapeModifiers.swift), [VisualEffectModifiers.swift](../Sources/Raven/Modifiers/VisualEffectModifiers.swift), [ClipShapeModifier.swift](../Sources/Raven/Modifiers/ClipShapeModifier.swift), [ContainerRelativeFrameModifier.swift](../Sources/Raven/Modifiers/ContainerRelativeFrameModifier.swift), [ScrollBehaviorModifiers.swift](../Sources/Raven/Modifiers/ScrollBehaviorModifiers.swift), [ScrollTransitionModifier.swift](../Sources/Raven/Modifiers/ScrollTransitionModifier.swift), [SearchableModifier.swift](../Sources/Raven/Modifiers/SearchableModifier.swift), [AnimationModifier.swift](../Sources/Raven/Animation/AnimationModifier.swift), [TransitionModifier.swift](../Sources/Raven/Animation/TransitionModifier.swift), [Phase 9 Documentation](Phase9.md), [Phase 10 Documentation](Phase10.md), [Phase 11 Documentation](Phase11.md), [Phase 12 Documentation](Phase12.md)
 
 ---
 
@@ -1144,6 +1164,366 @@ struct ItemList: View {
 - ARIA accessibility
 
 **See:** `Sources/Raven/Modifiers/SearchableModifier.swift`, [Phase 11 Documentation](Phase11.md#search-functionality)
+
+---
+
+## Animation System (New in v0.6.0)
+
+Phase 12 introduces a comprehensive animation system with full SwiftUI compatibility, including animation curves, transitions, and multi-step keyframe animations.
+
+### Animation Types
+
+Raven provides multiple animation curves for different motion characteristics:
+
+```swift
+// Linear - Constant rate
+.animation(.linear, value: state)
+.animation(.linear(duration: 0.5), value: state)
+
+// Ease - Acceleration/deceleration
+.animation(.easeIn, value: state)       // Slow start
+.animation(.easeOut, value: state)      // Slow end
+.animation(.easeInOut, value: state)    // Slow start and end
+.animation(.default, value: state)      // Standard ease
+
+// Spring - Physics-based motion
+.animation(.spring(), value: state)     // Default spring
+.animation(.spring(response: 0.5, dampingFraction: 0.7), value: state)
+.animation(.spring(.bouncy), value: state)   // Bouncy
+.animation(.spring(.smooth), value: state)   // Smooth
+.animation(.spring(.snappy), value: state)   // Snappy
+
+// Custom - Cubic Bézier curves
+.animation(.timingCurve(0.17, 0.67, 0.83, 0.67, duration: 0.5), value: state)
+```
+
+**Parameters:**
+- `duration` - Animation duration in seconds
+- `response` - Spring response time
+- `dampingFraction` - Spring damping (0.0 = bouncy, 1.0 = no bounce)
+
+**See:** `Sources/Raven/Animation/Animation.swift`, [Phase 12 Documentation](Phase12.md#animation-types--curves)
+
+---
+
+### .animation() Modifier
+
+Apply implicit animations that trigger when a value changes:
+
+```swift
+@State private var isExpanded = false
+
+Circle()
+    .scaleEffect(isExpanded ? 1.5 : 1.0)
+    .animation(.spring(), value: isExpanded)
+    .onTapGesture {
+        isExpanded.toggle()
+    }
+```
+
+**Multiple animations:**
+```swift
+Rectangle()
+    .scaleEffect(scale)
+    .animation(.spring(), value: scale)
+    .opacity(opacity)
+    .animation(.easeOut, value: opacity)
+```
+
+**Conditional animation:**
+```swift
+Circle()
+    .offset(x: position)
+    .animation(animated ? .spring() : nil, value: position)
+```
+
+**Animatable properties:**
+- Transform (scale, rotation, offset)
+- Opacity
+- Colors (foreground, background)
+- Frame (width, height)
+- Corner radius
+- Shadow
+
+**See:** `Sources/Raven/Animation/AnimationModifier.swift`, [Phase 12 Documentation](Phase12.md#implicit-animations-animation)
+
+---
+
+### withAnimation()
+
+Create explicit animation blocks for coordinated state changes:
+
+```swift
+@State private var isVisible = false
+
+Button("Toggle") {
+    withAnimation(.spring()) {
+        isVisible.toggle()
+    }
+}
+
+if isVisible {
+    DetailView()
+        .transition(.opacity)
+}
+```
+
+**With completion:**
+```swift
+withAnimation(.easeOut(duration: 0.3), {
+    isLoading = true
+}, completion: {
+    // Called when animation completes
+    fetchData()
+})
+```
+
+**Nested animations:**
+```swift
+withAnimation(.easeOut) {
+    step = 1
+} completion: {
+    withAnimation(.spring()) {
+        step = 2
+    }
+}
+```
+
+**See:** `Sources/Raven/Animation/WithAnimation.swift`, [Phase 12 Documentation](Phase12.md#explicit-animations-withanimation)
+
+---
+
+### Transitions
+
+Define how views animate when inserted or removed:
+
+```swift
+// Basic transitions
+if showView {
+    MyView()
+        .transition(.opacity)          // Fade
+        .transition(.scale)            // Scale from 0
+        .transition(.slide)            // Slide from bottom
+        .transition(.move(edge: .leading))  // Slide from edge
+        .transition(.offset(x: 20, y: 0))   // Slide by pixels
+}
+
+// Combined transitions
+if showDialog {
+    DialogView()
+        .transition(.opacity.combined(with: .scale))
+}
+
+// Asymmetric transitions
+if showNotification {
+    NotificationView()
+        .transition(.asymmetric(
+            insertion: .move(edge: .trailing),
+            removal: .opacity
+        ))
+}
+
+// Advanced transitions
+if showPanel {
+    PanelView()
+        .transition(.push(from: .trailing))  // Push while opaque
+}
+```
+
+**Available transitions:**
+- `.identity` - No animation
+- `.opacity` - Fade in/out
+- `.scale(scale:anchor:)` - Scale from specified size
+- `.slide` - Slide from bottom
+- `.move(edge:)` - Slide from edge (.top, .bottom, .leading, .trailing)
+- `.offset(x:y:)` - Slide by pixels
+- `.push(from:)` - Slide while staying opaque
+- `.modifier(active:identity:)` - Custom ViewModifier-based transition
+- `.combined(with:)` - Combine multiple transitions
+- `.asymmetric(insertion:removal:)` - Different insertion/removal
+
+**Trigger with animation:**
+```swift
+VStack {
+    if showView {
+        MyView().transition(.scale)
+    }
+}
+.animation(.spring(), value: showView)
+
+// Or with withAnimation
+Button("Toggle") {
+    withAnimation {
+        showView.toggle()
+    }
+}
+```
+
+**See:** `Sources/Raven/Animation/AnyTransition.swift`, `Sources/Raven/Animation/TransitionModifier.swift`, [Phase 12 Documentation](Phase12.md#transition-system)
+
+---
+
+### keyframeAnimator()
+
+Create multi-step animations with precise timing control:
+
+```swift
+struct AnimationValues {
+    var scale = 1.0
+    var opacity = 1.0
+}
+
+Circle()
+    .keyframeAnimator(initialValue: AnimationValues()) { content, value in
+        content
+            .scaleEffect(value.scale)
+            .opacity(value.opacity)
+    } keyframes: { _ in
+        KeyframeTrack(\.scale) {
+            LinearKeyframe(1.5, duration: 0.3)
+            SpringKeyframe(1.0, duration: 0.5)
+        }
+        KeyframeTrack(\.opacity) {
+            LinearKeyframe(0.5, duration: 0.4)
+            LinearKeyframe(1.0, duration: 0.4)
+        }
+    }
+```
+
+**Keyframe types:**
+- `LinearKeyframe` - Constant rate
+- `SpringKeyframe` - Physics-based motion
+- `CubicKeyframe` - Custom cubic Bézier
+
+**Multiple tracks:**
+```swift
+struct ComplexValues {
+    var x = 0.0
+    var y = 0.0
+    var rotation = 0.0
+}
+
+Rectangle()
+    .keyframeAnimator(initialValue: ComplexValues()) { content, value in
+        content
+            .offset(x: value.x, y: value.y)
+            .rotationEffect(.degrees(value.rotation))
+    } keyframes: { _ in
+        KeyframeTrack(\.x) {
+            LinearKeyframe(100, duration: 0.5)
+            SpringKeyframe(0, duration: 0.5)
+        }
+        KeyframeTrack(\.y) {
+            LinearKeyframe(50, duration: 0.5)
+            SpringKeyframe(0, duration: 0.5)
+        }
+        KeyframeTrack(\.rotation) {
+            LinearKeyframe(180, duration: 0.5)
+            CubicKeyframe(360, duration: 0.5)
+        }
+    }
+```
+
+**With trigger:**
+```swift
+@State private var trigger = 0
+
+Circle()
+    .keyframeAnimator(
+        initialValue: AnimationValues(),
+        trigger: trigger  // Re-run when this changes
+    ) { content, value in
+        content.scaleEffect(value.scale)
+    } keyframes: { _ in
+        KeyframeTrack(\.scale) {
+            SpringKeyframe(1.2, duration: 0.3)
+            SpringKeyframe(1.0, duration: 0.3)
+        }
+    }
+
+Button("Animate") {
+    trigger += 1
+}
+```
+
+**See:** `Sources/Raven/Animation/KeyframeAnimator.swift`, [Phase 12 Documentation](Phase12.md#multi-step-animations-keyframeanimator)
+
+---
+
+### Common Animation Patterns
+
+**Button press feedback:**
+```swift
+@State private var isPressed = false
+
+Button("Press Me") { }
+    .scaleEffect(isPressed ? 0.95 : 1.0)
+    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+```
+
+**Modal presentation:**
+```swift
+if showModal {
+    Color.black.opacity(0.4)
+        .ignoresSafeArea()
+        .transition(.opacity)
+
+    ModalContent()
+        .transition(.scale.combined(with: .opacity))
+}
+```
+
+**List animations:**
+```swift
+ForEach(items, id: \.id) { item in
+    ItemView(item: item)
+        .transition(.asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .leading).combined(with: .opacity)
+        ))
+}
+.animation(.spring(), value: items)
+```
+
+**Loading spinner:**
+```swift
+struct SpinnerValues {
+    var rotation = 0.0
+}
+
+Circle()
+    .trim(from: 0, to: 0.7)
+    .stroke(Color.blue, lineWidth: 4)
+    .keyframeAnimator(initialValue: SpinnerValues()) { content, value in
+        content.rotationEffect(.degrees(value.rotation))
+    } keyframes: { _ in
+        KeyframeTrack(\.rotation) {
+            LinearKeyframe(360, duration: 1.0)
+        }
+    }
+```
+
+**See:** `Examples/Phase12Examples.swift`, [Phase 12 Documentation](Phase12.md#common-patterns)
+
+---
+
+### Performance
+
+Raven's animation system is optimized for smooth 60fps performance:
+
+- **GPU Acceleration** - Transform and opacity animations use hardware acceleration
+- **CSS-Based** - Efficient CSS transitions and animations
+- **Compositor Thread** - Animations run on browser compositor thread
+- **Optimized Properties** - Prefer transform over layout properties
+
+**Best practices:**
+- Use `transform` (scale, rotate, translate) instead of `width`/`height`/`top`/`left`
+- Animate `opacity` instead of adding/removing elements when possible
+- Keep animation durations between 0.2-0.5s for best feel
+- Use spring animations for interactive elements
+- Limit simultaneous animations to avoid performance issues
+
+**See:** [Phase 12 Documentation](Phase12.md#performance-considerations)
 
 ---
 

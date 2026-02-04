@@ -38,8 +38,9 @@ Whether you're building interactive web applications, creating cross-platform to
 - **Navigation** - NavigationLink and navigation state management
 - **Scroll Features** - Advanced scroll behavior and scroll-based animations
 - **Search** - Built-in searchable modifier with suggestions and filtering
+- **Animation System** - Complete animation support with curves, transitions, keyframes, and GPU acceleration
 - **Visual Effects** - 7 GPU-accelerated effects (blur, brightness, contrast, saturation, grayscale, hue rotation, shadow)
-- **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, and visual effects
+- **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, animations, and visual effects
 - **Environment Values** - Propagate configuration through the view hierarchy
 
 ## Quick Start
@@ -83,6 +84,43 @@ cd MyApp
 
 # Output will be in dist/
 ```
+
+## What's New in v0.6.0 (Phase 12)
+
+Raven v0.6.0 introduces a comprehensive animation system with full SwiftUI compatibility:
+
+**Animation System**
+- Complete animation curve support (linear, ease, spring, custom timing)
+- `.animation()` modifier for implicit, value-based animations
+- `withAnimation()` for explicit animation blocks with completion handlers
+- Full transition system (8 transition types: opacity, scale, slide, move, push, offset, custom, asymmetric)
+- `keyframeAnimator()` for multi-step animations with precise timing (iOS 17+)
+- CSS-based implementation with GPU acceleration for 60fps performance
+
+**Animation Types & Curves**
+- Linear animations for constant-rate changes
+- Ease animations (easeIn, easeOut, easeInOut, default)
+- Spring animations with physics-based motion and customizable damping
+- Custom cubic Bézier timing curves
+- Named spring configurations (.bouncy, .smooth, .snappy)
+
+**Advanced Features**
+- Combined transitions for complex effects
+- Asymmetric transitions (different insertion/removal)
+- Animation interruption and cancellation
+- Multiple animation tracks in keyframes
+- Trigger-based animation re-execution
+- Cross-feature integration with Phases 9-11
+
+**Testing & Quality**
+- 50+ integration tests across all animation features
+- Plus existing unit tests for each animation component
+- ~2,664 lines of production code, ~938 lines of verification tests
+- 10 complete working examples (~1,200+ lines)
+- Full DocC documentation for all APIs
+- API coverage increased from ~80% to ~85%
+
+See [CHANGELOG.md](CHANGELOG.md) and [Phase 12 Documentation](Documentation/Phase12.md) for complete details.
 
 ## What's New in v0.5.0 (Phase 11)
 
@@ -190,10 +228,11 @@ Raven is being developed in phases, each delivering complete, tested functionali
 | **Phase 5** | Build Pipeline | ✅ Complete | CLI tooling, WASM compilation, asset bundling, optimization |
 | **Phase 6** | Developer Experience | 🔄 In Progress | Hot reload, live preview, debugging tools, documentation |
 | **Phase 7** | Production Ready | ⏳ Planned | Performance optimization, accessibility, comprehensive examples |
-| **Phase 8** | Advanced Components | ⏳ Planned | Animations, gestures, advanced navigation, custom layouts |
+| **Phase 8** | Advanced Components | ⏳ Planned | Advanced gestures, navigation improvements, custom layouts |
 | **Phase 9** | Modern State & UI | ✅ Complete | @Observable, @Bindable, ContentUnavailableView, 10 new modifiers |
 | **Phase 10** | Shapes & Visual Effects | ✅ Complete | Shape system, Path, visual effects, clipping, 162+ tests |
 | **Phase 11** | Modern Layout & Search | ✅ Complete | containerRelativeFrame, ViewThatFits, scroll features, searchable, 102+ tests |
+| **Phase 12** | Animation System | ✅ Complete | Animation curves, transitions, keyframeAnimator, GPU acceleration, 50+ tests |
 
 ## Architecture
 
