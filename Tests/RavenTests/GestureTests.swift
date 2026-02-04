@@ -314,4 +314,209 @@ final class GestureTests: XCTestCase {
 
         XCTAssertTrue(TestGesture.Value.self == CustomValue.self)
     }
+
+    // MARK: - GestureRecognitionState Tests
+
+    func testGestureRecognitionStateInitialState() {
+        let state = GestureRecognitionState.possible
+        switch state {
+        case .possible:
+            XCTAssertTrue(true, "State should be .possible initially")
+        default:
+            XCTFail("Expected .possible state")
+        }
+    }
+
+    func testGestureRecognitionStateTransitions() {
+        // Test normal flow: possible -> began -> changed -> ended
+        var state = GestureRecognitionState.possible
+        XCTAssertTrue(state == .possible)
+
+        state = .began
+        XCTAssertTrue(state == .began)
+
+        state = .changed
+        XCTAssertTrue(state == .changed)
+
+        state = .ended
+        XCTAssertTrue(state == .ended)
+    }
+
+    func testGestureRecognitionStateCancellation() {
+        // Test cancellation from possible
+        var state = GestureRecognitionState.possible
+        state = .cancelled
+        XCTAssertTrue(state == .cancelled)
+
+        // Test cancellation from began
+        state = .began
+        state = .cancelled
+        XCTAssertTrue(state == .cancelled)
+
+        // Test cancellation from changed
+        state = .changed
+        state = .cancelled
+        XCTAssertTrue(state == .cancelled)
+    }
+
+    func testGestureRecognitionStateFailure() {
+        // Test failure from possible
+        var state = GestureRecognitionState.possible
+        state = .failed
+        XCTAssertTrue(state == .failed)
+    }
+
+    // MARK: - DragGestureState Tests
+
+    func testDragGestureStateInitialization() {
+        let startLocation = Raven.CGPoint(x: 100, y: 200)
+        let startTime = Date().timeIntervalSince1970
+        let minimumDistance = 10.0
+
+        let state = DragGestureState(
+            startLocation: startLocation,
+            startTime: startTime,
+            minimumDistance: minimumDistance
+        )
+
+        XCTAssertEqual(state.startLocation, startLocation)
+        XCTAssertEqual(state.startTime, startTime)
+        XCTAssertEqual(state.minimumDistance, minimumDistance)
+        XCTAssertEqual(state.recognitionState, .possible)
+        XCTAssertEqual(state.positionSamples.count, 1)
+        XCTAssertEqual(state.positionSamples[0].location, startLocation)
+    }
+
+    func testDragGestureStateMinimumDistanceCheck() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let state = DragGestureState(
+            startLocation: startLocation,
+            startTime: Date().timeIntervalSince1970,
+            minimumDistance: 10.0
+        )
+
+        // Test point within minimum distance
+        let nearPoint = Raven.CGPoint(x: 5, y: 5)
+        XCTAssertFalse(state.hasExceededMinimumDistance(to: nearPoint))
+
+        // Test point beyond minimum distance
+        let farPoint = Raven.CGPoint(x: 10, y: 10)
+        XCTAssertTrue(state.hasExceededMinimumDistance(to: farPoint))
+    }
+
+    func testDragGestureStateAddSample() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: 0.0,
+            minimumDistance: 10.0
+        )
+
+        // Add samples
+        state.addSample(location: Raven.CGPoint(x: 10, y: 10), time: 0.1)
+        state.addSample(location: Raven.CGPoint(x: 20, y: 20), time: 0.2)
+
+        XCTAssertEqual(state.positionSamples.count, 3)
+        XCTAssertEqual(state.positionSamples.last?.location.x, 20)
+    }
+
+    func testDragGestureStateVelocityCalculation() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: 0.0,
+            minimumDistance: 10.0
+        )
+
+        // Add sample that moves 100 points in 0.1 seconds
+        state.addSample(location: Raven.CGPoint(x: 100, y: 100), time: 0.1)
+
+        let velocity = state.calculateVelocity()
+
+        // Velocity should be 100 points / 0.1 seconds = 1000 points/second
+        XCTAssertEqual(velocity.width, 1000, accuracy: 0.1)
+        XCTAssertEqual(velocity.height, 1000, accuracy: 0.1)
+    }
+
+    func testDragGestureStateRecognitionStateTransitions() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: Date().timeIntervalSince1970,
+            minimumDistance: 10.0
+        )
+
+        // Initial state should be .possible
+        XCTAssertEqual(state.recognitionState, .possible)
+
+        // Transition to .began
+        state.recognitionState = .began
+        XCTAssertEqual(state.recognitionState, .began)
+
+        // Transition to .changed
+        state.recognitionState = .changed
+        XCTAssertEqual(state.recognitionState, .changed)
+
+        // Transition to .ended
+        state.recognitionState = .ended
+        XCTAssertEqual(state.recognitionState, .ended)
+    }
+
+    func testDragGestureStateRecognitionFromPossibleToCancelled() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: Date().timeIntervalSince1970,
+            minimumDistance: 10.0
+        )
+
+        // Gesture in .possible state can be cancelled
+        state.recognitionState = .cancelled
+        XCTAssertEqual(state.recognitionState, .cancelled)
+    }
+
+    func testDragGestureStateRecognitionFromPossibleToFailed() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: Date().timeIntervalSince1970,
+            minimumDistance: 10.0
+        )
+
+        // Gesture in .possible state can fail
+        state.recognitionState = .failed
+        XCTAssertEqual(state.recognitionState, .failed)
+    }
+
+    func testDragGestureStateDeprecatedIsRecognizedGetter() {
+        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        var state = DragGestureState(
+            startLocation: startLocation,
+            startTime: Date().timeIntervalSince1970,
+            minimumDistance: 10.0
+        )
+
+        // .possible -> not recognized
+        XCTAssertFalse(state.isRecognized)
+
+        // .began -> recognized
+        state.recognitionState = .began
+        XCTAssertTrue(state.isRecognized)
+
+        // .changed -> recognized
+        state.recognitionState = .changed
+        XCTAssertTrue(state.isRecognized)
+
+        // .ended -> recognized
+        state.recognitionState = .ended
+        XCTAssertTrue(state.isRecognized)
+
+        // .cancelled -> not recognized
+        state.recognitionState = .cancelled
+        XCTAssertFalse(state.isRecognized)
+
+        // .failed -> not recognized
+        state.recognitionState = .failed
+        XCTAssertFalse(state.isRecognized)
+    }
 }

@@ -39,6 +39,15 @@ public final class RenderCoordinator: Sendable {
     /// Gesture state tracking for ongoing gestures
     private var gestureStates: [UUID: Any] = [:]
 
+    /// Drag gesture state tracking
+    private var dragGestureStates: [UUID: DragGestureState] = [:]
+
+    /// Map of DOM element IDs to their associated gesture handler IDs and priorities
+    private var elementGestureMap: [String: [(handlerID: UUID, priority: GesturePriority)]] = [:]
+
+    /// Track which gestures have been recognized (for priority conflict resolution)
+    private var recognizedGestures: Set<UUID> = []
+
     /// Stored reference to the current root view for re-rendering
     /// This is a type-erased closure that re-renders the current view
     private var rerenderClosure: (@MainActor () async -> Void)?
@@ -812,22 +821,32 @@ public final class RenderCoordinator: Sendable {
     ///   - registration: Gesture registration with event names and handler ID
     ///   - element: DOM element to attach listeners to
     private func attachGestureListeners(_ registration: GestureRegistration, to element: JSObject) async {
+        // Get the element ID for gesture tracking
+        let elementID = element.__ravenNodeID.string ?? UUID().uuidString
+
+        // Register this gesture with the element
+        var gestures = elementGestureMap[elementID] ?? []
+        gestures.append((handlerID: registration.handlerID, priority: registration.priority))
+        elementGestureMap[elementID] = gestures
+
         // For each event the gesture needs, attach a listener
         for eventName in registration.events {
-            // Create a handler that will process the gesture event
-            let handler: @Sendable @MainActor () -> Void = { [weak self] in
+            // Create a handler that will process the gesture event with event data
+            let handler: @Sendable @MainActor (JSValue) -> Void = { [weak self] event in
                 guard let self = self else { return }
                 Task { @MainActor in
                     await self.handleGestureEvent(
                         handlerID: registration.handlerID,
                         eventName: eventName,
-                        priority: registration.priority
+                        priority: registration.priority,
+                        event: event,
+                        elementID: elementID
                     )
                 }
             }
 
-            // Register with DOMBridge
-            await DOMBridge.shared.addEventListener(
+            // Register with DOMBridge using gesture event listener
+            await DOMBridge.shared.addGestureEventListener(
                 element: element,
                 event: eventName,
                 handlerID: registration.handlerID,
@@ -841,28 +860,420 @@ public final class RenderCoordinator: Sendable {
     ///   - handlerID: ID of the gesture handler
     ///   - eventName: Name of the DOM event that triggered
     ///   - priority: Priority of the gesture
+    ///   - event: The DOM event object from JavaScript
+    ///   - elementID: The ID of the element that has this gesture
     private func handleGestureEvent(
         handlerID: UUID,
         eventName: String,
-        priority: GesturePriority
+        priority: GesturePriority,
+        event: JSValue,
+        elementID: String
     ) async {
         // Look up the gesture handler
         guard let handler = gestureHandlerRegistry[handlerID] else {
             return
         }
 
-        // Create a placeholder gesture value
-        // In a real implementation, this would extract event data from the DOM event
-        // and convert it to the appropriate gesture value type
-        let gestureValue: Any = ()
+        // Perform hit testing - check if event target matches gesture's element
+        guard let eventObj = event.object else { return }
+        if !performHitTest(event: eventObj, elementID: elementID) {
+            return
+        }
 
-        // Invoke the handler
-        handler(gestureValue)
+        // Get all gestures on this element
+        let elementGestures = elementGestureMap[elementID] ?? []
+
+        // Check for priority conflicts
+        if !shouldProcessGesture(
+            handlerID: handlerID,
+            priority: priority,
+            elementGestures: elementGestures,
+            eventName: eventName
+        ) {
+            return
+        }
+
+        // Extract event data and build gesture value based on event type
+        // For now, we focus on drag gestures with pointer events
+        if eventName == "pointerdown" {
+            handlePointerDown(handlerID: handlerID, event: event, handler: handler, priority: priority, elementGestures: elementGestures)
+        } else if eventName == "pointermove" {
+            handlePointerMove(handlerID: handlerID, event: event, handler: handler)
+        } else if eventName == "pointerup" || eventName == "pointercancel" {
+            handlePointerUp(handlerID: handlerID, event: event, handler: handler)
+        } else {
+            // For other gesture types, use placeholder for now
+            let gestureValue: Any = ()
+            handler(gestureValue)
+        }
 
         // Trigger re-render if needed
         if let rerender = rerenderClosure {
             await rerender()
         }
+    }
+
+    /// Perform hit testing to verify the event target matches the gesture's element
+    /// - Parameters:
+    ///   - event: The DOM event object
+    ///   - elementID: The ID of the element that has the gesture
+    /// - Returns: True if the hit test passes
+    private func performHitTest(event: JSObject, elementID: String) -> Bool {
+        // Get the event target
+        guard let target = event.target.object else {
+            return false
+        }
+
+        // Check if the target is the element or a descendant of it
+        // For now, we use a simple check - in a full implementation, we would walk the DOM tree
+        let targetNodeID = target.__ravenNodeID.string
+
+        // If the target has the same node ID, it's a direct hit
+        if targetNodeID == elementID {
+            return true
+        }
+
+        // Check if target is a descendant by walking up the tree
+        var current = target
+        while !current.parentNode.isNull && !current.parentNode.isUndefined {
+            guard let parent = current.parentNode.object else { break }
+            let parentNodeID = parent.__ravenNodeID.string
+            if parentNodeID == elementID {
+                return true
+            }
+            current = parent
+        }
+
+        return false
+    }
+
+    /// Determine if a gesture should be processed based on priority and recognition state
+    /// - Parameters:
+    ///   - handlerID: The gesture handler ID
+    ///   - priority: The gesture's priority
+    ///   - elementGestures: All gestures on this element
+    ///   - eventName: The event name being processed
+    /// - Returns: True if the gesture should be processed
+    private func shouldProcessGesture(
+        handlerID: UUID,
+        priority: GesturePriority,
+        elementGestures: [(handlerID: UUID, priority: GesturePriority)],
+        eventName: String
+    ) -> Bool {
+        // Simultaneous gestures always get to process events
+        if priority == .simultaneous {
+            return true
+        }
+
+        // If this gesture has already been recognized, let it continue
+        if recognizedGestures.contains(handlerID) {
+            return true
+        }
+
+        // Check if any high-priority gesture has been recognized
+        let recognizedHighPriority = elementGestures.first { gesture in
+            gesture.priority == .high && recognizedGestures.contains(gesture.handlerID)
+        }
+
+        // If a high-priority gesture is recognized and this is normal priority, block it
+        if let _ = recognizedHighPriority, priority == .normal {
+            return false
+        }
+
+        // Check if any normal-priority gesture (not this one) has been recognized
+        if priority == .normal {
+            let otherRecognizedNormal = elementGestures.first { gesture in
+                gesture.priority == .normal &&
+                gesture.handlerID != handlerID &&
+                recognizedGestures.contains(gesture.handlerID)
+            }
+            if otherRecognizedNormal != nil {
+                return false
+            }
+        }
+
+        // If we're still in pointerdown phase, everyone gets a chance
+        if eventName == "pointerdown" {
+            return true
+        }
+
+        return true
+    }
+
+    /// Fail competing gestures when a gesture is recognized
+    /// - Parameters:
+    ///   - recognizedHandlerID: The handler ID of the gesture that was recognized
+    ///   - priority: The priority of the recognized gesture
+    ///   - elementGestures: All gestures on the element
+    private func failCompetingGestures(
+        recognizedHandlerID: UUID,
+        priority: GesturePriority,
+        elementGestures: [(handlerID: UUID, priority: GesturePriority)]
+    ) {
+        // Mark this gesture as recognized
+        recognizedGestures.insert(recognizedHandlerID)
+
+        // If this is a high-priority gesture, fail all normal-priority gestures
+        if priority == .high {
+            for gesture in elementGestures {
+                if gesture.priority == .normal && gesture.handlerID != recognizedHandlerID {
+                    failGesture(handlerID: gesture.handlerID)
+                }
+            }
+        }
+
+        // If this is a normal-priority gesture, fail other normal-priority gestures
+        if priority == .normal {
+            for gesture in elementGestures {
+                if gesture.priority == .normal && gesture.handlerID != recognizedHandlerID {
+                    failGesture(handlerID: gesture.handlerID)
+                }
+            }
+        }
+
+        // Simultaneous gestures don't fail others
+    }
+
+    /// Fail a gesture by transitioning it to the failed state
+    /// - Parameter handlerID: The handler ID of the gesture to fail
+    private func failGesture(handlerID: UUID) {
+        // Transition drag gestures to failed state
+        if var state = dragGestureStates[handlerID] {
+            if state.recognitionState == .possible {
+                state.recognitionState = .failed
+                dragGestureStates[handlerID] = state
+            }
+        }
+    }
+
+    /// Handle pointerdown event for drag gestures
+    private func handlePointerDown(
+        handlerID: UUID,
+        event: JSValue,
+        handler: @Sendable @MainActor (Any) -> Void,
+        priority: GesturePriority,
+        elementGestures: [(handlerID: UUID, priority: GesturePriority)]
+    ) {
+        guard let eventObj = event.object else { return }
+
+        // Extract pointer coordinates
+        let clientX = eventObj.clientX.number ?? 0.0
+        let clientY = eventObj.clientY.number ?? 0.0
+
+        // Get current timestamp
+        let timestamp = Date().timeIntervalSince1970
+
+        // Create initial drag gesture state in .possible state
+        let startLocation = Raven.CGPoint(x: clientX, y: clientY)
+        let state = DragGestureState(
+            startLocation: startLocation,
+            startTime: timestamp,
+            minimumDistance: 10.0 // Default minimum distance
+        )
+
+        // Store the state (initialized with .possible state)
+        dragGestureStates[handlerID] = state
+
+        // Set up escape key listener to cancel gesture if needed
+        setupGestureCancellation(handlerID: handlerID)
+
+        // Don't call the handler yet - wait for movement beyond minimum distance
+        // State: .possible -> waiting for movement to transition to .began
+    }
+
+    /// Set up cancellation handling for an active gesture
+    /// This includes escape key handling and pointer leave events
+    private func setupGestureCancellation(handlerID: UUID) {
+        // Note: In a full implementation, we would:
+        // 1. Add a keydown listener for Escape key
+        // 2. Add pointerleave listener to the window
+        // 3. Store these listeners to clean up later
+        //
+        // For now, pointercancel events from the browser handle most cases
+        // Future enhancement: Add explicit escape key and pointer leave handling
+    }
+
+    /// Handle pointermove event for drag gestures
+    private func handlePointerMove(handlerID: UUID, event: JSValue, handler: @Sendable @MainActor (Any) -> Void) {
+        guard let eventObj = event.object else { return }
+        guard var state = dragGestureStates[handlerID] else { return }
+
+        // Extract pointer coordinates
+        let clientX = eventObj.clientX.number ?? 0.0
+        let clientY = eventObj.clientY.number ?? 0.0
+        let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
+
+        // Get current timestamp
+        let timestamp = Date().timeIntervalSince1970
+
+        // Add sample for velocity calculation
+        state.addSample(location: currentLocation, time: timestamp)
+
+        // State machine logic
+        switch state.recognitionState {
+        case .possible:
+            // Check if minimum distance threshold is exceeded
+            if state.hasExceededMinimumDistance(to: currentLocation) {
+                // Transition: .possible -> .began
+                state.recognitionState = .began
+
+                // Get the element ID and gestures for conflict resolution
+                if let elementID = findElementIDForGesture(handlerID: handlerID),
+                   let elementGestures = elementGestureMap[elementID] {
+                    // Find this gesture's priority
+                    if let gestureInfo = elementGestures.first(where: { $0.handlerID == handlerID }) {
+                        // Fail competing gestures
+                        failCompetingGestures(
+                            recognizedHandlerID: handlerID,
+                            priority: gestureInfo.priority,
+                            elementGestures: elementGestures
+                        )
+
+                        // Prevent default browser behavior if needed
+                        preventDefaultIfNeeded(event: eventObj, priority: gestureInfo.priority)
+                    }
+                }
+
+                // Calculate velocity
+                let velocity = state.calculateVelocity()
+
+                // Calculate predicted end location
+                let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
+
+                // Create DragGesture.Value
+                let dragValue = DragGesture.Value(
+                    location: currentLocation,
+                    startLocation: state.startLocation,
+                    velocity: velocity,
+                    predictedEndLocation: predictedEndLocation,
+                    time: Date(timeIntervalSince1970: timestamp)
+                )
+
+                // Update state
+                dragGestureStates[handlerID] = state
+
+                // Fire onChanged for the first time (gesture recognized)
+                handler(dragValue)
+            } else {
+                // Stay in .possible state, don't trigger handler yet
+                dragGestureStates[handlerID] = state
+            }
+
+        case .began, .changed:
+            // Transition: .began/.changed -> .changed
+            state.recognitionState = .changed
+
+            // Calculate velocity
+            let velocity = state.calculateVelocity()
+
+            // Calculate predicted end location
+            let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
+
+            // Create DragGesture.Value
+            let dragValue = DragGesture.Value(
+                location: currentLocation,
+                startLocation: state.startLocation,
+                velocity: velocity,
+                predictedEndLocation: predictedEndLocation,
+                time: Date(timeIntervalSince1970: timestamp)
+            )
+
+            // Update state
+            dragGestureStates[handlerID] = state
+
+            // Fire onChanged (gesture is ongoing)
+            handler(dragValue)
+
+        case .ended, .cancelled, .failed:
+            // Gesture already finished, ignore further moves
+            break
+        }
+    }
+
+    /// Find the element ID for a gesture handler
+    /// - Parameter handlerID: The gesture handler ID
+    /// - Returns: The element ID if found
+    private func findElementIDForGesture(handlerID: UUID) -> String? {
+        for (elementID, gestures) in elementGestureMap {
+            if gestures.contains(where: { $0.handlerID == handlerID }) {
+                return elementID
+            }
+        }
+        return nil
+    }
+
+    /// Prevent default browser behavior if needed for gesture recognition
+    /// - Parameters:
+    ///   - event: The DOM event object
+    ///   - priority: The gesture's priority
+    private func preventDefaultIfNeeded(event: JSObject, priority: GesturePriority) {
+        // Call preventDefault to prevent default scroll/swipe behavior
+        // This is especially important for high-priority gestures
+        _ = event.preventDefault?()
+    }
+
+    /// Handle pointerup/pointercancel event for drag gestures
+    private func handlePointerUp(handlerID: UUID, event: JSValue, handler: @Sendable @MainActor (Any) -> Void) {
+        guard let eventObj = event.object else { return }
+        guard var state = dragGestureStates[handlerID] else { return }
+
+        // Determine if this is a cancel or normal end
+        let eventName = eventObj.type.string ?? "pointerup"
+        let isCancelled = eventName == "pointercancel"
+
+        // State machine logic
+        switch state.recognitionState {
+        case .possible:
+            // Gesture never recognized - transition to .failed
+            state.recognitionState = .failed
+            // Don't call handler - gesture failed to meet recognition criteria
+
+        case .began, .changed:
+            // Gesture was recognized and is ending
+            if isCancelled {
+                // Transition: .began/.changed -> .cancelled
+                state.recognitionState = .cancelled
+            } else {
+                // Transition: .began/.changed -> .ended
+                state.recognitionState = .ended
+            }
+
+            // Extract final pointer coordinates
+            let clientX = eventObj.clientX.number ?? 0.0
+            let clientY = eventObj.clientY.number ?? 0.0
+            let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
+
+            // Get current timestamp
+            let timestamp = Date().timeIntervalSince1970
+
+            // Calculate final velocity
+            let velocity = state.calculateVelocity()
+
+            // Calculate predicted end location
+            let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
+
+            // Create final DragGesture.Value
+            let dragValue = DragGesture.Value(
+                location: currentLocation,
+                startLocation: state.startLocation,
+                velocity: velocity,
+                predictedEndLocation: predictedEndLocation,
+                time: Date(timeIntervalSince1970: timestamp)
+            )
+
+            // Fire onEnded callback
+            handler(dragValue)
+
+        case .ended, .cancelled, .failed:
+            // Already in terminal state, shouldn't happen but handle gracefully
+            break
+        }
+
+        // Clean up state
+        dragGestureStates.removeValue(forKey: handlerID)
+
+        // Remove from recognized gestures set
+        recognizedGestures.remove(handlerID)
     }
 
     /// Register a gesture handler
@@ -880,6 +1291,99 @@ public final class RenderCoordinator: Sendable {
             }
         }
         gestureHandlerRegistry[id] = anyHandler
+    }
+
+    /// Cancel all active gestures
+    /// This is useful when:
+    /// - The view is about to be removed
+    /// - Navigation occurs
+    /// - A modal is presented
+    public func cancelAllGestures() {
+        // Cancel all active drag gestures
+        for (handlerID, var state) in dragGestureStates {
+            // Only cancel if gesture is active (not already in terminal state)
+            switch state.recognitionState {
+            case .possible, .began, .changed:
+                state.recognitionState = .cancelled
+
+                // If gesture was recognized, fire final callback
+                if state.recognitionState == .began || state.recognitionState == .changed {
+                    if let handler = gestureHandlerRegistry[handlerID] {
+                        // Create final gesture value at last known position
+                        let lastSample = state.positionSamples.last ?? state.positionSamples.first!
+                        let velocity = state.calculateVelocity()
+                        let predictedEndLocation = state.predictEndLocation(
+                            from: lastSample.location,
+                            velocity: velocity
+                        )
+
+                        let dragValue = DragGesture.Value(
+                            location: lastSample.location,
+                            startLocation: state.startLocation,
+                            velocity: velocity,
+                            predictedEndLocation: predictedEndLocation,
+                            time: Date(timeIntervalSince1970: lastSample.time)
+                        )
+
+                        handler(dragValue)
+                    }
+                }
+
+            case .ended, .cancelled, .failed:
+                // Already in terminal state
+                break
+            }
+        }
+
+        // Clear all gesture states
+        dragGestureStates.removeAll()
+
+        // Clear recognized gestures
+        recognizedGestures.removeAll()
+    }
+
+    /// Cancel a specific gesture by ID
+    /// - Parameter handlerID: The gesture handler ID to cancel
+    public func cancelGesture(handlerID: UUID) {
+        guard var state = dragGestureStates[handlerID] else { return }
+
+        // Only cancel if gesture is active
+        switch state.recognitionState {
+        case .possible, .began, .changed:
+            state.recognitionState = .cancelled
+
+            // If gesture was recognized, fire final callback
+            if state.recognitionState == .began || state.recognitionState == .changed {
+                if let handler = gestureHandlerRegistry[handlerID] {
+                    let lastSample = state.positionSamples.last ?? state.positionSamples.first!
+                    let velocity = state.calculateVelocity()
+                    let predictedEndLocation = state.predictEndLocation(
+                        from: lastSample.location,
+                        velocity: velocity
+                    )
+
+                    let dragValue = DragGesture.Value(
+                        location: lastSample.location,
+                        startLocation: state.startLocation,
+                        velocity: velocity,
+                        predictedEndLocation: predictedEndLocation,
+                        time: Date(timeIntervalSince1970: lastSample.time)
+                    )
+
+                    handler(dragValue)
+                }
+            }
+
+            // Remove the gesture state
+            dragGestureStates.removeValue(forKey: handlerID)
+
+            // Remove from recognized gestures
+            recognizedGestures.remove(handlerID)
+
+        case .ended, .cancelled, .failed:
+            // Already in terminal state
+            break
+        }
     }
 }
 

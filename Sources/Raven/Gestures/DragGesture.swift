@@ -582,6 +582,77 @@ extension DragGesture {
     }
 }
 
+// MARK: - Gesture Recognition State
+
+/// The state of gesture recognition.
+///
+/// This enum represents the lifecycle of a gesture as it progresses from initial
+/// detection through completion or cancellation. The state machine ensures gestures
+/// only fire callbacks after proper recognition.
+///
+/// ## State Transitions
+///
+/// Normal flow:
+/// ```
+/// .possible -> .began -> .changed -> .ended
+/// ```
+///
+/// Cancellation flow:
+/// ```
+/// .possible -> .cancelled (gesture failed to recognize)
+/// .began -> .cancelled (gesture interrupted)
+/// .changed -> .cancelled (gesture interrupted)
+/// ```
+///
+/// Failure flow:
+/// ```
+/// .possible -> .failed (gesture recognition failed)
+/// ```
+public enum GestureRecognitionState: Sendable {
+    /// The gesture might happen but hasn't been recognized yet.
+    ///
+    /// This is the initial state when touch/pointer begins. The system is tracking
+    /// movement but hasn't yet determined if this will become a recognized gesture.
+    /// No callbacks are fired in this state.
+    case possible
+
+    /// The gesture has been recognized and is starting.
+    ///
+    /// Transition to this state occurs when the gesture's recognition criteria are met
+    /// (e.g., minimum distance threshold for drag). The first `onChanged` callback
+    /// fires when entering this state.
+    case began
+
+    /// The gesture is actively ongoing.
+    ///
+    /// After `.began`, subsequent updates transition to `.changed`. The `onChanged`
+    /// callback fires for each update while in this state.
+    case changed
+
+    /// The gesture completed successfully.
+    ///
+    /// The user released the pointer/touch and the gesture finished normally.
+    /// The `onEnded` callback fires when entering this state.
+    case ended
+
+    /// The gesture was interrupted or cancelled.
+    ///
+    /// This occurs when:
+    /// - The pointer leaves the window or element
+    /// - The escape key is pressed
+    /// - Another gesture wins priority
+    /// - A system gesture takes over
+    ///
+    /// The `onEnded` callback may fire with the last known state.
+    case cancelled
+
+    /// The gesture recognition failed.
+    ///
+    /// The gesture started tracking but failed to meet recognition criteria
+    /// and won't proceed further. No callbacks fire for failed gestures.
+    case failed
+}
+
 // MARK: - Internal State
 
 /// Internal state for tracking an active drag gesture.
@@ -589,37 +660,50 @@ extension DragGesture {
 /// This structure maintains the state needed during drag recognition, including position
 /// history for velocity calculation and timing information.
 @MainActor
-internal struct DragGestureState: Sendable {
+public struct DragGestureState: Sendable {
     /// Position sample for velocity calculation.
-    struct PositionSample: Sendable {
-        var location: CGPoint
-        var time: Double
+    public struct PositionSample: Sendable {
+        public var location: CGPoint
+        public var time: Double
     }
 
     /// The starting location of the drag.
-    var startLocation: CGPoint
+    public var startLocation: CGPoint
 
     /// The time when the drag started.
-    var startTime: Double
+    public var startTime: Double
 
     /// The minimum distance threshold for recognition.
-    let minimumDistance: Double
+    public let minimumDistance: Double
+
+    /// The current recognition state of the gesture.
+    public var recognitionState: GestureRecognitionState
 
     /// Whether the gesture has been recognized (passed minimum distance).
-    var isRecognized: Bool
+    @available(*, deprecated, message: "Use recognitionState instead")
+    public var isRecognized: Bool {
+        get {
+            recognitionState == .began || recognitionState == .changed || recognitionState == .ended
+        }
+        set {
+            if newValue && recognitionState == .possible {
+                recognitionState = .began
+            }
+        }
+    }
 
     /// Recent position samples for velocity calculation (rolling window).
-    var positionSamples: [PositionSample]
+    public var positionSamples: [PositionSample]
 
     /// Maximum number of samples to keep for velocity calculation.
-    static let maxSamples = 10
+    public static let maxSamples = 10
 
     /// Time window for velocity calculation (in seconds).
-    static let velocityWindow: Double = 0.1 // 100ms
+    public static let velocityWindow: Double = 0.1 // 100ms
 
     /// Friction coefficient for predicted end position (0.0 to 1.0).
     /// Higher values = more friction = shorter momentum.
-    static let frictionCoefficient: Double = 0.92
+    public static let frictionCoefficient: Double = 0.92
 
     /// Creates a new drag gesture state.
     ///
@@ -627,7 +711,7 @@ internal struct DragGestureState: Sendable {
     ///   - startLocation: The initial drag location.
     ///   - startTime: The time when the drag began.
     ///   - minimumDistance: The minimum distance threshold.
-    init(
+    public init(
         startLocation: CGPoint,
         startTime: Double,
         minimumDistance: Double
@@ -635,7 +719,7 @@ internal struct DragGestureState: Sendable {
         self.startLocation = startLocation
         self.startTime = startTime
         self.minimumDistance = minimumDistance
-        self.isRecognized = false
+        self.recognitionState = .possible
         self.positionSamples = [PositionSample(location: startLocation, time: startTime)]
     }
 
@@ -643,7 +727,7 @@ internal struct DragGestureState: Sendable {
     ///
     /// - Parameter currentLocation: The current drag location.
     /// - Returns: `true` if the drag has moved beyond the minimum distance.
-    func hasExceededMinimumDistance(to currentLocation: CGPoint) -> Bool {
+    public func hasExceededMinimumDistance(to currentLocation: CGPoint) -> Bool {
         let dx = currentLocation.x - startLocation.x
         let dy = currentLocation.y - startLocation.y
         let distance = sqrt(dx * dx + dy * dy)
@@ -655,7 +739,7 @@ internal struct DragGestureState: Sendable {
     /// - Parameters:
     ///   - location: The current drag location.
     ///   - time: The current time.
-    mutating func addSample(location: CGPoint, time: Double) {
+    public mutating func addSample(location: CGPoint, time: Double) {
         positionSamples.append(PositionSample(location: location, time: time))
 
         // Remove old samples outside the velocity window
@@ -674,7 +758,7 @@ internal struct DragGestureState: Sendable {
     /// in the rolling window.
     ///
     /// - Returns: The velocity in points per second.
-    func calculateVelocity() -> CGSize {
+    public func calculateVelocity() -> CGSize {
         guard positionSamples.count >= 2 else {
             return CGSize(width: 0, height: 0)
         }
@@ -704,7 +788,7 @@ internal struct DragGestureState: Sendable {
     ///   - currentLocation: The current drag location.
     ///   - velocity: The current velocity.
     /// - Returns: The predicted end location.
-    func predictEndLocation(from currentLocation: CGPoint, velocity: CGSize) -> CGPoint {
+    public func predictEndLocation(from currentLocation: CGPoint, velocity: CGSize) -> CGPoint {
         // If velocity is very small, predict current location
         let speed = sqrt(velocity.width * velocity.width + velocity.height * velocity.height)
         guard speed > 10 else {

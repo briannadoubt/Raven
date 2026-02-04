@@ -17,6 +17,9 @@ public final class DOMBridge {
     /// Registry of event handlers mapped by UUID
     private var eventHandlers: [UUID: @Sendable @MainActor () -> Void] = [:]
 
+    /// Registry of gesture event handlers that receive event data mapped by UUID
+    private var gestureEventHandlers: [UUID: @Sendable @MainActor (JSValue) -> Void] = [:]
+
     /// Map of NodeID to JSObject for efficient lookups
     private var nodeRegistry: [NodeID: JSObject] = [:]
 
@@ -66,6 +69,15 @@ public final class DOMBridge {
         }
 
         handler()
+    }
+
+    /// Invoke a registered gesture event handler with event data
+    private func invokeGestureHandler(_ handlerID: UUID, event: JSValue) {
+        guard let handler = gestureEventHandlers[handlerID] else {
+            return
+        }
+
+        handler(event)
     }
 
     // MARK: - Core DOM Operations
@@ -202,11 +214,66 @@ public final class DOMBridge {
             if let handlerIDString = keys[i].string,
                let handlerID = UUID(uuidString: handlerIDString) {
                 eventHandlers.removeValue(forKey: handlerID)
+                gestureEventHandlers.removeValue(forKey: handlerID)
             }
         }
 
         // Clear the handlers object
         element.__ravenHandlers = .undefined
+    }
+
+    /// Add a gesture event listener that receives event data
+    public func addGestureEventListener(
+        element: JSObject,
+        event: String,
+        handlerID: UUID,
+        handler: @escaping @Sendable @MainActor (JSValue) -> Void
+    ) {
+        // Ensure event delegation is set up
+        setupEventDelegation()
+
+        // Store the handler
+        gestureEventHandlers[handlerID] = handler
+
+        // Create an inline event handler that calls our global handler with event data
+        // We need to store a reference to the handler that can be called with the event
+        let handlerScript = """
+        function(e) {
+            if (window.__ravenGestureEventHandler_\(handlerID.uuidString)) {
+                window.__ravenGestureEventHandler_\(handlerID.uuidString)(e);
+            }
+        }
+        """
+
+        // Create a JavaScript closure that can receive the event
+        let closure = JSClosure { [weak self] args -> JSValue in
+            guard let self = self, args.count > 0 else {
+                return .undefined
+            }
+
+            let event = args[0]
+            Task { @MainActor in
+                self.invokeGestureHandler(handlerID, event: event)
+            }
+
+            return .undefined
+        }
+
+        // Store the closure globally
+        JSObject.global[dynamicMember: "__ravenGestureEventHandler_\(handlerID.uuidString)"] = .object(closure)
+
+        // Create a JavaScript function from the script
+        let jsHandler = JSObject.global.Function.function!("e", "return \(handlerScript)")
+        let boundHandler = jsHandler.new()
+
+        // Add the event listener
+        _ = element.addEventListener!(event, boundHandler)
+
+        // Store the bound handler on the element for cleanup
+        if element.__ravenHandlers.isUndefined {
+            element.__ravenHandlers = .object(JSObject.global.Object.function!.new())
+        }
+        element.__ravenHandlers[dynamicMember: handlerID.uuidString] = boundHandler
     }
 
     // MARK: - Node Tracking
@@ -246,6 +313,7 @@ public final class DOMBridge {
         }
         nodeRegistry.removeAll()
         eventHandlers.removeAll()
+        gestureEventHandlers.removeAll()
     }
 
     // MARK: - Query Methods
