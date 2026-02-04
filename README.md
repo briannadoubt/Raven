@@ -38,9 +38,10 @@ Whether you're building interactive web applications, creating cross-platform to
 - **Navigation** - NavigationLink and navigation state management
 - **Scroll Features** - Advanced scroll behavior and scroll-based animations
 - **Search** - Built-in searchable modifier with suggestions and filtering
+- **Gesture System** - Complete gesture recognition with 6 gesture types, @GestureState, composition, and web event integration
 - **Animation System** - Complete animation support with curves, transitions, keyframes, and GPU acceleration
 - **Visual Effects** - 7 GPU-accelerated effects (blur, brightness, contrast, saturation, grayscale, hue rotation, shadow)
-- **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, animations, and visual effects
+- **Comprehensive View Modifiers** - Layout, interaction, text styling, shape styling, animations, gestures, and visual effects
 - **Environment Values** - Propagate configuration through the view hierarchy
 
 ## Quick Start
@@ -84,6 +85,38 @@ cd MyApp
 
 # Output will be in dist/
 ```
+
+## What's New in v0.7.0 (Phase 13)
+
+Raven v0.7.0 introduces a comprehensive gesture recognition system with full SwiftUI compatibility:
+
+**Gesture System**
+- Complete `Gesture` protocol foundation with composability support
+- 6 built-in gesture types: `TapGesture`, `SpatialTapGesture`, `LongPressGesture`, `DragGesture`, `RotationGesture`, `MagnificationGesture`
+- `@GestureState` property wrapper for automatic state management with reset
+- Gesture modifiers: `.onChanged()`, `.onEnded()`, `.updating()` for lifecycle handling
+- Three view integration methods: `.gesture()`, `.simultaneousGesture()`, `.highPriorityGesture()` with priority control
+- Gesture composition operators: `.simultaneously(with:)`, `.sequenced(before:)`, `.exclusively(before:)`
+- `GestureMask` options for controlling gesture recognition scope
+- `EventModifiers` support for detecting keyboard modifiers during gestures
+- `Transaction` support for animation integration
+
+**Web Platform Integration**
+- Pointer Events API for unified mouse/touch handling
+- Touch Events for multi-touch gestures (rotation, magnification)
+- Coordinate space transformations (local, global, named)
+- Velocity calculation for drag gestures
+- Event throttling for performance (60fps)
+- Automatic event listener cleanup
+
+**Testing & Quality**
+- 194+ comprehensive tests across all gesture features
+- Plus existing unit tests for each gesture component
+- ~5,224 lines of production code, ~3,782 lines of test code
+- Full DocC documentation for all APIs
+- API coverage increased from ~85% to ~90%
+
+See [CHANGELOG.md](CHANGELOG.md) and [Phase 13 Documentation](Documentation/Phase13.md) for complete details.
 
 ## What's New in v0.6.0 (Phase 12)
 
@@ -233,6 +266,7 @@ Raven is being developed in phases, each delivering complete, tested functionali
 | **Phase 10** | Shapes & Visual Effects | ✅ Complete | Shape system, Path, visual effects, clipping, 162+ tests |
 | **Phase 11** | Modern Layout & Search | ✅ Complete | containerRelativeFrame, ViewThatFits, scroll features, searchable, 102+ tests |
 | **Phase 12** | Animation System | ✅ Complete | Animation curves, transitions, keyframeAnimator, GPU acceleration, 50+ tests |
+| **Phase 13** | Gesture System | ✅ Complete | 6 gesture types, @GestureState, composition, web events, 194+ tests |
 
 ## Architecture
 

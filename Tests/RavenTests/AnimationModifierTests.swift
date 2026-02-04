@@ -16,7 +16,6 @@ struct AnimationModifierTests {
     // MARK: - Basic Animation Tests
 
     @Test("Animation modifier with nil creates view without transitions")
-    @MainActor
     @MainActor func animationWithNil() {
         let view = _AnimationView(
             content: Text("Hello"),

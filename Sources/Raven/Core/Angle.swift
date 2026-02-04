@@ -53,7 +53,7 @@ import Foundation
 /// - ``zero``
 ///
 /// - Note: Angle calculations use Double precision for accuracy.
-public struct Angle: Hashable, Sendable {
+public struct Angle: Hashable, Sendable, Codable {
     /// The angle value in degrees.
     ///
     /// A full rotation is 360 degrees.
