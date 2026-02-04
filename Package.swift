@@ -1,0 +1,131 @@
+// swift-tools-version: 6.2
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "Raven",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16)
+    ],
+    products: [
+        // Main library product
+        .library(
+            name: "Raven",
+            targets: ["Raven"]
+        ),
+        // Runtime support library
+        .library(
+            name: "RavenRuntime",
+            targets: ["RavenRuntime"]
+        ),
+        // CLI executable
+        .executable(
+            name: "raven",
+            targets: ["RavenCLI"]
+        )
+    ],
+    dependencies: [
+        // JavaScriptKit for WASM/JavaScript interop
+        .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", from: "0.19.0"),
+        // ArgumentParser for CLI
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
+    ],
+    targets: [
+        // MARK: - Main Library Targets
+
+        // Main Raven library with SwiftUI API
+        .target(
+            name: "Raven",
+            dependencies: [
+                .product(name: "JavaScriptKit", package: "JavaScriptKit")
+            ],
+            path: "Sources/Raven",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // Runtime support library
+        .target(
+            name: "RavenRuntime",
+            dependencies: [
+                "Raven",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit")
+            ],
+            path: "Sources/RavenRuntime",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // CLI executable for build tooling
+        .executableTarget(
+            name: "RavenCLI",
+            dependencies: [
+                "Raven",
+                "RavenRuntime",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            path: "Sources/RavenCLI",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // MARK: - Test Targets
+
+        // Core Raven tests
+        .testTarget(
+            name: "RavenTests",
+            dependencies: ["Raven"],
+            path: "Tests/RavenTests",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // VirtualDOM-specific tests
+        .testTarget(
+            name: "VirtualDOMTests",
+            dependencies: ["Raven"],
+            path: "Tests/VirtualDOMTests",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // Integration tests
+        .testTarget(
+            name: "IntegrationTests",
+            dependencies: [
+                "Raven",
+                "RavenRuntime"
+            ],
+            path: "Tests/IntegrationTests",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        ),
+
+        // RavenCLI tests
+        .testTarget(
+            name: "RavenCLITests",
+            dependencies: [
+                "RavenCLI"
+            ],
+            path: "Tests/RavenCLI",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("AccessLevelOnImport")
+            ]
+        )
+    ]
+)

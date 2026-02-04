@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ProjectName}}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading {{ProjectName}}...</p>
+        </div>
+    </div>
+
+    <!-- Swift WASM Runtime -->
+    <script type="module">
+        // This will be populated by the build system
+        // The runtime.js and compiled WASM module will be loaded here
+
+        // For now, this is a placeholder
+        console.log('{{ProjectName}} - Ready to load WASM module');
+    </script>
+
+    <!--
+        The build system will inject:
+        - runtime.js: JavaScript runtime for Swift WASM
+        - {{ProjectName}}.wasm: Compiled WebAssembly module
+    -->
+</body>
+</html>

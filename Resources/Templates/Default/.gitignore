@@ -1,0 +1,33 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# WASM output
+dist/
+*.wasm
+
+# IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Xcode
+xcuserdata/
+*.xcodeproj/
+*.xcworkspace/
+
+# Build artifacts
+DerivedData/
+.derivedData/
+
+# Dependencies
+Packages/
+.build-artifacts/
+
+# Logs
+*.log
+npm-debug.log*
