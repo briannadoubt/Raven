@@ -17,7 +17,7 @@ public final class DebugOverlay: Sendable {
     private let overlayID = "__raven_debug_overlay"
 
     /// Metrics update timer
-    private var updateTimer: Timer?
+    private var updateTask: Task<Void, Never>?
 
     /// Performance metrics
     private struct Metrics: Sendable {
@@ -276,16 +276,22 @@ public final class DebugOverlay: Sendable {
     }
 
     private func startMetricsUpdates() {
-        // Update metrics every 100ms
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, self.isVisible else { return }
-            self.updateMetricsDisplay()
+        // Update metrics every 100ms using Task.sleep instead of Timer
+        updateTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self = self, self.isVisible else {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    continue
+                }
+                self.updateMetricsDisplay()
+                try? await Task.sleep(for: .milliseconds(100))
+            }
         }
     }
 
     private func stopMetricsUpdates() {
-        updateTimer?.invalidate()
-        updateTimer = nil
+        updateTask?.cancel()
+        updateTask = nil
     }
 
     private func updateMetricsDisplay() {

@@ -333,7 +333,7 @@ public final class DataChannel: Sendable {
         }
 
         // Convert Data to Uint8Array
-        let uint8Array = JSObject.global.Uint8Array.call(data.count)
+        var uint8Array = JSObject.global.Uint8Array.call(data.count)
         for (index, byte) in data.enumerated() {
             uint8Array[index] = .number(Double(byte))
         }

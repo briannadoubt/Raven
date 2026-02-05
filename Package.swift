@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -28,7 +28,7 @@ let package = Package(
     ],
     dependencies: [
         // JavaScriptKit for WASM/JavaScript interop
-        .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", exact: "0.36.0"),
+        .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", exact: "0.19.2"),
         // ArgumentParser for CLI
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
     ],

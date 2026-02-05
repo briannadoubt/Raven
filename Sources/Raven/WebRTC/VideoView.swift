@@ -177,7 +177,7 @@ internal struct VideoElement: Sendable {
         }
 
         // Apply styling
-        let style = video.style
+        var style = video.style
         style.objectFit = JSValue.string(objectFit.rawValue)
         style.width = JSValue.string("100%")
         style.height = JSValue.string("100%")
@@ -203,7 +203,7 @@ internal struct VideoElement: Sendable {
         element.muted = JSValue.boolean(muted)
 
         // Update styling
-        let style = element.style
+        var style = element.style
         style.objectFit = JSValue.string(objectFit.rawValue)
 
         if mirrored {
@@ -321,7 +321,7 @@ public final class VideoRecorder: Sendable {
             throw VideoRecorderError.notSupported
         }
 
-        let options = JSObject.global.Object.call()
+        var options = JSObject.global.Object.call()
         options.mimeType = JSValue.string(mimeType)
 
         if let bitrate = videoBitsPerSecond {
@@ -383,7 +383,7 @@ public final class VideoRecorder: Sendable {
                     }
 
                     // Create blob from chunks
-                    let chunksArray = JSObject.global.Array.call()
+                    var chunksArray = JSObject.global.Array.call()
                     for (index, chunk) in self.recordedChunks.enumerated() {
                         chunksArray[index] = chunk
                     }

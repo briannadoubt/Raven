@@ -273,7 +273,7 @@ public final class IndexedDB: @unchecked Sendable {
             let request = getFn(key)
 
             // Use closure function to avoid ExpressibleByDictionaryLiteral ambiguity
-            let successClosure: (sending [JSValue]) -> JSValue = { args in
+            let successClosure: ([JSValue]) -> JSValue = { args in
                 guard let event = args.first else{
                     continuation.resume(returning: [:])
                     return .undefined
@@ -292,7 +292,7 @@ public final class IndexedDB: @unchecked Sendable {
             }
             let successHandler = JSClosure(successClosure)
 
-            let errorClosure: (sending [JSValue]) -> JSValue = { _ in
+            let errorClosure: ([JSValue]) -> JSValue = { _ in
                 continuation.resume(throwing: IndexedDBError.operationFailed)
                 return .undefined
             }

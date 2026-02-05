@@ -395,7 +395,7 @@ public final class AudioRecorder: Sendable {
                     }
 
                     // Create blob from chunks
-                    let chunksArray = JSObject.global.Array.call()
+                    var chunksArray = JSObject.global.Array.call()
                     for (index, chunk) in self.recordedChunks.enumerated() {
                         chunksArray[index] = chunk
                     }

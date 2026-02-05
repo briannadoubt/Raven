@@ -216,7 +216,8 @@ struct _SwipeActionsModifier<Actions: View>: ViewModifier, Sendable {
         }
 
         // Trigger first action after animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
             // First action would be triggered here
             // For now, just reset
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {

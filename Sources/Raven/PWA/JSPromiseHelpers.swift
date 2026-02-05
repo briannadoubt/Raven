@@ -12,11 +12,11 @@ extension JSPromise {
             _ = self.then(
                 success: { value in
                     continuation.resume(returning: value)
-                    return .undefined
+                    return JSValue.undefined
                 },
                 failure: { error in
                     continuation.resume(throwing: JSPromiseError.rejected(error))
-                    return .undefined
+                    return JSValue.undefined
                 }
             )
         }

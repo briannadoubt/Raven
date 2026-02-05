@@ -151,7 +151,7 @@ public final class AppRuntime: Sendable {
             return nil
         }
 
-        let root = document.createElement("div")
+        var root = document.createElement("div")
         root.id = "root"
         if let appendChild = body.appendChild.function {
             _ = appendChild(root)

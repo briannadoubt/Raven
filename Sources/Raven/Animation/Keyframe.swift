@@ -39,7 +39,7 @@ extension Float: Interpolatable {
     }
 }
 
-#if !(os(macOS) || os(iOS) || os(tvOS) || os(watchOS))
+#if !(os(macOS) || os(iOS) || os(tvOS) || os(watchOS)) && !arch(wasm32)
 // Only add CGFloat conformance on platforms where it's not Double
 extension CGFloat: Interpolatable {
     public func interpolated(to other: CGFloat, amount: Double) -> CGFloat {
