@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Raven CLI - Development tools for Raven Swift WASM apps
+
+Usage:
+    raven dev       Start development server with hot reload
+    raven build     Build WASM binary
+    raven serve     Serve app without hot reload
+    raven --version Show version information
+    raven --help    Show this help message
+"""
+
+import os
+import sys
+import subprocess
+import signal
+from pathlib import Path
+
+# Add project root to path so we can import cli package
+PROJECT_ROOT = Path(__file__).parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    import click
+except ImportError:
+    print("Error: click not installed")
+    print("Install with: pip3 install click flask flask-cors watchdog")
+    sys.exit(1)
+
+from cli.raven_dev import dev_command
+from cli.raven_build import build_command
+from cli.raven_serve import serve_command
+
+__version__ = "0.1.0"
+
+@click.group(invoke_without_command=True)
+@click.option('--version', is_flag=True, help='Show version information')
+@click.pass_context
+def cli(ctx, version):
+    """Raven - Development tools for Swift WASM apps"""
+    if version:
+        click.echo(f"Raven CLI v{__version__}")
+        click.echo("Swift WASM development tools")
+        return
+
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+# Register commands
+cli.add_command(dev_command, name='dev')
+cli.add_command(build_command, name='build')
+cli.add_command(serve_command, name='serve')
+
+def main():
+    """Main entry point with graceful shutdown"""
+    def signal_handler(sig, frame):
+        click.echo("\n\n🛑 Shutting down...")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        cli()
+    except KeyboardInterrupt:
+        signal_handler(None, None)
+
+if __name__ == '__main__':
+    main()
