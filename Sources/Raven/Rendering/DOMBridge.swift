@@ -188,8 +188,20 @@ public final class DOMBridge {
         // Store the closure in our registry to keep it alive
         eventClosures[handlerID] = jsClosure
 
-        // Add the event listener using the closure directly
-        _ = element.addEventListener!(event, jsClosure)
+        // Add the event listener using call to preserve 'this' binding
+        // We need to use JavaScript's call method to ensure 'this' is the element
+        let console = JSObject.global.console
+        if let addEventListenerFn = element.addEventListener.function {
+            // Call the function with the element as 'this'
+            if let call = addEventListenerFn.call.function {
+                _ = call(element, event, jsClosure)
+                _ = console.log("[Swift] addEventListener called for event: \(event)")
+            } else {
+                _ = console.log("[Swift] Warning: call method not available")
+            }
+        } else {
+            _ = console.log("[Swift] Warning: addEventListener not available on element")
+        }
     }
 
     /// Remove an event listener from a DOM element
@@ -206,8 +218,10 @@ public final class DOMBridge {
             return
         }
 
-        // Remove the DOM event listener
-        _ = element.removeEventListener!(event, jsClosure)
+        // Remove the DOM event listener - extract the function and call it
+        if let removeEventListenerFn = element.removeEventListener.function {
+            _ = removeEventListenerFn(event, jsClosure)
+        }
     }
 
     /// Remove all event listeners from a DOM element
