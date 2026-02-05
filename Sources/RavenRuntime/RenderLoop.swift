@@ -905,7 +905,15 @@ public final class RenderCoordinator: Sendable {
                     continue
                 }
                 DOMBridge.shared.appendChild(parent: element, child: childDOMNode)
-                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                // Only register nodes that can be parents (elements, fragments, components)
+                // Don't register text nodes since they can't have children
+                if case .element = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                } else if case .fragment = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                } else if case .component = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                }
             }
 
         case .text(let content):
@@ -926,7 +934,14 @@ public final class RenderCoordinator: Sendable {
                     continue
                 }
                 DOMBridge.shared.appendChild(parent: fragment, child: childDOMNode)
-                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                // Only register nodes that can be parents (not text nodes)
+                if case .element = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                } else if case .fragment = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                } else if case .component = child.type {
+                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                }
             }
 
         case .component:
@@ -997,6 +1012,13 @@ public final class RenderCoordinator: Sendable {
                 return
             }
 
+            // Validate parent is an element that can have children (nodeType === 1)
+            let nodeType = parentElement.nodeType.number ?? 0
+            if nodeType != 1 {
+                print("Warning: Cannot insert into non-element node (type: \(Int(nodeType))). Parent ID: \(parentID)")
+                return
+            }
+
             guard let newElement = createDOMNode(node) else {
                 print("Warning: Failed to create DOM node for insert")
                 return
@@ -1010,7 +1032,14 @@ public final class RenderCoordinator: Sendable {
                 DOMBridge.shared.appendChild(parent: parentElement, child: newElement)
             }
 
-            DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            // Only register nodes that can be parents
+            if case .element = node.type {
+                DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            } else if case .fragment = node.type {
+                DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            } else if case .component = node.type {
+                DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            }
 
         case .remove(let nodeID):
             guard let element = DOMBridge.shared.getNode(id: nodeID) else {
