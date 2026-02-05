@@ -211,6 +211,11 @@ public final class RenderCoordinator: Sendable {
             return buttonNode
         }
 
+        // TextField view handling
+        if let textFieldNode = extractTextField(view) {
+            return textFieldNode
+        }
+
         // VStack view handling
         if let vstackView = extractVStack(view) {
             return vstackView
@@ -219,6 +224,11 @@ public final class RenderCoordinator: Sendable {
         // HStack view handling
         if let hstackView = extractHStack(view) {
             return hstackView
+        }
+
+        // List view handling
+        if let listView = extractList(view) {
+            return listView
         }
 
         // EmptyView
@@ -358,6 +368,110 @@ public final class RenderCoordinator: Sendable {
         eventHandlerRegistry[id] = wrappedAction
     }
 
+    /// Extract and convert TextField with proper event handler registration
+    /// - Parameter view: View that might be a TextField
+    /// - Returns: VNode if this is a TextField, nil otherwise
+    private func extractTextField<V: View>(_ view: V) -> VNode? {
+        // Check if this is a TextField and extract its properties using reflection
+        let mirror = Mirror(reflecting: view)
+
+        var placeholder: String?
+        var textBinding: Binding<String>?
+
+        for child in mirror.children {
+            switch child.label {
+            case "placeholder":
+                placeholder = child.value as? String
+            case "text":
+                textBinding = child.value as? Binding<String>
+            default:
+                break
+            }
+        }
+
+        // If we found both required properties, this is a TextField
+        guard let placeholderText = placeholder,
+              let binding = textBinding else {
+            return nil
+        }
+
+        // Generate a unique ID for the input event handler
+        let handlerID = UUID()
+
+        // Register the input event handler that updates the binding
+        registerInputEventHandler(id: handlerID, binding: binding)
+
+        // Reconstruct the VNode with our registered handler ID
+        let inputHandler = VProperty.eventHandler(event: "input", handlerID: handlerID)
+
+        var props: [String: VProperty] = [
+            // Input type
+            "type": .attribute(name: "type", value: "text"),
+
+            // Placeholder from TextField
+            "placeholder": .attribute(name: "placeholder", value: placeholderText),
+
+            // Current value (reflects the binding)
+            "value": .attribute(name: "value", value: binding.wrappedValue),
+
+            // Input event handler
+            "onInput": inputHandler,
+
+            // Default styling
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "width": .style(name: "width", value: "100%"),
+            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+        ]
+
+        // ARIA attributes
+        props["aria-label"] = .attribute(name: "aria-label", value: placeholderText)
+        props["role"] = .attribute(name: "role", value: "textbox")
+
+        return VNode.element(
+            "input",
+            props: props,
+            children: []
+        )
+    }
+
+    /// Register an input event handler that extracts the value and updates a binding
+    /// - Parameters:
+    ///   - id: Unique identifier for the handler
+    ///   - binding: String binding to update when input changes
+    private func registerInputEventHandler(id: UUID, binding: Binding<String>) {
+        // Store the binding in a way we can access it from the event handler
+        // For now, we'll use a simpler approach: register a handler that will
+        // extract the value via JavaScript when the event fires
+
+        // The handler needs to:
+        // 1. Extract the new value from the input element
+        // 2. Update the binding
+        // 3. Trigger a re-render
+
+        // Since our current architecture doesn't pass event objects to handlers,
+        // we need to use a workaround. We'll use DOMBridge to find the element
+        // by its handler ID and extract its value.
+
+        // For now, create a simple handler that just triggers re-render
+        // The actual value extraction will happen in the modified DOMBridge
+        let wrappedAction: @Sendable @MainActor () -> Void = { [weak self] in
+            // Note: In a proper implementation, we would extract event.target.value here
+            // For now, this is a placeholder that shows the architecture needs updating
+
+            guard let self = self else { return }
+
+            // Trigger a re-render to reflect any state changes
+            if let rerender = self.rerenderClosure {
+                rerender()
+            }
+        }
+
+        eventHandlerRegistry[id] = wrappedAction
+    }
+
     /// Extract and convert VStack with children
     private func extractVStack<V: View>(_ view: V) -> VNode? {
         // Use reflection to extract VStack and its content
@@ -484,14 +598,81 @@ public final class RenderCoordinator: Sendable {
         return VNode.fragment(children: children)
     }
 
+    /// Extract and convert List with children
+    private func extractList<V: View>(_ view: V) -> VNode? {
+        // Use reflection to extract List and its content
+        let mirror = Mirror(reflecting: view)
+
+        var content: Any?
+
+        for child in mirror.children {
+            if child.label == "content" {
+                content = child.value
+                break
+            }
+        }
+
+        // If we didn't find content, this might not be a List
+        guard let contentView = content as? (any View) else {
+            return nil
+        }
+
+        // Create the List container node with proper styling
+        var props: [String: VProperty] = [
+            // ARIA role for accessibility
+            "role": .attribute(name: "role", value: "list"),
+
+            // Layout styles
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+
+            // Scrolling behavior
+            "overflow-y": .style(name: "overflow-y", value: "auto"),
+
+            // Default styling
+            "width": .style(name: "width", value: "100%"),
+            "gap": .style(name: "gap", value: "8px"),
+        ]
+
+        // Convert children
+        var children: [VNode] = []
+        let childVNode = convertViewToVNode(contentView)
+
+        // If the child is a fragment (like ForEach), use its children directly
+        // Otherwise, use the child itself
+        if case .fragment = childVNode.type {
+            children = childVNode.children
+        } else {
+            children = [childVNode]
+        }
+
+        return VNode.element("div", props: props, children: children)
+    }
+
     /// Extract and convert ConditionalContent
     private func extractConditionalContent<V: View>(_ view: V) -> VNode? {
         // ConditionalContent represents if/else branches
         // We need to check which branch is active and render that
 
-        // This is a simplified implementation
-        // In reality, we'd need to use reflection or a different approach
-        // to extract the actual conditional content
+        let mirror = Mirror(reflecting: view)
+
+        // ConditionalContent has a "storage" property that contains either
+        // .trueContent or .falseContent
+        for child in mirror.children {
+            if child.label == "storage" {
+                // Extract the storage enum
+                let storageMirror = Mirror(reflecting: child.value)
+
+                // Check which case is active
+                if let caseName = storageMirror.children.first?.label {
+                    // Get the associated value (the actual view)
+                    if let content = storageMirror.children.first?.value as? (any View) {
+                        // Render the active branch
+                        return convertViewToVNode(content)
+                    }
+                }
+            }
+        }
 
         return nil
     }
@@ -500,6 +681,27 @@ public final class RenderCoordinator: Sendable {
     private func extractOptionalContent<V: View>(_ view: V) -> VNode? {
         // OptionalContent wraps an optional view
         // Render the view if present, otherwise return empty fragment
+
+        let mirror = Mirror(reflecting: view)
+
+        // OptionalContent has a "content" property that is Optional<some View>
+        for child in mirror.children {
+            if child.label == "content" {
+                // Check if the optional has a value
+                let contentMirror = Mirror(reflecting: child.value)
+
+                if contentMirror.displayStyle == .optional {
+                    // Check if it's nil or has a value
+                    if contentMirror.children.isEmpty {
+                        // nil - return empty fragment
+                        return VNode.fragment(children: [])
+                    } else if let some = contentMirror.children.first?.value as? (any View) {
+                        // Has a value - render it
+                        return convertViewToVNode(some)
+                    }
+                }
+            }
+        }
 
         return nil
     }

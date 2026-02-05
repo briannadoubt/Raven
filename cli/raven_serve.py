@@ -29,16 +29,17 @@ def serve_command(port, no_browser):
     os.chdir(app_root)
     config = get_config(app_root)
 
-    public_dir = config.get('public_dir', 'public')
+    # Use absolute path for public directory
+    public_dir = Path(config.get('public_dir', 'public')).resolve()
 
     # Check if public directory exists
-    if not Path(public_dir).exists():
+    if not public_dir.exists():
         click.echo(f"{Colors.FAIL}Error: {public_dir}/ directory not found{Colors.ENDC}")
         click.echo("Run 'raven build' first")
         sys.exit(1)
 
     # Check if WASM exists
-    wasm_file = Path(public_dir) / f"{config['app_name']}-v2.wasm"
+    wasm_file = public_dir / f"{config['app_name']}-v2.wasm"
     if not wasm_file.exists():
         click.echo(f"{Colors.WARNING}Warning: {wasm_file} not found{Colors.ENDC}")
         click.echo("Run 'raven build' to create it")
@@ -48,11 +49,11 @@ def serve_command(port, no_browser):
 
     @app.route('/')
     def index():
-        return send_from_directory(public_dir, 'index.html')
+        return send_from_directory(str(public_dir), 'index.html')
 
     @app.route('/<path:path>')
     def serve_file(path):
-        return send_from_directory(public_dir, path)
+        return send_from_directory(str(public_dir), path)
 
     @app.after_request
     def add_headers(response):

@@ -20,6 +20,12 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Activate venv if it exists
+VENV_PYTHON = PROJECT_ROOT / "venv" / "bin" / "python3"
+if VENV_PYTHON.exists() and sys.executable != str(VENV_PYTHON):
+    # Re-execute with venv Python
+    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON)] + sys.argv)
+
 try:
     import click
 except ImportError:

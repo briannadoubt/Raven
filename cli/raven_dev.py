@@ -35,15 +35,16 @@ class RavenDevServer:
 
     def setup_routes(self):
         """Setup Flask routes"""
-        public_dir = self.config.get('public_dir', 'public')
+        # Use absolute path for public directory
+        public_dir = Path(self.config.get('public_dir', 'public')).resolve()
 
         @self.app.route('/')
         def index():
-            return send_from_directory(public_dir, 'index.html')
+            return send_from_directory(str(public_dir), 'index.html')
 
         @self.app.route('/<path:path>')
         def serve_file(path):
-            return send_from_directory(public_dir, path)
+            return send_from_directory(str(public_dir), path)
 
         @self.app.route('/api/status')
         def status():

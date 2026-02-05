@@ -83,6 +83,7 @@
             font-size: 0.875rem;
         }
     </style>
+    <link rel="stylesheet" href="todoapp.css">
 </head>
 <body>
     <div id="loading">
@@ -271,5 +272,31 @@
             console.error('JavaScriptKit runtime not loaded!');
         }
     </script>
+
+    <!-- Raven Hot Reload -->
+    <script id="raven-hot-reload">
+    (function() {
+        let lastHash = null;
+        function checkForUpdates() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (lastHash === null) {
+                        lastHash = data.wasm_hash;
+                        console.log('🔥 Hot reload active');
+                        return;
+                    }
+                    if (data.wasm_hash && data.wasm_hash !== lastHash) {
+                        console.log('🔄 Reloading...');
+                        window.location.reload();
+                    }
+                })
+                .catch(() => {});
+        }
+        setInterval(checkForUpdates, 2000);
+        checkForUpdates();
+    })();
+    </script>
+    
 </body>
 </html>
