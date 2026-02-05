@@ -13,6 +13,8 @@ DerivedData/
 # Raven-specific
 dist/
 .raven/
+*.wasm
+!Dockerfile.wasm
 
 # IDE
 .vscode/
