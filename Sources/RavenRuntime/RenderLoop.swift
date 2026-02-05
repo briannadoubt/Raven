@@ -448,20 +448,14 @@ public final class RenderCoordinator: Sendable {
     ///   - id: Unique identifier for the handler
     ///   - binding: String binding to update when input changes
     private func registerInputEventHandler(id: UUID, binding: Binding<String>) {
-        let handler: @Sendable @MainActor (JSValue) -> Void = { [weak self] event in
-            guard let self = self else { return }
-
+        let handler: @Sendable @MainActor (JSValue) -> Void = { event in
             // Extract event.target.value from the DOM event
-            // event is a JSValue; .target and .value are dynamic member lookups
             let newValue = event.target.value.string
             if let newValue = newValue {
-                // Update the binding with the new input value
+                // Update the binding silently - no re-render needed.
+                // Full DOM rebuild would destroy the input element and lose focus/cursor.
+                // The binding value is used when other actions trigger a re-render (e.g., Add button).
                 binding.wrappedValue = newValue
-            }
-
-            // Trigger a re-render to reflect the state change
-            if let rerender = self.rerenderClosure {
-                rerender()
             }
         }
 
