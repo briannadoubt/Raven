@@ -33,6 +33,9 @@ public final class RenderCoordinator: Sendable {
     /// Event handler registry mapping UUIDs to action closures
     private var eventHandlerRegistry: [UUID: @Sendable @MainActor () -> Void] = [:]
 
+    /// Input event handler registry for handlers that need DOM event data (e.g., TextField)
+    private var inputEventHandlerRegistry: [UUID: @Sendable @MainActor (JSValue) -> Void] = [:]
+
     /// Gesture handler registry for tracking gesture state
     private var gestureHandlerRegistry: [UUID: @Sendable @MainActor (Any) -> Void] = [:]
 
@@ -55,6 +58,9 @@ public final class RenderCoordinator: Sendable {
     /// Counter for generating unique handler IDs (UUID doesn't work reliably in WASM)
     private var handlerIDCounter: UInt64 = 0
 
+    /// Guard against reentrant renders (e.g., from stale event handlers firing during mount)
+    private var isRendering: Bool = false
+
     // MARK: - Initialization
 
     /// Initialize the render coordinator
@@ -68,15 +74,10 @@ public final class RenderCoordinator: Sendable {
         // String.format() is broken in WASM, so use manual hex conversion
         let highHex = String(handlerIDCounter >> 32, radix: 16, uppercase: false)
         let lowHex = String(handlerIDCounter & 0xFFFFFFFF, radix: 16, uppercase: false)
-        // Pad with leading zeros
         let high = String(repeating: "0", count: max(0, 8 - highHex.count)) + highHex
         let low = String(repeating: "0", count: max(0, 12 - lowHex.count)) + lowHex
         let uuidString = "\(high)-0000-4000-8000-\(low)"
-        let console = JSObject.global.console
-        _ = console.log("[Swift generateHandlerID] ✅ Counter: \(handlerIDCounter), String: \(uuidString)")
-        let result = UUID(uuidString: uuidString) ?? UUID()
-        _ = console.log("[Swift generateHandlerID] ✅ Result UUID: \(result)")
-        return result
+        return UUID(uuidString: uuidString) ?? UUID()
     }
 
     // MARK: - Public API
@@ -137,29 +138,35 @@ public final class RenderCoordinator: Sendable {
     /// - Parameter view: SwiftUI-style view to render
     private func internalRender<V: View>(view: V) {
         let console = JSObject.global.console
-        _ = console.log("[Swift Render] 🎨 internalRender called for: \(V.self)")
 
+        // Guard against reentrant renders
+        guard !isRendering else { return }
+        isRendering = true
+        defer { isRendering = false }
+
+        let isRerender = currentTree != nil
+
+        if isRerender {
+            // Re-render: clear DOM and reset handler state BEFORE view conversion
+            // convertViewToVNode registers handlers, so registry must be empty first
+            if let container = rootContainer {
+                DOMBridge.shared.clearChildren(container)
+            }
+            DOMBridge.shared.clearRegistry()
+            eventHandlerRegistry.removeAll()
+            inputEventHandlerRegistry.removeAll()
+        }
+
+        // Convert view to VNode tree (this registers event handlers in eventHandlerRegistry)
         let newRoot = convertViewToVNode(view)
 
-        _ = console.log("[Swift Render] VNode type: \(newRoot.type)")
-        _ = console.log("[Swift Render] VNode children count: \(newRoot.children.count)")
+        _ = console.log("[Raven] Render: \(newRoot.children.count) children, rerender=\(isRerender)")
 
         let newTree = VTree(root: newRoot)
 
-        if let oldTree = currentTree {
-            // Perform diff and update
-            _ = console.log("[Swift Render] 🔄 Re-render detected, computing diff...")
-            let patches = differ.diff(old: oldTree.root, new: newTree.root)
-            _ = console.log("[Swift Render] Generated \(patches.count) patches")
-            applyPatches(patches)
-            currentTree = newTree
-            _ = console.log("[Swift Render] ✅ Patches applied, re-render complete!")
-        } else {
-            // Initial render - mount the entire tree
-            _ = console.log("[Swift Render] Mounting tree to DOM")
-            mountTree(newRoot)
-            currentTree = newTree
-        }
+        // Mount the tree to DOM (this uses eventHandlerRegistry to attach listeners)
+        mountTree(newRoot)
+        currentTree = newTree
     }
 
     /// Schedule an update to be batched with other pending updates
@@ -194,17 +201,9 @@ public final class RenderCoordinator: Sendable {
     /// - Parameter view: View to convert
     /// - Returns: VNode representation
     private func convertViewToVNode<V: View>(_ view: V) -> VNode {
-        let console = JSObject.global.console
-        _ = console.log("[Swift Render] convertViewToVNode: \(V.self)")
-
-        // Check if this is a primitive view (Body == Never)
         if isPrimitiveView(view) {
-            _ = console.log("[Swift Render] \(V.self) is primitive")
             return convertPrimitiveView(view)
         }
-
-        // Otherwise, recursively walk the body
-        _ = console.log("[Swift Render] \(V.self) is composite, getting body")
         let bodyView = view.body
         return convertViewToVNode(bodyView)
     }
@@ -337,23 +336,13 @@ public final class RenderCoordinator: Sendable {
         let handlerID = generateHandlerID()
 
         // Extract the action closure using a type-erased approach
-        // We need to use reflection to get the actual closure
-        let console = JSObject.global.console
         if let buttonAny = view as? any View {
-            // Try to cast to Button with Text label (most common case)
             if let button = buttonAny as? Button<Text> {
-                _ = console.log("[Swift RenderLoop] ✅ Button<Text> cast successful, registering action")
                 registerEventHandler(id: handlerID, action: button.actionClosure)
             } else if let button = buttonAny as? Button<AnyView> {
-                _ = console.log("[Swift RenderLoop] ✅ Button<AnyView> cast successful, registering action")
                 registerEventHandler(id: handlerID, action: button.actionClosure)
             } else {
-                _ = console.log("[Swift RenderLoop] ⚠️ Button cast failed, using placeholder action")
-                // For other label types, we need a more generic approach
-                // For now, register a placeholder that logs
-                registerEventHandler(id: handlerID, action: {
-                    _ = console.log("[Swift] Button clicked but action not properly extracted")
-                })
+                registerEventHandler(id: handlerID, action: {})
             }
         }
 
@@ -380,17 +369,9 @@ public final class RenderCoordinator: Sendable {
     ///   - id: Unique identifier for the handler
     ///   - action: Action closure to register
     private func registerEventHandler(id: UUID, action: @escaping @Sendable @MainActor () -> Void) {
-        let console = JSObject.global.console
         // Store the action directly without automatic re-render
         // Re-renders are triggered by objectWillChange from @Published properties
-        let wrappedAction: @Sendable @MainActor () -> Void = {
-            _ = console.log("[Swift RenderLoop] 🎬 Executing action for handlerID: \(id)")
-            action()
-            _ = console.log("[Swift RenderLoop] ✅ Action completed")
-        }
-
-        eventHandlerRegistry[id] = wrappedAction
-        _ = console.log("[Swift RenderLoop] ✅ Registered handler for ID: \(id)")
+        eventHandlerRegistry[id] = action
     }
 
     /// Extract and convert TextField with proper event handler registration
@@ -467,34 +448,24 @@ public final class RenderCoordinator: Sendable {
     ///   - id: Unique identifier for the handler
     ///   - binding: String binding to update when input changes
     private func registerInputEventHandler(id: UUID, binding: Binding<String>) {
-        // Store the binding in a way we can access it from the event handler
-        // For now, we'll use a simpler approach: register a handler that will
-        // extract the value via JavaScript when the event fires
-
-        // The handler needs to:
-        // 1. Extract the new value from the input element
-        // 2. Update the binding
-        // 3. Trigger a re-render
-
-        // Since our current architecture doesn't pass event objects to handlers,
-        // we need to use a workaround. We'll use DOMBridge to find the element
-        // by its handler ID and extract its value.
-
-        // For now, create a simple handler that just triggers re-render
-        // The actual value extraction will happen in the modified DOMBridge
-        let wrappedAction: @Sendable @MainActor () -> Void = { [weak self] in
-            // Note: In a proper implementation, we would extract event.target.value here
-            // For now, this is a placeholder that shows the architecture needs updating
-
+        let handler: @Sendable @MainActor (JSValue) -> Void = { [weak self] event in
             guard let self = self else { return }
 
-            // Trigger a re-render to reflect any state changes
+            // Extract event.target.value from the DOM event
+            // event is a JSValue; .target and .value are dynamic member lookups
+            let newValue = event.target.value.string
+            if let newValue = newValue {
+                // Update the binding with the new input value
+                binding.wrappedValue = newValue
+            }
+
+            // Trigger a re-render to reflect the state change
             if let rerender = self.rerenderClosure {
                 rerender()
             }
         }
 
-        eventHandlerRegistry[id] = wrappedAction
+        inputEventHandlerRegistry[id] = handler
     }
 
     /// Extract and convert VStack with children
@@ -905,15 +876,7 @@ public final class RenderCoordinator: Sendable {
                     continue
                 }
                 DOMBridge.shared.appendChild(parent: element, child: childDOMNode)
-                // Only register nodes that can be parents (elements, fragments, components)
-                // Don't register text nodes since they can't have children
-                if case .element = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                } else if case .fragment = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                } else if case .component = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                }
+                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
             }
 
         case .text(let content):
@@ -934,14 +897,7 @@ public final class RenderCoordinator: Sendable {
                     continue
                 }
                 DOMBridge.shared.appendChild(parent: fragment, child: childDOMNode)
-                // Only register nodes that can be parents (not text nodes)
-                if case .element = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                } else if case .fragment = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                } else if case .component = child.type {
-                    DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-                }
+                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
             }
 
         case .component:
@@ -975,19 +931,21 @@ public final class RenderCoordinator: Sendable {
             }
 
         case .eventHandler(let event, let handlerID):
-            // Look up the handler in our registry and register it with DOMBridge
-            let console = JSObject.global.console
-            if let handler = eventHandlerRegistry[handlerID] {
-                _ = console.log("[Swift RenderLoop] 🔌 Adding \(event) listener to element, handlerID: \(handlerID)")
+            // Check if this is an input event handler that needs event data
+            if let inputHandler = inputEventHandlerRegistry[handlerID] {
+                DOMBridge.shared.addGestureEventListener(
+                    element: element,
+                    event: event,
+                    handlerID: handlerID,
+                    handler: inputHandler
+                )
+            } else if let handler = eventHandlerRegistry[handlerID] {
                 DOMBridge.shared.addEventListener(
                     element: element,
                     event: event,
                     handlerID: handlerID,
                     handler: handler
                 )
-                _ = console.log("[Swift RenderLoop] ✅ addEventListener completed")
-            } else {
-                _ = console.log("[Swift RenderLoop] ⚠️ Event handler not found in registry: \(handlerID)")
             }
         }
     }
@@ -1012,13 +970,6 @@ public final class RenderCoordinator: Sendable {
                 return
             }
 
-            // Validate parent is an element that can have children (nodeType === 1)
-            let nodeType = parentElement.nodeType.number ?? 0
-            if nodeType != 1 {
-                print("Warning: Cannot insert into non-element node (type: \(Int(nodeType))). Parent ID: \(parentID)")
-                return
-            }
-
             guard let newElement = createDOMNode(node) else {
                 print("Warning: Failed to create DOM node for insert")
                 return
@@ -1032,14 +983,7 @@ public final class RenderCoordinator: Sendable {
                 DOMBridge.shared.appendChild(parent: parentElement, child: newElement)
             }
 
-            // Only register nodes that can be parents
-            if case .element = node.type {
-                DOMBridge.shared.registerNode(id: node.id, element: newElement)
-            } else if case .fragment = node.type {
-                DOMBridge.shared.registerNode(id: node.id, element: newElement)
-            } else if case .component = node.type {
-                DOMBridge.shared.registerNode(id: node.id, element: newElement)
-            }
+            DOMBridge.shared.registerNode(id: node.id, element: newElement)
 
         case .remove(let nodeID):
             guard let element = DOMBridge.shared.getNode(id: nodeID) else {

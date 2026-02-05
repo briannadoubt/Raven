@@ -18,17 +18,19 @@ struct SimpleTestView: View {
 @main
 struct TodoAppMain {
     static func main() {
+        // Guard against multiple _start calls (WASM resets static vars, JS globals persist)
+        let alreadyLaunched = JSObject.global.__ravenAppLaunched
+        guard alreadyLaunched.isUndefined || alreadyLaunched.boolean != true else { return }
+        JSObject.global.__ravenAppLaunched = .boolean(true)
+
         let console = JSObject.global.console
-        _ = console.log("[Swift] Main entry point - synchronous launch")
+        _ = console.log("[Swift] Main entry point")
 
         // Install event loop for any async operations
         JavaScriptEventLoop.installGlobalExecutor()
-        _ = console.log("[Swift] Event loop installed")
 
         // Launch the app synchronously (no async/await in main)
         launchApp()
-
-        _ = console.log("[Swift] Main returning")
     }
 
     // Store coordinator globally so we can trigger re-renders
@@ -36,12 +38,16 @@ struct TodoAppMain {
     static var coordinator: RenderCoordinator?
     @MainActor
     static var rootView: TodoApp?
-
+    @MainActor
+    static var renderPending: Bool = false
+    /// Reusable JSClosure for setTimeout render callback (prevents JSClosure leak)
+    @MainActor
+    static var renderCallback: JSClosure?
     /// Synchronous app launch like Tokamak
     @MainActor
     static func launchApp() {
         let console = JSObject.global.console
-        _ = console.log("[Swift] Launching app synchronously...")
+        _ = console.log("[Swift] Launching app...")
 
         // Create the root view directly (skip App/Scene extraction)
         // Test full TodoApp with 5-element tuple using parameter packs
@@ -83,13 +89,27 @@ struct TodoAppMain {
         let store = view.store
         _ = console.log("[Swift] Found TodoStore, subscribing to changes")
 
-        // Subscribe to store changes
-        store.objectWillChange.subscribe {
-            _ = console.log("[Swift] 🔄 Store changed, triggering re-render!")
-            // Trigger re-render
+        // Create ONE reusable JSClosure for setTimeout (prevents JSClosure leak)
+        let callback = JSClosure { _ in
+            _ = console.log("[Swift] 🎨 Deferred re-render executing...")
             if let rootView = Self.rootView, let coord = Self.coordinator {
                 coord.render(view: rootView)
             }
+            // Clear AFTER render so any objectWillChange during render is blocked
+            Self.renderPending = false
+            return .undefined
+        }
+        Self.renderCallback = callback  // Keep alive
+
+        // Subscribe to store changes
+        // CRITICAL: Defer re-render to next event loop tick using setTimeout
+        // Synchronous re-render during event handler causes WASM reentrancy crash
+        // Use renderPending flag to coalesce multiple objectWillChange notifications
+        store.objectWillChange.subscribe {
+            guard !Self.renderPending else { return }
+            Self.renderPending = true
+            _ = console.log("[Swift] 🔄 Store changed, scheduling deferred re-render...")
+            _ = JSObject.global.setTimeout!(callback, 0)
         }
     }
 

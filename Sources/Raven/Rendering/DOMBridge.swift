@@ -32,6 +32,10 @@ public final class DOMBridge {
     /// Flag to track if event delegation is set up
     private var isEventDelegationSetup = false
 
+    /// Render generation counter - incremented on each clearRegistry()
+    /// JSClosures capture their creation generation and bail out if stale
+    private var renderGeneration: UInt64 = 0
+
     // MARK: - Initialization
 
     private init() {
@@ -116,12 +120,13 @@ public final class DOMBridge {
 
     /// Set a style property on a DOM element
     public func setStyle(element: JSObject, name: String, value: String) {
-        element.style[dynamicMember: name] = .string(value)
+        // Use setProperty() for reliable CSS property setting (supports hyphenated names)
+        _ = element.style.setProperty(name, value)
     }
 
     /// Remove a style property from a DOM element
     public func removeStyle(element: JSObject, name: String) {
-        element.style[dynamicMember: name] = .string("")
+        _ = element.style.removeProperty(name)
     }
 
     /// Append a child node to a parent element
@@ -134,6 +139,12 @@ public final class DOMBridge {
     public func removeChild(parent: JSObject, child: JSObject) {
         // Call method directly on parent to preserve 'this' binding
         _ = parent.removeChild!(child)
+    }
+
+    /// Clear all children from an element
+    public func clearChildren(_ element: JSObject) {
+        // Use innerHTML = "" to clear all children efficiently
+        element.innerHTML = .string("")
     }
 
     /// Replace an old child node with a new one
@@ -177,19 +188,18 @@ public final class DOMBridge {
         // Store the handler in the registry FIRST
         eventHandlers[handlerID] = handler
 
-        // Create JSClosure that only captures handlerID (not the handler itself)
-        // This avoids memory corruption from capturing complex Swift closures
-        let console = JSObject.global.console
+        // Capture current render generation to detect stale closures
+        let creationGeneration = self.renderGeneration
         let jsClosure = JSClosure { [weak self] _ in
-            _ = console.log("[Swift DOMBridge] 🔥 JSClosure invoked for handlerID: \(handlerID)")
-            // Look up handler from registry to avoid capturing it directly
-            guard let self = self, let handler = self.eventHandlers[handlerID] else {
-                _ = console.log("[Swift DOMBridge] ⚠️ Handler not found for ID: \(handlerID)")
+            guard let self = self else { return .undefined }
+            // Check generation - if mismatched, this closure is from a previous render
+            guard self.renderGeneration == creationGeneration else {
                 return .undefined
             }
-            _ = console.log("[Swift DOMBridge] 📞 Calling Swift handler...")
+            guard let handler = self.eventHandlers[handlerID] else {
+                return .undefined
+            }
             handler()
-            _ = console.log("[Swift DOMBridge] ✅ Swift handler completed")
             return .undefined
         }
 
@@ -253,16 +263,20 @@ public final class DOMBridge {
         // Store the handler
         gestureEventHandlers[handlerID] = handler
 
-        // Create JSClosure for the gesture event handler (safe, no dynamic member access)
+        // Capture current render generation to detect stale closures
+        let creationGeneration = self.renderGeneration
         let jsClosure = JSClosure { [weak self] args -> JSValue in
             guard let self = self, args.count > 0 else {
                 return .undefined
             }
+            // Check generation - if mismatched, this closure is from a previous render
+            guard self.renderGeneration == creationGeneration else {
+                return .undefined
+            }
 
             let event = args[0]
-            Task { @MainActor in
-                handler(event)
-            }
+            // Call handler synchronously - Task{} doesn't execute in WASM event loop
+            handler(event)
 
             return .undefined
         }
@@ -309,8 +323,10 @@ public final class DOMBridge {
         Array(nodeRegistry.keys)
     }
 
-    /// Clear all registered nodes
+    /// Clear all registered nodes and invalidate stale closures
     public func clearRegistry() {
+        // Increment generation FIRST so any in-flight closures become stale
+        renderGeneration += 1
         for (_, element) in nodeRegistry {
             removeAllEventListeners(element: element)
         }

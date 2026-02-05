@@ -6,6 +6,24 @@ import JavaScriptKit
 typealias ObservableObject = Raven.ObservableObject
 typealias Published = Raven.Published
 
+// MARK: - Unique ID Generation
+
+/// Counter-based UUID generator for WASM
+/// Foundation's UUID() relies on WASI random_get which is broken in our polyfill
+/// This generates unique UUIDs using a monotonic counter instead
+@MainActor
+private var _todoIDCounter: UInt64 = 0
+
+@MainActor
+func nextTodoID() -> UUID {
+    _todoIDCounter += 1
+    let hex = String(_todoIDCounter, radix: 16, uppercase: false)
+    let padded = String(repeating: "0", count: max(0, 12 - hex.count)) + hex
+    // UUID format: 8-4-4-4-12 hex digits
+    let uuidString = "a0000000-0000-4000-8000-\(padded)"
+    return UUID(uuidString: uuidString) ?? UUID()
+}
+
 // MARK: - Models
 
 /// Represents a single todo item
@@ -17,8 +35,9 @@ struct TodoItem: Identifiable, Sendable {
     /// Whether the todo has been completed
     var isCompleted: Bool
 
-    init(id: UUID = UUID(), text: String, isCompleted: Bool = false) {
-        self.id = id
+    @MainActor
+    init(text: String, isCompleted: Bool = false) {
+        self.id = nextTodoID()
         self.text = text
         self.isCompleted = isCompleted
     }
@@ -65,31 +84,20 @@ final class TodoStore: ObservableObject {
 
     /// Toggle the completion status of a todo
     func toggleTodo(_ id: UUID) {
-        let console = JSObject.global.console
-        _ = console.log("[Swift TodoStore] 🎯 toggleTodo called for id: \(id)")
         if let index = todos.firstIndex(where: { $0.id == id }) {
-            _ = console.log("[Swift TodoStore] Found todo at index \(index), calling objectWillChange.send()")
-            // Manually trigger objectWillChange since we're mutating array contents
-            objectWillChange.send()
-            _ = console.log("[Swift TodoStore] objectWillChange.send() completed, toggling isCompleted")
+            // @Published setter on todos triggers objectWillChange.send() automatically
             todos[index].isCompleted.toggle()
-            _ = console.log("[Swift TodoStore] Toggled! New value: \(todos[index].isCompleted)")
-        } else {
-            _ = console.log("[Swift TodoStore] ⚠️ Todo not found for id: \(id)")
         }
     }
 
     /// Delete a todo from the list
     func deleteTodo(_ id: UUID) {
-        // Manually trigger objectWillChange since we're mutating array contents
-        objectWillChange.send()
         todos.removeAll { $0.id == id }
     }
 
     /// Delete all completed todos
     func clearCompleted() {
-        // Manually trigger objectWillChange since we're mutating array contents
-        objectWillChange.send()
+        // @Published setter on todos triggers objectWillChange.send() automatically
         todos.removeAll { $0.isCompleted }
     }
 

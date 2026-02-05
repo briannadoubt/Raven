@@ -161,7 +161,9 @@ public struct Text: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A text-type VNode containing the string content.
     @MainActor public func toVNode() -> VNode {
-        VNode.text(content)
+        // Wrap in <span> so Text becomes a flex item (responds to CSS gap)
+        // Raw text nodes are not flex items and ignore gap/spacing
+        VNode.element("span", props: [:], children: [VNode.text(content)])
     }
 }
 
