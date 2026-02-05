@@ -222,11 +222,14 @@ public struct CanvasPattern: Sendable {
     ) -> JSObject? {
         // Create an offscreen canvas for the pattern
         let bridge = DOMBridge.shared
-        let patternCanvas = bridge.createElement(tag: "canvas")
+        guard let patternCanvas = bridge.createElement(tag: "canvas") else {
+            return nil
+        }
         patternCanvas.width = .number(size.width)
         patternCanvas.height = .number(size.height)
 
-        guard let patternContext = patternCanvas.getContext!("2d").object else {
+        guard let getContextFn = patternCanvas.getContext.function,
+              let patternContext = getContextFn("2d").object else {
             return nil
         }
 
@@ -235,7 +238,8 @@ public struct CanvasPattern: Sendable {
         renderer(graphicsContext)
 
         // Create pattern from the canvas
-        guard let pattern = context.createPattern!(patternCanvas, repetition.rawValue).object else {
+        guard let createPatternFn = context.createPattern.function,
+              let pattern = createPatternFn(patternCanvas, repetition.rawValue).object else {
             return nil
         }
 

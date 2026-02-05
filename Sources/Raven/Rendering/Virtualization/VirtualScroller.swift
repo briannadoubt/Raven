@@ -230,12 +230,16 @@ public final class VirtualScroller: Sendable {
 
     /// Create the DOM structure for the virtual scroller.
     private func createScrollerDOM() {
-        guard let container = containerElement else { return }
-
-        let document = JSObject.global.document.object!
+        guard let container = containerElement,
+              let document = JSObject.global.document.object,
+              let createElementFn = document.createElement.function else {
+            return
+        }
 
         // Create scroller wrapper (scrollable container)
-        let scroller = document.createElement!("div").object!
+        guard let scroller = createElementFn("div").object else {
+            return
+        }
         scroller.style.overflow = .string("auto")
         scroller.style.position = .string("relative")
         scroller.style.width = .string("100%")
@@ -243,7 +247,9 @@ public final class VirtualScroller: Sendable {
         scroller.className = .string("raven-virtual-scroller")
 
         // Create spacer element (maintains total height)
-        let spacer = document.createElement!("div").object!
+        guard let spacer = createElementFn("div").object else {
+            return
+        }
         spacer.style.position = .string("relative")
         spacer.style.width = .string("100%")
         let totalHeight = Double(itemCount) * config.estimatedItemHeight
@@ -251,10 +257,14 @@ public final class VirtualScroller: Sendable {
         spacer.className = .string("raven-virtual-spacer")
 
         // Append spacer to scroller
-        _ = scroller.appendChild!(spacer)
+        if let appendChildFn = scroller.appendChild.function {
+            _ = appendChildFn(spacer)
+        }
 
         // Append scroller to container
-        _ = container.appendChild!(scroller)
+        if let appendChildFn = container.appendChild.function {
+            _ = appendChildFn(scroller)
+        }
 
         self.scrollerElement = scroller
         self.spacerElement = spacer
@@ -474,16 +484,21 @@ public final class VirtualScroller: Sendable {
     ///   - item: The pooled item to render
     ///   - index: Index in the data collection
     private func renderItem(_ item: ItemPool.PooledItem, at index: Int) {
-        guard let spacer = spacerElement else { return }
-
-        let document = JSObject.global.document.object!
+        guard let spacer = spacerElement,
+              let document = JSObject.global.document.object else {
+            return
+        }
 
         // Create or reuse element
         let element: JSObject
         if let existing = item.element {
             element = existing
         } else {
-            element = document.createElement!("div").object!
+            guard let createElementFn = document.createElement.function,
+                  let newElement = createElementFn("div").object else {
+                return
+            }
+            element = newElement
         }
 
         // Set positioning

@@ -1,0 +1,8 @@
+.build
+.git
+.swiftpm
+*.xcodeproj
+*.xcworkspace
+.DS_Store
+public
+README.md

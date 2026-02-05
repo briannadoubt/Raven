@@ -124,64 +124,64 @@ public struct ViewBuilder: Sendable {
     /// Builds a view from two components.
     @MainActor public static func buildBlock<C0: View, C1: View>(
         _ c0: C0, _ c1: C1
-    ) -> TupleView<(C0, C1)> {
-        TupleView((c0, c1))
+    ) -> TupleView<C0, C1> {
+        TupleView(c0, c1)
     }
 
     /// Builds a view from three components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View>(
         _ c0: C0, _ c1: C1, _ c2: C2
-    ) -> TupleView<(C0, C1, C2)> {
-        TupleView((c0, c1, c2))
+    ) -> TupleView<C0, C1, C2> {
+        TupleView(c0, c1, c2)
     }
 
     /// Builds a view from four components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3
-    ) -> TupleView<(C0, C1, C2, C3)> {
-        TupleView((c0, c1, c2, c3))
+    ) -> TupleView<C0, C1, C2, C3> {
+        TupleView(c0, c1, c2, c3)
     }
 
     /// Builds a view from five components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4
-    ) -> TupleView<(C0, C1, C2, C3, C4)> {
-        TupleView((c0, c1, c2, c3, c4))
+    ) -> TupleView<C0, C1, C2, C3, C4> {
+        TupleView(c0, c1, c2, c3, c4)
     }
 
     /// Builds a view from six components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View, C5: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4, _ c5: C5
-    ) -> TupleView<(C0, C1, C2, C3, C4, C5)> {
-        TupleView((c0, c1, c2, c3, c4, c5))
+    ) -> TupleView<C0, C1, C2, C3, C4, C5> {
+        TupleView(c0, c1, c2, c3, c4, c5)
     }
 
     /// Builds a view from seven components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View, C5: View, C6: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4, _ c5: C5, _ c6: C6
-    ) -> TupleView<(C0, C1, C2, C3, C4, C5, C6)> {
-        TupleView((c0, c1, c2, c3, c4, c5, c6))
+    ) -> TupleView<C0, C1, C2, C3, C4, C5, C6> {
+        TupleView(c0, c1, c2, c3, c4, c5, c6)
     }
 
     /// Builds a view from eight components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View, C5: View, C6: View, C7: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4, _ c5: C5, _ c6: C6, _ c7: C7
-    ) -> TupleView<(C0, C1, C2, C3, C4, C5, C6, C7)> {
-        TupleView((c0, c1, c2, c3, c4, c5, c6, c7))
+    ) -> TupleView<C0, C1, C2, C3, C4, C5, C6, C7> {
+        TupleView(c0, c1, c2, c3, c4, c5, c6, c7)
     }
 
     /// Builds a view from nine components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View, C5: View, C6: View, C7: View, C8: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4, _ c5: C5, _ c6: C6, _ c7: C7, _ c8: C8
-    ) -> TupleView<(C0, C1, C2, C3, C4, C5, C6, C7, C8)> {
-        TupleView((c0, c1, c2, c3, c4, c5, c6, c7, c8))
+    ) -> TupleView<C0, C1, C2, C3, C4, C5, C6, C7, C8> {
+        TupleView(c0, c1, c2, c3, c4, c5, c6, c7, c8)
     }
 
     /// Builds a view from ten components.
     @MainActor public static func buildBlock<C0: View, C1: View, C2: View, C3: View, C4: View, C5: View, C6: View, C7: View, C8: View, C9: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4, _ c5: C5, _ c6: C6, _ c7: C7, _ c8: C8, _ c9: C9
-    ) -> TupleView<(C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)> {
-        TupleView((c0, c1, c2, c3, c4, c5, c6, c7, c8, c9))
+    ) -> TupleView<C0, C1, C2, C3, C4, C5, C6, C7, C8, C9> {
+        TupleView(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9)
     }
 
     // MARK: - Conditional Content
@@ -275,13 +275,31 @@ public struct EmptyView: View, Sendable {
 ///
 /// - Note: `TupleView` supports up to 10 child views. For more complex layouts,
 ///   use nested container views like `VStack` or `HStack`.
-public struct TupleView<T>: View, Sendable where T: Sendable {
+
+/// Protocol for views that contain tuple children
+/// Allows runtime dispatch to parameter pack implementations
+@MainActor
+public protocol _ViewTuple: View {
+    func _extractChildren() -> [any View]
+}
+
+/// A view that contains multiple child views in a tuple structure.
+/// Uses parameter packs to support any number of child views
+public struct TupleView<each Element: View>: View, Sendable, _ViewTuple {
     public typealias Body = Never
 
-    public let content: T
+    public let content: (repeat each Element)
 
-    @MainActor public init(_ content: T) {
-        self.content = content
+    @MainActor public init(_ content: repeat each Element) {
+        self.content = (repeat each content)
+    }
+
+    /// Extract children using parameter pack iteration
+    @MainActor
+    public func _extractChildren() -> [any View] {
+        var children: [any View] = []
+        repeat (children.append(each content))
+        return children
     }
 }
 

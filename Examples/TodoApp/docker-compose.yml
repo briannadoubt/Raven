@@ -1,0 +1,23 @@
+services:
+  wasm-dev:
+    build:
+      context: ../..
+      dockerfile: Examples/TodoApp/Dockerfile
+    volumes:
+      # Mount source for live development
+      - ../../Sources:/Raven/Sources:ro
+      - ./Sources:/Raven/Examples/TodoApp/Sources:rw
+      - ./Package.swift:/Raven/Examples/TodoApp/Package.swift:ro
+      - ../../Package.swift:/Raven/Package.swift:ro
+      # Mount build output
+      - ./.build:/Raven/Examples/TodoApp/.build
+      # Mount public directory for WASM output
+      - ./public:/Raven/Examples/TodoApp/public:rw
+    ports:
+      - "8000:8000"
+    environment:
+      - SWIFT_SDK=swift-6.2.3-RELEASE_wasm
+    working_dir: /Raven/Examples/TodoApp
+    command: ["dev"]
+    stdin_open: true
+    tty: true

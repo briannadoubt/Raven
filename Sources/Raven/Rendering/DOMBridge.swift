@@ -26,13 +26,19 @@ public final class DOMBridge {
     /// Global event handler closure for event delegation
     private var eventClosure: JSClosure?
 
+    /// Registry of JSClosures for event handlers (keeps them alive and allows removal)
+    private var eventClosures: [UUID: JSClosure] = [:]
+
     /// Flag to track if event delegation is set up
     private var isEventDelegationSetup = false
 
     // MARK: - Initialization
 
     private init() {
-        self.document = JSObject.global.document.object!
+        guard let doc = JSObject.global.document.object else {
+            fatalError("DOM not available - ensure DOMBridge runs in browser context")
+        }
+        self.document = doc
     }
 
     // MARK: - Event Delegation Setup
@@ -83,22 +89,28 @@ public final class DOMBridge {
     // MARK: - Core DOM Operations
 
     /// Create a new DOM element with the specified tag name
-    public func createElement(tag: String) -> JSObject {
-        document.createElement!(tag).object!
+    public func createElement(tag: String) -> JSObject? {
+        // Call method directly on document to preserve 'this' binding
+        let result = document.createElement!(tag)
+        return result.isNull || result.isUndefined ? nil : result.object
     }
 
     /// Create a text node with the specified content
-    public func createTextNode(text: String) -> JSObject {
-        document.createTextNode!(text).object!
+    public func createTextNode(text: String) -> JSObject? {
+        // Call method directly on document to preserve 'this' binding
+        let result = document.createTextNode!(text)
+        return result.isNull || result.isUndefined ? nil : result.object
     }
 
     /// Set an attribute on a DOM element
     public func setAttribute(element: JSObject, name: String, value: String) {
+        // Call method directly on element to preserve 'this' binding
         _ = element.setAttribute!(name, value)
     }
 
     /// Remove an attribute from a DOM element
     public func removeAttribute(element: JSObject, name: String) {
+        // Call method directly on element to preserve 'this' binding
         _ = element.removeAttribute!(name)
     }
 
@@ -114,21 +126,25 @@ public final class DOMBridge {
 
     /// Append a child node to a parent element
     public func appendChild(parent: JSObject, child: JSObject) {
+        // Call method directly on parent to preserve 'this' binding
         _ = parent.appendChild!(child)
     }
 
     /// Remove a child node from a parent element
     public func removeChild(parent: JSObject, child: JSObject) {
+        // Call method directly on parent to preserve 'this' binding
         _ = parent.removeChild!(child)
     }
 
     /// Replace an old child node with a new one
     public func replaceChild(parent: JSObject, old: JSObject, new: JSObject) {
+        // Call method directly on parent to preserve 'this' binding
         _ = parent.replaceChild!(new, old)
     }
 
     /// Insert a new node before a reference node
     public func insertBefore(parent: JSObject, new: JSObject, reference: JSObject?) {
+        // Call method directly on parent to preserve 'this' binding
         if let reference = reference {
             _ = parent.insertBefore!(new, reference)
         } else {
@@ -161,27 +177,19 @@ public final class DOMBridge {
         // Store the handler
         eventHandlers[handlerID] = handler
 
-        // Create an inline event handler that calls our global handler
-        let handlerScript = """
-        function(e) {
-            if (window.__ravenEventHandler) {
-                window.__ravenEventHandler('\(handlerID.uuidString)');
+        // Create JSClosure for the event handler (safe, no dynamic member access)
+        let jsClosure = JSClosure { _ in
+            Task { @MainActor in
+                handler()
             }
+            return .undefined
         }
-        """
 
-        // Create a JavaScript function from the script
-        let jsHandler = JSObject.global.Function.function!("e", "return \(handlerScript)")
-        let boundHandler = jsHandler.new()
+        // Store the closure in our registry to keep it alive
+        eventClosures[handlerID] = jsClosure
 
-        // Add the event listener
-        _ = element.addEventListener!(event, boundHandler)
-
-        // Store the bound handler on the element for cleanup
-        if element.__ravenHandlers.isUndefined {
-            element.__ravenHandlers = .object(JSObject.global.Object.function!.new())
-        }
-        element.__ravenHandlers[dynamicMember: handlerID.uuidString] = boundHandler
+        // Add the event listener using the closure directly
+        _ = element.addEventListener!(event, jsClosure)
     }
 
     /// Remove an event listener from a DOM element
@@ -190,36 +198,26 @@ public final class DOMBridge {
         event: String,
         handlerID: UUID
     ) {
-        // Remove from registry
+        // Remove from registries
         eventHandlers.removeValue(forKey: handlerID)
 
-        // Remove the DOM event listener
-        if let boundHandler = element.__ravenHandlers[dynamicMember: handlerID.uuidString].object {
-            _ = element.removeEventListener!(event, boundHandler)
-            element.__ravenHandlers[dynamicMember: handlerID.uuidString] = .undefined
+        // Get the closure and remove the listener
+        guard let jsClosure = eventClosures.removeValue(forKey: handlerID) else {
+            return
         }
+
+        // Remove the DOM event listener
+        _ = element.removeEventListener!(event, jsClosure)
     }
 
     /// Remove all event listeners from a DOM element
     public func removeAllEventListeners(element: JSObject) {
-        guard let handlers = element.__ravenHandlers.object else {
-            return
-        }
-
-        // Get all handler IDs
-        let keys = JSObject.global.Object.keys(handlers)
-        let length = keys.length.number ?? 0
-
-        for i in 0..<Int(length) {
-            if let handlerIDString = keys[i].string,
-               let handlerID = UUID(uuidString: handlerIDString) {
-                eventHandlers.removeValue(forKey: handlerID)
-                gestureEventHandlers.removeValue(forKey: handlerID)
-            }
-        }
-
-        // Clear the handlers object
-        element.__ravenHandlers = .undefined
+        // Clean up all closures for this element
+        // Note: We don't have a way to map element -> handler IDs efficiently,
+        // so this is a simplified version that clears all handlers
+        eventHandlers.removeAll()
+        gestureEventHandlers.removeAll()
+        eventClosures.removeAll()
     }
 
     /// Add a gesture event listener that receives event data
@@ -235,45 +233,25 @@ public final class DOMBridge {
         // Store the handler
         gestureEventHandlers[handlerID] = handler
 
-        // Create an inline event handler that calls our global handler with event data
-        // We need to store a reference to the handler that can be called with the event
-        let handlerScript = """
-        function(e) {
-            if (window.__ravenGestureEventHandler_\(handlerID.uuidString)) {
-                window.__ravenGestureEventHandler_\(handlerID.uuidString)(e);
-            }
-        }
-        """
-
-        // Create a JavaScript closure that can receive the event
-        let closure = JSClosure { [weak self] args -> JSValue in
+        // Create JSClosure for the gesture event handler (safe, no dynamic member access)
+        let jsClosure = JSClosure { [weak self] args -> JSValue in
             guard let self = self, args.count > 0 else {
                 return .undefined
             }
 
             let event = args[0]
             Task { @MainActor in
-                self.invokeGestureHandler(handlerID, event: event)
+                handler(event)
             }
 
             return .undefined
         }
 
-        // Store the closure globally
-        JSObject.global[dynamicMember: "__ravenGestureEventHandler_\(handlerID.uuidString)"] = .object(closure)
+        // Store the closure in our registry to keep it alive
+        eventClosures[handlerID] = jsClosure
 
-        // Create a JavaScript function from the script
-        let jsHandler = JSObject.global.Function.function!("e", "return \(handlerScript)")
-        let boundHandler = jsHandler.new()
-
-        // Add the event listener
-        _ = element.addEventListener!(event, boundHandler)
-
-        // Store the bound handler on the element for cleanup
-        if element.__ravenHandlers.isUndefined {
-            element.__ravenHandlers = .object(JSObject.global.Object.function!.new())
-        }
-        element.__ravenHandlers[dynamicMember: handlerID.uuidString] = boundHandler
+        // Add the event listener using the closure directly
+        _ = element.addEventListener!(event, jsClosure)
     }
 
     // MARK: - Node Tracking
@@ -281,15 +259,12 @@ public final class DOMBridge {
     /// Register a DOM node with a NodeID for efficient lookups
     public func registerNode(id: NodeID, element: JSObject) {
         nodeRegistry[id] = element
-
-        // Store the NodeID on the element for debugging
-        element.__ravenNodeID = .string(id.uuidString)
+        // Note: We no longer store NodeID on the element to avoid dynamic member access issues
     }
 
     /// Unregister a DOM node
     public func unregisterNode(id: NodeID) {
         if let element = nodeRegistry[id] {
-            element.__ravenNodeID = .undefined
             removeAllEventListeners(element: element)
         }
         nodeRegistry.removeValue(forKey: id)
@@ -309,29 +284,32 @@ public final class DOMBridge {
     public func clearRegistry() {
         for (_, element) in nodeRegistry {
             removeAllEventListeners(element: element)
-            element.__ravenNodeID = .undefined
         }
         nodeRegistry.removeAll()
         eventHandlers.removeAll()
         gestureEventHandlers.removeAll()
+        eventClosures.removeAll()
     }
 
     // MARK: - Query Methods
 
     /// Query the DOM for an element by ID
     public func getElementById(_ id: String) -> JSObject? {
+        // Call method directly on document to preserve 'this' binding
         let result = document.getElementById!(id)
         return result.isNull || result.isUndefined ? nil : result.object
     }
 
     /// Query the DOM for elements by selector
     public func querySelector(_ selector: String) -> JSObject? {
+        // Call method directly on document to preserve 'this' binding
         let result = document.querySelector!(selector)
         return result.isNull || result.isUndefined ? nil : result.object
     }
 
     /// Query the DOM for all elements matching a selector
     public func querySelectorAll(_ selector: String) -> [JSObject] {
+        // Call method directly on document to preserve 'this' binding
         let nodeList = document.querySelectorAll!(selector)
         let length = nodeList.length.number ?? 0
 

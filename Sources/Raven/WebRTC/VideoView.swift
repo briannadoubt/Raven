@@ -146,9 +146,12 @@ internal struct VideoElement: Sendable {
     let mirrored: Bool
     let id: UUID
 
-    func createElement() -> JSObject {
+    func createElement() -> JSObject? {
         // Create video element
-        let video = JSObject.global.document.createElement("video").object!
+        guard let createElementFn = JSObject.global.document.createElement.function,
+              let video = createElementFn("video").object else {
+            return nil
+        }
 
         // Set unique ID
         video.id = JSValue.string(id.uuidString)
@@ -462,7 +465,11 @@ extension VideoView {
     public static func captureSnapshot(from stream: MediaStream) async -> Data? {
         return await withCheckedContinuation { continuation in
             // Create temporary video element
-            let video = JSObject.global.document.createElement("video").object!
+            guard let createVideoFn = JSObject.global.document.createElement.function,
+                  let video = createVideoFn("video").object else {
+                continuation.resume(returning: nil)
+                return
+            }
             video.srcObject = JSValue.object(stream.jsObject)
             video.autoplay = JSValue.boolean(true)
             video.muted = JSValue.boolean(true)
@@ -471,7 +478,11 @@ extension VideoView {
             let loadedMetadataClosure = JSClosure { _ in
                 Task { @MainActor in
                     // Create canvas
-                    let canvas = JSObject.global.document.createElement.call("canvas").object!
+                    guard let createCanvasFn = JSObject.global.document.createElement.function,
+                          let canvas = createCanvasFn("canvas").object else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
                     let width = video.videoWidth.number ?? 640
                     let height = video.videoHeight.number ?? 480
 

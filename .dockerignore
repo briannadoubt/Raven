@@ -1,0 +1,28 @@
+# Build artifacts
+.build/
+**/. build/
+**/.swiftpm/
+*.xcodeproj
+*.xcworkspace
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System
+.DS_Store
+Thumbs.db
+
+# Temporary
+tmp/
+temp/
+
+# Don't ignore TodoApp public folder (we need it)
+!Examples/TodoApp/public/

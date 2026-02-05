@@ -39,11 +39,11 @@ public final class AppRuntime: Sendable {
     ///
     /// This is the main entry point for launching a Raven app:
     /// ```swift
-    /// await AppRuntime.shared.run(app: myApp)
+    /// AppRuntime.shared.run(app: myApp)
     /// ```
     ///
     /// - Parameter app: The app to run.
-    public func run<A: App>(app: A) async {
+    public func run<A: App>(app: A) {
         currentApp = app
 
         // Extract root view from app's scene hierarchy
@@ -65,8 +65,8 @@ public final class AppRuntime: Sendable {
         // Set the root container in the coordinator
         coordinator.setRootContainer(rootContainer)
 
-        // Render the root view
-        await coordinator.render(view: rootView)
+        // Render the root view (now synchronous!)
+        coordinator.render(view: rootView)
     }
 
     /// Extracts the root view from a scene hierarchy.
@@ -151,13 +151,16 @@ public final class AppRuntime: Sendable {
             return nil
         }
 
-        var root = document.createElement("div")
-        root.id = "root"
+        guard let createElementFn = document.createElement.function,
+              let root = createElementFn("div").object else {
+            return nil
+        }
+        root.id = .string("root")
         if let appendChild = body.appendChild.function {
             _ = appendChild(root)
         }
 
-        return root.object
+        return root
     }
 
     /// Sets up tracking for scene phase changes based on browser events.

@@ -463,7 +463,10 @@ public struct PresentationAnimations: Sendable {
         }
 
         // Create style element
-        let styleElement = bridge.createElement(tag: "style")
+        guard let styleElement = bridge.createElement(tag: "style") else {
+            print("Warning: Failed to create style element for presentation animations")
+            return
+        }
         bridge.setAttribute(element: styleElement, name: "id", value: "raven-presentation-animations")
         bridge.setTextContent(element: styleElement, text: generateStylesheet())
 

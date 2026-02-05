@@ -1,0 +1,25 @@
+# Swift WASM Development Container for Raven
+# Uses official Swift 6.2.3 with WASM SDK
+FROM swift:6.2.3
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install WASM SDK
+RUN swift sdk install \
+    https://download.swift.org/swift-6.2.3-release/wasm-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_wasm.artifactbundle.tar.gz \
+    --checksum 394040ecd5260e68bb02f6c20aeede733b9b90702c2204e178f3e42413edad2a
+
+# Set working directory
+WORKDIR /Raven/Examples/TodoApp
+
+# Build script
+COPY Examples/TodoApp/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

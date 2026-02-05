@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raven Todo App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #loading {
+            color: white;
+            text-align: center;
+        }
+
+        #loading h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        #loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #root {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            min-height: 400px;
+        }
+
+        #error {
+            color: #ff6b6b;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        #error h2 {
+            margin-bottom: 1rem;
+        }
+
+        #error pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <h1>🐦 Loading Raven...</h1>
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem;">Initializing Swift WASM</p>
+    </div>
+
+    <!-- Root element for Raven to mount to -->
+    <div id="root" style="display: none;"></div>
+
+    <!-- Error display -->
+    <div id="error" style="display: none;">
+        <h2>❌ Failed to load</h2>
+        <p id="error-message"></p>
+        <pre id="error-stack"></pre>
+    </div>
+
+    <!-- JavaScriptKit Runtime -->
+    <script src="runtime.js"></script>
+
+    <script type="module">
+        // WASI polyfill for browser
+        let wasmMemory;
+
+        const wasiPolyfill = {
+            args_get: () => 0,
+            args_sizes_get: () => 0,
+            environ_get: () => 0,
+            environ_sizes_get: () => 0,
+            clock_res_get: () => 0,
+            clock_time_get: () => 0,
+            fd_advise: () => 0,
+            fd_allocate: () => 0,
+            fd_close: () => 0,
+            fd_datasync: () => 0,
+            fd_fdstat_get: () => 0,
+            fd_fdstat_set_flags: () => 0,
+            fd_fdstat_set_rights: () => 0,
+            fd_filestat_get: () => 0,
+            fd_filestat_set_size: () => 0,
+            fd_filestat_set_times: () => 0,
+            fd_pread: () => 0,
+            fd_prestat_get: () => 0,
+            fd_prestat_dir_name: () => 0,
+            fd_pwrite: () => 0,
+            fd_read: () => 0,
+            fd_readdir: () => 0,
+            fd_renumber: () => 0,
+            fd_seek: () => 0,
+            fd_sync: () => 0,
+            fd_tell: () => 0,
+            fd_write: (fd, iov, iovcnt, nwritten) => {
+                // Proper stdout/stderr implementation that reads from WASM memory
+                if ((fd === 1 || fd === 2) && wasmMemory) {
+                    try {
+                        const buffers = new Uint32Array(wasmMemory.buffer, iov, iovcnt * 2);
+                        let output = '';
+                        for (let i = 0; i < iovcnt; i++) {
+                            const ptr = buffers[i * 2];
+                            const len = buffers[i * 2 + 1];
+                            const buffer = new Uint8Array(wasmMemory.buffer, ptr, len);
+                            output += new TextDecoder().decode(buffer);
+                        }
+                        if (fd === 1) {
+                            console.log('[Swift]', output);
+                        } else {
+                            console.error('[Swift Error]', output);
+                        }
+                        // Write the number of bytes written
+                        if (nwritten) {
+                            new Uint32Array(wasmMemory.buffer, nwritten, 1)[0] = output.length;
+                        }
+                        return 0;
+                    } catch (e) {
+                        console.error('fd_write error:', e);
+                        return -1;
+                    }
+                }
+                return 0;
+            },
+            path_create_directory: () => 0,
+            path_filestat_get: () => 0,
+            path_filestat_set_times: () => 0,
+            path_link: () => 0,
+            path_open: () => 0,
+            path_readlink: () => 0,
+            path_remove_directory: () => 0,
+            path_rename: () => 0,
+            path_symlink: () => 0,
+            path_unlink_file: () => 0,
+            poll_oneoff: () => 0,
+            proc_exit: (code) => {
+                console.log('[WASM] Exit code:', code);
+            },
+            proc_raise: () => 0,
+            sched_yield: () => 0,
+            random_get: () => 0,
+            sock_recv: () => 0,
+            sock_send: () => 0,
+            sock_shutdown: () => 0,
+        };
+
+        async function loadWASM() {
+            try {
+                console.log('🚀 Loading TodoApp-v2.wasm...');
+
+                const response = await fetch('TodoApp-v2.wasm?t=' + Date.now());
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
+                }
+
+                const bytes = await response.arrayBuffer();
+                console.log(`📦 Loaded ${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB`);
+
+                // Initialize JavaScriptKit bridge
+                const { SwiftRuntime } = JavaScriptKit;
+                const swift = new SwiftRuntime();
+
+                const { instance } = await WebAssembly.instantiate(bytes, {
+                    wasi_snapshot_preview1: wasiPolyfill,
+                    javascript_kit: swift.importObjects(),
+                });
+
+                console.log('✅ WASM instantiated successfully');
+
+                // Store memory reference for WASI polyfill
+                wasmMemory = instance.exports.memory;
+
+                // Set up SwiftRuntime (patched runtime.js allows command ABI)
+                swift.setInstance(instance);
+                console.log('✅ SwiftRuntime instance set (using patched runtime)');
+
+                // Initialize if needed
+                if (instance.exports._initialize) {
+                    console.log('🔧 Calling _initialize()...');
+                    instance.exports._initialize();
+                }
+
+                // Hide loading, show root
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('root').style.display = 'block';
+
+                // Log all available exports
+                console.log('📋 Available exports:', Object.keys(instance.exports));
+
+                // With command ABI, call _start to run main()
+                if (instance.exports._start) {
+                    console.log('🎯 Calling _start() to run Swift main...');
+                    try {
+                        instance.exports._start();
+                        console.log('✅ _start completed');
+
+                        // Give the event loop time to process Swift Tasks
+                        console.log('⏰ Waiting for Swift Tasks to execute...');
+                        for (let i = 0; i < 10; i++) {
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                            console.log(`⏰ Tick ${i + 1}/10`);
+                        }
+                        console.log('⏰ Event loop processing complete');
+                    } catch (e) {
+                        console.error('❌ Error in _start:', e);
+                        console.error('Stack:', e.stack);
+                        throw e;
+                    }
+                } else {
+                    console.error('❌ _start export not found!');
+                }
+
+                console.log('🎉 App initialized!');
+
+            } catch (error) {
+                console.error('❌ Error loading WASM:', error);
+                document.getElementById('loading').style.display = 'none';
+                const errorDiv = document.getElementById('error');
+                errorDiv.style.display = 'block';
+                document.getElementById('error-message').textContent = error.message;
+                document.getElementById('error-stack').textContent = error.stack || 'No stack trace';
+            }
+        }
+
+        // Start loading when JavaScriptKit runtime is ready
+        if (typeof JavaScriptKit !== 'undefined') {
+            loadWASM();
+        } else {
+            console.error('JavaScriptKit runtime not loaded!');
+        }
+    </script>
+</body>
+</html>

@@ -68,16 +68,28 @@ public final class ManifestGenerator: Sendable {
         let document = JSObject.global.document
 
         // Update or create theme-color meta tag
-        let queryResult = document.querySelector.function!("meta[name='theme-color']")
+        guard let querySelectorFn = document.querySelector.function else {
+            return
+        }
+        let queryResult = querySelectorFn("meta[name='theme-color']")
         var themeColorMeta = queryResult.isNull ? nil : queryResult.object
 
         if themeColorMeta == nil {
-            themeColorMeta = document.createElement.function!("meta").object
-            themeColorMeta?.setAttribute.function!("name", "theme-color")
-            _ = document.head.appendChild.function!(themeColorMeta!)
+            guard let createElementFn = document.createElement.function,
+                  let meta = createElementFn("meta").object,
+                  let setAttributeFn = meta.setAttribute.function,
+                  let appendChildFn = document.head.appendChild.function else {
+                return
+            }
+            themeColorMeta = meta
+            _ = setAttributeFn("name", "theme-color")
+            _ = appendChildFn(meta)
         }
 
-        themeColorMeta?.setAttribute.function!("content", color)
+        if let themeColorMeta = themeColorMeta,
+           let setAttributeFn = themeColorMeta.setAttribute.function {
+            _ = setAttributeFn("content", color)
+        }
     }
 
     // MARK: - Private Methods
@@ -271,15 +283,23 @@ public final class ManifestGenerator: Sendable {
         let document = JSObject.global.document
 
         // Remove existing manifest link
-        let existingResult = document.querySelector.function!("link[rel='manifest']")
-        if !existingResult.isNull, let existingLink = existingResult.object {
-            _ = existingLink.remove.function!()
+        guard let querySelectorFn = document.querySelector.function else {
+            return
+        }
+        let existingResult = querySelectorFn("link[rel='manifest']")
+        if !existingResult.isNull, let existingLink = existingResult.object,
+           let removeFn = existingLink.remove.function {
+            _ = removeFn()
         }
 
         // Create new link element
-        let link = document.createElement.function!("link").object!
-        link.setAttribute.function!("rel", "manifest")
-        link.setAttribute.function!("href", url)
+        guard let createElementFn = document.createElement.function,
+              let link = createElementFn("link").object,
+              let setAttributeFn = link.setAttribute.function else {
+            return
+        }
+        _ = setAttributeFn("rel", "manifest")
+        _ = setAttributeFn("href", url)
 
         // Append to head
         _ = document.head.appendChild.function!(link)

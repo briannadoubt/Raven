@@ -50,7 +50,7 @@ public final class RenderCoordinator: Sendable {
 
     /// Stored reference to the current root view for re-rendering
     /// This is a type-erased closure that re-renders the current view
-    private var rerenderClosure: (@MainActor () async -> Void)?
+    private var rerenderClosure: (@MainActor () -> Void)?
 
     // MARK: - Initialization
 
@@ -63,7 +63,7 @@ public final class RenderCoordinator: Sendable {
 
     /// Main entry point for rendering a view
     /// - Parameter view: SwiftUI-style view to render
-    public func render<V: View>(view: V) async {
+    public func render<V: View>(view: V) {
         // Create a mutable copy for state setup
         var mutableView = view
 
@@ -74,11 +74,11 @@ public final class RenderCoordinator: Sendable {
         rerenderClosure = { [weak self] in
             guard let self = self else { return }
             // Re-render with the current view state
-            await self.internalRender(view: mutableView)
+            self.internalRender(view: mutableView)
         }
 
         // Perform initial render
-        await internalRender(view: mutableView)
+        internalRender(view: mutableView)
     }
 
     /// Set up state update callbacks for a view
@@ -115,18 +115,26 @@ public final class RenderCoordinator: Sendable {
 
     /// Internal render method that performs the actual rendering
     /// - Parameter view: SwiftUI-style view to render
-    private func internalRender<V: View>(view: V) async {
+    private func internalRender<V: View>(view: V) {
+        let console = JSObject.global.console
+        _ = console.log("[Swift Render] Converting view to VNode: \(V.self)")
+
         let newRoot = convertViewToVNode(view)
+
+        _ = console.log("[Swift Render] VNode type: \(newRoot.type)")
+        _ = console.log("[Swift Render] VNode children count: \(newRoot.children.count)")
+
         let newTree = VTree(root: newRoot)
 
         if let oldTree = currentTree {
             // Perform diff and update
             let patches = differ.diff(old: oldTree.root, new: newTree.root)
-            await applyPatches(patches)
+            applyPatches(patches)
             currentTree = newTree
         } else {
             // Initial render - mount the entire tree
-            await mountTree(newRoot)
+            _ = console.log("[Swift Render] Mounting tree to DOM")
+            mountTree(newRoot)
             currentTree = newTree
         }
     }
@@ -139,10 +147,8 @@ public final class RenderCoordinator: Sendable {
         updatePending = true
 
         // In WASM environment, this would use requestAnimationFrame
-        // For now, we execute immediately but maintain the batching flag
-        Task { @MainActor in
-            self.performUpdate()
-        }
+        // For now, we execute immediately and synchronously
+        performUpdate()
     }
 
     /// Execute all pending updates
@@ -165,12 +171,17 @@ public final class RenderCoordinator: Sendable {
     /// - Parameter view: View to convert
     /// - Returns: VNode representation
     private func convertViewToVNode<V: View>(_ view: V) -> VNode {
+        let console = JSObject.global.console
+        _ = console.log("[Swift Render] convertViewToVNode: \(V.self)")
+
         // Check if this is a primitive view (Body == Never)
         if isPrimitiveView(view) {
+            _ = console.log("[Swift Render] \(V.self) is primitive")
             return convertPrimitiveView(view)
         }
 
         // Otherwise, recursively walk the body
+        _ = console.log("[Swift Render] \(V.self) is composite, getting body")
         let bodyView = view.body
         return convertViewToVNode(bodyView)
     }
@@ -337,12 +348,10 @@ public final class RenderCoordinator: Sendable {
             // Execute the original action
             action()
 
-            // Trigger a re-render
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                if let rerender = self.rerenderClosure {
-                    await rerender()
-                }
+            // Trigger a re-render (now synchronous)
+            guard let self = self else { return }
+            if let rerender = self.rerenderClosure {
+                rerender()
             }
         }
 
@@ -391,7 +400,14 @@ public final class RenderCoordinator: Sendable {
         // Convert children
         var children: [VNode] = []
         if let contentView = content as? (any View) {
-            children = [convertViewToVNode(contentView)]
+            let childVNode = convertViewToVNode(contentView)
+            // If the child is a fragment (like TupleView), use its children directly
+            // Otherwise, use the child itself
+            if case .fragment = childVNode.type {
+                children = childVNode.children
+            } else {
+                children = [childVNode]
+            }
         }
 
         return VNode.element("div", props: props, children: children)
@@ -437,7 +453,14 @@ public final class RenderCoordinator: Sendable {
         // Convert children
         var children: [VNode] = []
         if let contentView = content as? (any View) {
-            children = [convertViewToVNode(contentView)]
+            let childVNode = convertViewToVNode(contentView)
+            // If the child is a fragment (like TupleView), use its children directly
+            // Otherwise, use the child itself
+            if case .fragment = childVNode.type {
+                children = childVNode.children
+            } else {
+                children = [childVNode]
+            }
         }
 
         return VNode.element("div", props: props, children: children)
@@ -445,41 +468,20 @@ public final class RenderCoordinator: Sendable {
 
     // MARK: - ViewBuilder Construct Handlers
 
-    /// Extract and convert TupleView
+    /// Extract and convert TupleView using parameter pack iteration via _ViewTuple protocol
+    /// The protocol conformance uses parameter packs to iterate over tuple elements
     private func extractTupleView<V: View>(_ view: V) -> VNode? {
-        // Handle different tuple sizes
-        // TupleView wraps multiple views in a tuple
-
-        if let tuple2 = view as? TupleView<(any View, any View)> {
-            let children = extractTuple2(tuple2.content)
-            return VNode.fragment(children: children)
+        // Check if this view conforms to _ViewTuple protocol
+        // TupleView conforms when T is a parameter pack of Views
+        guard let viewTuple = view as? any _ViewTuple else {
+            return nil
         }
 
-        if let tuple3 = view as? TupleView<(any View, any View, any View)> {
-            let children = extractTuple3(tuple3.content)
-            return VNode.fragment(children: children)
-        }
+        // Extract children using parameter packs (via protocol implementation)
+        let childViews = viewTuple._extractChildren()
+        let children = childViews.map { convertViewToVNode($0) }
 
-        // Add more tuple sizes as needed...
-        // For now, return nil for unsupported sizes
-        return nil
-    }
-
-    /// Extract views from a 2-element tuple
-    private func extractTuple2(_ tuple: (any View, any View)) -> [VNode] {
-        [
-            convertViewToVNode(tuple.0),
-            convertViewToVNode(tuple.1)
-        ]
-    }
-
-    /// Extract views from a 3-element tuple
-    private func extractTuple3(_ tuple: (any View, any View, any View)) -> [VNode] {
-        [
-            convertViewToVNode(tuple.0),
-            convertViewToVNode(tuple.1),
-            convertViewToVNode(tuple.2)
-        ]
+        return VNode.fragment(children: children)
     }
 
     /// Extract and convert ConditionalContent
@@ -633,60 +635,79 @@ public final class RenderCoordinator: Sendable {
 
     /// Mount a virtual tree to the DOM
     /// - Parameter node: Root VNode to mount
-    private func mountTree(_ node: VNode) async {
+    private func mountTree(_ node: VNode) {
         guard let container = rootContainer else {
             print("Warning: No root container set for mounting")
             return
         }
 
-        let domNode = await createDOMNode(node)
-        await DOMBridge.shared.appendChild(parent: container, child: domNode)
-        await DOMBridge.shared.registerNode(id: node.id, element: domNode)
+        guard let domNode = createDOMNode(node) else {
+            print("Warning: Failed to create DOM node")
+            return
+        }
+        DOMBridge.shared.appendChild(parent: container, child: domNode)
+        DOMBridge.shared.registerNode(id: node.id, element: domNode)
     }
 
     /// Recursively create DOM nodes from VNode
     /// - Parameter node: VNode to convert
     /// - Returns: JSObject representing the DOM node
-    private func createDOMNode(_ node: VNode) async -> JSObject {
-        let domNode: JSObject
+    private func createDOMNode(_ node: VNode) -> JSObject? {
+        let domNode: JSObject?
 
         switch node.type {
         case .element(let tag):
-            domNode = await DOMBridge.shared.createElement(tag: tag)
+            guard let element = DOMBridge.shared.createElement(tag: tag) else {
+                return nil
+            }
+            domNode = element
 
             // Apply properties
             for (_, property) in node.props {
-                await applyProperty(property, to: domNode)
+                applyProperty(property, to: element)
             }
 
             // Attach gesture event listeners
             for gestureReg in node.gestures {
-                await attachGestureListeners(gestureReg, to: domNode)
+                attachGestureListeners(gestureReg, to: element)
             }
 
             // Create and append children
             for child in node.children {
-                let childDOMNode = await createDOMNode(child)
-                await DOMBridge.shared.appendChild(parent: domNode, child: childDOMNode)
-                await DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                guard let childDOMNode = createDOMNode(child) else {
+                    continue
+                }
+                DOMBridge.shared.appendChild(parent: element, child: childDOMNode)
+                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
             }
 
         case .text(let content):
-            domNode = await DOMBridge.shared.createTextNode(text: content)
+            guard let textNode = DOMBridge.shared.createTextNode(text: content) else {
+                return nil
+            }
+            domNode = textNode
 
         case .fragment:
             // Fragments don't create a wrapper element
             // For now, create a document fragment or just return a div
-            domNode = await DOMBridge.shared.createElement(tag: "div")
+            guard let fragment = DOMBridge.shared.createElement(tag: "div") else {
+                return nil
+            }
+            domNode = fragment
             for child in node.children {
-                let childDOMNode = await createDOMNode(child)
-                await DOMBridge.shared.appendChild(parent: domNode, child: childDOMNode)
-                await DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
+                guard let childDOMNode = createDOMNode(child) else {
+                    continue
+                }
+                DOMBridge.shared.appendChild(parent: fragment, child: childDOMNode)
+                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
             }
 
         case .component:
             // Components are already expanded during VNode conversion
-            domNode = await DOMBridge.shared.createElement(tag: "div")
+            guard let component = DOMBridge.shared.createElement(tag: "div") else {
+                return nil
+            }
+            domNode = component
         }
 
         return domNode
@@ -696,25 +717,25 @@ public final class RenderCoordinator: Sendable {
     /// - Parameters:
     ///   - property: VProperty to apply
     ///   - element: JSObject representing the DOM element
-    private func applyProperty(_ property: VProperty, to element: JSObject) async {
+    private func applyProperty(_ property: VProperty, to element: JSObject) {
         switch property {
         case .attribute(let name, let value):
-            await DOMBridge.shared.setAttribute(element: element, name: name, value: value)
+            DOMBridge.shared.setAttribute(element: element, name: name, value: value)
 
         case .style(let name, let value):
-            await DOMBridge.shared.setStyle(element: element, name: name, value: value)
+            DOMBridge.shared.setStyle(element: element, name: name, value: value)
 
         case .boolAttribute(let name, let value):
             if value {
-                await DOMBridge.shared.setAttribute(element: element, name: name, value: name)
+                DOMBridge.shared.setAttribute(element: element, name: name, value: name)
             } else {
-                await DOMBridge.shared.removeAttribute(element: element, name: name)
+                DOMBridge.shared.removeAttribute(element: element, name: name)
             }
 
         case .eventHandler(let event, let handlerID):
             // Look up the handler in our registry and register it with DOMBridge
             if let handler = eventHandlerRegistry[handlerID] {
-                await DOMBridge.shared.addEventListener(
+                DOMBridge.shared.addEventListener(
                     element: element,
                     event: event,
                     handlerID: handlerID,
@@ -730,65 +751,71 @@ public final class RenderCoordinator: Sendable {
 
     /// Apply patches to the DOM
     /// - Parameter patches: Array of patches from diffing algorithm
-    private func applyPatches(_ patches: [Patch]) async {
+    private func applyPatches(_ patches: [Patch]) {
         for patch in patches {
-            await applyPatch(patch)
+            applyPatch(patch)
         }
     }
 
     /// Apply a single patch to the DOM
     /// - Parameter patch: Patch to apply
-    private func applyPatch(_ patch: Patch) async {
+    private func applyPatch(_ patch: Patch) {
         switch patch {
         case .insert(let parentID, let node, let index):
-            guard let parentElement = await DOMBridge.shared.getNode(id: parentID) else {
+            guard let parentElement = DOMBridge.shared.getNode(id: parentID) else {
                 print("Warning: Parent node not found for insert: \(parentID)")
                 return
             }
 
-            let newElement = await createDOMNode(node)
+            guard let newElement = createDOMNode(node) else {
+                print("Warning: Failed to create DOM node for insert")
+                return
+            }
 
             // Get the reference child at index
             if index < Int(parentElement.childNodes.length.number ?? 0) {
                 let referenceChild = parentElement.childNodes[index].object
-                await DOMBridge.shared.insertBefore(parent: parentElement, new: newElement, reference: referenceChild)
+                DOMBridge.shared.insertBefore(parent: parentElement, new: newElement, reference: referenceChild)
             } else {
-                await DOMBridge.shared.appendChild(parent: parentElement, child: newElement)
+                DOMBridge.shared.appendChild(parent: parentElement, child: newElement)
             }
 
-            await DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            DOMBridge.shared.registerNode(id: node.id, element: newElement)
 
         case .remove(let nodeID):
-            guard let element = await DOMBridge.shared.getNode(id: nodeID) else {
+            guard let element = DOMBridge.shared.getNode(id: nodeID) else {
                 print("Warning: Node not found for removal: \(nodeID)")
                 return
             }
 
             if let parent = element.parentNode.object {
-                await DOMBridge.shared.removeChild(parent: parent, child: element)
+                DOMBridge.shared.removeChild(parent: parent, child: element)
             }
-            await DOMBridge.shared.unregisterNode(id: nodeID)
+            DOMBridge.shared.unregisterNode(id: nodeID)
 
         case .replace(let oldID, let newNode):
-            guard let oldElement = await DOMBridge.shared.getNode(id: oldID),
+            guard let oldElement = DOMBridge.shared.getNode(id: oldID),
                   let parent = oldElement.parentNode.object else {
                 print("Warning: Old node not found for replacement: \(oldID)")
                 return
             }
 
-            let newElement = await createDOMNode(newNode)
-            await DOMBridge.shared.replaceChild(parent: parent, old: oldElement, new: newElement)
-            await DOMBridge.shared.unregisterNode(id: oldID)
-            await DOMBridge.shared.registerNode(id: newNode.id, element: newElement)
+            guard let newElement = createDOMNode(newNode) else {
+                print("Warning: Failed to create DOM node for replace")
+                return
+            }
+            DOMBridge.shared.replaceChild(parent: parent, old: oldElement, new: newElement)
+            DOMBridge.shared.unregisterNode(id: oldID)
+            DOMBridge.shared.registerNode(id: newNode.id, element: newElement)
 
         case .updateProps(let nodeID, let propPatches):
-            guard let element = await DOMBridge.shared.getNode(id: nodeID) else {
+            guard let element = DOMBridge.shared.getNode(id: nodeID) else {
                 print("Warning: Node not found for property update: \(nodeID)")
                 return
             }
 
             for propPatch in propPatches {
-                await applyPropPatch(propPatch, to: element)
+                applyPropPatch(propPatch, to: element)
             }
 
         case .reorder(let parentID, let moves):
@@ -802,15 +829,15 @@ public final class RenderCoordinator: Sendable {
     /// - Parameters:
     ///   - patch: PropPatch to apply
     ///   - element: JSObject representing the DOM element
-    private func applyPropPatch(_ patch: PropPatch, to element: JSObject) async {
+    private func applyPropPatch(_ patch: PropPatch, to element: JSObject) {
         switch patch {
         case .add(let key, let value), .update(let key, let value):
-            await applyProperty(value, to: element)
+            applyProperty(value, to: element)
 
         case .remove(let key):
             // Determine the property type from the key and remove it
             // This is simplified; in a real implementation, we'd track property types
-            await DOMBridge.shared.removeAttribute(element: element, name: key)
+            DOMBridge.shared.removeAttribute(element: element, name: key)
         }
     }
 
@@ -820,7 +847,7 @@ public final class RenderCoordinator: Sendable {
     /// - Parameters:
     ///   - registration: Gesture registration with event names and handler ID
     ///   - element: DOM element to attach listeners to
-    private func attachGestureListeners(_ registration: GestureRegistration, to element: JSObject) async {
+    private func attachGestureListeners(_ registration: GestureRegistration, to element: JSObject) {
         // Get the element ID for gesture tracking
         let elementID = element.__ravenNodeID.string ?? UUID().uuidString
 
@@ -834,19 +861,17 @@ public final class RenderCoordinator: Sendable {
             // Create a handler that will process the gesture event with event data
             let handler: @Sendable @MainActor (JSValue) -> Void = { [weak self] event in
                 guard let self = self else { return }
-                Task { @MainActor in
-                    await self.handleGestureEvent(
-                        handlerID: registration.handlerID,
-                        eventName: eventName,
-                        priority: registration.priority,
-                        event: event,
-                        elementID: elementID
-                    )
-                }
+                self.handleGestureEvent(
+                    handlerID: registration.handlerID,
+                    eventName: eventName,
+                    priority: registration.priority,
+                    event: event,
+                    elementID: elementID
+                )
             }
 
             // Register with DOMBridge using gesture event listener
-            await DOMBridge.shared.addGestureEventListener(
+            DOMBridge.shared.addGestureEventListener(
                 element: element,
                 event: eventName,
                 handlerID: registration.handlerID,
@@ -868,7 +893,7 @@ public final class RenderCoordinator: Sendable {
         priority: GesturePriority,
         event: JSValue,
         elementID: String
-    ) async {
+    ) {
         // Look up the gesture handler
         guard let handler = gestureHandlerRegistry[handlerID] else {
             return
@@ -909,7 +934,7 @@ public final class RenderCoordinator: Sendable {
 
         // Trigger re-render if needed
         if let rerender = rerenderClosure {
-            await rerender()
+            rerender()
         }
     }
 
@@ -1403,12 +1428,9 @@ public final class RenderCoordinator: Sendable {
         // 2. Propagating environment values through the view hierarchy during rendering
         // 3. Triggering a re-render after environment update
 
-        // For now, this is a placeholder that would trigger a re-render
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            if let rerender = self.rerenderClosure {
-                await rerender()
-            }
+        // For now, this is a placeholder that would trigger a re-render (now synchronous)
+        if let rerender = rerenderClosure {
+            rerender()
         }
     }
 }

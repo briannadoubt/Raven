@@ -140,9 +140,12 @@ public struct Canvas: View {
 
     /// Renders the canvas content to a DOM canvas element
     @MainActor
-    internal func render(size: CGSize) -> JSObject {
+    internal func render(size: CGSize) -> JSObject? {
         let bridge = DOMBridge.shared
-        let canvas = bridge.createElement(tag: "canvas")
+        guard let canvas = bridge.createElement(tag: "canvas") else {
+            print("Warning: Failed to create canvas element")
+            return nil
+        }
 
         // Set canvas dimensions
         canvas.width = .number(size.width)
@@ -161,7 +164,8 @@ public struct Canvas: View {
         }
 
         // Get 2D rendering context
-        guard let ctx = canvas.getContext!("2d").object else {
+        guard let getContextFn = canvas.getContext.function,
+              let ctx = getContextFn("2d").object else {
             return canvas
         }
 
