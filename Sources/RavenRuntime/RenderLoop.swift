@@ -52,11 +52,22 @@ public final class RenderCoordinator: Sendable {
     /// This is a type-erased closure that re-renders the current view
     private var rerenderClosure: (@MainActor () -> Void)?
 
+    /// Counter for generating unique handler IDs (UUID doesn't work reliably in WASM)
+    private var handlerIDCounter: UInt64 = 0
+
     // MARK: - Initialization
 
     /// Initialize the render coordinator
     public init() {
         self.differ = Differ()
+    }
+
+    /// Generate a unique handler ID
+    private func generateHandlerID() -> UUID {
+        handlerIDCounter += 1
+        // Create a UUID from the counter (more reliable than UUID() in WASM)
+        let uuidString = String(format: "%08x-0000-4000-8000-%012x", handlerIDCounter >> 32, handlerIDCounter & 0xFFFFFFFF)
+        return UUID(uuidString: uuidString) ?? UUID()
     }
 
     // MARK: - Public API
@@ -117,7 +128,7 @@ public final class RenderCoordinator: Sendable {
     /// - Parameter view: SwiftUI-style view to render
     private func internalRender<V: View>(view: V) {
         let console = JSObject.global.console
-        _ = console.log("[Swift Render] Converting view to VNode: \(V.self)")
+        _ = console.log("[Swift Render] 🎨 internalRender called for: \(V.self)")
 
         let newRoot = convertViewToVNode(view)
 
@@ -128,9 +139,12 @@ public final class RenderCoordinator: Sendable {
 
         if let oldTree = currentTree {
             // Perform diff and update
+            _ = console.log("[Swift Render] 🔄 Re-render detected, computing diff...")
             let patches = differ.diff(old: oldTree.root, new: newTree.root)
+            _ = console.log("[Swift Render] Generated \(patches.count) patches")
             applyPatches(patches)
             currentTree = newTree
+            _ = console.log("[Swift Render] ✅ Patches applied, re-render complete!")
         } else {
             // Initial render - mount the entire tree
             _ = console.log("[Swift Render] Mounting tree to DOM")
@@ -311,21 +325,25 @@ public final class RenderCoordinator: Sendable {
         }
 
         // Generate a unique ID for this event handler
-        let handlerID = UUID()
+        let handlerID = generateHandlerID()
 
         // Extract the action closure using a type-erased approach
         // We need to use reflection to get the actual closure
+        let console = JSObject.global.console
         if let buttonAny = view as? any View {
             // Try to cast to Button with Text label (most common case)
             if let button = buttonAny as? Button<Text> {
+                _ = console.log("[Swift RenderLoop] ✅ Button<Text> cast successful, registering action")
                 registerEventHandler(id: handlerID, action: button.actionClosure)
             } else if let button = buttonAny as? Button<AnyView> {
+                _ = console.log("[Swift RenderLoop] ✅ Button<AnyView> cast successful, registering action")
                 registerEventHandler(id: handlerID, action: button.actionClosure)
             } else {
+                _ = console.log("[Swift RenderLoop] ⚠️ Button cast failed, using placeholder action")
                 // For other label types, we need a more generic approach
                 // For now, register a placeholder that logs
                 registerEventHandler(id: handlerID, action: {
-                    print("Button clicked but action not properly extracted")
+                    _ = console.log("[Swift] Button clicked but action not properly extracted")
                 })
             }
         }
@@ -396,7 +414,7 @@ public final class RenderCoordinator: Sendable {
         }
 
         // Generate a unique ID for the input event handler
-        let handlerID = UUID()
+        let handlerID = generateHandlerID()
 
         // Register the input event handler that updates the binding
         registerInputEventHandler(id: handlerID, binding: binding)
@@ -936,15 +954,18 @@ public final class RenderCoordinator: Sendable {
 
         case .eventHandler(let event, let handlerID):
             // Look up the handler in our registry and register it with DOMBridge
+            let console = JSObject.global.console
             if let handler = eventHandlerRegistry[handlerID] {
+                _ = console.log("[Swift RenderLoop] 🔌 Adding \(event) listener to element, handlerID: \(handlerID)")
                 DOMBridge.shared.addEventListener(
                     element: element,
                     event: event,
                     handlerID: handlerID,
                     handler: handler
                 )
+                _ = console.log("[Swift RenderLoop] ✅ addEventListener completed")
             } else {
-                print("Warning: Event handler not found in registry: \(handlerID)")
+                _ = console.log("[Swift RenderLoop] ⚠️ Event handler not found in registry: \(handlerID)")
             }
         }
     }

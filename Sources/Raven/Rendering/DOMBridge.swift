@@ -188,8 +188,17 @@ public final class DOMBridge {
         // Store the closure in our registry to keep it alive
         eventClosures[handlerID] = jsClosure
 
-        // Add the event listener using the closure directly
-        _ = element.addEventListener!(event, jsClosure)
+        // Use JavaScript helper to add event listener with proper 'this' binding
+        let helperValue = JSObject.global.__ravenAddEventListener
+        if helperValue.isUndefined || helperValue.isNull {
+            print("Warning: __ravenAddEventListener helper not available")
+            return
+        }
+        // Call the helper function directly through dynamic member
+        let result = JSObject.global.__ravenAddEventListener!(element, event, jsClosure)
+        if result.boolean == false {
+            print("Warning: addEventListener failed for event: \(event)")
+        }
     }
 
     /// Remove an event listener from a DOM element
@@ -206,8 +215,11 @@ public final class DOMBridge {
             return
         }
 
-        // Remove the DOM event listener
-        _ = element.removeEventListener!(event, jsClosure)
+        // Use JavaScript helper to remove event listener
+        let helperValue = JSObject.global.__ravenRemoveEventListener
+        if !helperValue.isUndefined && !helperValue.isNull {
+            _ = JSObject.global.__ravenRemoveEventListener!(element, event, jsClosure)
+        }
     }
 
     /// Remove all event listeners from a DOM element
@@ -250,8 +262,17 @@ public final class DOMBridge {
         // Store the closure in our registry to keep it alive
         eventClosures[handlerID] = jsClosure
 
-        // Add the event listener using the closure directly
-        _ = element.addEventListener!(event, jsClosure)
+        // Use JavaScript helper to add event listener with proper 'this' binding
+        let helperValue = JSObject.global.__ravenAddEventListener
+        if helperValue.isUndefined || helperValue.isNull {
+            print("Warning: __ravenAddEventListener helper not available")
+            return
+        }
+        // Call the helper function directly through dynamic member
+        let result = JSObject.global.__ravenAddEventListener!(element, event, jsClosure)
+        if result.boolean == false {
+            print("Warning: addGestureEventListener failed for event: \(event)")
+        }
     }
 
     // MARK: - Node Tracking

@@ -105,6 +105,60 @@
     <!-- JavaScriptKit Runtime -->
     <script src="runtime.js"></script>
 
+    <!-- Raven Event Handler Helper -->
+    <script>
+        // Helper function for Swift to properly add event listeners
+        // This bypasses JavaScriptKit's method calling limitations by providing
+        // a global function with correct 'this' binding context
+        // Store registered events for debugging
+        window.__ravenEvents = [];
+
+        window.__ravenAddEventListener = function(element, eventName, handler) {
+            // Store event info
+            window.__ravenEvents.push({
+                element: element ? element.tagName : 'null',
+                eventName: eventName,
+                handlerType: typeof handler
+            });
+
+            // Log first few
+            if (window.__ravenEvents.length <= 5) {
+                console.log('[RAVEN] Event #' + window.__ravenEvents.length + ':',
+                    element ? element.tagName : 'null',
+                    'eventName="' + eventName + '"',
+                    typeof handler);
+            }
+
+            if (element && typeof element.addEventListener === 'function' && typeof handler === 'function') {
+                // Wrap the handler to log when it fires and catch errors
+                const wrappedHandler = function(event) {
+                    console.log('[RAVEN] 🔥 Handler FIRED for', eventName, 'on', element.tagName);
+                    try {
+                        console.log('[RAVEN] Calling Swift JSClosure...');
+                        const result = handler(event);
+                        console.log('[RAVEN] ✅ JSClosure returned:', result);
+                        return result;
+                    } catch (error) {
+                        console.error('[RAVEN] ❌ JSClosure threw error:', error);
+                        console.error('[RAVEN] Error stack:', error.stack);
+                        throw error;
+                    }
+                };
+                element.addEventListener(eventName, wrappedHandler);
+                return true;
+            }
+            return false;
+        };
+
+        window.__ravenRemoveEventListener = function(element, eventName, handler) {
+            if (element && typeof element.removeEventListener === 'function') {
+                element.removeEventListener(eventName, handler);
+                return true;
+            }
+            return false;
+        };
+    </script>
+
     <script type="module">
         // WASI polyfill for browser
         let wasmMemory;
@@ -236,14 +290,6 @@
                     try {
                         instance.exports._start();
                         console.log('✅ _start completed');
-
-                        // Give the event loop time to process Swift Tasks
-                        console.log('⏰ Waiting for Swift Tasks to execute...');
-                        for (let i = 0; i < 10; i++) {
-                            await new Promise(resolve => setTimeout(resolve, 50));
-                            console.log(`⏰ Tick ${i + 1}/10`);
-                        }
-                        console.log('⏰ Event loop processing complete');
                     } catch (e) {
                         console.error('❌ Error in _start:', e);
                         console.error('Stack:', e.stack);
@@ -273,7 +319,8 @@
         }
     </script>
 
-    <!-- Raven Hot Reload -->
+    <!-- Raven Hot Reload (DISABLED - causing 404s) -->
+    <!--
     <script id="raven-hot-reload">
     (function() {
         let lastHash = null;
@@ -297,6 +344,7 @@
         checkForUpdates();
     })();
     </script>
+    -->
     
 </body>
 </html>

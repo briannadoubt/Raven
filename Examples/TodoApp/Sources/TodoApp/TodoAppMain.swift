@@ -31,6 +31,12 @@ struct TodoAppMain {
         _ = console.log("[Swift] Main returning")
     }
 
+    // Store coordinator globally so we can trigger re-renders
+    @MainActor
+    static var coordinator: RenderCoordinator?
+    @MainActor
+    static var rootView: TodoApp?
+
     /// Synchronous app launch like Tokamak
     @MainActor
     static func launchApp() {
@@ -39,7 +45,8 @@ struct TodoAppMain {
 
         // Create the root view directly (skip App/Scene extraction)
         // Test full TodoApp with 5-element tuple using parameter packs
-        let rootView = TodoApp()
+        let view = TodoApp()
+        rootView = view
         _ = console.log("[Swift] Root view created")
 
         // Get the root container from the DOM
@@ -50,16 +57,40 @@ struct TodoAppMain {
         _ = console.log("[Swift] Root container found")
 
         // Create render coordinator
-        let coordinator = RenderCoordinator()
-        coordinator.setRootContainer(rootContainer)
+        let coord = RenderCoordinator()
+        coordinator = coord
+        coord.setRootContainer(rootContainer)
         _ = console.log("[Swift] Render coordinator created")
+
+        // Subscribe to state changes to trigger re-renders
+        setupStateSubscriptions(view: view, coordinator: coord)
 
         // Render synchronously (no async/await needed!)
         _ = console.log("[Swift] Starting render...")
-        coordinator.render(view: rootView)
+        coord.render(view: view)
         _ = console.log("[Swift] Render complete!")
 
         _ = console.log("[Swift] App launched!")
+    }
+
+    /// Subscribe to observable object changes to trigger re-renders
+    @MainActor
+    static func setupStateSubscriptions(view: TodoApp, coordinator: RenderCoordinator) {
+        let console = JSObject.global.console
+        _ = console.log("[Swift] Setting up state subscriptions...")
+
+        // Access the store directly (now that it's internal, not private)
+        let store = view.store
+        _ = console.log("[Swift] Found TodoStore, subscribing to changes")
+
+        // Subscribe to store changes
+        store.objectWillChange.subscribe {
+            _ = console.log("[Swift] 🔄 Store changed, triggering re-render!")
+            // Trigger re-render
+            if let rootView = Self.rootView, let coord = Self.coordinator {
+                coord.render(view: rootView)
+            }
+        }
     }
 
     /// Get or create root DOM container (from AppRuntime)

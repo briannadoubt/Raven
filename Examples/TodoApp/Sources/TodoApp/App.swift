@@ -1,5 +1,6 @@
 import Foundation
 import Raven
+import JavaScriptKit
 
 // Import Raven's ObservableObject explicitly to avoid ambiguity with Foundation
 typealias ObservableObject = Raven.ObservableObject
@@ -64,18 +65,31 @@ final class TodoStore: ObservableObject {
 
     /// Toggle the completion status of a todo
     func toggleTodo(_ id: UUID) {
+        let console = JSObject.global.console
+        _ = console.log("[Swift TodoStore] 🎯 toggleTodo called for id: \(id)")
         if let index = todos.firstIndex(where: { $0.id == id }) {
+            _ = console.log("[Swift TodoStore] Found todo at index \(index), calling objectWillChange.send()")
+            // Manually trigger objectWillChange since we're mutating array contents
+            objectWillChange.send()
+            _ = console.log("[Swift TodoStore] objectWillChange.send() completed, toggling isCompleted")
             todos[index].isCompleted.toggle()
+            _ = console.log("[Swift TodoStore] Toggled! New value: \(todos[index].isCompleted)")
+        } else {
+            _ = console.log("[Swift TodoStore] ⚠️ Todo not found for id: \(id)")
         }
     }
 
     /// Delete a todo from the list
     func deleteTodo(_ id: UUID) {
+        // Manually trigger objectWillChange since we're mutating array contents
+        objectWillChange.send()
         todos.removeAll { $0.id == id }
     }
 
     /// Delete all completed todos
     func clearCompleted() {
+        // Manually trigger objectWillChange since we're mutating array contents
+        objectWillChange.send()
         todos.removeAll { $0.isCompleted }
     }
 
@@ -109,7 +123,7 @@ final class TodoStore: ObservableObject {
 struct TodoApp: View {
     /// The store manages all todo state and is owned by this view
     /// Using @StateObject ensures the store persists across view updates
-    @StateObject private var store = TodoStore()
+    @StateObject var store = TodoStore()
 
     /// Local state for the new todo input field
     @State private var newTodoText = ""
