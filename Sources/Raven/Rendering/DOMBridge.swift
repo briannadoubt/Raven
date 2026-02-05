@@ -174,14 +174,19 @@ public final class DOMBridge {
         // Ensure event delegation is set up
         setupEventDelegation()
 
-        // Store the handler
+        // Store the handler in the registry FIRST
         eventHandlers[handlerID] = handler
 
-        // Create JSClosure for the event handler (safe, no dynamic member access)
+        // Create JSClosure that only captures handlerID (not the handler itself)
+        // This avoids memory corruption from capturing complex Swift closures
         let console = JSObject.global.console
-        let jsClosure = JSClosure { _ in
+        let jsClosure = JSClosure { [weak self] _ in
             _ = console.log("[Swift DOMBridge] 🔥 JSClosure invoked for handlerID: \(handlerID)")
-            // Call handler synchronously (Task doesn't work reliably in WASM event loop)
+            // Look up handler from registry to avoid capturing it directly
+            guard let self = self, let handler = self.eventHandlers[handlerID] else {
+                _ = console.log("[Swift DOMBridge] ⚠️ Handler not found for ID: \(handlerID)")
+                return .undefined
+            }
             _ = console.log("[Swift DOMBridge] 📞 Calling Swift handler...")
             handler()
             _ = console.log("[Swift DOMBridge] ✅ Swift handler completed")

@@ -381,25 +381,12 @@ public final class RenderCoordinator: Sendable {
     ///   - action: Action closure to register
     private func registerEventHandler(id: UUID, action: @escaping @Sendable @MainActor () -> Void) {
         let console = JSObject.global.console
-        // Wrap the action to trigger a re-render after execution
-        let wrappedAction: @Sendable @MainActor () -> Void = { [weak self] in
-            _ = console.log("[Swift RenderLoop] 🎬 Wrapped action executing for handlerID: \(id)")
-            // Execute the original action
+        // Store the action directly without automatic re-render
+        // Re-renders are triggered by objectWillChange from @Published properties
+        let wrappedAction: @Sendable @MainActor () -> Void = {
+            _ = console.log("[Swift RenderLoop] 🎬 Executing action for handlerID: \(id)")
             action()
-            _ = console.log("[Swift RenderLoop] ✅ Original action completed")
-
-            // Trigger a re-render (now synchronous)
-            guard let self = self else {
-                _ = console.log("[Swift RenderLoop] ⚠️ Self is nil, cannot re-render")
-                return
-            }
-            if let rerender = self.rerenderClosure {
-                _ = console.log("[Swift RenderLoop] 🔄 Triggering re-render...")
-                rerender()
-                _ = console.log("[Swift RenderLoop] ✅ Re-render completed")
-            } else {
-                _ = console.log("[Swift RenderLoop] ⚠️ No rerenderClosure available")
-            }
+            _ = console.log("[Swift RenderLoop] ✅ Action completed")
         }
 
         eventHandlerRegistry[id] = wrappedAction
