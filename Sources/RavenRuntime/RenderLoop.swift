@@ -1385,5 +1385,31 @@ public final class RenderCoordinator: Sendable {
             break
         }
     }
+
+    // MARK: - Environment Updates
+
+    /// Update an environment value and trigger re-render.
+    ///
+    /// This method updates a specific environment value and triggers a re-render
+    /// of the view hierarchy to propagate the change.
+    ///
+    /// - Parameters:
+    ///   - keyPath: The key path to the environment value to update.
+    ///   - value: The new value to set.
+    public func updateEnvironment<Value>(_ keyPath: WritableKeyPath<EnvironmentValues, Value>, _ value: Value) {
+        // TODO: Implement environment value storage and propagation
+        // This requires:
+        // 1. Storing EnvironmentValues in RenderCoordinator
+        // 2. Propagating environment values through the view hierarchy during rendering
+        // 3. Triggering a re-render after environment update
+
+        // For now, this is a placeholder that would trigger a re-render
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            if let rerender = self.rerenderClosure {
+                await rerender()
+            }
+        }
+    }
 }
 
