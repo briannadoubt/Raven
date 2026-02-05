@@ -178,10 +178,13 @@ public final class DOMBridge {
         eventHandlers[handlerID] = handler
 
         // Create JSClosure for the event handler (safe, no dynamic member access)
+        let console = JSObject.global.console
         let jsClosure = JSClosure { _ in
-            Task { @MainActor in
-                handler()
-            }
+            _ = console.log("[Swift DOMBridge] 🔥 JSClosure invoked for handlerID: \(handlerID)")
+            // Call handler synchronously (Task doesn't work reliably in WASM event loop)
+            _ = console.log("[Swift DOMBridge] 📞 Calling Swift handler...")
+            handler()
+            _ = console.log("[Swift DOMBridge] ✅ Swift handler completed")
             return .undefined
         }
 

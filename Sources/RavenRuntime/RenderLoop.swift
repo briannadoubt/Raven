@@ -65,9 +65,18 @@ public final class RenderCoordinator: Sendable {
     /// Generate a unique handler ID
     private func generateHandlerID() -> UUID {
         handlerIDCounter += 1
-        // Create a UUID from the counter (more reliable than UUID() in WASM)
-        let uuidString = String(format: "%08x-0000-4000-8000-%012x", handlerIDCounter >> 32, handlerIDCounter & 0xFFFFFFFF)
-        return UUID(uuidString: uuidString) ?? UUID()
+        // String.format() is broken in WASM, so use manual hex conversion
+        let highHex = String(handlerIDCounter >> 32, radix: 16, uppercase: false)
+        let lowHex = String(handlerIDCounter & 0xFFFFFFFF, radix: 16, uppercase: false)
+        // Pad with leading zeros
+        let high = String(repeating: "0", count: max(0, 8 - highHex.count)) + highHex
+        let low = String(repeating: "0", count: max(0, 12 - lowHex.count)) + lowHex
+        let uuidString = "\(high)-0000-4000-8000-\(low)"
+        let console = JSObject.global.console
+        _ = console.log("[Swift generateHandlerID] ✅ Counter: \(handlerIDCounter), String: \(uuidString)")
+        let result = UUID(uuidString: uuidString) ?? UUID()
+        _ = console.log("[Swift generateHandlerID] ✅ Result UUID: \(result)")
+        return result
     }
 
     // MARK: - Public API
@@ -371,19 +380,30 @@ public final class RenderCoordinator: Sendable {
     ///   - id: Unique identifier for the handler
     ///   - action: Action closure to register
     private func registerEventHandler(id: UUID, action: @escaping @Sendable @MainActor () -> Void) {
+        let console = JSObject.global.console
         // Wrap the action to trigger a re-render after execution
         let wrappedAction: @Sendable @MainActor () -> Void = { [weak self] in
+            _ = console.log("[Swift RenderLoop] 🎬 Wrapped action executing for handlerID: \(id)")
             // Execute the original action
             action()
+            _ = console.log("[Swift RenderLoop] ✅ Original action completed")
 
             // Trigger a re-render (now synchronous)
-            guard let self = self else { return }
+            guard let self = self else {
+                _ = console.log("[Swift RenderLoop] ⚠️ Self is nil, cannot re-render")
+                return
+            }
             if let rerender = self.rerenderClosure {
+                _ = console.log("[Swift RenderLoop] 🔄 Triggering re-render...")
                 rerender()
+                _ = console.log("[Swift RenderLoop] ✅ Re-render completed")
+            } else {
+                _ = console.log("[Swift RenderLoop] ⚠️ No rerenderClosure available")
             }
         }
 
         eventHandlerRegistry[id] = wrappedAction
+        _ = console.log("[Swift RenderLoop] ✅ Registered handler for ID: \(id)")
     }
 
     /// Extract and convert TextField with proper event handler registration
