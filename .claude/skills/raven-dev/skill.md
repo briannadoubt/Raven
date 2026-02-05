@@ -13,9 +13,26 @@ Invoke this skill when:
 
 ## Core Workflow
 
-### 1. Build Phase
+### Option 1: Hot Reload Development (Recommended)
 
-**Always build from the app directory (not root):**
+**Use `raven-dev.py` for automatic rebuilding:**
+```bash
+cd Examples/TodoApp
+python3 raven-dev.py
+```
+
+This provides:
+- 🔄 Automatic WASM rebuilding on file changes
+- 🌐 Browser auto-reload when new WASM is ready
+- 👀 Watches both app and framework sources
+- ⚡ Fast incremental builds
+- 🎨 Colored terminal output
+
+See `RAVEN_DEV.md` for full documentation.
+
+### Option 2: Manual Build
+
+**Build from the app directory (not root):**
 ```bash
 cd Examples/TodoApp  # or other example app
 swift build --swift-sdk swift-6.2.3-RELEASE_wasm
@@ -343,7 +360,11 @@ Before marking work complete:
 ## Quick Commands
 
 ```bash
-# Build
+# Development with hot reload (recommended)
+cd Examples/TodoApp
+python3 raven-dev.py
+
+# Manual build
 cd Examples/TodoApp
 swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 
@@ -351,11 +372,14 @@ swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 cp .build/wasm32-unknown-wasip1/debug/TodoApp.wasm public/TodoApp-v2.wasm
 md5 public/TodoApp-v2.wasm
 
-# Serve (if not running)
+# Serve (manual, without hot reload)
 python3 serve.py
 
 # Check if server running
 lsof -ti:8000
+
+# Install dev server dependencies
+pip3 install -r requirements.txt
 ```
 
 ## Success Criteria
