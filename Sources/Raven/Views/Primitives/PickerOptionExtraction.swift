@@ -30,12 +30,9 @@ protocol ForEachViewProtocol {
 
 extension TupleView: TupleViewProtocol {
     @MainActor func extractPickerOptions<Selection: Hashable>(into options: inout [PickerOption<Selection>]) where Selection: Sendable {
-        // Use Mirror to traverse tuple elements
-        let mirror = Mirror(reflecting: content)
-        for child in mirror.children {
-            if let view = child.value as? any View {
-                extractFromView(view, into: &options)
-            }
+        // Use parameter pack iteration instead of Mirror
+        for child in _extractChildren() {
+            extractFromView(child, into: &options)
         }
     }
 

@@ -105,12 +105,12 @@
 /// `withAnimation` calls to work correctly. The current animation can be
 /// accessed and modified by the rendering system.
 @MainActor
-internal final class AnimationContext: Sendable {
+public final class AnimationContext: Sendable {
     /// The current animation in the active transaction, if any.
     ///
     /// This is `nil` when no `withAnimation` block is active. Views can check
     /// this value to determine if they should animate their changes.
-    nonisolated(unsafe) static var current: Animation? = nil
+    nonisolated(unsafe) public static var current: Animation? = nil
 
     /// The completion callback for the current animation, if any.
     ///
@@ -131,7 +131,7 @@ internal final class AnimationContext: Sendable {
     ///
     /// - Returns: The result of the body closure.
     /// - Throws: Rethrows any error thrown by the body closure.
-    static func withAnimation<T>(
+    public static func withAnimation<T>(
         _ animation: Animation?,
         _ body: () throws -> T,
         completion: (@MainActor @Sendable () -> Void)? = nil
@@ -160,7 +160,7 @@ internal final class AnimationContext: Sendable {
     /// Views and modifiers can call this to check if they should animate changes.
     ///
     /// - Returns: The current animation, or `nil` if no animation is active.
-    static func getCurrentAnimation() -> Animation? {
+    public static func getCurrentAnimation() -> Animation? {
         return current
     }
 
@@ -170,7 +170,7 @@ internal final class AnimationContext: Sendable {
     /// ensuring the callback is invoked only once.
     ///
     /// - Returns: The completion callback, or `nil` if none is set.
-    static func takeCompletionCallback() -> (@MainActor @Sendable () -> Void)? {
+    public static func takeCompletionCallback() -> (@MainActor @Sendable () -> Void)? {
         let callback = currentCompletion
         currentCompletion = nil
         return callback

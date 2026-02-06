@@ -37,6 +37,9 @@ public final class AppRuntime: Sendable {
     /// Whether framework CSS has already been injected.
     private static var cssInjected = false
 
+    /// Whether the app has already been launched (prevents duplicate launches).
+    private var hasLaunched = false
+
     private init() {}
 
     /// Runs an app by extracting its scenes and mounting the root view to the DOM.
@@ -48,6 +51,9 @@ public final class AppRuntime: Sendable {
     ///
     /// - Parameter app: The app to run.
     public func run<A: App>(app: A) {
+        guard !hasLaunched else { return }
+        hasLaunched = true
+
         Self.injectFrameworkCSSIfNeeded()
         currentApp = app
 
@@ -57,8 +63,9 @@ public final class AppRuntime: Sendable {
         // Set up scene phase tracking based on browser events
         setupScenePhaseTracking()
 
-        // Initialize render coordinator
-        let coordinator = RenderCoordinator()
+        // Initialize render coordinator with DOMRenderer
+        let domRenderer = DOMRenderer()
+        let coordinator = RenderCoordinator(renderer: domRenderer)
         renderCoordinator = coordinator
 
         // Get or create root container element

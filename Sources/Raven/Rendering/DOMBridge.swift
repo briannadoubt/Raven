@@ -106,10 +106,24 @@ public final class DOMBridge {
         return result.isNull || result.isUndefined ? nil : result.object
     }
 
-    /// Set an attribute on a DOM element
+    /// Set an attribute on a DOM element.
+    ///
+    /// For `value` and `checked`, also sets the corresponding JS property.
+    /// HTML attributes only set the "default" value; once a user interacts
+    /// with an input, the displayed value is controlled by the JS property.
     public func setAttribute(element: JSObject, name: String, value: String) {
         // Call method directly on element to preserve 'this' binding
         _ = element.setAttribute!(name, value)
+
+        // Sync JS properties that diverge from HTML attributes after user interaction
+        switch name {
+        case "value":
+            element.value = .string(value)
+        case "checked":
+            element.checked = .boolean(value == "true" || value == name)
+        default:
+            break
+        }
     }
 
     /// Remove an attribute from a DOM element
@@ -306,10 +320,12 @@ public final class DOMBridge {
     }
 
     /// Unregister a DOM node
+    ///
+    /// Note: handler cleanup is managed by RenderCoordinator's stale-handler
+    /// tracking (`previousHandlerIDs.subtracting(activeHandlerIDs)`).
+    /// We must NOT call `removeAllEventListeners` here because it clears
+    /// ALL handlers globally, breaking every other element in the app.
     public func unregisterNode(id: NodeID) {
-        if let element = nodeRegistry[id] {
-            removeAllEventListeners(element: element)
-        }
         nodeRegistry.removeValue(forKey: id)
     }
 

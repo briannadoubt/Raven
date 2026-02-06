@@ -242,16 +242,10 @@ public struct DialogRenderer: Sendable {
     /// - Parameter view: The view to extract text from
     /// - Returns: The text content if available
     internal static func extractTextContent(_ view: Any) -> String? {
-        // Use reflection to extract text from Text views
-        let mirror = Mirror(reflecting: view)
-
-        // Look for a "content" property (Text views store their string here)
-        for child in mirror.children {
-            if child.label == "content", let content = child.value as? String {
-                return content
-            }
+        // Direct cast to Text instead of Mirror reflection
+        if let text = view as? Text {
+            return text.textContent
         }
-
         return nil
     }
 

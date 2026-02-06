@@ -31,6 +31,24 @@ extension DynamicProperty {
     }
 }
 
+// MARK: - Render Scheduler
+
+/// Global bridge between @State mutations and the render coordinator.
+///
+/// When a `StateStorage` value changes and no explicit `onUpdate` closure
+/// is wired (the standard case — `onUpdate` is currently unused), it calls
+/// `_RenderScheduler.current?.scheduleRender()` to trigger a batched render.
+@MainActor
+public enum _RenderScheduler {
+    /// Weak reference to the active render coordinator.
+    public static weak var current: (any _StateChangeReceiver)?
+
+    /// The component path currently being evaluated during a render pass.
+    /// Set by `RenderCoordinator.convertViewToVNode` so that `StateStorage`
+    /// can lazily associate itself with the component that reads it.
+    public static var currentComponentPath: String?
+}
+
 // MARK: - State Storage
 
 /// Internal storage for @State property wrapper values.
@@ -48,6 +66,10 @@ private final class StateStorage<Value: Sendable>: @unchecked Sendable {
     /// This will trigger a view update through the render coordinator
     private var onUpdate: (@Sendable @MainActor () -> Void)?
 
+    /// The component path that owns this state, for selective re-rendering.
+    /// Lazily captured on first read during a render pass.
+    private var componentPath: String?
+
     /// Initialize with an initial value
     /// - Parameter value: The initial value to store
     init(initialValue: Value) {
@@ -55,16 +77,34 @@ private final class StateStorage<Value: Sendable>: @unchecked Sendable {
         self.onUpdate = nil
     }
 
-    /// Get the current value
+    /// Get the current value.
+    /// On first access during a render pass, associates this storage with the
+    /// current component path for selective re-rendering.
     var currentValue: Value {
-        value
+        if componentPath == nil {
+            componentPath = _RenderScheduler.currentComponentPath
+        }
+        return value
     }
 
     /// Set a new value and trigger update callback
     /// - Parameter newValue: The new value to store
     func setValue(_ newValue: Value) {
         value = newValue
-        onUpdate?()
+
+        // If we know which component owns this state, mark it dirty
+        // for selective re-rendering.
+        if let path = componentPath {
+            _RenderScheduler.current?.markDirty(path: path)
+        }
+
+        // Fire explicit onUpdate if wired (currently unused in standard path)
+        if let onUpdate = onUpdate {
+            onUpdate()
+        } else if componentPath == nil {
+            // Fallback: no component path and no onUpdate — schedule a full render
+            _RenderScheduler.current?.scheduleRender()
+        }
     }
 
     /// Set the update callback

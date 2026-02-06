@@ -1,6 +1,22 @@
 import Foundation
 import JavaScriptKit
 
+// MARK: - State Change Receiver Protocol
+
+/// Protocol for receiving state change notifications and scheduling renders.
+///
+/// `RenderCoordinator` conforms to this protocol to enable batched rendering:
+/// multiple state changes coalesce into a single render pass.
+@MainActor public protocol _StateChangeReceiver: AnyObject {
+    /// Schedule a render pass. Multiple calls before the microtask fires
+    /// are coalesced into a single render.
+    func scheduleRender()
+
+    /// Mark a component path as dirty (state changed), triggering selective
+    /// re-rendering of only the affected subtree.
+    func markDirty(path: String)
+}
+
 // MARK: - Render Context Protocol
 
 /// Abstracts the render coordinator so views in the Raven module can render

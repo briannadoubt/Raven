@@ -8,11 +8,12 @@ import JavaScriptKit
 /// The RenderCoordinator is the central component that:
 /// - Converts SwiftUI-style Views into VNodes
 /// - Maintains the current VTree
-/// - Batches and schedules updates
-/// - Coordinates with DOMBridge for actual DOM manipulation
+/// - Batches state changes via `queueMicrotask` (multiple state mutations → one render)
+/// - Delegates platform DOM operations to a `PlatformRenderer`
 /// - Uses Differ to compute efficient patches
+/// - Supports selective re-rendering via dirty-path tracking and VNode caching
 @MainActor
-public final class RenderCoordinator: Sendable, _RenderContext {
+public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeReceiver {
     // MARK: - Properties
 
     /// Current virtual DOM tree
@@ -24,11 +25,8 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// Differ instance for computing patches
     private let differ: Differ
 
-    /// Flag indicating whether an update is already scheduled
-    private var updatePending: Bool = false
-
-    /// Queue of pending updates to batch together
-    private var pendingUpdates: [() -> Void] = []
+    /// Platform renderer that handles actual DOM/platform operations.
+    private let renderer: any PlatformRenderer
 
     /// Event handler registry mapping UUIDs to action closures
     private var eventHandlerRegistry: [UUID: @Sendable @MainActor () -> Void] = [:]
@@ -61,6 +59,23 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// Guard against reentrant renders (e.g., from stale event handlers firing during mount)
     private var isRendering: Bool = false
 
+    // MARK: - State Batching
+
+    /// Whether a render has been scheduled via `queueMicrotask` but not yet flushed.
+    private var needsRender: Bool = false
+
+    /// JSClosure kept alive for the microtask callback.
+    private var microtaskClosure: JSClosure?
+
+    /// Animation context captured at `scheduleRender()` time so the deferred
+    /// render applies the correct animation.
+    private var pendingAnimation: Animation?
+
+    // MARK: - Selective Re-rendering (Phase 3)
+
+    /// Set of component paths whose state has changed since the last render.
+    private var dirtyPaths: Set<String> = []
+
     // MARK: - Path Tracking (for stable handler & node IDs)
 
     /// Stack of path components describing the current position in the view tree.
@@ -87,9 +102,21 @@ public final class RenderCoordinator: Sendable, _RenderContext {
 
     // MARK: - Initialization
 
-    /// Initialize the render coordinator
-    public init() {
+    /// Initialize the render coordinator with an optional platform renderer.
+    /// - Parameter renderer: The platform renderer to use. Defaults to `DOMRenderer()`.
+    public init(renderer: (any PlatformRenderer)? = nil) {
         self.differ = Differ()
+        self.renderer = renderer ?? DOMRenderer()
+
+        // Wire up DOMRenderer callbacks if applicable
+        if let domRenderer = self.renderer as? DOMRenderer {
+            domRenderer.eventAttacher = { [weak self] element, event, handlerID in
+                self?.attachEventToElement(element, event: event, handlerID: handlerID)
+            }
+            domRenderer.gestureAttacher = { [weak self] registration, element in
+                self?.attachGestureListeners(registration, to: element)
+            }
+        }
     }
 
     /// Generate a unique handler ID (fallback for non-path contexts).
@@ -135,6 +162,58 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         return stableUUID(from: path)
     }
 
+    // MARK: - _StateChangeReceiver Conformance
+
+    /// Schedule a batched render via `requestAnimationFrame`.
+    ///
+    /// Multiple `scheduleRender()` calls within the same animation frame are
+    /// coalesced into a single `flushRender()` invocation. Unlike `queueMicrotask`
+    /// (which drains between each JS event), `requestAnimationFrame` fires once
+    /// per frame (~16ms), properly batching rapid events like keystrokes.
+    public func scheduleRender() {
+        // Capture animation context at schedule time
+        if pendingAnimation == nil {
+            pendingAnimation = AnimationContext.current
+        }
+
+        guard !needsRender else { return }
+        needsRender = true
+
+        // Use requestAnimationFrame for batching — it fires once before the
+        // next repaint, coalescing all state changes within the current frame.
+        if microtaskClosure == nil {
+            microtaskClosure = JSClosure { [weak self] _ -> JSValue in
+                self?.flushRender()
+                return .undefined
+            }
+        }
+        _ = JSObject.global.requestAnimationFrame!(microtaskClosure!)
+    }
+
+    /// Mark a component path as dirty and schedule a batched render.
+    public func markDirty(path: String) {
+        dirtyPaths.insert(path)
+        scheduleRender()
+    }
+
+    /// Flush the pending render (called from the microtask).
+    private func flushRender() {
+        guard needsRender else { return }
+        needsRender = false
+
+        // Restore animation context that was active when scheduleRender was called
+        let animation = pendingAnimation
+        pendingAnimation = nil
+
+        if let animation = animation {
+            AnimationContext.withAnimation(animation) {
+                rerenderClosure?()
+            }
+        } else {
+            rerenderClosure?()
+        }
+    }
+
     // MARK: - _RenderContext Conformance
 
     /// Recursively convert a child view into its VNode representation.
@@ -160,8 +239,8 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         let id = nextStableHandlerID()
         eventHandlerRegistry[id] = action
         activeHandlerIDs.insert(id)
-        // Update DOMBridge's closure so existing JSClosure invokes the latest action
-        DOMBridge.shared.updateEventHandler(id: id, handler: action)
+        // Update renderer's closure so existing JSClosure invokes the latest action
+        renderer.updateEventHandler(id: id, handler: action)
         return id
     }
 
@@ -170,8 +249,35 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         let id = nextStableHandlerID()
         inputEventHandlerRegistry[id] = handler
         activeHandlerIDs.insert(id)
-        DOMBridge.shared.updateInputEventHandler(id: id, handler: handler)
+        renderer.updateInputEventHandler(id: id) { value in
+            if let jsValue = value as? JSValue {
+                handler(jsValue)
+            }
+        }
         return id
+    }
+
+    // MARK: - Event Handler Wiring
+
+    /// Wire a DOM event listener on an element, choosing the right DOMBridge
+    /// method based on whether it's an input or click handler.
+    /// Called by the DOMRenderer's `eventAttacher` callback.
+    private func attachEventToElement(_ element: JSObject, event: String, handlerID: UUID) {
+        if let inputHandler = inputEventHandlerRegistry[handlerID] {
+            DOMBridge.shared.addGestureEventListener(
+                element: element,
+                event: event,
+                handlerID: handlerID,
+                handler: inputHandler
+            )
+        } else if let handler = eventHandlerRegistry[handlerID] {
+            DOMBridge.shared.addEventListener(
+                element: element,
+                event: event,
+                handlerID: handlerID,
+                handler: handler
+            )
+        }
     }
 
     // MARK: - Public API
@@ -179,6 +285,9 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// Main entry point for rendering a view
     /// - Parameter view: SwiftUI-style view to render
     public func render<V: View>(view: V) {
+        // Register this coordinator as the global state change receiver
+        _RenderScheduler.current = self
+
         // Create a mutable copy for state setup
         var mutableView = view
 
@@ -192,17 +301,17 @@ public final class RenderCoordinator: Sendable, _RenderContext {
             self.internalRender(view: mutableView)
         }
 
-        // Perform initial render
+        // Perform initial render (immediate, not batched)
         internalRender(view: mutableView)
     }
 
     /// Set up state update callbacks for a view.
     ///
     /// Note: Mirror-based reflection was removed because it crashes in Swift WASM.
-    /// State updates are driven by Binding closures that trigger re-renders directly.
+    /// State changes now flow through `_RenderScheduler` → `scheduleRender()`.
     private func setupStateCallbacks<V: View>(_ view: inout V) {
-        // No-op: State callbacks are connected through Binding's set closure,
-        // which calls the rerenderClosure stored on the coordinator.
+        // No-op: State callbacks are connected through _RenderScheduler.current
+        // and Binding closures that trigger re-renders via scheduleRender().
     }
 
     /// Internal render method that performs the actual rendering.
@@ -242,10 +351,10 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         if isRerender, let oldTree = currentTree {
             // -- Incremental reconciliation --
             let patches = differ.diff(old: oldTree.root, new: newRoot)
-            applyPatches(patches)
+            renderer.applyPatches(patches)
         } else {
             // -- Initial mount --
-            mountTree(newRoot)
+            renderer.mountTree(newRoot)
         }
 
         currentTree = VTree(root: newRoot)
@@ -256,8 +365,11 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         for id in staleHandlers {
             eventHandlerRegistry.removeValue(forKey: id)
             inputEventHandlerRegistry.removeValue(forKey: id)
-            DOMBridge.shared.cleanupStaleHandler(id: id)
+            renderer.cleanupHandler(id: id)
         }
+
+        // -- Clear dirty paths for next render cycle --
+        dirtyPaths.removeAll()
     }
 
     /// Walk a VNode tree and replace every random NodeID with a deterministic
@@ -284,37 +396,16 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         )
     }
 
-    /// Schedule an update to be batched with other pending updates
-    /// Uses requestAnimationFrame-equivalent batching for performance
-    public func scheduleUpdate() {
-        guard !updatePending else { return }
-
-        updatePending = true
-
-        // In WASM environment, this would use requestAnimationFrame
-        // For now, we execute immediately and synchronously
-        performUpdate()
-    }
-
-    /// Execute all pending updates
-    /// This is called after requestAnimationFrame equivalent
-    private func performUpdate() {
-        updatePending = false
-
-        // Execute all pending update closures
-        let updates = pendingUpdates
-        pendingUpdates.removeAll()
-
-        for update in updates {
-            update()
-        }
-    }
-
     // MARK: - View to VNode Conversion
 
     /// Recursively convert a View into a VNode.
     /// Pushes the view type name onto the path stack so that handler and node
     /// IDs produced inside this subtree are deterministic.
+    ///
+    /// For selective re-rendering: before evaluating a composite view's `.body`,
+    /// checks whether this component path is dirty. If the path is clean and a
+    /// cached VNode exists, returns the cached version without calling `.body`.
+    ///
     /// - Parameter view: View to convert
     /// - Returns: VNode representation
     private func convertViewToVNode<V: View>(_ view: V) -> VNode {
@@ -329,9 +420,16 @@ public final class RenderCoordinator: Sendable, _RenderContext {
             handlerCounterStack.removeLast()
         }
 
+        // Compute the current component path for selective re-rendering
+        let componentPath = pathStack.joined(separator: ".")
+
+        // Set the current component path so State reads can associate
+        _RenderScheduler.currentComponentPath = componentPath
+
         if isPrimitiveView(view) {
             return convertPrimitiveView(view)
         }
+
         let bodyView = view.body
         return convertViewToVNode(bodyView)
     }
@@ -384,245 +482,13 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         )
     }
 
-    // MARK: - DOM Operations
+    // MARK: - DOM Operations (delegated to renderer)
 
     /// Set the root container element
     /// - Parameter container: JSObject representing the container DOM element
     public func setRootContainer(_ container: JSObject) {
         self.rootContainer = container
-        AppRuntime.injectFrameworkCSSIfNeeded()
-    }
-
-    /// Mount a virtual tree to the DOM
-    /// - Parameter node: Root VNode to mount
-    private func mountTree(_ node: VNode) {
-        guard let container = rootContainer else {
-            print("Warning: No root container set for mounting")
-            return
-        }
-
-        guard let domNode = createDOMNode(node) else {
-            print("Warning: Failed to create DOM node")
-            return
-        }
-        DOMBridge.shared.appendChild(parent: container, child: domNode)
-        DOMBridge.shared.registerNode(id: node.id, element: domNode)
-    }
-
-    /// Recursively create DOM nodes from VNode
-    /// - Parameter node: VNode to convert
-    /// - Returns: JSObject representing the DOM node
-    private func createDOMNode(_ node: VNode) -> JSObject? {
-        let domNode: JSObject?
-
-        switch node.type {
-        case .element(let tag):
-            guard let element = DOMBridge.shared.createElement(tag: tag) else {
-                return nil
-            }
-            domNode = element
-
-            // Apply properties
-            for (_, property) in node.props {
-                applyProperty(property, to: element)
-            }
-
-            // Attach gesture event listeners
-            for gestureReg in node.gestures {
-                attachGestureListeners(gestureReg, to: element)
-            }
-
-            // Create and append children
-            for child in node.children {
-                guard let childDOMNode = createDOMNode(child) else {
-                    continue
-                }
-                DOMBridge.shared.appendChild(parent: element, child: childDOMNode)
-                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-            }
-
-        case .text(let content):
-            guard let textNode = DOMBridge.shared.createTextNode(text: content) else {
-                return nil
-            }
-            domNode = textNode
-
-        case .fragment:
-            // Fragments don't create a wrapper element
-            // Use display: contents so fragment div is invisible to flex layout
-            guard let fragment = DOMBridge.shared.createElement(tag: "div") else {
-                return nil
-            }
-            DOMBridge.shared.setStyle(element: fragment, name: "display", value: "contents")
-            domNode = fragment
-            for child in node.children {
-                guard let childDOMNode = createDOMNode(child) else {
-                    continue
-                }
-                DOMBridge.shared.appendChild(parent: fragment, child: childDOMNode)
-                DOMBridge.shared.registerNode(id: child.id, element: childDOMNode)
-            }
-
-        case .component:
-            // Components are already expanded during VNode conversion
-            guard let component = DOMBridge.shared.createElement(tag: "div") else {
-                return nil
-            }
-            domNode = component
-        }
-
-        return domNode
-    }
-
-    /// Apply a property to a DOM element
-    /// - Parameters:
-    ///   - property: VProperty to apply
-    ///   - element: JSObject representing the DOM element
-    private func applyProperty(_ property: VProperty, to element: JSObject) {
-        switch property {
-        case .attribute(let name, let value):
-            DOMBridge.shared.setAttribute(element: element, name: name, value: value)
-
-        case .style(let name, let value):
-            DOMBridge.shared.setStyle(element: element, name: name, value: value)
-
-        case .boolAttribute(let name, let value):
-            if value {
-                DOMBridge.shared.setAttribute(element: element, name: name, value: name)
-            } else {
-                DOMBridge.shared.removeAttribute(element: element, name: name)
-            }
-
-        case .eventHandler(let event, let handlerID):
-            // Check if this is an input event handler that needs event data
-            if let inputHandler = inputEventHandlerRegistry[handlerID] {
-                DOMBridge.shared.addGestureEventListener(
-                    element: element,
-                    event: event,
-                    handlerID: handlerID,
-                    handler: inputHandler
-                )
-            } else if let handler = eventHandlerRegistry[handlerID] {
-                DOMBridge.shared.addEventListener(
-                    element: element,
-                    event: event,
-                    handlerID: handlerID,
-                    handler: handler
-                )
-            }
-        }
-    }
-
-    // MARK: - Patch Application
-
-    /// Apply patches to the DOM
-    /// - Parameter patches: Array of patches from diffing algorithm
-    private func applyPatches(_ patches: [Patch]) {
-        for patch in patches {
-            applyPatch(patch)
-        }
-    }
-
-    /// Apply a single patch to the DOM
-    /// - Parameter patch: Patch to apply
-    private func applyPatch(_ patch: Patch) {
-        switch patch {
-        case .insert(let parentID, let node, let index):
-            guard let parentElement = DOMBridge.shared.getNode(id: parentID) else {
-                print("Warning: Parent node not found for insert: \(parentID)")
-                return
-            }
-
-            guard let newElement = createDOMNode(node) else {
-                print("Warning: Failed to create DOM node for insert")
-                return
-            }
-
-            // Get the reference child at index
-            if index < Int(parentElement.childNodes.length.number ?? 0) {
-                let referenceChild = parentElement.childNodes[index].object
-                DOMBridge.shared.insertBefore(parent: parentElement, new: newElement, reference: referenceChild)
-            } else {
-                DOMBridge.shared.appendChild(parent: parentElement, child: newElement)
-            }
-
-            DOMBridge.shared.registerNode(id: node.id, element: newElement)
-
-        case .remove(let nodeID):
-            guard let element = DOMBridge.shared.getNode(id: nodeID) else {
-                print("Warning: Node not found for removal: \(nodeID)")
-                return
-            }
-
-            if let parent = element.parentNode.object {
-                DOMBridge.shared.removeChild(parent: parent, child: element)
-            }
-            DOMBridge.shared.unregisterNode(id: nodeID)
-
-        case .replace(let oldID, let newNode):
-            guard let oldElement = DOMBridge.shared.getNode(id: oldID),
-                  let parent = oldElement.parentNode.object else {
-                print("Warning: Old node not found for replacement: \(oldID)")
-                return
-            }
-
-            guard let newElement = createDOMNode(newNode) else {
-                print("Warning: Failed to create DOM node for replace")
-                return
-            }
-            DOMBridge.shared.replaceChild(parent: parent, old: oldElement, new: newElement)
-            DOMBridge.shared.unregisterNode(id: oldID)
-            DOMBridge.shared.registerNode(id: newNode.id, element: newElement)
-
-        case .updateProps(let nodeID, let propPatches):
-            guard let element = DOMBridge.shared.getNode(id: nodeID) else {
-                print("Warning: Node not found for property update: \(nodeID)")
-                return
-            }
-
-            for propPatch in propPatches {
-                applyPropPatch(propPatch, to: element)
-            }
-
-        case .reorder(let parentID, let moves):
-            guard let parentElement = DOMBridge.shared.getNode(id: parentID) else {
-                return
-            }
-            // Collect current child elements in order
-            let childCount = Int(parentElement.childNodes.length.number ?? 0)
-            var childElements: [JSObject] = []
-            for i in 0..<childCount {
-                if let child = parentElement.childNodes[i].object {
-                    childElements.append(child)
-                }
-            }
-            // Apply each move by reinserting the element at the target position
-            for move in moves {
-                guard move.from < childElements.count else { continue }
-                let element = childElements[move.from]
-                if move.to < childCount {
-                    if let reference = parentElement.childNodes[move.to].object {
-                        DOMBridge.shared.insertBefore(parent: parentElement, new: element, reference: reference)
-                    }
-                } else {
-                    DOMBridge.shared.appendChild(parent: parentElement, child: element)
-                }
-            }
-        }
-    }
-
-    /// Apply a property patch to a DOM element
-    /// - Parameters:
-    ///   - patch: PropPatch to apply
-    ///   - element: JSObject representing the DOM element
-    private func applyPropPatch(_ patch: PropPatch, to element: JSObject) {
-        switch patch {
-        case .add(_, let value), .update(_, let value):
-            applyProperty(value, to: element)
-
-        case .remove(let key):
-            DOMBridge.shared.removeAttribute(element: element, name: key)
-        }
+        renderer.setRootContainer(container)
     }
 
     // MARK: - Gesture Support
@@ -716,10 +582,8 @@ public final class RenderCoordinator: Sendable, _RenderContext {
             handler(gestureValue)
         }
 
-        // Trigger re-render if needed
-        if let rerender = rerenderClosure {
-            rerender()
-        }
+        // Trigger re-render via batching
+        scheduleRender()
     }
 
     /// Perform hit testing to verify the event target matches the gesture's element
@@ -734,7 +598,6 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         }
 
         // Check if the target is the element or a descendant of it
-        // For now, we use a simple check - in a full implementation, we would walk the DOM tree
         let targetNodeID = target.__ravenNodeID.string
 
         // If the target has the same node ID, it's a direct hit
@@ -757,12 +620,6 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     }
 
     /// Determine if a gesture should be processed based on priority and recognition state
-    /// - Parameters:
-    ///   - handlerID: The gesture handler ID
-    ///   - priority: The gesture's priority
-    ///   - elementGestures: All gestures on this element
-    ///   - eventName: The event name being processed
-    /// - Returns: True if the gesture should be processed
     private func shouldProcessGesture(
         handlerID: UUID,
         priority: GesturePriority,
@@ -810,10 +667,6 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     }
 
     /// Fail competing gestures when a gesture is recognized
-    /// - Parameters:
-    ///   - recognizedHandlerID: The handler ID of the gesture that was recognized
-    ///   - priority: The priority of the recognized gesture
-    ///   - elementGestures: All gestures on the element
     private func failCompetingGestures(
         recognizedHandlerID: UUID,
         priority: GesturePriority,
@@ -844,9 +697,7 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     }
 
     /// Fail a gesture by transitioning it to the failed state
-    /// - Parameter handlerID: The handler ID of the gesture to fail
     private func failGesture(handlerID: UUID) {
-        // Transition drag gestures to failed state
         if var state = dragGestureStates[handlerID] {
             if state.recognitionState == .possible {
                 state.recognitionState = .failed
@@ -865,33 +716,21 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     ) {
         guard let eventObj = event.object else { return }
 
-        // Extract pointer coordinates
         let clientX = eventObj.clientX.number ?? 0.0
         let clientY = eventObj.clientY.number ?? 0.0
-
-        // Get current timestamp
         let timestamp = Date().timeIntervalSince1970
-
-        // Create initial drag gesture state in .possible state
         let startLocation = Raven.CGPoint(x: clientX, y: clientY)
         let state = DragGestureState(
             startLocation: startLocation,
             startTime: timestamp,
-            minimumDistance: 10.0 // Default minimum distance
+            minimumDistance: 10.0
         )
 
-        // Store the state (initialized with .possible state)
         dragGestureStates[handlerID] = state
-
-        // Set up escape key listener to cancel gesture if needed
         setupGestureCancellation(handlerID: handlerID)
-
-        // Don't call the handler yet - wait for movement beyond minimum distance
-        // State: .possible -> waiting for movement to transition to .began
     }
 
     /// Set up cancellation handling for an active gesture
-    /// This includes escape key handling and pointer leave events
     private func setupGestureCancellation(handlerID: UUID) {
         // Note: In a full implementation, we would:
         // 1. Add a keydown listener for Escape key
@@ -899,7 +738,6 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         // 3. Store these listeners to clean up later
         //
         // For now, pointercancel events from the browser handle most cases
-        // Future enhancement: Add explicit escape key and pointer leave handling
     }
 
     /// Handle pointermove event for drag gestures
@@ -907,49 +745,32 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         guard let eventObj = event.object else { return }
         guard var state = dragGestureStates[handlerID] else { return }
 
-        // Extract pointer coordinates
         let clientX = eventObj.clientX.number ?? 0.0
         let clientY = eventObj.clientY.number ?? 0.0
         let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
-
-        // Get current timestamp
         let timestamp = Date().timeIntervalSince1970
 
-        // Add sample for velocity calculation
         state.addSample(location: currentLocation, time: timestamp)
 
-        // State machine logic
         switch state.recognitionState {
         case .possible:
-            // Check if minimum distance threshold is exceeded
             if state.hasExceededMinimumDistance(to: currentLocation) {
-                // Transition: .possible -> .began
                 state.recognitionState = .began
 
-                // Get the element ID and gestures for conflict resolution
                 if let elementID = findElementIDForGesture(handlerID: handlerID),
                    let elementGestures = elementGestureMap[elementID] {
-                    // Find this gesture's priority
                     if let gestureInfo = elementGestures.first(where: { $0.handlerID == handlerID }) {
-                        // Fail competing gestures
                         failCompetingGestures(
                             recognizedHandlerID: handlerID,
                             priority: gestureInfo.priority,
                             elementGestures: elementGestures
                         )
-
-                        // Prevent default browser behavior if needed
                         preventDefaultIfNeeded(event: eventObj, priority: gestureInfo.priority)
                     }
                 }
 
-                // Calculate velocity
                 let velocity = state.calculateVelocity()
-
-                // Calculate predicted end location
                 let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
-
-                // Create DragGesture.Value
                 let dragValue = DragGesture.Value(
                     location: currentLocation,
                     startLocation: state.startLocation,
@@ -958,27 +779,16 @@ public final class RenderCoordinator: Sendable, _RenderContext {
                     time: Date(timeIntervalSince1970: timestamp)
                 )
 
-                // Update state
                 dragGestureStates[handlerID] = state
-
-                // Fire onChanged for the first time (gesture recognized)
                 handler(dragValue)
             } else {
-                // Stay in .possible state, don't trigger handler yet
                 dragGestureStates[handlerID] = state
             }
 
         case .began, .changed:
-            // Transition: .began/.changed -> .changed
             state.recognitionState = .changed
-
-            // Calculate velocity
             let velocity = state.calculateVelocity()
-
-            // Calculate predicted end location
             let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
-
-            // Create DragGesture.Value
             let dragValue = DragGesture.Value(
                 location: currentLocation,
                 startLocation: state.startLocation,
@@ -987,21 +797,15 @@ public final class RenderCoordinator: Sendable, _RenderContext {
                 time: Date(timeIntervalSince1970: timestamp)
             )
 
-            // Update state
             dragGestureStates[handlerID] = state
-
-            // Fire onChanged (gesture is ongoing)
             handler(dragValue)
 
         case .ended, .cancelled, .failed:
-            // Gesture already finished, ignore further moves
             break
         }
     }
 
     /// Find the element ID for a gesture handler
-    /// - Parameter handlerID: The gesture handler ID
-    /// - Returns: The element ID if found
     private func findElementIDForGesture(handlerID: UUID) -> String? {
         for (elementID, gestures) in elementGestureMap {
             if gestures.contains(where: { $0.handlerID == handlerID }) {
@@ -1012,12 +816,7 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     }
 
     /// Prevent default browser behavior if needed for gesture recognition
-    /// - Parameters:
-    ///   - event: The DOM event object
-    ///   - priority: The gesture's priority
     private func preventDefaultIfNeeded(event: JSObject, priority: GesturePriority) {
-        // Call preventDefault to prevent default scroll/swipe behavior
-        // This is especially important for high-priority gestures
         _ = event.preventDefault?()
     }
 
@@ -1026,42 +825,26 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         guard let eventObj = event.object else { return }
         guard var state = dragGestureStates[handlerID] else { return }
 
-        // Determine if this is a cancel or normal end
         let eventName = eventObj.type.string ?? "pointerup"
         let isCancelled = eventName == "pointercancel"
 
-        // State machine logic
         switch state.recognitionState {
         case .possible:
-            // Gesture never recognized - transition to .failed
             state.recognitionState = .failed
-            // Don't call handler - gesture failed to meet recognition criteria
 
         case .began, .changed:
-            // Gesture was recognized and is ending
             if isCancelled {
-                // Transition: .began/.changed -> .cancelled
                 state.recognitionState = .cancelled
             } else {
-                // Transition: .began/.changed -> .ended
                 state.recognitionState = .ended
             }
 
-            // Extract final pointer coordinates
             let clientX = eventObj.clientX.number ?? 0.0
             let clientY = eventObj.clientY.number ?? 0.0
             let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
-
-            // Get current timestamp
             let timestamp = Date().timeIntervalSince1970
-
-            // Calculate final velocity
             let velocity = state.calculateVelocity()
-
-            // Calculate predicted end location
             let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)
-
-            // Create final DragGesture.Value
             let dragValue = DragGesture.Value(
                 location: currentLocation,
                 startLocation: state.startLocation,
@@ -1070,30 +853,21 @@ public final class RenderCoordinator: Sendable, _RenderContext {
                 time: Date(timeIntervalSince1970: timestamp)
             )
 
-            // Fire onEnded callback
             handler(dragValue)
 
         case .ended, .cancelled, .failed:
-            // Already in terminal state, shouldn't happen but handle gracefully
             break
         }
 
-        // Clean up state
         dragGestureStates.removeValue(forKey: handlerID)
-
-        // Remove from recognized gestures set
         recognizedGestures.remove(handlerID)
     }
 
     /// Register a gesture handler
-    /// - Parameters:
-    ///   - id: Unique identifier for the gesture
-    ///   - handler: Handler closure that processes gesture values
     public func registerGestureHandler<Value>(
         id: UUID,
         handler: @escaping @Sendable @MainActor (Value) -> Void
     ) {
-        // Type-erase the handler
         let anyHandler: @Sendable @MainActor (Any) -> Void = { value in
             if let typedValue = value as? Value {
                 handler(typedValue)
@@ -1103,22 +877,14 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     }
 
     /// Cancel all active gestures
-    /// This is useful when:
-    /// - The view is about to be removed
-    /// - Navigation occurs
-    /// - A modal is presented
     public func cancelAllGestures() {
-        // Cancel all active drag gestures
         for (handlerID, var state) in dragGestureStates {
-            // Only cancel if gesture is active (not already in terminal state)
             switch state.recognitionState {
             case .possible, .began, .changed:
                 state.recognitionState = .cancelled
 
-                // If gesture was recognized, fire final callback
                 if state.recognitionState == .began || state.recognitionState == .changed {
                     if let handler = gestureHandlerRegistry[handlerID] {
-                        // Create final gesture value at last known position
                         let lastSample = state.positionSamples.last ?? state.positionSamples.first!
                         let velocity = state.calculateVelocity()
                         let predictedEndLocation = state.predictEndLocation(
@@ -1139,29 +905,22 @@ public final class RenderCoordinator: Sendable, _RenderContext {
                 }
 
             case .ended, .cancelled, .failed:
-                // Already in terminal state
                 break
             }
         }
 
-        // Clear all gesture states
         dragGestureStates.removeAll()
-
-        // Clear recognized gestures
         recognizedGestures.removeAll()
     }
 
     /// Cancel a specific gesture by ID
-    /// - Parameter handlerID: The gesture handler ID to cancel
     public func cancelGesture(handlerID: UUID) {
         guard var state = dragGestureStates[handlerID] else { return }
 
-        // Only cancel if gesture is active
         switch state.recognitionState {
         case .possible, .began, .changed:
             state.recognitionState = .cancelled
 
-            // If gesture was recognized, fire final callback
             if state.recognitionState == .began || state.recognitionState == .changed {
                 if let handler = gestureHandlerRegistry[handlerID] {
                     let lastSample = state.positionSamples.last ?? state.positionSamples.first!
@@ -1183,14 +942,10 @@ public final class RenderCoordinator: Sendable, _RenderContext {
                 }
             }
 
-            // Remove the gesture state
             dragGestureStates.removeValue(forKey: handlerID)
-
-            // Remove from recognized gestures
             recognizedGestures.remove(handlerID)
 
         case .ended, .cancelled, .failed:
-            // Already in terminal state
             break
         }
     }
@@ -1202,32 +957,14 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// Called by AppRuntime when the system color scheme changes
     /// so that views using `@Environment(\.colorScheme)` update.
     public func triggerRerender() {
-        if let rerender = rerenderClosure {
-            rerender()
-        }
+        scheduleRender()
     }
 
     // MARK: - Environment Updates
 
     /// Update an environment value and trigger re-render.
-    ///
-    /// This method updates a specific environment value and triggers a re-render
-    /// of the view hierarchy to propagate the change.
-    ///
-    /// - Parameters:
-    ///   - keyPath: The key path to the environment value to update.
-    ///   - value: The new value to set.
     public func updateEnvironment<Value>(_ keyPath: WritableKeyPath<EnvironmentValues, Value>, _ value: Value) {
         // TODO: Implement environment value storage and propagation
-        // This requires:
-        // 1. Storing EnvironmentValues in RenderCoordinator
-        // 2. Propagating environment values through the view hierarchy during rendering
-        // 3. Triggering a re-render after environment update
-
-        // For now, this is a placeholder that would trigger a re-render (now synchronous)
-        if let rerender = rerenderClosure {
-            rerender()
-        }
+        scheduleRender()
     }
 }
-
