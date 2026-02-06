@@ -40,4 +40,19 @@ import Foundation
 
     /// Clean up a handler that is no longer active.
     func cleanupHandler(id: UUID)
+
+    /// Apply fiber mutations in batch.
+    ///
+    /// The default implementation translates each `FiberMutation` to a `Patch`
+    /// and delegates to `applyPatches`. Renderers may override for better perf.
+    func applyMutations(_ mutations: [FiberMutation])
+}
+
+// MARK: - Default applyMutations
+
+extension PlatformRenderer {
+    public func applyMutations(_ mutations: [FiberMutation]) {
+        let patches = mutations.map { $0.toPatch() }
+        applyPatches(patches)
+    }
 }

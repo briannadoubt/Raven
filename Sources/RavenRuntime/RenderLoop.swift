@@ -7,23 +7,16 @@ import JavaScriptKit
 ///
 /// The RenderCoordinator is the central component that:
 /// - Converts SwiftUI-style Views into VNodes
-/// - Maintains the current VTree
-/// - Batches state changes via `queueMicrotask` (multiple state mutations → one render)
+/// - Maintains a persistent fiber tree for incremental reconciliation
+/// - Batches state changes via `requestAnimationFrame` (multiple state mutations → one render)
 /// - Delegates platform DOM operations to a `PlatformRenderer`
-/// - Uses Differ to compute efficient patches
-/// - Supports selective re-rendering via dirty-path tracking and VNode caching
+/// - Skips clean subtrees for O(dirty) instead of O(total) reconciliation
 @MainActor
 public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeReceiver {
     // MARK: - Properties
 
-    /// Current virtual DOM tree
-    private var currentTree: VTree?
-
     /// Root container element in the DOM
     private var rootContainer: JSObject?
-
-    /// Differ instance for computing patches
-    private let differ: Differ
 
     /// Platform renderer that handles actual DOM/platform operations.
     private let renderer: any PlatformRenderer
@@ -71,11 +64,6 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// render applies the correct animation.
     private var pendingAnimation: Animation?
 
-    // MARK: - Selective Re-rendering (Phase 3)
-
-    /// Set of component paths whose state has changed since the last render.
-    private var dirtyPaths: Set<String> = []
-
     // MARK: - Path Tracking (for stable handler & node IDs)
 
     /// Stack of path components describing the current position in the view tree.
@@ -100,12 +88,25 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// Set of handler IDs from the *previous* render pass, used for stale cleanup.
     private var previousHandlerIDs: Set<UUID> = []
 
+    // MARK: - Fiber Reconciler
+
+    /// Current fiber root (the "current" tree in dual-tree terminology).
+    private var currentFiberRoot: Fiber?
+
+    /// Fiber tree builder for constructing/reconciling fiber trees.
+    private let fiberTreeBuilder = FiberTreeBuilder()
+
+    /// Reconcile pass for collecting mutations from dirty fibers.
+    private let reconcilePass = ReconcilePass()
+
+    /// Paused reconciliation state (for resumable traversal).
+    private var pausedReconcileState: (fiber: Fiber, mutations: [FiberMutation])?
+
     // MARK: - Initialization
 
     /// Initialize the render coordinator with an optional platform renderer.
     /// - Parameter renderer: The platform renderer to use. Defaults to `DOMRenderer()`.
     public init(renderer: (any PlatformRenderer)? = nil) {
-        self.differ = Differ()
         self.renderer = renderer ?? DOMRenderer()
 
         // Wire up DOMRenderer callbacks if applicable
@@ -192,7 +193,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
 
     /// Mark a component path as dirty and schedule a batched render.
     public func markDirty(path: String) {
-        dirtyPaths.insert(path)
+        FiberRegistry.shared.markDirty(path: path)
         scheduleRender()
     }
 
@@ -329,7 +330,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         isRendering = true
         defer { isRendering = false }
 
-        let isRerender = currentTree != nil
+        let isRerender = currentFiberRoot != nil
 
         // -- Reset path tracking for this render pass --
         pathStack.removeAll()
@@ -342,22 +343,13 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         // This registers event handlers (populating activeHandlerIDs)
         let rawRoot = convertViewToVNode(view)
 
-        // Assign stable node IDs based on tree position so the Differ
-        // can match old and new nodes across renders.
+        // Assign stable node IDs based on tree position.
         let newRoot = assignStableIDs(rawRoot, path: "root")
 
         _ = console.log("[Raven] Render: \(newRoot.children.count) children, rerender=\(isRerender)")
 
-        if isRerender, let oldTree = currentTree {
-            // -- Incremental reconciliation --
-            let patches = differ.diff(old: oldTree.root, new: newRoot)
-            renderer.applyPatches(patches)
-        } else {
-            // -- Initial mount --
-            renderer.mountTree(newRoot)
-        }
-
-        currentTree = VTree(root: newRoot)
+        // -- Fiber reconciliation --
+        fiberRender(newRoot: newRoot, isRerender: isRerender)
 
         // -- Clean up stale handlers --
         // Any handler that was active last render but not this render is stale.
@@ -367,19 +359,10 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
             inputEventHandlerRegistry.removeValue(forKey: id)
             renderer.cleanupHandler(id: id)
         }
-
-        // -- Clear dirty paths for next render cycle --
-        dirtyPaths.removeAll()
     }
 
     /// Walk a VNode tree and replace every random NodeID with a deterministic
     /// one derived from the node's structural position.
-    ///
-    /// This makes the Differ's output patches reference the correct DOM
-    /// elements: the "old" tree (from the previous render) and the "new" tree
-    /// (from this render) share the same NodeIDs for structurally-equivalent
-    /// positions, so `Patch.updateProps(nodeID:…)` can look up the right
-    /// JSObject in DOMBridge's node registry.
     private func assignStableIDs(_ node: VNode, path: String) -> VNode {
         let stableID = NodeID(stablePath: path)
         let children = node.children.enumerated().map { (i, child) in
@@ -966,5 +949,55 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     public func updateEnvironment<Value>(_ keyPath: WritableKeyPath<EnvironmentValues, Value>, _ value: Value) {
         // TODO: Implement environment value storage and propagation
         scheduleRender()
+    }
+
+    // MARK: - Fiber Reconciliation
+
+    /// Fiber-based render path.
+    ///
+    /// On first render: builds a full fiber tree, marks all dirty, collects
+    /// insert mutations, and commits.
+    /// On re-render: reconciles dirty fibers only, collects mutations, commits.
+    private func fiberRender(newRoot: VNode, isRerender: Bool) {
+        if isRerender, let currentRoot = currentFiberRoot {
+            // -- Re-render: reconcile existing fiber tree --
+            // Update the existing fiber tree with the new VNode
+            fiberTreeBuilder.reconcileChildren(
+                of: currentRoot,
+                newChildren: newRoot.children,
+                pathPrefix: "root"
+            )
+            currentRoot.elementDesc = newRoot
+            currentRoot.stableNodeID = newRoot.id
+
+            // Run reconciliation pass — skip clean subtrees
+            let result = reconcilePass.run(root: currentRoot)
+
+            switch result {
+            case .complete(let mutations):
+                // Apply all mutations and swap trees
+                if !mutations.isEmpty {
+                    renderer.applyMutations(mutations)
+                }
+                currentRoot.clearDirtyFlagsRecursive()
+                pausedReconcileState = nil
+
+            case .paused(let resumeFiber, let mutations):
+                // Store paused state for continuation in next frame
+                pausedReconcileState = (fiber: resumeFiber, mutations: mutations)
+                scheduleRender()
+            }
+        } else {
+            // -- First render: build full fiber tree and mount --
+            let rootFiber = fiberTreeBuilder.buildTree(from: newRoot)
+            rootFiber.elementDesc = newRoot
+            rootFiber.stableNodeID = newRoot.id
+
+            // On first render, use mountTree (same as legacy path)
+            renderer.mountTree(newRoot)
+
+            rootFiber.clearDirtyFlagsRecursive()
+            currentFiberRoot = rootFiber
+        }
     }
 }
