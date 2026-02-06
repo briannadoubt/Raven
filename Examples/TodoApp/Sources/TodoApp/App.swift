@@ -487,144 +487,173 @@ struct DisplayTab: View {
 
 // MARK: - Layout Tab
 
+// Split into sub-views to avoid deeply nested generic types that crash WASM's
+// swift_getTypeByMangledName (memory access out of bounds on huge type metadata).
+
 @MainActor
 struct LayoutTab: View {
     var body: some View {
         VStack(spacing: 16) {
-            // VStack demo
-            SectionCard(title: "VStack") {
-                VStack(spacing: 8) {
-                    Text("Item 1")
-                        .padding(12)
-                        .background(Color(hex: "#dbeafe"))
-                        .foregroundColor(Color(hex: "#1e40af"))
-                        .cornerRadius(6)
+            VStackDemo()
+            HStackDemo()
+            ZStackDemo()
+            NestedLayoutDemo()
+            ModifierShowcase()
+        }
+        .padding(16)
+    }
+}
 
-                    Text("Item 2")
-                        .padding(12)
-                        .background(Color(hex: "#dcfce7"))
-                        .foregroundColor(Color(hex: "#166534"))
-                        .cornerRadius(6)
+@MainActor
+struct VStackDemo: View {
+    var body: some View {
+        SectionCard(title: "VStack") {
+            VStack(spacing: 8) {
+                Text("Item 1")
+                    .padding(12)
+                    .background(Color(hex: "#dbeafe"))
+                    .foregroundColor(Color(hex: "#1e40af"))
+                    .cornerRadius(6)
 
-                    Text("Item 3")
-                        .padding(12)
-                        .background(Color(hex: "#fef9c3"))
-                        .foregroundColor(Color(hex: "#854d0e"))
-                        .cornerRadius(6)
-                }
+                Text("Item 2")
+                    .padding(12)
+                    .background(Color(hex: "#dcfce7"))
+                    .foregroundColor(Color(hex: "#166534"))
+                    .cornerRadius(6)
+
+                Text("Item 3")
+                    .padding(12)
+                    .background(Color(hex: "#fef9c3"))
+                    .foregroundColor(Color(hex: "#854d0e"))
+                    .cornerRadius(6)
             }
+        }
+    }
+}
 
-            // HStack demo
-            SectionCard(title: "HStack") {
+@MainActor
+struct HStackDemo: View {
+    var body: some View {
+        SectionCard(title: "HStack") {
+            HStack(spacing: 8) {
+                Text("A")
+                    .padding(16)
+                    .background(Color(hex: "#e0e7ff"))
+                    .foregroundColor(Color(hex: "#3730a3"))
+                    .cornerRadius(6)
+
+                Text("B")
+                    .padding(16)
+                    .background(Color(hex: "#fce7f3"))
+                    .foregroundColor(Color(hex: "#9d174d"))
+                    .cornerRadius(6)
+
+                Text("C")
+                    .padding(16)
+                    .background(Color(hex: "#ccfbf1"))
+                    .foregroundColor(Color(hex: "#115e59"))
+                    .cornerRadius(6)
+            }
+        }
+    }
+}
+
+@MainActor
+struct ZStackDemo: View {
+    var body: some View {
+        SectionCard(title: "ZStack") {
+            ZStack {
+                Text("Back Layer")
+                    .padding(24)
+                    .background(Color(hex: "#bfdbfe"))
+                    .foregroundColor(Color(hex: "#1e40af"))
+                    .cornerRadius(8)
+
+                Text("Front Layer")
+                    .padding(12)
+                    .background(Color(hex: "#fecaca"))
+                    .foregroundColor(Color(hex: "#991b1b"))
+                    .cornerRadius(8)
+                    .opacity(0.9)
+            }
+            .frame(height: 100)
+        }
+    }
+}
+
+@MainActor
+struct NestedLayoutDemo: View {
+    var body: some View {
+        SectionCard(title: "Nested Layout") {
+            VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    Text("A")
-                        .padding(16)
-                        .background(Color(hex: "#e0e7ff"))
-                        .foregroundColor(Color(hex: "#3730a3"))
-                        .cornerRadius(6)
-
-                    Text("B")
-                        .padding(16)
-                        .background(Color(hex: "#fce7f3"))
-                        .foregroundColor(Color(hex: "#9d174d"))
-                        .cornerRadius(6)
-
-                    Text("C")
-                        .padding(16)
-                        .background(Color(hex: "#ccfbf1"))
-                        .foregroundColor(Color(hex: "#115e59"))
-                        .cornerRadius(6)
-                }
-            }
-
-            // ZStack demo
-            SectionCard(title: "ZStack") {
-                ZStack {
-                    Text("Back Layer")
-                        .padding(24)
-                        .background(Color(hex: "#bfdbfe"))
-                        .foregroundColor(Color(hex: "#1e40af"))
-                        .cornerRadius(8)
-
-                    Text("Front Layer")
-                        .padding(12)
-                        .background(Color(hex: "#fecaca"))
-                        .foregroundColor(Color(hex: "#991b1b"))
-                        .cornerRadius(8)
-                        .opacity(0.9)
-                }
-                .frame(height: 100)
-            }
-
-            // Nested layout demo
-            SectionCard(title: "Nested Layout") {
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
-                        VStack(spacing: 4) {
-                            Text("Top Left")
-                                .font(.caption)
-                            Text("Detail")
-                                .font(.caption)
-                                .foregroundColor(Color(hex: "#64748b"))
-                        }
-                        .padding(12)
-                        .background(Color(hex: "#f0fdf4"))
-                        .cornerRadius(6)
-
-                        VStack(spacing: 4) {
-                            Text("Top Right")
-                                .font(.caption)
-                            Text("Detail")
-                                .font(.caption)
-                                .foregroundColor(Color(hex: "#64748b"))
-                        }
-                        .padding(12)
-                        .background(Color(hex: "#fef2f2"))
-                        .cornerRadius(6)
-                    }
-
-                    HStack(spacing: 8) {
-                        Text("Full Width Bottom")
+                    VStack(spacing: 4) {
+                        Text("Top Left")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "#1e293b"))
-
-                        Spacer()
-
-                        Text("Right-aligned")
+                        Text("Detail")
                             .font(.caption)
                             .foregroundColor(Color(hex: "#64748b"))
                     }
                     .padding(12)
-                    .background(Color(hex: "#f8fafc"))
+                    .background(Color(hex: "#f0fdf4"))
+                    .cornerRadius(6)
+
+                    VStack(spacing: 4) {
+                        Text("Top Right")
+                            .font(.caption)
+                        Text("Detail")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "#64748b"))
+                    }
+                    .padding(12)
+                    .background(Color(hex: "#fef2f2"))
                     .cornerRadius(6)
                 }
-            }
 
-            // Modifier showcase
-            SectionCard(title: "View Modifiers") {
-                VStack(spacing: 8) {
-                    Text("Shadow")
-                        .padding(12)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+                HStack(spacing: 8) {
+                    Text("Full Width Bottom")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#1e293b"))
 
-                    Text("Opacity 50%")
-                        .padding(12)
-                        .background(Color(hex: "#3b82f6"))
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                        .opacity(0.5)
+                    Spacer()
 
-                    Text("Large Corner Radius")
-                        .padding(12)
-                        .background(Color(hex: "#8b5cf6"))
-                        .foregroundColor(.white)
-                        .cornerRadius(20)
+                    Text("Right-aligned")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
                 }
+                .padding(12)
+                .background(Color(hex: "#f8fafc"))
+                .cornerRadius(6)
             }
         }
-        .padding(16)
+    }
+}
+
+@MainActor
+struct ModifierShowcase: View {
+    var body: some View {
+        SectionCard(title: "View Modifiers") {
+            VStack(spacing: 8) {
+                Text("Shadow")
+                    .padding(12)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+
+                Text("Opacity 50%")
+                    .padding(12)
+                    .background(Color(hex: "#3b82f6"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .opacity(0.5)
+
+                Text("Large Corner Radius")
+                    .padding(12)
+                    .background(Color(hex: "#8b5cf6"))
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+            }
+        }
     }
 }
 

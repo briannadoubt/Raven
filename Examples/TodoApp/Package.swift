@@ -30,6 +30,11 @@ let package = Package(
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("AccessLevelOnImport")
+            ],
+            linkerSettings: [
+                // Increase WASM stack size to 1MB (default is ~64KB) to handle
+                // deeply nested view modifier chains without stack overflow
+                .unsafeFlags(["-Xlinker", "-z", "-Xlinker", "stack-size=1048576"])
             ]
         )
     ]

@@ -308,10 +308,11 @@ public final class RenderCoordinator: Sendable, _RenderContext {
 
         case .fragment:
             // Fragments don't create a wrapper element
-            // For now, create a document fragment or just return a div
+            // Use display: contents so fragment div is invisible to flex layout
             guard let fragment = DOMBridge.shared.createElement(tag: "div") else {
                 return nil
             }
+            DOMBridge.shared.setStyle(element: fragment, name: "display", value: "contents")
             domNode = fragment
             for child in node.children {
                 guard let childDOMNode = createDOMNode(child) else {

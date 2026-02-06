@@ -267,7 +267,15 @@ extension Button: _CoordinatorRenderable {
         let handlerID = context.registerClickHandler(action)
         let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
         let props: [String: VProperty] = [
-            "onClick": clickHandler
+            "onClick": clickHandler,
+            // Reset browser default button styles — modifiers handle all styling
+            "border": .style(name: "border", value: "none"),
+            "background": .style(name: "background", value: "transparent"),
+            "padding": .style(name: "padding", value: "0"),
+            "font": .style(name: "font", value: "inherit"),
+            "color": .style(name: "color", value: "inherit"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+            "text-align": .style(name: "text-align", value: "inherit"),
         ]
         let children = [context.renderChild(label)]
         return VNode.element("button", props: props, children: children)

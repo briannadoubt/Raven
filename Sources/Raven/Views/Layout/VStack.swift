@@ -182,10 +182,17 @@ public struct VStack<Content: View>: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A VNode configured as a vertical flexbox container.
     @MainActor public func toVNode() -> VNode {
+        let textAlign: String
+        switch alignment {
+        case .leading: textAlign = "start"
+        case .trailing: textAlign = "end"
+        case .center: textAlign = "center"
+        }
         var props: [String: VProperty] = [
             "display": .style(name: "display", value: "flex"),
             "flex-direction": .style(name: "flex-direction", value: "column"),
-            "align-items": .style(name: "align-items", value: alignment.cssValue)
+            "align-items": .style(name: "align-items", value: "stretch"),
+            "text-align": .style(name: "text-align", value: textAlign),
         ]
 
         // Add gap spacing if provided
@@ -204,10 +211,20 @@ public struct VStack<Content: View>: View, PrimitiveView, Sendable {
 
 extension VStack: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // SwiftUI VStack proposes full width to each child (align-items: stretch).
+        // The alignment parameter controls content alignment within the stretched children
+        // via text-align, which cascades to inline content like text spans.
+        let textAlign: String
+        switch alignment {
+        case .leading: textAlign = "start"
+        case .trailing: textAlign = "end"
+        case .center: textAlign = "center"
+        }
         var props: [String: VProperty] = [
             "display": .style(name: "display", value: "flex"),
             "flex-direction": .style(name: "flex-direction", value: "column"),
-            "align-items": .style(name: "align-items", value: alignment.cssValue)
+            "align-items": .style(name: "align-items", value: "stretch"),
+            "text-align": .style(name: "text-align", value: textAlign),
         ]
         if let spacing = spacing {
             props["gap"] = .style(name: "gap", value: "\(spacing)px")
