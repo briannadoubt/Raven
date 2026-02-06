@@ -4,9 +4,8 @@ import Foundation
 /// Performance benchmarks for Raven framework
 ///
 /// These benchmarks measure the performance characteristics of core Raven operations:
-/// - VNode diffing with various tree sizes
-/// - View-to-VNode conversion (render coordinator)
-/// - State update propagation
+/// - VNode creation overhead
+/// - Property diffing
 /// - List rendering with ForEach
 ///
 /// ## Running Benchmarks
@@ -18,12 +17,7 @@ import Foundation
 ///
 /// ## Expected Performance Characteristics
 ///
-/// - **VNode Diffing**: O(n) where n is the number of nodes
-///   - 100 nodes: < 1ms
-///   - 1000 nodes: < 10ms
-///   - 10000 nodes: < 100ms
-///
-/// - **State Updates**: Should propagate in < 1ms for simple updates
+/// - **Node Creation**: < 1ms for 1000 nodes
 ///
 /// - **List Rendering**: Linear with number of items
 ///   - 100 items: < 5ms
@@ -82,146 +76,6 @@ public struct RavenBenchmarks: Sendable {
                 return String(format: "%.2fs", Double(nanoseconds) / 1_000_000_000.0)
             }
         }
-    }
-
-    // MARK: - VNode Diffing Benchmark
-
-    /// Benchmark VNode diffing with a large tree
-    ///
-    /// Creates two trees with 1000 nodes each and measures the time
-    /// to compute the diff. This tests the core diffing algorithm performance.
-    ///
-    /// Expected: < 10ms for 1000-node tree
-    public func benchmarkVNodeDiffing(iterations: Int = 10) async -> BenchmarkResult {
-        var times: [Duration] = []
-
-        for _ in 0..<iterations {
-            let oldTree = createLargeTree(nodeCount: 1000, prefix: "old")
-            let newTree = createLargeTree(nodeCount: 1000, prefix: "new")
-
-            let differ = Differ()
-
-            let clock = ContinuousClock()
-            let elapsed = await clock.measure {
-                let _ = await differ.diff(old: oldTree, new: newTree)
-            }
-
-            times.append(elapsed)
-        }
-
-        return BenchmarkResult(
-            name: "VNode Diffing (1000 nodes)",
-            iterations: iterations,
-            times: times
-        )
-    }
-
-    /// Benchmark VNode diffing with identical trees
-    ///
-    /// Tests the fast path when trees are identical.
-    /// Expected: Faster than different trees, < 5ms
-    public func benchmarkIdenticalTreeDiffing(iterations: Int = 10) async -> BenchmarkResult {
-        var times: [Duration] = []
-
-        for _ in 0..<iterations {
-            let tree = createLargeTree(nodeCount: 1000, prefix: "same")
-
-            let differ = Differ()
-
-            let clock = ContinuousClock()
-            let elapsed = await clock.measure {
-                let _ = await differ.diff(old: tree, new: tree)
-            }
-
-            times.append(elapsed)
-        }
-
-        return BenchmarkResult(
-            name: "Identical Tree Diffing (1000 nodes)",
-            iterations: iterations,
-            times: times
-        )
-    }
-
-    /// Benchmark VNode diffing with small changes
-    ///
-    /// Tests incremental updates where only a few nodes change.
-    /// This is the most common case in real applications.
-    /// Expected: < 5ms
-    public func benchmarkIncrementalDiffing(iterations: Int = 10) async -> BenchmarkResult {
-        var times: [Duration] = []
-
-        for _ in 0..<iterations {
-            let oldTree = createLargeTree(nodeCount: 1000, prefix: "v1")
-            let newTree = modifyTreeSlightly(oldTree)
-
-            let differ = Differ()
-
-            let clock = ContinuousClock()
-            let elapsed = await clock.measure {
-                let _ = await differ.diff(old: oldTree, new: newTree)
-            }
-
-            times.append(elapsed)
-        }
-
-        return BenchmarkResult(
-            name: "Incremental Diffing (1000 nodes, few changes)",
-            iterations: iterations,
-            times: times
-        )
-    }
-
-    // MARK: - Tree Creation Helpers
-
-    private func createLargeTree(nodeCount: Int, prefix: String) -> VNode {
-        // Create a balanced tree structure
-        let childCount = 10
-        let depth = Int(log(Double(nodeCount)) / log(Double(childCount)))
-
-        func createNode(currentDepth: Int, index: Int) -> VNode {
-            let id = "\(prefix)-\(currentDepth)-\(index)"
-
-            if currentDepth >= depth {
-                return VNode.text("\(prefix) text \(index)")
-            }
-
-            let children = (0..<childCount).map { childIndex in
-                createNode(currentDepth: currentDepth + 1, index: index * childCount + childIndex)
-            }
-
-            return VNode.element(
-                "div",
-                props: [
-                    "id": .attribute(name: "id", value: id),
-                    "class": .attribute(name: "class", value: "node-\(currentDepth)")
-                ],
-                children: children
-            )
-        }
-
-        return createNode(currentDepth: 0, index: 0)
-    }
-
-    private func modifyTreeSlightly(_ tree: VNode) -> VNode {
-        // Modify just a few nodes in the tree
-        guard !tree.children.isEmpty else {
-            return tree
-        }
-
-        var modifiedChildren = tree.children
-        if modifiedChildren.count > 0 {
-            // Modify first child
-            modifiedChildren[0] = VNode.text("Modified text")
-        }
-
-        return VNode(
-            id: tree.id,
-            type: tree.type,
-            props: tree.props,
-            children: modifiedChildren,
-            key: tree.key
-        )
     }
 
     // MARK: - List Rendering Benchmark
@@ -387,12 +241,9 @@ public struct RavenBenchmarks: Sendable {
         print("🚀 Raven Performance Benchmarks")
         print("================================\n")
 
-        let results = await [
+        let results = [
             benchmarkNodeCreation(),
             benchmarkPropertyDiffing(),
-            benchmarkVNodeDiffing(),
-            benchmarkIdenticalTreeDiffing(),
-            benchmarkIncrementalDiffing(),
             benchmarkListRendering(),
             benchmarkLargeListRendering()
         ]

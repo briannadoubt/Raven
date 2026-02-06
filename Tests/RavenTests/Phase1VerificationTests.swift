@@ -2,14 +2,13 @@ import XCTest
 @testable import Raven
 
 /// Comprehensive Phase 1 verification tests that validate the entire pipeline
-/// from View to VNode to DOM diffing.
+/// from View to VNode.
 ///
 /// These tests verify that:
 /// 1. Views can be converted to VNodes correctly
 /// 2. VNode creation works as expected
-/// 3. The Differ produces correct patches
-/// 4. VTree operations function properly
-/// 5. ViewBuilder constructs work correctly
+/// 3. VTree operations function properly
+/// 4. ViewBuilder constructs work correctly
 @MainActor
 final class Phase1VerificationTests: XCTestCase {
 
@@ -127,125 +126,7 @@ final class Phase1VerificationTests: XCTestCase {
         XCTAssertEqual(fragment.children.count, 2)
     }
 
-    // MARK: - Test 3: Differ with Simple Changes
-
-    func testDifferWithTextContentChange() async throws {
-        let oldNode = VNode.text("Old text")
-        let newNode = VNode.text("New text")
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        // Note: Current implementation considers text nodes compatible regardless of content
-        // This means text content changes don't produce patches (this is a limitation)
-        // In a real implementation, we'd want to detect text content changes
-        XCTAssertEqual(patches.count, 0, "Current implementation produces no patches for text content changes")
-    }
-
-    func testDifferWithNilOldNode() async throws {
-        let newNode = VNode.text("New node")
-
-        let differ = Differ()
-        let patches = differ.diff(old: nil, new: newNode)
-
-        // When old is nil, we can't insert at root level without a parent
-        // So this should produce no patches (handled by caller)
-        XCTAssertTrue(patches.isEmpty, "Should produce no patches when inserting at root")
-    }
-
-    func testDifferWithNilNewNode() async throws {
-        let oldNode = VNode.text("Old node")
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: nil)
-
-        XCTAssertEqual(patches.count, 1, "Should produce one patch")
-
-        if case .remove(let nodeID) = patches[0] {
-            XCTAssertEqual(nodeID, oldNode.id, "Should remove the old node")
-        } else {
-            XCTFail("Should produce a remove patch")
-        }
-    }
-
-    func testDifferWithBothNil() async throws {
-        let differ = Differ()
-        let patches = differ.diff(old: nil, new: nil)
-
-        XCTAssertTrue(patches.isEmpty, "Should produce no patches when both are nil")
-    }
-
-    func testDifferWithSameText() async throws {
-        let oldNode = VNode.text("Same text")
-        let newNode = VNode.text("Same text")
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        // Text nodes are considered compatible, and same content means no patches
-        XCTAssertEqual(patches.count, 0, "Same text content produces no patches")
-    }
-
-    func testDifferWithPropertyChanges() async throws {
-        let oldProps: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "old-class")
-        ]
-        let newProps: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "new-class"),
-            "id": .attribute(name: "id", value: "new-id")
-        ]
-
-        let oldNode = VNode.element("div", props: oldProps)
-        let newNode = VNode.element("div", props: newProps)
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        // Should replace because nodes have different IDs
-        XCTAssertGreaterThan(patches.count, 0, "Should produce patches")
-    }
-
-    func testDifferWithChildrenAddition() async throws {
-        let oldNode = VNode.element("div", children: [])
-        let newChild = VNode.text("New child")
-        let newNode = VNode.element("div", children: [newChild])
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        // Nodes have different IDs, so will be replaced
-        XCTAssertGreaterThan(patches.count, 0, "Should produce patches")
-    }
-
-    func testDifferWithChildrenRemoval() async throws {
-        let oldChild = VNode.text("Old child")
-        let oldNode = VNode.element("div", children: [oldChild])
-        let newNode = VNode.element("div", children: [])
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        XCTAssertGreaterThan(patches.count, 0, "Should produce patches")
-    }
-
-    func testDifferWithDifferentElementTypes() async throws {
-        let oldNode = VNode.element("div")
-        let newNode = VNode.element("span")
-
-        let differ = Differ()
-        let patches = differ.diff(old: oldNode, new: newNode)
-
-        XCTAssertEqual(patches.count, 1, "Should produce one patch")
-
-        if case .replace(let oldID, let replacement) = patches[0] {
-            XCTAssertEqual(oldID, oldNode.id)
-            XCTAssertEqual(replacement.elementTag, "span")
-        } else {
-            XCTFail("Should produce a replace patch")
-        }
-    }
-
-    // MARK: - Test 4: VTree Operations
+    // MARK: - Test 3: VTree Operations
 
     func testVTreeCreation() async throws {
         let root = VNode.text("Root")
@@ -516,33 +397,6 @@ final class Phase1VerificationTests: XCTestCase {
 
     // MARK: - Integration Tests
 
-    func testCompleteTextToDiffPipeline() async throws {
-        // Test the complete pipeline with element nodes instead of text
-        // since text content changes don't currently produce patches
-
-        // Create two element nodes with different tags
-        let vnode1 = VNode.element("div")
-        let vnode2 = VNode.element("span")
-
-        // Create VTrees
-        let tree1 = VTree(root: vnode1)
-        let tree2 = VTree(root: vnode2)
-
-        // Diff them
-        let differ = Differ()
-        let patches = differ.diff(old: tree1.root, new: tree2.root)
-
-        // Verify we got a replace patch
-        XCTAssertEqual(patches.count, 1, "Different element types should produce a replace patch")
-
-        if case .replace(let oldID, let newNode) = patches[0] {
-            XCTAssertEqual(oldID, vnode1.id)
-            XCTAssertEqual(newNode.elementTag, "span")
-        } else {
-            XCTFail("Should produce a replace patch")
-        }
-    }
-
     func testCompleteElementTreePipeline() async throws {
         // Create a simple tree structure
         let child1 = VNode.text("Child 1")
@@ -609,9 +463,8 @@ final class Phase1VerificationTests: XCTestCase {
 
     func testBasicButtonWithTextLabel() async throws {
         // Create a button with a simple text label
-        var clicked = false
         let button = Button("Click Me") {
-            clicked = true
+            // action
         }
 
         // Convert to VNode
