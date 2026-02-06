@@ -71,57 +71,15 @@ public final class AppRuntime: Sendable {
 
     /// Extracts the root view from a scene hierarchy.
     ///
-    /// This method recursively unwraps scenes until it finds a `WindowGroup` or other
-    /// scene containing a view, then returns that view as `AnyView`.
+    /// Uses protocol-based dispatch instead of Mirror reflection, which crashes
+    /// in Swift WASM on complex generic types.
     ///
     /// - Parameter scene: The scene to extract from.
     /// - Returns: The root view wrapped in `AnyView`.
     private func extractRootView<S: Scene>(from scene: S) -> AnyView {
-        // Handle WindowGroup (primary case)
-        if let windowGroup = scene as? WindowGroup<AnyView> {
-            return AnyView(windowGroup.content())
-        }
-
-        // Try to extract from any WindowGroup by casting through existential
-        // This handles WindowGroup<Content> where Content is not AnyView
-        let mirror = Mirror(reflecting: scene)
-        for child in mirror.children {
-            if child.label == "content", let contentClosure = child.value as? () -> Any {
-                // Call the closure to get the view
-                let view = contentClosure()
-                if let anyView = view as? AnyView {
-                    return anyView
-                } else if let concreteView = view as? any View {
-                    return AnyView(concreteView)
-                }
-            }
-        }
-
-        // Handle Settings scene
-        if mirror.displayStyle == .struct {
-            for child in mirror.children {
-                if child.label == "content", let contentClosure = child.value as? () -> Any {
-                    let view = contentClosure()
-                    if let anyView = view as? AnyView {
-                        return anyView
-                    } else if let concreteView = view as? any View {
-                        return AnyView(concreteView)
-                    }
-                }
-            }
-        }
-
-        // Handle TupleScene (multiple scenes) - use the first one
-        if mirror.displayStyle == .struct {
-            for child in mirror.children {
-                if child.label == "content" {
-                    // TupleScene contains a tuple of scenes
-                    let tupleMirror = Mirror(reflecting: child.value)
-                    if let firstScene = tupleMirror.children.first?.value as? any Scene {
-                        return extractRootView(from: firstScene)
-                    }
-                }
-            }
+        // Primary path: scenes that conform to _SceneContentExtractable (e.g. WindowGroup)
+        if let extractable = scene as? _SceneContentExtractable {
+            return extractable._extractRootView()
         }
 
         // Handle nested scenes (scene with body)

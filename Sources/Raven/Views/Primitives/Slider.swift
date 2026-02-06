@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control for selecting a value from a bounded linear range.
 ///
@@ -206,5 +207,31 @@ public struct Slider: View, PrimitiveView, Sendable {
     /// input element and convert it to a Double.
     @MainActor public var valueBinding: Binding<Double> {
         value
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension Slider: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = value
+        let handlerID = context.registerInputHandler { event in
+            if let str = event.target.value.string, let val = Double(str) {
+                binding.wrappedValue = val
+            }
+        }
+
+        var props: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "range"),
+            "min": .attribute(name: "min", value: String(bounds.lowerBound)),
+            "max": .attribute(name: "max", value: String(bounds.upperBound)),
+            "value": .attribute(name: "value", value: String(binding.wrappedValue)),
+            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+            "width": .style(name: "width", value: "100%"),
+        ]
+        if let step = step {
+            props["step"] = .attribute(name: "step", value: String(step))
+        }
+        return VNode.element("input", props: props, children: [])
     }
 }

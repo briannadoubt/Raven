@@ -400,3 +400,13 @@ extension View {
         _ValueAnimationView(content: self, animation: animation, value: value)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _AnimationView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _ValueAnimationView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

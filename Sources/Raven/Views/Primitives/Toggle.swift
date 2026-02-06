@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// An interactive control that toggles between on and off states.
 ///
@@ -407,5 +408,36 @@ extension View {
     /// - Returns: A view with the specified toggle style.
     @MainActor public func toggleStyle<S: ToggleStyle>(_ style: S) -> some View {
         environment(\.toggleStyle, style)
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension Toggle: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = isOn
+        let handlerID = context.registerInputHandler { event in
+            if let checked = event.target.checked.boolean {
+                binding.wrappedValue = checked
+            }
+        }
+
+        var inputProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "checkbox"),
+            "role": .attribute(name: "role", value: "switch"),
+            "aria-checked": .attribute(name: "aria-checked", value: binding.wrappedValue ? "true" : "false"),
+            "onChange": .eventHandler(event: "change", handlerID: handlerID),
+        ]
+        inputProps["checked"] = .boolAttribute(name: "checked", value: binding.wrappedValue)
+        let inputNode = VNode.element("input", props: inputProps, children: [])
+
+        let labelChildren = [inputNode, context.renderChild(label)]
+        let labelProps: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "8px"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+        ]
+        return VNode.element("label", props: labelProps, children: labelChildren)
     }
 }

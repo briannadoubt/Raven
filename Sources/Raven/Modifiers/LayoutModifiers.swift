@@ -207,3 +207,17 @@ extension View {
         _FixedSizeView(content: self, horizontal: horizontal, vertical: vertical)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _ClippedView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _AspectRatioView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _FixedSizeView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

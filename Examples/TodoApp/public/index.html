@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raven Todo App</title>
+    <title>Raven Component Showcase</title>
     <style>
         * {
             margin: 0;
@@ -87,7 +87,7 @@
 </head>
 <body>
     <div id="loading">
-        <h1>🐦 Loading Raven...</h1>
+        <h1>🐦 Loading Raven Showcase...</h1>
         <div class="spinner"></div>
         <p style="margin-top: 1rem;">Initializing Swift WASM</p>
     </div>
@@ -243,9 +243,9 @@
 
         async function loadWASM() {
             try {
-                console.log('🚀 Loading TodoApp-v2.wasm...');
+                console.log('🚀 Loading TodoApp.wasm...');
 
-                const response = await fetch('TodoApp-v2.wasm?t=' + Date.now());
+                const response = await fetch('TodoApp.wasm?t=' + Date.now());
                 if (!response.ok) {
                     throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
                 }

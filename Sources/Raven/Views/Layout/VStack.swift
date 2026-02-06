@@ -201,3 +201,24 @@ public struct VStack<Content: View>: View, PrimitiveView, Sendable {
         )
     }
 }
+
+extension VStack: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "align-items": .style(name: "align-items", value: alignment.cssValue)
+        ]
+        if let spacing = spacing {
+            props["gap"] = .style(name: "gap", value: "\(spacing)px")
+        }
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: props, children: children)
+    }
+}

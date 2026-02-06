@@ -365,3 +365,46 @@ public struct ForEachView<Content: View>: View, Sendable {
         self.views = views
     }
 }
+
+// MARK: - _CoordinatorRenderable Conformances
+
+extension TupleView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let childViews = _extractChildren()
+        let children = childViews.map { context.renderChild($0) }
+        return VNode.fragment(children: children)
+    }
+}
+
+extension ConditionalContent: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        switch storage {
+        case .trueContent(let content):
+            return context.renderChild(content)
+        case .falseContent(let content):
+            return context.renderChild(content)
+        }
+    }
+}
+
+extension OptionalContent: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        if let content = content {
+            return context.renderChild(content)
+        }
+        return VNode.fragment(children: [])
+    }
+}
+
+extension ForEachView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let children = views.map { context.renderChild($0) }
+        return VNode.fragment(children: children)
+    }
+}
+
+extension EmptyView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        return VNode.fragment(children: [])
+    }
+}

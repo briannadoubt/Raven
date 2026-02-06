@@ -295,3 +295,25 @@ extension View {
         _OnChangeView(content: self, value: value, action: action)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _DisabledView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OnTapGestureView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OnAppearView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OnDisappearView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OnChangeView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

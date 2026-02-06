@@ -167,3 +167,9 @@ extension View {
         _TransitionView(content: self, transition: t)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _TransitionView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

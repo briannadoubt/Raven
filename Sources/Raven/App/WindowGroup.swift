@@ -1,5 +1,13 @@
 import Foundation
 
+/// Protocol for scenes that can extract a root view without Mirror reflection.
+///
+/// WindowGroup conforms to this so the runtime can get the root view
+/// in a type-safe way that works in Swift WASM (where Mirror crashes).
+@MainActor public protocol _SceneContentExtractable {
+    func _extractRootView() -> AnyView
+}
+
 /// A scene that presents a group of identically structured windows.
 ///
 /// In a web context, a `WindowGroup` maps to the root DOM element. For Raven apps,
@@ -61,6 +69,14 @@ public struct WindowGroup<Content: View>: Scene {
         self.id = id
         self.title = title.stringValue // Store the key as the title
         self.content = content
+    }
+}
+
+// MARK: - Scene Content Extraction
+
+extension WindowGroup: _SceneContentExtractable {
+    @MainActor public func _extractRootView() -> AnyView {
+        AnyView(content())
     }
 }
 

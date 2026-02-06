@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control that displays an editable text interface.
 ///
@@ -225,5 +226,34 @@ public struct TextEditor: View, PrimitiveView, Sendable {
     /// Provides access to the text binding for the render coordinator.
     @MainActor public var textBinding: Binding<String> {
         text
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension TextField: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = text
+        let handlerID = context.registerInputHandler { event in
+            if let newValue = event.target.value.string {
+                binding.wrappedValue = newValue
+            }
+        }
+
+        var props: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "text"),
+            "placeholder": .attribute(name: "placeholder", value: placeholder),
+            "value": .attribute(name: "value", value: binding.wrappedValue),
+            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "width": .style(name: "width", value: "100%"),
+            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+        ]
+        props["aria-label"] = .attribute(name: "aria-label", value: placeholder)
+        props["role"] = .attribute(name: "role", value: "textbox")
+        return VNode.element("input", props: props, children: [])
     }
 }

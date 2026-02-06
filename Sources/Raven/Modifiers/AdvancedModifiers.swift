@@ -490,3 +490,89 @@ extension View {
 ///
 /// In Swift on WebAssembly, CGFloat is not available, so we use Double as a replacement.
 public typealias CGFloat = Double
+
+// MARK: - Modifier Renderable Conformances
+
+extension _FontView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _BackgroundColorView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _ShadowView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _CornerRadiusView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OpacityView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OffsetView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _RotationEffectView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _ScaleEffectView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+// Special: _BackgroundView has two children (content + background)
+extension _BackgroundView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let wrapperNode = toVNode()
+        let bgNode = context.renderChild(background)
+        let contentNode = context.renderChild(content)
+        guard case .element(let tag) = wrapperNode.type else { return contentNode }
+        // Background goes behind content, both in same grid cell
+        let bgWrapper = VNode.element("div", props: [
+            "grid-row": .style(name: "grid-row", value: "1 / -1"),
+            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+        ], children: [bgNode])
+        let contentWrapper = VNode.element("div", props: [
+            "grid-row": .style(name: "grid-row", value: "1 / -1"),
+            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+        ], children: [contentNode])
+        return VNode(
+            id: wrapperNode.id,
+            type: .element(tag: tag),
+            props: wrapperNode.props,
+            children: [bgWrapper, contentWrapper],
+            key: wrapperNode.key
+        )
+    }
+}
+
+// Special: _OverlayView has two children (content + overlay)
+extension _OverlayView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let wrapperNode = toVNode()
+        let contentNode = context.renderChild(content)
+        let overlayNode = context.renderChild(overlay)
+        guard case .element(let tag) = wrapperNode.type else { return contentNode }
+        // Content goes behind overlay, both in same grid cell
+        let contentWrapper = VNode.element("div", props: [
+            "grid-row": .style(name: "grid-row", value: "1 / -1"),
+            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+        ], children: [contentNode])
+        let overlayWrapper = VNode.element("div", props: [
+            "grid-row": .style(name: "grid-row", value: "1 / -1"),
+            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+        ], children: [overlayNode])
+        return VNode(
+            id: wrapperNode.id,
+            type: .element(tag: tag),
+            props: wrapperNode.props,
+            children: [contentWrapper, overlayWrapper],
+            key: wrapperNode.key
+        )
+    }
+}

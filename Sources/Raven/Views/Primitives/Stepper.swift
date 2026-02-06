@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control that performs increment and decrement actions.
 ///
@@ -350,6 +351,68 @@ public struct Stepper<Label: View>: View, PrimitiveView, Sendable {
     /// the UI state and re-render when the value changes.
     @MainActor public var valueBinding: Binding<Int> {
         value
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension Stepper: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = value
+        let range = bounds
+        let currentValue = binding.wrappedValue
+        let isAtMin = currentValue <= range.lowerBound
+        let isAtMax = currentValue >= range.upperBound
+
+        // Decrement button
+        var decrementProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "button"),
+            "aria-label": .attribute(name: "aria-label", value: "Decrement"),
+        ]
+        if isAtMin {
+            decrementProps["disabled"] = .boolAttribute(name: "disabled", value: true)
+        } else {
+            let decID = context.registerClickHandler {
+                if binding.wrappedValue > range.lowerBound {
+                    binding.wrappedValue -= 1
+                }
+            }
+            decrementProps["onClick"] = .eventHandler(event: "click", handlerID: decID)
+        }
+        let decrementButton = VNode.element("button", props: decrementProps, children: [VNode.text("\u{2212}")])
+
+        // Increment button
+        var incrementProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "button"),
+            "aria-label": .attribute(name: "aria-label", value: "Increment"),
+        ]
+        if isAtMax {
+            incrementProps["disabled"] = .boolAttribute(name: "disabled", value: true)
+        } else {
+            let incID = context.registerClickHandler {
+                if binding.wrappedValue < range.upperBound {
+                    binding.wrappedValue += 1
+                }
+            }
+            incrementProps["onClick"] = .eventHandler(event: "click", handlerID: incID)
+        }
+        let incrementButton = VNode.element("button", props: incrementProps, children: [VNode.text("+")])
+
+        var children: [VNode] = []
+        if let labelView = label {
+            children.append(context.renderChild(labelView))
+        }
+        let buttonsContainer = VNode.element("div", props: [
+            "display": .style(name: "display", value: "flex"),
+            "gap": .style(name: "gap", value: "4px"),
+        ], children: [decrementButton, incrementButton])
+        children.append(buttonsContainer)
+
+        return VNode.element("div", props: [
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "8px"),
+        ], children: children)
     }
 }
 

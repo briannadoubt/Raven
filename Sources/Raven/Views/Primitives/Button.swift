@@ -259,3 +259,17 @@ extension Button where Label == Text {
         // It's primarily used by presentation modifiers (alerts, sheets, etc.)
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension Button: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let handlerID = context.registerClickHandler(action)
+        let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
+        let props: [String: VProperty] = [
+            "onClick": clickHandler
+        ]
+        let children = [context.renderChild(label)]
+        return VNode.element("button", props: props, children: children)
+    }
+}

@@ -192,3 +192,17 @@ extension View {
         _TruncationModeView(content: self, mode: mode)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _LineLimitView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _MultilineTextAlignmentView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _TruncationModeView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

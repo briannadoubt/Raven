@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control that displays a secure text interface for password input.
 ///
@@ -129,5 +130,32 @@ public struct SecureField: View, PrimitiveView, Sendable {
     /// the event handler that updates the bound value when the user types.
     @MainActor public var textBinding: Binding<String> {
         text
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension SecureField: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = text
+        let handlerID = context.registerInputHandler { event in
+            if let newValue = event.target.value.string {
+                binding.wrappedValue = newValue
+            }
+        }
+
+        let props: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "password"),
+            "placeholder": .attribute(name: "placeholder", value: placeholder),
+            "value": .attribute(name: "value", value: binding.wrappedValue),
+            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "width": .style(name: "width", value: "100%"),
+            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+        ]
+        return VNode.element("input", props: props, children: [])
     }
 }

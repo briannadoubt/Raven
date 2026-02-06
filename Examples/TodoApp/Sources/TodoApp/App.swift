@@ -43,31 +43,35 @@ struct TodoItem: Identifiable, Sendable {
     }
 }
 
-// MARK: - View Models
+// MARK: - Store
 
-/// Central store managing the todo list state
-/// This demonstrates @StateObject usage with ObservableObject
+/// Central store managing all showcase state including todos and form controls
 @MainActor
-final class TodoStore: ObservableObject {
-    /// The list of all todos
-    /// @Published automatically notifies views when this changes
+final class ShowcaseStore: ObservableObject {
+    // -- Tab state --
+    @Published var selectedTab: String = "todos"
+
+    // -- Todo state --
     @Published var todos: [TodoItem] = []
 
-    /// Current filter selection
     @Published var filter: Filter = .all
 
-    /// Available filter options
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
         case active = "Active"
         case completed = "Completed"
     }
 
+    // -- Controls state --
+    @Published var toggleValue: Bool = false
+    @Published var sliderValue: Double = 50.0
+    @Published var stepperValue: Int = 0
+    @Published var secureText: String = ""
+    @Published var progressValue: Double = 0.65
+
     init() {
-        // Required setup for @Published properties
         setupPublished()
 
-        // Add some sample todos to start
         todos = [
             TodoItem(text: "Learn SwiftUI basics", isCompleted: true),
             TodoItem(text: "Build a Raven app", isCompleted: false),
@@ -75,33 +79,28 @@ final class TodoStore: ObservableObject {
         ]
     }
 
-    /// Add a new todo to the list
+    // MARK: Todo actions
+
     func addTodo(_ text: String) {
         guard !text.isEmpty else { return }
         let newTodo = TodoItem(text: text)
         todos.append(newTodo)
     }
 
-    /// Toggle the completion status of a todo
     func toggleTodo(_ id: UUID) {
         if let index = todos.firstIndex(where: { $0.id == id }) {
-            // @Published setter on todos triggers objectWillChange.send() automatically
             todos[index].isCompleted.toggle()
         }
     }
 
-    /// Delete a todo from the list
     func deleteTodo(_ id: UUID) {
         todos.removeAll { $0.id == id }
     }
 
-    /// Delete all completed todos
     func clearCompleted() {
-        // @Published setter on todos triggers objectWillChange.send() automatically
         todos.removeAll { $0.isCompleted }
     }
 
-    /// Get filtered todos based on current filter
     var filteredTodos: [TodoItem] {
         switch filter {
         case .all:
@@ -113,220 +112,544 @@ final class TodoStore: ObservableObject {
         }
     }
 
-    /// Count of active (incomplete) todos
     var activeCount: Int {
         todos.filter { !$0.isCompleted }.count
     }
 
-    /// Count of completed todos
     var completedCount: Int {
         todos.filter { $0.isCompleted }.count
     }
 }
 
-// MARK: - Views
+// MARK: - Root View
 
-/// Main todo app view
+/// Tabbed component showcase demonstrating Raven framework capabilities
 @MainActor
 struct TodoApp: View {
-    /// The store manages all todo state and is owned by this view
-    /// Using @StateObject ensures the store persists across view updates
-    @StateObject var store = TodoStore()
+    @StateObject var store = ShowcaseStore()
 
-    /// Local state for the new todo input field
     @State private var newTodoText = ""
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Header with title and stats
-            HeaderView(
-                activeCount: store.activeCount,
-                completedCount: store.completedCount
-            )
+        VStack(spacing: 0) {
+            // Header
+            ShowcaseHeader()
 
-            // Input section for adding new todos
-            AddTodoView(newTodoText: $newTodoText) {
-                store.addTodo(newTodoText)
-                newTodoText = ""
+            // Tab bar
+            TabBar(selectedTab: store.selectedTab) { tab in
+                store.selectedTab = tab
+            }
+
+            // Tab content
+            if store.selectedTab == "todos" {
+                TodosTab(
+                    store: store,
+                    newTodoText: $newTodoText
+                )
+            }
+            if store.selectedTab == "controls" {
+                ControlsTab(store: store)
+            }
+            if store.selectedTab == "display" {
+                DisplayTab()
+            }
+            if store.selectedTab == "layout" {
+                LayoutTab()
+            }
+        }
+    }
+}
+
+// MARK: - Header
+
+@MainActor
+struct ShowcaseHeader: View {
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("Raven Component Showcase")
+                .font(.title)
+                .foregroundColor(.white)
+
+            Text("Cross-compiled SwiftUI running in the browser")
+                .font(.caption)
+                .foregroundColor(Color(hex: "#cbd5e1"))
+        }
+        .padding(20)
+        .background(Color(hex: "#1e293b"))
+    }
+}
+
+// MARK: - Tab Bar
+
+@MainActor
+struct TabBar: View {
+    let selectedTab: String
+    let onSelect: @MainActor (String) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            TabButton(label: "Todos", tab: "todos", isSelected: selectedTab == "todos", onSelect: onSelect)
+            TabButton(label: "Controls", tab: "controls", isSelected: selectedTab == "controls", onSelect: onSelect)
+            TabButton(label: "Display", tab: "display", isSelected: selectedTab == "display", onSelect: onSelect)
+            TabButton(label: "Layout", tab: "layout", isSelected: selectedTab == "layout", onSelect: onSelect)
+        }
+        .background(Color(hex: "#f1f5f9"))
+    }
+}
+
+@MainActor
+struct TabButton: View {
+    let label: String
+    let tab: String
+    let isSelected: Bool
+    let onSelect: @MainActor (String) -> Void
+
+    var body: some View {
+        Button(label) {
+            onSelect(tab)
+        }
+        .padding(12)
+        .background(isSelected ? Color.white : Color.clear)
+        .foregroundColor(isSelected ? Color(hex: "#1e293b") : Color(hex: "#64748b"))
+        .font(.body)
+    }
+}
+
+// MARK: - Todos Tab
+
+@MainActor
+struct TodosTab: View {
+    let store: ShowcaseStore
+    @Binding var newTodoText: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Add todo input
+            HStack(spacing: 8) {
+                TextField("What needs to be done?", text: $newTodoText)
+
+                Button("Add") {
+                    store.addTodo(newTodoText)
+                    newTodoText = ""
+                }
+                .padding(8)
+                .background(Color(hex: "#3b82f6"))
+                .foregroundColor(.white)
+                .cornerRadius(6)
+            }
+
+            // Stats
+            HStack(spacing: 16) {
+                Text("\(store.activeCount) active")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+
+                Text("\(store.completedCount) completed")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
             }
 
             // Filter buttons
-            FilterView(currentFilter: store.filter) { filter in
-                store.filter = filter
+            HStack(spacing: 8) {
+                Text("Show:")
+                    .font(.caption)
+
+                ForEach(ShowcaseStore.Filter.allCases, id: \.self) { filter in
+                    Button(filter.rawValue) {
+                        store.filter = filter
+                    }
+                    .padding(6)
+                    .background(store.filter == filter ? Color(hex: "#3b82f6") : Color(hex: "#e2e8f0"))
+                    .foregroundColor(store.filter == filter ? Color.white : Color(hex: "#334155"))
+                    .cornerRadius(4)
+                    .font(.caption)
+                }
             }
 
-            // The todo list
-            TodoListView(
-                todos: store.filteredTodos,
-                onToggle: { id in store.toggleTodo(id) },
-                onDelete: { id in store.deleteTodo(id) }
-            )
+            // Todo list
+            if store.filteredTodos.isEmpty {
+                Text("No todos to display")
+                    .foregroundColor(Color(hex: "#94a3b8"))
+                    .padding(20)
+            } else {
+                List(store.filteredTodos) { todo in
+                    HStack(spacing: 12) {
+                        Button(todo.isCompleted ? "[x]" : "[ ]") {
+                            store.toggleTodo(todo.id)
+                        }
+                        .foregroundColor(todo.isCompleted ? Color(hex: "#22c55e") : Color(hex: "#94a3b8"))
 
-            // Footer with clear completed button
+                        Text(todo.text)
+                            .foregroundColor(todo.isCompleted ? Color(hex: "#94a3b8") : Color(hex: "#1e293b"))
+
+                        Spacer()
+
+                        Button("Delete") {
+                            store.deleteTodo(todo.id)
+                        }
+                        .foregroundColor(Color(hex: "#ef4444"))
+                        .font(.caption)
+                    }
+                }
+            }
+
+            // Clear completed
             if store.completedCount > 0 {
                 Button("Clear Completed (\(store.completedCount))") {
                     store.clearCompleted()
                 }
+                .padding(8)
+                .background(Color(hex: "#fee2e2"))
+                .foregroundColor(Color(hex: "#dc2626"))
+                .cornerRadius(6)
+                .font(.caption)
             }
         }
+        .padding(16)
     }
 }
 
-/// Header view displaying app title and statistics
+// MARK: - Controls Tab
+
 @MainActor
-struct HeaderView: View {
-    let activeCount: Int
-    let completedCount: Int
+struct ControlsTab: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Toggle section
+            SectionCard(title: "Toggle") {
+                VStack(spacing: 8) {
+                    Toggle("Dark Mode", isOn: Binding(
+                        get: { store.toggleValue },
+                        set: { store.toggleValue = $0 }
+                    ))
+
+                    Text(store.toggleValue ? "Enabled" : "Disabled")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+
+            // Slider section
+            SectionCard(title: "Slider") {
+                VStack(spacing: 8) {
+                    Slider(value: Binding(
+                        get: { store.sliderValue },
+                        set: { store.sliderValue = $0 }
+                    ), in: 0...100, step: 1)
+
+                    Text("Value: \(Int(store.sliderValue))")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+
+            // Stepper section
+            SectionCard(title: "Stepper") {
+                HStack(spacing: 12) {
+                    Stepper("Quantity", value: Binding(
+                        get: { store.stepperValue },
+                        set: { store.stepperValue = $0 }
+                    ), in: -10...10)
+
+                    Text("\(store.stepperValue)")
+                        .font(.headline)
+                        .foregroundColor(Color(hex: "#1e293b"))
+                }
+            }
+
+            // Text input section
+            SectionCard(title: "SecureField") {
+                VStack(spacing: 8) {
+                    SecureField("Enter password", text: Binding(
+                        get: { store.secureText },
+                        set: { store.secureText = $0 }
+                    ))
+
+                    Text("Length: \(store.secureText.count) characters")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+
+            // Progress section
+            SectionCard(title: "ProgressView") {
+                VStack(spacing: 8) {
+                    ProgressView(value: store.progressValue, total: 1.0)
+
+                    Text("\(Int(store.progressValue * 100))% complete")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+        }
+        .padding(16)
+    }
+}
+
+// MARK: - Display Tab
+
+@MainActor
+struct DisplayTab: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            // Typography section
+            SectionCard(title: "Typography") {
+                VStack(spacing: 8) {
+                    Text("Title Style")
+                        .font(.title)
+                        .foregroundColor(Color(hex: "#1e293b"))
+
+                    Text("Headline Style")
+                        .font(.headline)
+                        .foregroundColor(Color(hex: "#334155"))
+
+                    Text("Body Style - regular paragraph text for content areas")
+                        .font(.body)
+                        .foregroundColor(Color(hex: "#475569"))
+
+                    Text("Caption Style - small text for labels and metadata")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#94a3b8"))
+                }
+            }
+
+            // Divider section
+            SectionCard(title: "Divider") {
+                VStack(spacing: 8) {
+                    Text("Content above")
+                        .font(.body)
+                    Divider()
+                    Text("Content below")
+                        .font(.body)
+                }
+            }
+
+            // Progress indicators section
+            SectionCard(title: "Progress Indicators") {
+                VStack(spacing: 12) {
+                    ProgressView(value: 0.25, total: 1.0)
+                    Text("25%")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+
+                    ProgressView(value: 0.65, total: 1.0)
+                    Text("65%")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+
+                    ProgressView(value: 1.0, total: 1.0)
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#22c55e"))
+                }
+            }
+
+            // Link section
+            SectionCard(title: "Link") {
+                VStack(spacing: 8) {
+                    Link("Raven on GitHub", destination: URL(string: "https://github.com/nicktowe/raven")!)
+
+                    Link("Swift.org", destination: URL(string: "https://swift.org")!)
+                }
+            }
+
+            // Spacer demonstration
+            SectionCard(title: "Spacer") {
+                VStack(spacing: 8) {
+                    HStack(spacing: 0) {
+                        Text("Left")
+                            .foregroundColor(Color(hex: "#1e293b"))
+                        Spacer()
+                        Text("Right")
+                            .foregroundColor(Color(hex: "#1e293b"))
+                    }
+                    .padding(8)
+                    .background(Color(hex: "#f1f5f9"))
+                    .cornerRadius(4)
+
+                    HStack(spacing: 0) {
+                        Spacer()
+                        Text("Centered with Spacers")
+                            .foregroundColor(Color(hex: "#1e293b"))
+                        Spacer()
+                    }
+                    .padding(8)
+                    .background(Color(hex: "#f1f5f9"))
+                    .cornerRadius(4)
+                }
+            }
+        }
+        .padding(16)
+    }
+}
+
+// MARK: - Layout Tab
+
+@MainActor
+struct LayoutTab: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            // VStack demo
+            SectionCard(title: "VStack") {
+                VStack(spacing: 8) {
+                    Text("Item 1")
+                        .padding(12)
+                        .background(Color(hex: "#dbeafe"))
+                        .foregroundColor(Color(hex: "#1e40af"))
+                        .cornerRadius(6)
+
+                    Text("Item 2")
+                        .padding(12)
+                        .background(Color(hex: "#dcfce7"))
+                        .foregroundColor(Color(hex: "#166534"))
+                        .cornerRadius(6)
+
+                    Text("Item 3")
+                        .padding(12)
+                        .background(Color(hex: "#fef9c3"))
+                        .foregroundColor(Color(hex: "#854d0e"))
+                        .cornerRadius(6)
+                }
+            }
+
+            // HStack demo
+            SectionCard(title: "HStack") {
+                HStack(spacing: 8) {
+                    Text("A")
+                        .padding(16)
+                        .background(Color(hex: "#e0e7ff"))
+                        .foregroundColor(Color(hex: "#3730a3"))
+                        .cornerRadius(6)
+
+                    Text("B")
+                        .padding(16)
+                        .background(Color(hex: "#fce7f3"))
+                        .foregroundColor(Color(hex: "#9d174d"))
+                        .cornerRadius(6)
+
+                    Text("C")
+                        .padding(16)
+                        .background(Color(hex: "#ccfbf1"))
+                        .foregroundColor(Color(hex: "#115e59"))
+                        .cornerRadius(6)
+                }
+            }
+
+            // ZStack demo
+            SectionCard(title: "ZStack") {
+                ZStack {
+                    Text("Back Layer")
+                        .padding(24)
+                        .background(Color(hex: "#bfdbfe"))
+                        .foregroundColor(Color(hex: "#1e40af"))
+                        .cornerRadius(8)
+
+                    Text("Front Layer")
+                        .padding(12)
+                        .background(Color(hex: "#fecaca"))
+                        .foregroundColor(Color(hex: "#991b1b"))
+                        .cornerRadius(8)
+                        .opacity(0.9)
+                }
+                .frame(height: 100)
+            }
+
+            // Nested layout demo
+            SectionCard(title: "Nested Layout") {
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        VStack(spacing: 4) {
+                            Text("Top Left")
+                                .font(.caption)
+                            Text("Detail")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                        .padding(12)
+                        .background(Color(hex: "#f0fdf4"))
+                        .cornerRadius(6)
+
+                        VStack(spacing: 4) {
+                            Text("Top Right")
+                                .font(.caption)
+                            Text("Detail")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "#64748b"))
+                        }
+                        .padding(12)
+                        .background(Color(hex: "#fef2f2"))
+                        .cornerRadius(6)
+                    }
+
+                    HStack(spacing: 8) {
+                        Text("Full Width Bottom")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "#1e293b"))
+
+                        Spacer()
+
+                        Text("Right-aligned")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "#64748b"))
+                    }
+                    .padding(12)
+                    .background(Color(hex: "#f8fafc"))
+                    .cornerRadius(6)
+                }
+            }
+
+            // Modifier showcase
+            SectionCard(title: "View Modifiers") {
+                VStack(spacing: 8) {
+                    Text("Shadow")
+                        .padding(12)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+
+                    Text("Opacity 50%")
+                        .padding(12)
+                        .background(Color(hex: "#3b82f6"))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .opacity(0.5)
+
+                    Text("Large Corner Radius")
+                        .padding(12)
+                        .background(Color(hex: "#8b5cf6"))
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                }
+            }
+        }
+        .padding(16)
+    }
+}
+
+// MARK: - Reusable Section Card
+
+@MainActor
+struct SectionCard<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("Todo App")
-                .font(.title)
+            Text(title)
+                .font(.headline)
+                .foregroundColor(Color(hex: "#1e293b"))
 
-            HStack(spacing: 16) {
-                Text("\(activeCount) active")
-                Text("\(completedCount) completed")
-            }
-            .font(.caption)
+            content
         }
+        .padding(16)
+        .background(Color(hex: "#f9fafb"))
+        .cornerRadius(8)
     }
 }
-
-/// View for adding new todos
-/// Demonstrates TextField usage and action callbacks
-@MainActor
-struct AddTodoView: View {
-    /// Two-way binding to the parent's newTodoText state
-    @Binding var newTodoText: String
-
-    /// Callback when the add button is pressed
-    let onAdd: @MainActor () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            // TextField with placeholder and two-way binding
-            TextField("What needs to be done?", text: $newTodoText)
-
-            // Add button
-            Button("Add") {
-                onAdd()
-            }
-        }
-    }
-}
-
-/// Filter selection view
-/// Demonstrates how to create a segmented control-style interface
-@MainActor
-struct FilterView: View {
-    let currentFilter: TodoStore.Filter
-    let onFilterChange: @MainActor (TodoStore.Filter) -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text("Show:")
-
-            // Create a button for each filter option
-            ForEach(TodoStore.Filter.allCases, id: \.self) { filter in
-                Button(filter.rawValue) {
-                    onFilterChange(filter)
-                }
-                // You could add styling here to highlight the selected filter
-            }
-        }
-    }
-}
-
-/// The main todo list view
-/// Demonstrates List and ForEach usage with dynamic content
-@MainActor
-struct TodoListView: View {
-    let todos: [TodoItem]
-    let onToggle: @MainActor (UUID) -> Void
-    let onDelete: @MainActor (UUID) -> Void
-
-    var body: some View {
-        if todos.isEmpty {
-            // Empty state
-            Text("No todos to display")
-        } else {
-            // List of todos
-            // List automatically provides scrolling and layout
-            List(todos) { todo in
-                TodoRowView(
-                    todo: todo,
-                    onToggle: { onToggle(todo.id) },
-                    onDelete: { onDelete(todo.id) }
-                )
-            }
-        }
-    }
-}
-
-/// Individual todo row view
-/// Demonstrates Toggle and Button usage
-@MainActor
-struct TodoRowView: View {
-    let todo: TodoItem
-    let onToggle: @MainActor () -> Void
-    let onDelete: @MainActor () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Toggle for completion status
-            // Note: In a real app, you'd want to make this truly interactive
-            // For now, we'll use a button to toggle
-            Button(todo.isCompleted ? "☑" : "☐") {
-                onToggle()
-            }
-
-            // Todo text
-            Text(todo.text)
-
-            Spacer()
-
-            // Delete button
-            Button("Delete") {
-                onDelete()
-            }
-        }
-    }
-}
-
-// MARK: - Usage Notes
-
-/*
- This Todo App demonstrates several key Raven/SwiftUI concepts:
-
- 1. State Management:
-    - @StateObject: Store owns and manages the todo list state
-    - @Published: Properties that trigger view updates when changed
-    - @State: Local component state for the input field
-    - @Binding: Two-way data binding between parent and child views
-
- 2. View Composition:
-    - Breaking down the UI into small, reusable components
-    - Passing data down through props
-    - Passing actions up through callbacks
-
- 3. Lists and Dynamic Content:
-    - List: Scrollable container for multiple items
-    - ForEach: Iterate over collections to create views
-    - Identifiable: Protocol for stable list item identity
-
- 4. User Input:
-    - TextField: Text input with two-way binding
-    - Button: Clickable actions
-    - Toggle: Boolean switches
-
- 5. Conditional Rendering:
-    - if/else to show different content based on state
-    - Empty states for better UX
-
- Key Learning Points:
- - ObservableObject must call setupPublished() in init
- - Use @StateObject for objects the view owns
- - Use @Binding when a child needs to modify parent state
- - Keep view logic simple, move business logic to models
- - Identifiable types work seamlessly with List and ForEach
-*/

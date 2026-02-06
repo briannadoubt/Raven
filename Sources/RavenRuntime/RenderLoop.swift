@@ -12,7 +12,7 @@ import JavaScriptKit
 /// - Coordinates with DOMBridge for actual DOM manipulation
 /// - Uses Differ to compute efficient patches
 @MainActor
-public final class RenderCoordinator: Sendable {
+public final class RenderCoordinator: Sendable, _RenderContext {
     // MARK: - Properties
 
     /// Current virtual DOM tree
@@ -80,6 +80,27 @@ public final class RenderCoordinator: Sendable {
         return UUID(uuidString: uuidString) ?? UUID()
     }
 
+    // MARK: - _RenderContext Conformance
+
+    /// Recursively convert a child view into its VNode representation.
+    public func renderChild(_ view: any View) -> VNode {
+        return convertViewToVNode(view)
+    }
+
+    /// Register a click/action handler and return its unique ID.
+    public func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID {
+        let id = generateHandlerID()
+        eventHandlerRegistry[id] = action
+        return id
+    }
+
+    /// Register an input handler that receives the raw DOM event and return its unique ID.
+    public func registerInputHandler(_ handler: @escaping @Sendable @MainActor (JSValue) -> Void) -> UUID {
+        let id = generateHandlerID()
+        inputEventHandlerRegistry[id] = handler
+        return id
+    }
+
     // MARK: - Public API
 
     /// Main entry point for rendering a view
@@ -102,36 +123,13 @@ public final class RenderCoordinator: Sendable {
         internalRender(view: mutableView)
     }
 
-    /// Set up state update callbacks for a view
-    /// This uses reflection to find @State properties and connect them to re-renders
-    /// - Parameter view: View to set up callbacks for
+    /// Set up state update callbacks for a view.
+    ///
+    /// Note: Mirror-based reflection was removed because it crashes in Swift WASM.
+    /// State updates are driven by Binding closures that trigger re-renders directly.
     private func setupStateCallbacks<V: View>(_ view: inout V) {
-        // Use reflection to find all @State properties
-        let mirror = Mirror(reflecting: view)
-
-        for child in mirror.children {
-            // Check if this child is a State property wrapper
-            // State properties have a backing storage field
-            if let stateValue = child.value as? any DynamicProperty {
-                // For @State properties, we need to set up the update callback
-                // This is a simplified approach - in a full implementation,
-                // we would use property wrapper introspection
-
-                // Try to access the internal storage and set callback
-                // This requires reflection access to the State's internal structure
-                let childMirror = Mirror(reflecting: stateValue)
-                for innerChild in childMirror.children {
-                    if innerChild.label == "storage" {
-                        // Found the StateStorage - set up callback
-                        // This is the connection point for state updates
-                        if let storage = innerChild.value as? AnyObject {
-                            // Use reflection to call setUpdateCallback
-                            // In practice, this would be done through a protocol method
-                        }
-                    }
-                }
-            }
-        }
+        // No-op: State callbacks are connected through Binding's set closure,
+        // which calls the rerenderClosure stored on the coordinator.
     }
 
     /// Internal render method that performs the actual rendering
@@ -216,605 +214,34 @@ public final class RenderCoordinator: Sendable {
         return V.Body.self == Never.self
     }
 
-    /// Convert a primitive view to VNode
-    /// This handles the base cases like Text, Image, etc.
-    /// - Parameter view: Primitive view to convert
-    /// - Returns: VNode representation
+    /// Convert a primitive view to VNode using protocol dispatch.
+    ///
+    /// Views that conform to `_CoordinatorRenderable` render themselves using
+    /// the coordinator as a `_RenderContext`. All other `PrimitiveView` types
+    /// fall back to their `toVNode()` method. This replaces ~900 lines of
+    /// Mirror-based extraction functions that crash in Swift WASM.
     private func convertPrimitiveView<V: View>(_ view: V) -> VNode {
-        // Handle specific primitive types
-
-        // Text view handling (for now, basic implementation)
-        if let textView = view as? Text {
-            return convertTextView(textView)
+        // 1. Protocol-based rendering (handles all views with _CoordinatorRenderable)
+        if let renderable = view as? any _CoordinatorRenderable {
+            return renderable._render(with: self)
         }
 
-        // Button view handling
-        if let buttonNode = extractButtonView(view) {
-            return buttonNode
-        }
-
-        // TextField view handling
-        if let textFieldNode = extractTextField(view) {
-            return textFieldNode
-        }
-
-        // VStack view handling
-        if let vstackView = extractVStack(view) {
-            return vstackView
-        }
-
-        // HStack view handling
-        if let hstackView = extractHStack(view) {
-            return hstackView
-        }
-
-        // List view handling
-        if let listView = extractList(view) {
-            return listView
-        }
-
-        // EmptyView
-        if view is EmptyView {
-            return VNode.fragment(children: [])
-        }
-
-        // TupleView - handle multiple children
-        if let tupleView = extractTupleView(view) {
-            return tupleView
-        }
-
-        // ConditionalContent - handle if/else branches
-        if let conditionalNode = extractConditionalContent(view) {
-            return conditionalNode
-        }
-
-        // OptionalContent - handle optional views
-        if let optionalNode = extractOptionalContent(view) {
-            return optionalNode
-        }
-
-        // ForEachView - handle arrays of views (from ViewBuilder)
-        if let forEachNode = extractForEachView(view) {
-            return forEachNode
-        }
-
-        // ForEach - handle ForEach views
-        if let forEachNode = extractForEach(view) {
-            return forEachNode
-        }
-
-        // AnyView - handle type-erased views
+        // 2. AnyView — type-erased, has its own render() method
         if let anyView = view as? AnyView {
             return anyView.render()
         }
 
-        // Default: create a component node with type information
+        // 3. Leaf PrimitiveView fallback (Text, Spacer, Divider, Color, etc.)
+        if let primitiveView = view as? any PrimitiveView {
+            return primitiveView.toVNode()
+        }
+
+        // 4. Default: unknown primitive — create a placeholder component node
         return VNode.component(
             props: [:],
             children: [],
             key: String(describing: V.self)
         )
-    }
-
-    /// Convert a Text view to VNode
-    /// - Parameter text: Text view to convert
-    /// - Returns: VNode representing the text
-    private func convertTextView(_ text: Text) -> VNode {
-        // Text views render as text nodes
-        // Use the Text view's built-in toVNode method
-        return text.toVNode()
-    }
-
-    /// Extract and convert Button view with proper event handler registration
-    /// - Parameter view: View that might be a Button
-    /// - Returns: VNode if this is a Button, nil otherwise
-    private func extractButtonView<V: View>(_ view: V) -> VNode? {
-        // Use reflection to check if this is a Button
-        let mirror = Mirror(reflecting: view)
-
-        // Check for Button properties
-        var action: Any?
-        var label: Any?
-
-        for child in mirror.children {
-            switch child.label {
-            case "action":
-                action = child.value
-            case "label":
-                label = child.value
-            default:
-                break
-            }
-        }
-
-        // If we found both action and label, this is a Button
-        guard action != nil, let labelView = label as? (any View) else {
-            return nil
-        }
-
-        // Generate a unique ID for this event handler
-        let handlerID = generateHandlerID()
-
-        // Extract the action closure using a type-erased approach
-        if let buttonAny = view as? any View {
-            if let button = buttonAny as? Button<Text> {
-                registerEventHandler(id: handlerID, action: button.actionClosure)
-            } else if let button = buttonAny as? Button<AnyView> {
-                registerEventHandler(id: handlerID, action: button.actionClosure)
-            } else {
-                registerEventHandler(id: handlerID, action: {})
-            }
-        }
-
-        // Create the click event handler property
-        let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
-
-        // Create button element with event handler
-        let props: [String: VProperty] = [
-            "onClick": clickHandler
-        ]
-
-        // Convert label to children nodes
-        let children = [convertViewToVNode(labelView)]
-
-        return VNode.element(
-            "button",
-            props: props,
-            children: children
-        )
-    }
-
-    /// Register an event handler in the registry
-    /// - Parameters:
-    ///   - id: Unique identifier for the handler
-    ///   - action: Action closure to register
-    private func registerEventHandler(id: UUID, action: @escaping @Sendable @MainActor () -> Void) {
-        // Store the action directly without automatic re-render
-        // Re-renders are triggered by objectWillChange from @Published properties
-        eventHandlerRegistry[id] = action
-    }
-
-    /// Extract and convert TextField with proper event handler registration
-    /// - Parameter view: View that might be a TextField
-    /// - Returns: VNode if this is a TextField, nil otherwise
-    private func extractTextField<V: View>(_ view: V) -> VNode? {
-        // Check if this is a TextField and extract its properties using reflection
-        let mirror = Mirror(reflecting: view)
-
-        var placeholder: String?
-        var textBinding: Binding<String>?
-
-        for child in mirror.children {
-            switch child.label {
-            case "placeholder":
-                placeholder = child.value as? String
-            case "text":
-                textBinding = child.value as? Binding<String>
-            default:
-                break
-            }
-        }
-
-        // If we found both required properties, this is a TextField
-        guard let placeholderText = placeholder,
-              let binding = textBinding else {
-            return nil
-        }
-
-        // Generate a unique ID for the input event handler
-        let handlerID = generateHandlerID()
-
-        // Register the input event handler that updates the binding
-        registerInputEventHandler(id: handlerID, binding: binding)
-
-        // Reconstruct the VNode with our registered handler ID
-        let inputHandler = VProperty.eventHandler(event: "input", handlerID: handlerID)
-
-        var props: [String: VProperty] = [
-            // Input type
-            "type": .attribute(name: "type", value: "text"),
-
-            // Placeholder from TextField
-            "placeholder": .attribute(name: "placeholder", value: placeholderText),
-
-            // Current value (reflects the binding)
-            "value": .attribute(name: "value", value: binding.wrappedValue),
-
-            // Input event handler
-            "onInput": inputHandler,
-
-            // Default styling
-            "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
-            "border-radius": .style(name: "border-radius", value: "4px"),
-            "font-size": .style(name: "font-size", value: "14px"),
-            "width": .style(name: "width", value: "100%"),
-            "box-sizing": .style(name: "box-sizing", value: "border-box"),
-        ]
-
-        // ARIA attributes
-        props["aria-label"] = .attribute(name: "aria-label", value: placeholderText)
-        props["role"] = .attribute(name: "role", value: "textbox")
-
-        return VNode.element(
-            "input",
-            props: props,
-            children: []
-        )
-    }
-
-    /// Register an input event handler that extracts the value and updates a binding
-    /// - Parameters:
-    ///   - id: Unique identifier for the handler
-    ///   - binding: String binding to update when input changes
-    private func registerInputEventHandler(id: UUID, binding: Binding<String>) {
-        let handler: @Sendable @MainActor (JSValue) -> Void = { event in
-            // Extract event.target.value from the DOM event
-            let newValue = event.target.value.string
-            if let newValue = newValue {
-                // Update the binding silently - no re-render needed.
-                // Full DOM rebuild would destroy the input element and lose focus/cursor.
-                // The binding value is used when other actions trigger a re-render (e.g., Add button).
-                binding.wrappedValue = newValue
-            }
-        }
-
-        inputEventHandlerRegistry[id] = handler
-    }
-
-    /// Extract and convert VStack with children
-    private func extractVStack<V: View>(_ view: V) -> VNode? {
-        // Use reflection to extract VStack and its content
-        let mirror = Mirror(reflecting: view)
-
-        // Check if this is a VStack by looking for the required properties
-        var alignment: HorizontalAlignment?
-        var spacingOpt: Double??
-        var content: Any?
-
-        for child in mirror.children {
-            switch child.label {
-            case "alignment":
-                alignment = child.value as? HorizontalAlignment
-            case "spacing":
-                spacingOpt = child.value as? Double?
-            case "content":
-                content = child.value
-            default:
-                break
-            }
-        }
-
-        // If we found the required VStack properties, convert it
-        guard alignment != nil else { return nil }
-
-        // Create the VStack container node using its toVNode method
-        // We need to use a type-specific approach here
-        // For now, create a basic flexbox div manually
-        var props: [String: VProperty] = [
-            "display": .style(name: "display", value: "flex"),
-            "flex-direction": .style(name: "flex-direction", value: "column"),
-            "align-items": .style(name: "align-items", value: alignment!.cssValue)
-        ]
-
-        if let spacing = spacingOpt ?? nil {
-            props["gap"] = .style(name: "gap", value: "\(spacing)px")
-        }
-
-        // Convert children
-        var children: [VNode] = []
-        if let contentView = content as? (any View) {
-            let childVNode = convertViewToVNode(contentView)
-            // If the child is a fragment (like TupleView), use its children directly
-            // Otherwise, use the child itself
-            if case .fragment = childVNode.type {
-                children = childVNode.children
-            } else {
-                children = [childVNode]
-            }
-        }
-
-        return VNode.element("div", props: props, children: children)
-    }
-
-    /// Extract and convert HStack with children
-    private func extractHStack<V: View>(_ view: V) -> VNode? {
-        // Use reflection to extract HStack and its content
-        let mirror = Mirror(reflecting: view)
-
-        // Check if this is an HStack by looking for the required properties
-        var alignment: VerticalAlignment?
-        var spacingOpt: Double??
-        var content: Any?
-
-        for child in mirror.children {
-            switch child.label {
-            case "alignment":
-                alignment = child.value as? VerticalAlignment
-            case "spacing":
-                spacingOpt = child.value as? Double?
-            case "content":
-                content = child.value
-            default:
-                break
-            }
-        }
-
-        // If we found the required HStack properties, convert it
-        guard alignment != nil else { return nil }
-
-        // Create the HStack container node
-        var props: [String: VProperty] = [
-            "display": .style(name: "display", value: "flex"),
-            "flex-direction": .style(name: "flex-direction", value: "row"),
-            "align-items": .style(name: "align-items", value: alignment!.cssValue)
-        ]
-
-        if let spacing = spacingOpt ?? nil {
-            props["gap"] = .style(name: "gap", value: "\(spacing)px")
-        }
-
-        // Convert children
-        var children: [VNode] = []
-        if let contentView = content as? (any View) {
-            let childVNode = convertViewToVNode(contentView)
-            // If the child is a fragment (like TupleView), use its children directly
-            // Otherwise, use the child itself
-            if case .fragment = childVNode.type {
-                children = childVNode.children
-            } else {
-                children = [childVNode]
-            }
-        }
-
-        return VNode.element("div", props: props, children: children)
-    }
-
-    // MARK: - ViewBuilder Construct Handlers
-
-    /// Extract and convert TupleView using parameter pack iteration via _ViewTuple protocol
-    /// The protocol conformance uses parameter packs to iterate over tuple elements
-    private func extractTupleView<V: View>(_ view: V) -> VNode? {
-        // Check if this view conforms to _ViewTuple protocol
-        // TupleView conforms when T is a parameter pack of Views
-        guard let viewTuple = view as? any _ViewTuple else {
-            return nil
-        }
-
-        // Extract children using parameter packs (via protocol implementation)
-        let childViews = viewTuple._extractChildren()
-        let children = childViews.map { convertViewToVNode($0) }
-
-        return VNode.fragment(children: children)
-    }
-
-    /// Extract and convert List with children
-    private func extractList<V: View>(_ view: V) -> VNode? {
-        // Use reflection to extract List and its content
-        let mirror = Mirror(reflecting: view)
-
-        var content: Any?
-
-        for child in mirror.children {
-            if child.label == "content" {
-                content = child.value
-                break
-            }
-        }
-
-        // If we didn't find content, this might not be a List
-        guard let contentView = content as? (any View) else {
-            return nil
-        }
-
-        // Create the List container node with proper styling
-        var props: [String: VProperty] = [
-            // ARIA role for accessibility
-            "role": .attribute(name: "role", value: "list"),
-
-            // Layout styles
-            "display": .style(name: "display", value: "flex"),
-            "flex-direction": .style(name: "flex-direction", value: "column"),
-
-            // Scrolling behavior
-            "overflow-y": .style(name: "overflow-y", value: "auto"),
-
-            // Default styling
-            "width": .style(name: "width", value: "100%"),
-            "gap": .style(name: "gap", value: "8px"),
-        ]
-
-        // Convert children
-        var children: [VNode] = []
-        let childVNode = convertViewToVNode(contentView)
-
-        // If the child is a fragment (like ForEach), use its children directly
-        // Otherwise, use the child itself
-        if case .fragment = childVNode.type {
-            children = childVNode.children
-        } else {
-            children = [childVNode]
-        }
-
-        return VNode.element("div", props: props, children: children)
-    }
-
-    /// Extract and convert ConditionalContent
-    private func extractConditionalContent<V: View>(_ view: V) -> VNode? {
-        // ConditionalContent represents if/else branches
-        // We need to check which branch is active and render that
-
-        let mirror = Mirror(reflecting: view)
-
-        // ConditionalContent has a "storage" property that contains either
-        // .trueContent or .falseContent
-        for child in mirror.children {
-            if child.label == "storage" {
-                // Extract the storage enum
-                let storageMirror = Mirror(reflecting: child.value)
-
-                // Check which case is active
-                if let caseName = storageMirror.children.first?.label {
-                    // Get the associated value (the actual view)
-                    if let content = storageMirror.children.first?.value as? (any View) {
-                        // Render the active branch
-                        return convertViewToVNode(content)
-                    }
-                }
-            }
-        }
-
-        return nil
-    }
-
-    /// Extract and convert OptionalContent
-    private func extractOptionalContent<V: View>(_ view: V) -> VNode? {
-        // OptionalContent wraps an optional view
-        // Render the view if present, otherwise return empty fragment
-
-        let mirror = Mirror(reflecting: view)
-
-        // OptionalContent has a "content" property that is Optional<some View>
-        for child in mirror.children {
-            if child.label == "content" {
-                // Check if the optional has a value
-                let contentMirror = Mirror(reflecting: child.value)
-
-                if contentMirror.displayStyle == .optional {
-                    // Check if it's nil or has a value
-                    if contentMirror.children.isEmpty {
-                        // nil - return empty fragment
-                        return VNode.fragment(children: [])
-                    } else if let some = contentMirror.children.first?.value as? (any View) {
-                        // Has a value - render it
-                        return convertViewToVNode(some)
-                    }
-                }
-            }
-        }
-
-        return nil
-    }
-
-    /// Extract and convert ForEachView (from ViewBuilder)
-    private func extractForEachView<V: View>(_ view: V) -> VNode? {
-        // ForEachView contains an array of views
-        // Render each view and collect into a fragment
-
-        let mirror = Mirror(reflecting: view)
-
-        for child in mirror.children {
-            if child.label == "views" {
-                // Extract the array of views
-                if let views = child.value as? [any View] {
-                    let children = views.map { convertViewToVNode($0) }
-                    return VNode.fragment(children: children)
-                }
-            }
-        }
-
-        return nil
-    }
-
-    /// Extract and convert ForEach view
-    private func extractForEach<V: View>(_ view: V) -> VNode? {
-        // Use reflection to extract ForEach properties
-        let mirror = Mirror(reflecting: view)
-
-        var data: Any?
-        var idKeyPath: Any?
-        var content: Any?
-
-        for child in mirror.children {
-            switch child.label {
-            case "data":
-                data = child.value
-            case "idKeyPath":
-                idKeyPath = child.value
-            case "content":
-                content = child.value
-            default:
-                break
-            }
-        }
-
-        // If we found the ForEach properties, iterate and generate children
-        guard let contentClosure = content else {
-            return nil
-        }
-
-        // We need to iterate over the data collection
-        // This is complex due to Swift's type system, so we use a simplified approach
-        // In a real implementation, we would use a more robust reflection mechanism
-
-        var children: [VNode] = []
-
-        // Try to handle common cases: Range<Int> and Array
-        if let range = data as? Range<Int> {
-            // Handle Range<Int>
-            for index in range {
-                // Create a view by calling the content closure with the index
-                // This requires runtime casting which is not type-safe
-                // For now, we'll use a workaround with reflection
-
-                // Try to call the closure - this is the tricky part
-                // We'll need to use a generic approach here
-                if let view = callContentClosure(contentClosure, with: index) {
-                    var node = convertViewToVNode(view)
-                    // Set stable key
-                    node = VNode(
-                        id: node.id,
-                        type: node.type,
-                        props: node.props,
-                        children: node.children,
-                        key: "\(index)"
-                    )
-                    children.append(node)
-                }
-            }
-        } else if let array = data as? [any Sendable] {
-            // Handle array collections
-            for (index, element) in array.enumerated() {
-                if let view = callContentClosure(contentClosure, with: element) {
-                    var node = convertViewToVNode(view)
-                    // Try to extract ID for stable key
-                    let key = extractID(from: element, keyPath: idKeyPath) ?? "\(index)"
-                    node = VNode(
-                        id: node.id,
-                        type: node.type,
-                        props: node.props,
-                        children: node.children,
-                        key: key
-                    )
-                    children.append(node)
-                }
-            }
-        }
-
-        return VNode.fragment(children: children)
-    }
-
-    /// Helper to call a content closure with an element (uses reflection)
-    private func callContentClosure(_ closure: Any, with element: Any) -> (any View)? {
-        // This is a simplified implementation
-        // In a real implementation, we would use proper type-safe mechanisms
-        // For now, we return nil to indicate this needs proper implementation
-        // The actual implementation would require more sophisticated reflection
-        // or a protocol-based approach
-        return nil
-    }
-
-    /// Helper to extract ID from an element using a key path
-    private func extractID(from element: Any, keyPath: Any?) -> String? {
-        // Try to extract the ID using the key path
-        // This requires reflection or a protocol-based approach
-
-        // Check if element is Identifiable
-        if let identifiable = element as? any Identifiable {
-            return String(describing: identifiable.id)
-        }
-
-        return nil
     }
 
     // MARK: - DOM Operations

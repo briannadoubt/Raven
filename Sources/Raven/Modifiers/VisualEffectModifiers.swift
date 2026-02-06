@@ -548,3 +548,29 @@ extension View {
         _HueRotationView(content: self, angle: angle)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _BlurView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _BrightnessView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _ContrastView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _SaturationView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _GrayscaleView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _HueRotationView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}

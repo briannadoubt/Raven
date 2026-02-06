@@ -254,3 +254,17 @@ extension View {
         _ForegroundColorView(content: self, color: color)
     }
 }
+
+// MARK: - Modifier Renderable Conformances
+
+extension _PaddingView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _FrameView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _ForegroundColorView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
