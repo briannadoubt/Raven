@@ -262,9 +262,9 @@ public final class RenderCoordinator: Sendable, _RenderContext {
             return renderable._render(with: self)
         }
 
-        // 2. AnyView — type-erased, has its own render() method
+        // 2. AnyView — unwrap and render via coordinator for proper _CoordinatorRenderable dispatch
         if let anyView = view as? AnyView {
-            return anyView.render()
+            return convertViewToVNode(anyView.wrappedView)
         }
 
         // 3. Leaf PrimitiveView fallback (Text, Spacer, Divider, Color, etc.)
@@ -286,6 +286,7 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// - Parameter container: JSObject representing the container DOM element
     public func setRootContainer(_ container: JSObject) {
         self.rootContainer = container
+        AppRuntime.injectFrameworkCSSIfNeeded()
     }
 
     /// Mount a virtual tree to the DOM
@@ -1069,6 +1070,18 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         case .ended, .cancelled, .failed:
             // Already in terminal state
             break
+        }
+    }
+
+    // MARK: - Rerender
+
+    /// Triggers a full re-render of the current view hierarchy.
+    ///
+    /// Called by AppRuntime when the system color scheme changes
+    /// so that views using `@Environment(\.colorScheme)` update.
+    public func triggerRerender() {
+        if let rerender = rerenderClosure {
+            rerender()
         }
     }
 

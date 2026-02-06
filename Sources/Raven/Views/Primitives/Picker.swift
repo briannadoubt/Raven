@@ -268,10 +268,10 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
 
             // Default styling
             "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
-            "background-color": .style(name: "background-color", value: "white"),
+            "background-color": .style(name: "background-color", value: "var(--system-control-background)"),
             "cursor": .style(name: "cursor", value: "pointer"),
         ]
 
@@ -355,7 +355,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
         // Create properties for the fieldset element
         let props: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-picker-inline"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "padding": .style(name: "padding", value: "12px")
         ]
@@ -403,9 +403,9 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
 
                 // Base button styles
                 "padding": .style(name: "padding", value: "8px 16px"),
-                "border": .style(name: "border", value: "1px solid #ccc"),
-                "background-color": .style(name: "background-color", value: isSelected ? "#007AFF" : "white"),
-                "color": .style(name: "color", value: isSelected ? "white" : "#333"),
+                "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
+                "background-color": .style(name: "background-color", value: isSelected ? "var(--system-accent)" : "var(--system-control-background)"),
+                "color": .style(name: "color", value: isSelected ? "white" : "var(--system-label)"),
                 "font-size": .style(name: "font-size", value: "14px"),
                 "cursor": .style(name: "cursor", value: "pointer"),
                 "transition": .style(name: "transition", value: "all 0.2s ease"),
@@ -528,9 +528,9 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
             "aria-label": .attribute(name: "aria-label", value: label),
             "role": .attribute(name: "role", value: "listbox"),
             // Styling for container
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "8px"),
-            "background-color": .style(name: "background-color", value: "white"),
+            "background-color": .style(name: "background-color", value: "var(--system-control-background)"),
             "position": .style(name: "position", value: "relative"),
             "overflow": .style(name: "overflow", value: "hidden")
         ]
@@ -657,10 +657,10 @@ extension Picker: _CoordinatorRenderable {
             "aria-label": .attribute(name: "aria-label", value: label),
             "onChange": .eventHandler(event: "change", handlerID: handlerID),
             "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
-            "background-color": .style(name: "background-color", value: "white"),
+            "background-color": .style(name: "background-color", value: "var(--system-control-background)"),
             "cursor": .style(name: "cursor", value: "pointer"),
         ]
         let selectNode = VNode.element("select", props: selectProps, children: optionNodes)

@@ -217,6 +217,36 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     /// Accent color for the current theme
     public static let accent = Color(systemColor: "accent")
 
+    /// Label color for primary text content
+    public static let label = Color(systemColor: "label")
+
+    /// Label color for secondary text content
+    public static let secondaryLabel = Color(systemColor: "secondary-label")
+
+    /// Label color for tertiary text content
+    public static let tertiaryLabel = Color(systemColor: "tertiary-label")
+
+    /// Primary background color
+    public static let systemBackground = Color(systemColor: "background")
+
+    /// Secondary background color for grouped content
+    public static let secondarySystemBackground = Color(systemColor: "secondary-background")
+
+    /// Tertiary background color
+    public static let tertiarySystemBackground = Color(systemColor: "tertiary-background")
+
+    /// Background color for grouped content areas
+    public static let groupedBackground = Color(systemColor: "grouped-background")
+
+    /// Color for thin separator lines
+    public static let separator = Color(systemColor: "separator")
+
+    /// Color for fill areas
+    public static let fill = Color(systemColor: "fill")
+
+    /// Color for secondary fill areas
+    public static let secondaryFill = Color(systemColor: "secondary-fill")
+
     // MARK: - CSS Conversion
 
     /// Converts this color to a CSS color string.

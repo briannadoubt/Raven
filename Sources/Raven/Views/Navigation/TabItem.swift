@@ -38,7 +38,7 @@ public struct TabItem: Sendable {
 // MARK: - TabItem Modifier
 
 /// Internal view wrapper that stores tab item configuration.
-struct TabItemModifier<Content: View>: View, Sendable {
+struct TabItemModifier<Content: View>: View, PrimitiveView, Sendable {
     typealias Body = Never
 
     /// The content view
@@ -56,7 +56,7 @@ struct TabItemModifier<Content: View>: View, Sendable {
 // MARK: - Badge Modifier
 
 /// Internal view wrapper that stores badge configuration.
-struct BadgeModifier<Content: View>: View, Sendable {
+struct BadgeModifier<Content: View>: View, PrimitiveView, Sendable {
     typealias Body = Never
 
     /// The content view
@@ -262,5 +262,41 @@ protocol BadgeModifiable {
 extension BadgeModifier: BadgeModifiable {
     @MainActor func extractBadge() -> String? {
         badge
+    }
+}
+
+// MARK: - _CoordinatorRenderable Conformances
+
+extension TabItemModifier: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        context.renderChild(content)
+    }
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+extension BadgeModifier: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        context.renderChild(content)
+    }
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+// MARK: - BadgeModifier TabConfigurable
+
+extension BadgeModifier: TabConfigurable {
+    @MainActor func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)? {
+        // Unwrap inner TabConfigurable and overlay badge
+        if let inner = content as? any TabConfigurable,
+           var config = inner.extractTabConfiguration() {
+            config.badge = badge
+            return config
+        }
+        return nil
     }
 }

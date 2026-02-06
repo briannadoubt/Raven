@@ -456,7 +456,7 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
     @MainActor private func createContentArea(tabs: [ExtractedTab<SelectionValue>], selectedIndex: Int) -> VNode {
         let tabPanelID = "tabpanel-\(selectedIndex)"
 
-        var contentProps: [String: VProperty] = [
+        let contentProps: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-tab-content"),
             // ARIA tabpanel role (WCAG 2.1 requirement)
             "role": .attribute(name: "role", value: "tabpanel"),
@@ -476,6 +476,237 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
             "div",
             props: contentProps,
             children: []
+        )
+    }
+}
+
+// MARK: - TabViewContainer _CoordinatorRenderable
+
+extension TabViewContainer: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // 1. Extract children from the content
+        let childViews: [any View]
+        if let tuple = content as? any _ViewTuple {
+            childViews = tuple._extractChildren()
+        } else {
+            childViews = [content]
+        }
+
+        // 2. Build tabs array from extracted children
+        var tabs: [ExtractedTab<SelectionValue>] = []
+        for (index, child) in childViews.enumerated() {
+            let tab = extractTab(from: child, index: index)
+            tabs.append(tab)
+        }
+
+        guard !tabs.isEmpty else {
+            return VNode.element("div", props: [:], children: [])
+        }
+
+        // 3. Determine selected index
+        let selectedIndex: Int
+        if let sel = selection {
+            let currentValue = sel.wrappedValue
+            if let matchIndex = tabs.firstIndex(where: { tab in
+                guard let tagValue = tab.tagValue else { return false }
+                return tagValue == currentValue
+            }) {
+                selectedIndex = matchIndex
+            } else if let intVal = currentValue as? Int, intVal >= 0, intVal < tabs.count {
+                selectedIndex = intVal
+            } else {
+                selectedIndex = 0
+            }
+        } else {
+            selectedIndex = 0
+        }
+
+        // 4. Build tab bar buttons
+        let tabButtons: [VNode] = tabs.enumerated().map { index, tab in
+            let isSelected = index == selectedIndex
+
+            // Register click handler that updates the selection
+            let handlerID = context.registerClickHandler { [selection] in
+                guard let selection = selection else { return }
+                // If the tab has a tag value, use it
+                if let tagValue = tab.tagValue {
+                    selection.wrappedValue = tagValue
+                } else if let intIndex = index as? SelectionValue {
+                    selection.wrappedValue = intIndex
+                }
+            }
+
+            // Render the tab label via the context
+            let labelNode = context.renderChild(tab.tabItem.label)
+
+            var buttonChildren: [VNode] = []
+
+            // Add badge if present
+            if let badgeText = tab.badge, !badgeText.isEmpty {
+                let badgeNode = VNode.element(
+                    "span",
+                    props: [
+                        "class": .attribute(name: "class", value: "raven-tab-badge"),
+                        "position": .style(name: "position", value: "absolute"),
+                        "top": .style(name: "top", value: "4px"),
+                        "right": .style(name: "right", value: "4px"),
+                        "background-color": .style(name: "background-color", value: "#FF3B30"),
+                        "color": .style(name: "color", value: "#FFFFFF"),
+                        "border-radius": .style(name: "border-radius", value: "10px"),
+                        "padding": .style(name: "padding", value: "2px 6px"),
+                        "font-size": .style(name: "font-size", value: "11px"),
+                        "font-weight": .style(name: "font-weight", value: "600"),
+                        "min-width": .style(name: "min-width", value: "18px"),
+                        "text-align": .style(name: "text-align", value: "center"),
+                    ],
+                    children: [VNode.text(badgeText)]
+                )
+                buttonChildren.append(badgeNode)
+            }
+
+            // Add label
+            let labelWrapper = VNode.element(
+                "div",
+                props: [
+                    "class": .attribute(name: "class", value: "raven-tab-label"),
+                ],
+                children: [labelNode]
+            )
+            buttonChildren.append(labelWrapper)
+
+            // Active indicator: blue bottom border for selected tab
+            let borderBottom = isSelected ? "2px solid #007AFF" : "2px solid transparent"
+
+            let buttonProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: isSelected ? "raven-tab-button raven-tab-button-selected" : "raven-tab-button"),
+                "role": .attribute(name: "role", value: "tab"),
+                "aria-selected": .attribute(name: "aria-selected", value: isSelected ? "true" : "false"),
+                "aria-controls": .attribute(name: "aria-controls", value: "tabpanel-\(index)"),
+                "tabindex": .attribute(name: "tabindex", value: isSelected ? "0" : "-1"),
+                "onClick": .eventHandler(event: "click", handlerID: handlerID),
+                "display": .style(name: "display", value: "flex"),
+                "flex": .style(name: "flex", value: "1"),
+                "flex-direction": .style(name: "flex-direction", value: "column"),
+                "align-items": .style(name: "align-items", value: "center"),
+                "justify-content": .style(name: "justify-content", value: "center"),
+                "padding": .style(name: "padding", value: "8px 12px"),
+                "border": .style(name: "border", value: "none"),
+                "border-bottom": .style(name: "border-bottom", value: borderBottom),
+                "background": .style(name: "background", value: "transparent"),
+                "cursor": .style(name: "cursor", value: "pointer"),
+                "color": .style(name: "color", value: isSelected ? "#007AFF" : "#8E8E93"),
+                "position": .style(name: "position", value: "relative"),
+            ]
+
+            return VNode.element(
+                "button",
+                props: buttonProps,
+                children: buttonChildren
+            )
+        }
+
+        // Tab bar container
+        let tabBar = VNode.element(
+            "div",
+            props: [
+                "class": .attribute(name: "class", value: "raven-tab-bar"),
+                "role": .attribute(name: "role", value: "tablist"),
+                "aria-label": .attribute(name: "aria-label", value: "Tab navigation"),
+                "display": .style(name: "display", value: "flex"),
+                "flex-direction": .style(name: "flex-direction", value: "row"),
+                "border-top": .style(name: "border-top", value: "1px solid #e0e0e0"),
+                "background-color": .style(name: "background-color", value: "#ffffff"),
+            ],
+            children: tabButtons
+        )
+
+        // 5. Render content area with the selected tab's content
+        let selectedContent = context.renderChild(tabs[selectedIndex].content)
+
+        let contentArea = VNode.element(
+            "div",
+            props: [
+                "class": .attribute(name: "class", value: "raven-tab-content"),
+                "role": .attribute(name: "role", value: "tabpanel"),
+                "id": .attribute(name: "id", value: "tabpanel-\(selectedIndex)"),
+                "aria-labelledby": .attribute(name: "aria-labelledby", value: "tab-\(selectedIndex)"),
+                "tabindex": .attribute(name: "tabindex", value: "0"),
+                "flex": .style(name: "flex", value: "1"),
+                "overflow": .style(name: "overflow", value: "auto"),
+            ],
+            children: [selectedContent]
+        )
+
+        // 6. Return flex-column container with content on top, tab bar at bottom (iOS style)
+        return VNode.element(
+            "div",
+            props: [
+                "class": .attribute(name: "class", value: "raven-tab-view"),
+                "display": .style(name: "display", value: "flex"),
+                "flex-direction": .style(name: "flex-direction", value: "column"),
+                "height": .style(name: "height", value: "100%"),
+            ],
+            children: [contentArea, tabBar]
+        )
+    }
+
+    // MARK: - Tab Extraction Helper
+
+    /// Extracts a single tab from a child view, handling TaggedView, TabConfigurable, and plain views.
+    @MainActor private func extractTab(from child: any View, index: Int) -> ExtractedTab<SelectionValue> {
+        // Case 1: TaggedView — extract tag value and check for inner TabConfigurable
+        // Must check before TabConfigurable since TaggedView also conforms to TabConfigurable
+        // but we need to preserve the tag value for selection binding
+        if let taggedView = child as? TaggedView<SelectionValue> {
+            let tagValue = taggedView.tagValue
+
+            // Check if the tagged content has tab configuration
+            if let tabConfig = taggedView._tabConfigurable,
+               let config = tabConfig.extractTabConfiguration() {
+                return ExtractedTab<SelectionValue>(
+                    tagValue: tagValue,
+                    tabItem: config.tabItem,
+                    badge: config.badge,
+                    content: config.content
+                )
+            }
+
+            // Tagged but no tab item — use content as-is with default label
+            let defaultLabel = TabItem(
+                id: "tab-\(index)",
+                label: Text("Tab \(index + 1)"),
+                badge: nil
+            )
+            return ExtractedTab<SelectionValue>(
+                tagValue: tagValue,
+                tabItem: defaultLabel,
+                badge: nil,
+                content: taggedView.content
+            )
+        }
+
+        // Case 2: TabConfigurable directly (e.g. TabItemModifier without .tag())
+        if let configurable = child as? any TabConfigurable,
+           let config = configurable.extractTabConfiguration() {
+            return ExtractedTab<SelectionValue>(
+                tagValue: nil,
+                tabItem: config.tabItem,
+                badge: config.badge,
+                content: config.content
+            )
+        }
+
+        // Case 3: Plain view with no tab configuration — create default tab
+        let defaultLabel = TabItem(
+            id: "tab-\(index)",
+            label: Text("Tab \(index + 1)"),
+            badge: nil
+        )
+        return ExtractedTab<SelectionValue>(
+            tagValue: nil,
+            tabItem: defaultLabel,
+            badge: nil,
+            content: AnyView(child)
         )
     }
 }

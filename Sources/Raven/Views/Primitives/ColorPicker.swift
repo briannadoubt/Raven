@@ -252,7 +252,7 @@ public struct ColorPicker: View, PrimitiveView, Sendable {
             "aria-label": .attribute(name: "aria-label", value: label),
             "width": .style(name: "width", value: "60px"),
             "height": .style(name: "height", value: "40px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "cursor": .style(name: "cursor", value: "pointer"),
         ]
@@ -428,7 +428,7 @@ extension ColorPicker: _CoordinatorRenderable {
             "aria-label": .attribute(name: "aria-label", value: label),
             "width": .style(name: "width", value: "60px"),
             "height": .style(name: "height", value: "40px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "cursor": .style(name: "cursor", value: "pointer"),
         ]

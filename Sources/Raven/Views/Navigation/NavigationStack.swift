@@ -243,6 +243,48 @@ public struct NavigationStack<Data: Sendable, Root: View>: View, PrimitiveView {
     }
 }
 
+// MARK: - CoordinatorRenderable
+
+extension NavigationStack: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Navigation bar header
+        let navBarProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-navigation-bar"),
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "background-color": .style(name: "background-color", value: "#f8f9fa"),
+            "border-bottom": .style(name: "border-bottom", value: "1px solid #e0e0e0"),
+            "padding": .style(name: "padding", value: "8px 16px"),
+        ]
+        let titleNode = VNode.text("Navigation")
+        let navBar = VNode.element("header", props: navBarProps, children: [titleNode])
+
+        // Render the root content
+        let rootNode = context.renderChild(root)
+        let contentChildren: [VNode]
+        if case .fragment = rootNode.type {
+            contentChildren = rootNode.children
+        } else {
+            contentChildren = [rootNode]
+        }
+        let contentProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-navigation-content"),
+            "flex": .style(name: "flex", value: "1"),
+            "overflow": .style(name: "overflow", value: "auto"),
+        ]
+        let contentArea = VNode.element("main", props: contentProps, children: contentChildren)
+
+        // Main navigation container
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-navigation-stack"),
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "height": .style(name: "height", value: "100%"),
+        ]
+        return VNode.element("nav", props: containerProps, children: [navBar, contentArea])
+    }
+}
+
 // MARK: - Navigation Destination Modifier
 
 /// A type-erased wrapper for navigation destination information.

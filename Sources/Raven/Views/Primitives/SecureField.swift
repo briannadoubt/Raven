@@ -110,7 +110,7 @@ public struct SecureField: View, PrimitiveView, Sendable {
 
             // Default styling
             "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
         ]
@@ -151,7 +151,7 @@ extension SecureField: _CoordinatorRenderable {
             "aria-label": .attribute(name: "aria-label", value: placeholder),
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
             "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
             "width": .style(name: "width", value: "100%"),

@@ -89,46 +89,33 @@
 public struct AnyView: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
-    /// The type-erased rendering closure.
-    ///
-    /// This closure captures the original view and will be called during
-    /// the rendering phase to produce the virtual DOM node.
+    /// The type-erased rendering closure (fallback for non-coordinator paths).
     private let _render: @Sendable @MainActor () -> VNode
+
+    /// The wrapped view stored as existential for coordinator-based rendering.
+    private let _wrappedView: any View
 
     /// Creates a type-erased view from the given view.
     ///
-    /// Use this initializer to wrap any view in an `AnyView`, erasing its
-    /// specific type information.
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let textView = AnyView(Text("Hello"))
-    /// let imageView = AnyView(Image("icon"))
-    /// let views: [AnyView] = [textView, imageView]
-    /// ```
-    ///
     /// - Parameter view: The view to wrap.
     @MainActor public init<Content: View>(_ view: Content) {
-        // Capture the view in the closure and use recursive rendering
+        self._wrappedView = view
         self._render = { @MainActor in
             renderView(view)
         }
     }
 
     /// Renders the type-erased view to a virtual DOM node.
-    ///
-    /// This method is called by the rendering system to produce the actual
-    /// DOM representation of the wrapped view.
     @MainActor public func render() -> VNode {
         _render()
     }
 
+    /// The wrapped view for coordinator-based rendering.
+    @MainActor public var wrappedView: any View {
+        _wrappedView
+    }
+
     /// Converts this type-erased view into a virtual DOM node.
-    ///
-    /// This is required by the PrimitiveView protocol and delegates to the render() method.
-    ///
-    /// - Returns: A VNode representing this view's DOM structure.
     @MainActor public func toVNode() -> VNode {
         render()
     }

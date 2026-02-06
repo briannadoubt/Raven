@@ -267,7 +267,7 @@ public struct ProgressView: View, PrimitiveView, Sendable {
             width: 24px;
             height: 24px;
             border: 3px solid rgba(0, 0, 0, 0.1);
-            border-top-color: #007AFF;
+            border-top-color: var(--system-accent);
             border-radius: 50%;
             animation: raven-spinner-rotate 0.8s linear infinite;
             """
@@ -373,18 +373,18 @@ extension ProgressView {
         }
 
         .raven-progress-bar::-webkit-progress-bar {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: var(--system-fill);
             border-radius: 4px;
         }
 
         .raven-progress-bar::-webkit-progress-value {
-            background-color: #007AFF;
+            background-color: var(--system-accent);
             border-radius: 4px;
             transition: width 0.3s ease;
         }
 
         .raven-progress-bar::-moz-progress-bar {
-            background-color: #007AFF;
+            background-color: var(--system-accent);
             border-radius: 4px;
             transition: width 0.3s ease;
         }

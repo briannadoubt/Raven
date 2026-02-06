@@ -72,6 +72,7 @@ final class ShowcaseStore: ObservableObject {
     @Published var disclosureExpanded: Bool = false
     @Published var colorPickerValue: Color = .blue
     @Published var datePickerValue: Date = Date()
+    @Published var demoTabSelection: Int = 0
 
     init() {
         setupPublished()
@@ -158,7 +159,7 @@ struct TodoApp: View {
                 DisplayTab()
             }
             if store.selectedTab == "layout" {
-                LayoutTab()
+                LayoutTab(store: store)
             }
             if store.selectedTab == "forms" {
                 FormsTab(store: store)
@@ -182,7 +183,7 @@ struct ShowcaseHeader: View {
 
             Text("Cross-compiled SwiftUI running in the browser")
                 .font(.caption)
-                .foregroundColor(Color(hex: "#cbd5e1"))
+                .foregroundColor(Color.tertiaryLabel)
         }
         .padding(20)
         .background(Color(hex: "#1e293b"))
@@ -205,7 +206,7 @@ struct TabBar: View {
             TabButton(label: "Forms", tab: "forms", isSelected: selectedTab == "forms", onSelect: onSelect)
             TabButton(label: "Effects", tab: "effects", isSelected: selectedTab == "effects", onSelect: onSelect)
         }
-        .background(Color(hex: "#f1f5f9"))
+        .background(Color.secondarySystemBackground)
     }
 }
 
@@ -222,7 +223,7 @@ struct TabButton: View {
         }
         .padding(12)
         .background(isSelected ? Color.white : Color.clear)
-        .foregroundColor(isSelected ? Color(hex: "#1e293b") : Color(hex: "#64748b"))
+        .foregroundColor(isSelected ? Color.label : Color.secondaryLabel)
         .font(.body)
     }
 }
@@ -245,7 +246,7 @@ struct TodosTab: View {
                     newTodoText = ""
                 }
                 .padding(8)
-                .background(Color(hex: "#3b82f6"))
+                .background(Color.accent)
                 .foregroundColor(.white)
                 .cornerRadius(6)
             }
@@ -254,11 +255,11 @@ struct TodosTab: View {
             HStack(spacing: 16) {
                 Text("\(store.activeCount) active")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
 
                 Text("\(store.completedCount) completed")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
 
             // Filter buttons
@@ -271,8 +272,8 @@ struct TodosTab: View {
                         store.filter = filter
                     }
                     .padding(6)
-                    .background(store.filter == filter ? Color(hex: "#3b82f6") : Color(hex: "#e2e8f0"))
-                    .foregroundColor(store.filter == filter ? Color.white : Color(hex: "#334155"))
+                    .background(store.filter == filter ? Color.accent : Color.fill)
+                    .foregroundColor(store.filter == filter ? Color.white : Color.label)
                     .cornerRadius(4)
                     .font(.caption)
                 }
@@ -281,7 +282,7 @@ struct TodosTab: View {
             // Todo list
             if store.filteredTodos.isEmpty {
                 Text("No todos to display")
-                    .foregroundColor(Color(hex: "#94a3b8"))
+                    .foregroundColor(Color.tertiaryLabel)
                     .padding(20)
             } else {
                 List(store.filteredTodos) { todo in
@@ -289,17 +290,17 @@ struct TodosTab: View {
                         Button(todo.isCompleted ? "[x]" : "[ ]") {
                             store.toggleTodo(todo.id)
                         }
-                        .foregroundColor(todo.isCompleted ? Color(hex: "#22c55e") : Color(hex: "#94a3b8"))
+                        .foregroundColor(todo.isCompleted ? Color.green : Color.tertiaryLabel)
 
                         Text(todo.text)
-                            .foregroundColor(todo.isCompleted ? Color(hex: "#94a3b8") : Color(hex: "#1e293b"))
+                            .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
 
                         Spacer()
 
                         Button("Delete") {
                             store.deleteTodo(todo.id)
                         }
-                        .foregroundColor(Color(hex: "#ef4444"))
+                        .foregroundColor(Color.red)
                         .font(.caption)
                     }
                 }
@@ -311,8 +312,8 @@ struct TodosTab: View {
                     store.clearCompleted()
                 }
                 .padding(8)
-                .background(Color(hex: "#fee2e2"))
-                .foregroundColor(Color(hex: "#dc2626"))
+                .background(Color.red.opacity(0.1))
+                .foregroundColor(Color.red)
                 .cornerRadius(6)
                 .font(.caption)
             }
@@ -339,7 +340,7 @@ struct ControlsTab: View {
 
                     Text(store.toggleValue ? "Enabled" : "Disabled")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
 
@@ -353,7 +354,7 @@ struct ControlsTab: View {
 
                     Text("Value: \(Int(store.sliderValue))")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
 
@@ -367,7 +368,7 @@ struct ControlsTab: View {
 
                     Text("\(store.stepperValue)")
                         .font(.headline)
-                        .foregroundColor(Color(hex: "#1e293b"))
+                        .foregroundColor(Color.label)
                 }
             }
 
@@ -381,7 +382,7 @@ struct ControlsTab: View {
 
                     Text("Length: \(store.secureText.count) characters")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
 
@@ -392,7 +393,7 @@ struct ControlsTab: View {
 
                     Text("\(Int(store.progressValue * 100))% complete")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
 
@@ -419,7 +420,7 @@ struct ColorPickerDemo: View {
 
                 Text("Selected color applied below:")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
 
                 Text("Sample")
                     .padding(12)
@@ -446,7 +447,7 @@ struct DatePickerDemo: View {
 
                 Text("Date selected")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
         }
     }
@@ -479,19 +480,19 @@ struct DisplayTab: View {
                 VStack(spacing: 8) {
                     Text("Title Style")
                         .font(.title)
-                        .foregroundColor(Color(hex: "#1e293b"))
+                        .foregroundColor(Color.label)
 
                     Text("Headline Style")
                         .font(.headline)
-                        .foregroundColor(Color(hex: "#334155"))
+                        .foregroundColor(Color.label)
 
                     Text("Body Style - regular paragraph text for content areas")
                         .font(.body)
-                        .foregroundColor(Color(hex: "#475569"))
+                        .foregroundColor(Color.secondaryLabel)
 
                     Text("Caption Style - small text for labels and metadata")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#94a3b8"))
+                        .foregroundColor(Color.tertiaryLabel)
                 }
             }
 
@@ -512,17 +513,17 @@ struct DisplayTab: View {
                     ProgressView(value: 0.25, total: 1.0)
                     Text("25%")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
 
                     ProgressView(value: 0.65, total: 1.0)
                     Text("65%")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
 
                     ProgressView(value: 1.0, total: 1.0)
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#22c55e"))
+                        .foregroundColor(Color.green)
                 }
             }
 
@@ -540,23 +541,23 @@ struct DisplayTab: View {
                 VStack(spacing: 8) {
                     HStack(spacing: 0) {
                         Text("Left")
-                            .foregroundColor(Color(hex: "#1e293b"))
+                            .foregroundColor(Color.label)
                         Spacer()
                         Text("Right")
-                            .foregroundColor(Color(hex: "#1e293b"))
+                            .foregroundColor(Color.label)
                     }
                     .padding(8)
-                    .background(Color(hex: "#f1f5f9"))
+                    .background(Color.secondarySystemBackground)
                     .cornerRadius(4)
 
                     HStack(spacing: 0) {
                         Spacer()
                         Text("Centered with Spacers")
-                            .foregroundColor(Color(hex: "#1e293b"))
+                            .foregroundColor(Color.label)
                         Spacer()
                     }
                     .padding(8)
-                    .background(Color(hex: "#f1f5f9"))
+                    .background(Color.secondarySystemBackground)
                     .cornerRadius(4)
                 }
             }
@@ -585,7 +586,7 @@ struct ImageDemo: View {
 
                 Text("System SF Symbol icons")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
         }
     }
@@ -614,19 +615,19 @@ struct ShapesDemo: View {
         SectionCard(title: "Shapes") {
             HStack(spacing: 12) {
                 Circle()
-                    .fill(Color(hex: "#3b82f6"))
+                    .fill(Color.accent)
                     .frame(width: 50, height: 50)
 
                 Rectangle()
-                    .fill(Color(hex: "#ef4444"))
+                    .fill(Color.red)
                     .frame(width: 50, height: 50)
 
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(hex: "#22c55e"))
+                    .fill(Color.green)
                     .frame(width: 50, height: 50)
 
                 Capsule()
-                    .fill(Color(hex: "#f59e0b"))
+                    .fill(Color.orange)
                     .frame(width: 80, height: 40)
             }
         }
@@ -640,6 +641,19 @@ struct ShapesDemo: View {
 
 @MainActor
 struct LayoutTab: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(spacing: 16) {
+            LayoutBasicDemos()
+            LayoutAdvancedDemos(store: store)
+        }
+        .padding(16)
+    }
+}
+
+@MainActor
+struct LayoutBasicDemos: View {
     var body: some View {
         VStack(spacing: 16) {
             VStackDemo()
@@ -647,12 +661,23 @@ struct LayoutTab: View {
             ZStackDemo()
             NestedLayoutDemo()
             ModifierShowcase()
+        }
+    }
+}
+
+@MainActor
+struct LayoutAdvancedDemos: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(spacing: 16) {
             GridDemo()
             LazyVGridDemo()
             LazyVStackDemo()
             GeometryReaderDemo()
+            TabViewDemo(store: store)
+            NavigationDemo()
         }
-        .padding(16)
     }
 }
 
@@ -663,20 +688,20 @@ struct VStackDemo: View {
             VStack(spacing: 8) {
                 Text("Item 1")
                     .padding(12)
-                    .background(Color(hex: "#dbeafe"))
-                    .foregroundColor(Color(hex: "#1e40af"))
+                    .background(Color.blue.opacity(0.15))
+                    .foregroundColor(Color.blue)
                     .cornerRadius(6)
 
                 Text("Item 2")
                     .padding(12)
-                    .background(Color(hex: "#dcfce7"))
-                    .foregroundColor(Color(hex: "#166534"))
+                    .background(Color.green.opacity(0.15))
+                    .foregroundColor(Color.green)
                     .cornerRadius(6)
 
                 Text("Item 3")
                     .padding(12)
-                    .background(Color(hex: "#fef9c3"))
-                    .foregroundColor(Color(hex: "#854d0e"))
+                    .background(Color.yellow.opacity(0.2))
+                    .foregroundColor(Color.orange)
                     .cornerRadius(6)
             }
         }
@@ -690,20 +715,20 @@ struct HStackDemo: View {
             HStack(spacing: 8) {
                 Text("A")
                     .padding(16)
-                    .background(Color(hex: "#e0e7ff"))
-                    .foregroundColor(Color(hex: "#3730a3"))
+                    .background(Color.indigo.opacity(0.15))
+                    .foregroundColor(Color.indigo)
                     .cornerRadius(6)
 
                 Text("B")
                     .padding(16)
-                    .background(Color(hex: "#fce7f3"))
-                    .foregroundColor(Color(hex: "#9d174d"))
+                    .background(Color.pink.opacity(0.15))
+                    .foregroundColor(Color.pink)
                     .cornerRadius(6)
 
                 Text("C")
                     .padding(16)
-                    .background(Color(hex: "#ccfbf1"))
-                    .foregroundColor(Color(hex: "#115e59"))
+                    .background(Color.teal.opacity(0.15))
+                    .foregroundColor(Color.teal)
                     .cornerRadius(6)
             }
         }
@@ -717,14 +742,14 @@ struct ZStackDemo: View {
             ZStack {
                 Text("Back Layer")
                     .padding(24)
-                    .background(Color(hex: "#bfdbfe"))
-                    .foregroundColor(Color(hex: "#1e40af"))
+                    .background(Color.blue.opacity(0.25))
+                    .foregroundColor(Color.blue)
                     .cornerRadius(8)
 
                 Text("Front Layer")
                     .padding(12)
-                    .background(Color(hex: "#fecaca"))
-                    .foregroundColor(Color(hex: "#991b1b"))
+                    .background(Color.red.opacity(0.2))
+                    .foregroundColor(Color.red)
                     .cornerRadius(8)
                     .opacity(0.9)
             }
@@ -744,10 +769,10 @@ struct NestedLayoutDemo: View {
                             .font(.caption)
                         Text("Detail")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "#64748b"))
+                            .foregroundColor(Color.secondaryLabel)
                     }
                     .padding(12)
-                    .background(Color(hex: "#f0fdf4"))
+                    .background(Color.green.opacity(0.1))
                     .cornerRadius(6)
 
                     VStack(spacing: 4) {
@@ -755,26 +780,26 @@ struct NestedLayoutDemo: View {
                             .font(.caption)
                         Text("Detail")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "#64748b"))
+                            .foregroundColor(Color.secondaryLabel)
                     }
                     .padding(12)
-                    .background(Color(hex: "#fef2f2"))
+                    .background(Color.red.opacity(0.1))
                     .cornerRadius(6)
                 }
 
                 HStack(spacing: 8) {
                     Text("Full Width Bottom")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#1e293b"))
+                        .foregroundColor(Color.label)
 
                     Spacer()
 
                     Text("Right-aligned")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
                 .padding(12)
-                .background(Color(hex: "#f8fafc"))
+                .background(Color.secondarySystemBackground)
                 .cornerRadius(6)
             }
         }
@@ -794,14 +819,14 @@ struct ModifierShowcase: View {
 
                 Text("Opacity 50%")
                     .padding(12)
-                    .background(Color(hex: "#3b82f6"))
+                    .background(Color.accent)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .opacity(0.5)
 
                 Text("Large Corner Radius")
                     .padding(12)
-                    .background(Color(hex: "#8b5cf6"))
+                    .background(Color.purple)
                     .foregroundColor(.white)
                     .cornerRadius(20)
             }
@@ -819,29 +844,29 @@ struct GridDemo: View {
                 GridRow {
                     Text("R1C1")
                         .padding(8)
-                        .background(Color(hex: "#dbeafe"))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(4)
                     Text("R1C2")
                         .padding(8)
-                        .background(Color(hex: "#dbeafe"))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(4)
                     Text("R1C3")
                         .padding(8)
-                        .background(Color(hex: "#dbeafe"))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(4)
                 }
                 GridRow {
                     Text("R2C1")
                         .padding(8)
-                        .background(Color(hex: "#dcfce7"))
+                        .background(Color.green.opacity(0.15))
                         .cornerRadius(4)
                     Text("R2C2")
                         .padding(8)
-                        .background(Color(hex: "#dcfce7"))
+                        .background(Color.green.opacity(0.15))
                         .cornerRadius(4)
                     Text("R2C3")
                         .padding(8)
-                        .background(Color(hex: "#dcfce7"))
+                        .background(Color.green.opacity(0.15))
                         .cornerRadius(4)
                 }
             }
@@ -862,27 +887,27 @@ struct LazyVGridDemo: View {
             ], spacing: 8) {
                 Text("1")
                     .padding(12)
-                    .background(Color(hex: "#e0e7ff"))
+                    .background(Color.indigo.opacity(0.15))
                     .cornerRadius(4)
                 Text("2")
                     .padding(12)
-                    .background(Color(hex: "#fce7f3"))
+                    .background(Color.pink.opacity(0.15))
                     .cornerRadius(4)
                 Text("3")
                     .padding(12)
-                    .background(Color(hex: "#ccfbf1"))
+                    .background(Color.teal.opacity(0.15))
                     .cornerRadius(4)
                 Text("4")
                     .padding(12)
-                    .background(Color(hex: "#fef9c3"))
+                    .background(Color.yellow.opacity(0.2))
                     .cornerRadius(4)
                 Text("5")
                     .padding(12)
-                    .background(Color(hex: "#fee2e2"))
+                    .background(Color.red.opacity(0.1))
                     .cornerRadius(4)
                 Text("6")
                     .padding(12)
-                    .background(Color(hex: "#dbeafe"))
+                    .background(Color.blue.opacity(0.15))
                     .cornerRadius(4)
             }
         }
@@ -899,15 +924,15 @@ struct LazyVStackDemo: View {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     Text("Lazy Item 1")
                         .padding(8)
-                        .background(Color(hex: "#dbeafe"))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(4)
                     Text("Lazy Item 2")
                         .padding(8)
-                        .background(Color(hex: "#dcfce7"))
+                        .background(Color.green.opacity(0.15))
                         .cornerRadius(4)
                     Text("Lazy Item 3")
                         .padding(8)
-                        .background(Color(hex: "#fef9c3"))
+                        .background(Color.yellow.opacity(0.2))
                         .cornerRadius(4)
                 }
             }
@@ -925,9 +950,102 @@ struct GeometryReaderDemo: View {
             GeometryReader { proxy in
                 Text("Size: \(Int(proxy.size.width))x\(Int(proxy.size.height))")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
             .frame(height: 40)
+        }
+    }
+}
+
+// MARK: - TabView Demo
+
+@MainActor
+struct TabViewDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "TabView") {
+            VStack(spacing: 8) {
+                TabView(selection: Binding(
+                    get: { store.demoTabSelection },
+                    set: { store.demoTabSelection = $0 }
+                )) {
+                    VStack(spacing: 8) {
+                        Text("Home Content")
+                            .font(.headline)
+                        Text("Welcome to the home tab")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+                    .padding(16)
+                    .tabItem { Text("Home") }
+                    .tag(0)
+
+                    VStack(spacing: 8) {
+                        Text("Search Content")
+                            .font(.headline)
+                        Text("Find what you need")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+                    .padding(16)
+                    .tabItem { Text("Search") }
+                    .tag(1)
+
+                    VStack(spacing: 8) {
+                        Text("Profile Content")
+                            .font(.headline)
+                        Text("Your account details")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+                    .padding(16)
+                    .tabItem { Text("Profile") }
+                    .tag(2)
+                }
+
+                Text("Selected tab: \(store.demoTabSelection)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - Navigation Demo
+
+@MainActor
+struct NavigationDemo: View {
+    var body: some View {
+        SectionCard(title: "NavigationStack") {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    NavigationLink(destination: Text("Detail View")) {
+                        HStack(spacing: 8) {
+                            Text("Settings")
+                                .foregroundColor(Color.label)
+                        }
+                    }
+
+                    Divider()
+
+                    NavigationLink(destination: Text("About View")) {
+                        HStack(spacing: 8) {
+                            Text("About")
+                                .foregroundColor(Color.label)
+                        }
+                    }
+
+                    Divider()
+
+                    NavigationLink(destination: Text("Help View")) {
+                        HStack(spacing: 8) {
+                            Text("Help")
+                                .foregroundColor(Color.label)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -965,7 +1083,7 @@ struct FormDemo: View {
                 Section(header: "User Info") {
                     Text("Forms render as semantic HTML form elements")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
 
                     Toggle("Dark Mode", isOn: Binding(
                         get: { store.toggleValue },
@@ -976,7 +1094,7 @@ struct FormDemo: View {
                 Section(header: "Preferences") {
                     Text("Sections render as fieldset elements with legend headers")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
         }
@@ -1003,7 +1121,7 @@ struct PickerDemo: View {
 
                 Text("Selected: \(store.pickerSelection)")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
         }
     }
@@ -1019,11 +1137,11 @@ struct GroupBoxDemo: View {
                 VStack(spacing: 8) {
                     Text("GroupBox renders as a fieldset with a legend label")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
 
                     Text("It provides visual grouping of related content")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "#64748b"))
+                        .foregroundColor(Color.secondaryLabel)
                 }
             }
         }
@@ -1040,27 +1158,27 @@ struct ScrollViewDemo: View {
                 VStack(spacing: 4) {
                     Text("Item 1")
                         .padding(8)
-                        .background(Color(hex: "#dbeafe"))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(4)
                     Text("Item 2")
                         .padding(8)
-                        .background(Color(hex: "#dcfce7"))
+                        .background(Color.green.opacity(0.15))
                         .cornerRadius(4)
                     Text("Item 3")
                         .padding(8)
-                        .background(Color(hex: "#fef9c3"))
+                        .background(Color.yellow.opacity(0.2))
                         .cornerRadius(4)
                     Text("Item 4")
                         .padding(8)
-                        .background(Color(hex: "#fce7f3"))
+                        .background(Color.pink.opacity(0.15))
                         .cornerRadius(4)
                     Text("Item 5")
                         .padding(8)
-                        .background(Color(hex: "#e0e7ff"))
+                        .background(Color.indigo.opacity(0.15))
                         .cornerRadius(4)
                     Text("Item 6")
                         .padding(8)
-                        .background(Color(hex: "#ccfbf1"))
+                        .background(Color.teal.opacity(0.15))
                         .cornerRadius(4)
                 }
             }
@@ -1085,16 +1203,16 @@ struct DisclosureGroupDemo: View {
                     VStack(spacing: 8) {
                         Text("Hidden content revealed!")
                             .font(.body)
-                            .foregroundColor(Color(hex: "#1e293b"))
+                            .foregroundColor(Color.label)
                         Text("Click the header to collapse")
                             .font(.caption)
-                            .foregroundColor(Color(hex: "#64748b"))
+                            .foregroundColor(Color.secondaryLabel)
                     }
                 }
 
                 Text(store.disclosureExpanded ? "State: Expanded" : "State: Collapsed")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "#64748b"))
+                    .foregroundColor(Color.secondaryLabel)
             }
         }
     }
@@ -1170,35 +1288,35 @@ struct VisualEffectsDemo: View {
             VStack(spacing: 12) {
                 Text("Blur Effect")
                     .padding(12)
-                    .background(Color(hex: "#3b82f6"))
+                    .background(Color.accent)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .blur(radius: 2)
 
                 Text("Grayscale")
                     .padding(12)
-                    .background(Color(hex: "#ef4444"))
+                    .background(Color.red)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .grayscale(0.8)
 
                 Text("Brightness 1.3")
                     .padding(12)
-                    .background(Color(hex: "#22c55e"))
+                    .background(Color.green)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .brightness(0.3)
 
                 Text("Contrast 1.5")
                     .padding(12)
-                    .background(Color(hex: "#8b5cf6"))
+                    .background(Color.purple)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .contrast(1.5)
 
                 Text("Saturation 2.0")
                     .padding(12)
-                    .background(Color(hex: "#f59e0b"))
+                    .background(Color.orange)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .saturation(2.0)
@@ -1216,21 +1334,21 @@ struct TransformDemo: View {
             HStack(spacing: 24) {
                 Text("Rotated")
                     .padding(12)
-                    .background(Color(hex: "#3b82f6"))
+                    .background(Color.accent)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .rotationEffect(Angle(degrees: 15))
 
                 Text("Scaled")
                     .padding(12)
-                    .background(Color(hex: "#ef4444"))
+                    .background(Color.red)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .scaleEffect(1.2)
 
                 Text("Offset")
                     .padding(12)
-                    .background(Color(hex: "#22c55e"))
+                    .background(Color.green)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .offset(x: 0, y: -8)
@@ -1255,12 +1373,12 @@ struct SectionCard<Content: View>: View {
         VStack(spacing: 8) {
             Text(title)
                 .font(.headline)
-                .foregroundColor(Color(hex: "#1e293b"))
+                .foregroundColor(Color.label)
 
             content
         }
         .padding(16)
-        .background(Color(hex: "#f9fafb"))
+        .background(Color.secondarySystemBackground)
         .cornerRadius(8)
     }
 }

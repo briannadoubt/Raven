@@ -37,7 +37,7 @@ public struct PickerOption<Selection: Hashable>: Sendable where Selection: Senda
 // MARK: - Tag Modifier
 
 /// A view that associates a tag value for use in selection controls.
-public struct TaggedView<SelectionValue: Hashable>: View, Sendable where SelectionValue: Sendable {
+public struct TaggedView<SelectionValue: Hashable>: View, PrimitiveView, Sendable where SelectionValue: Sendable {
     public typealias Body = Never
 
     /// The content view being tagged
@@ -49,15 +49,44 @@ public struct TaggedView<SelectionValue: Hashable>: View, Sendable where Selecti
     /// The text content extracted before type erasure (for picker option labels)
     let textLabel: String
 
+    /// The original content's TabConfigurable (captured before type erasure)
+    nonisolated(unsafe) let _tabConfigurable: (any TabConfigurable)?
+
     @MainActor init<Content: View>(content: Content, tag: SelectionValue) {
         self.content = AnyView(content)
         self.tagValue = tag
+        self._tabConfigurable = content as? any TabConfigurable
         // Extract text label before type erasure loses the concrete type
         if let text = content as? Text {
             self.textLabel = text.textContent
         } else {
             self.textLabel = ""
         }
+    }
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+// MARK: - TaggedView _CoordinatorRenderable
+
+extension TaggedView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        context.renderChild(content)
+    }
+}
+
+// MARK: - TaggedView TabConfigurable
+
+extension TaggedView: TabConfigurable {
+    @MainActor func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)? {
+        // Delegate to inner TabConfigurable if available, attaching tagValue
+        if let inner = _tabConfigurable,
+           let config = inner.extractTabConfiguration() {
+            return config
+        }
+        return nil
     }
 }
 

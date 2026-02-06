@@ -201,7 +201,7 @@ public struct Link<Label: View>: View, PrimitiveView, Sendable {
         }
 
         // Add default link styling
-        props["style:color"] = .style(name: "color", value: "#0066cc")
+        props["style:color"] = .style(name: "color", value: "var(--system-accent)")
         props["style:text-decoration"] = .style(name: "text-decoration", value: "underline")
         props["style:cursor"] = .style(name: "cursor", value: "pointer")
 
@@ -273,7 +273,7 @@ extension Link: _CoordinatorRenderable {
         // Build anchor properties
         var props: [String: VProperty] = [
             "href": .attribute(name: "href", value: destination.absoluteString),
-            "color": .style(name: "color", value: "#0066cc"),
+            "color": .style(name: "color", value: "var(--system-accent)"),
             "text-decoration": .style(name: "text-decoration", value: "underline"),
             "cursor": .style(name: "cursor", value: "pointer"),
         ]

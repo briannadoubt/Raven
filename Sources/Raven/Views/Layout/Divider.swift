@@ -48,7 +48,7 @@ public struct Divider: View, PrimitiveView, Sendable {
     @MainActor public func toVNode() -> VNode {
         let props: [String: VProperty] = [
             // Use border-top for the divider line
-            "border-top": .style(name: "border-top", value: "1px solid #d1d5db"),
+            "border-top": .style(name: "border-top", value: "1px solid var(--system-separator)"),
             // Set height to 0 and rely on border for the visual line
             "height": .style(name: "height", value: "0"),
             // Full width

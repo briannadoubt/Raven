@@ -132,6 +132,46 @@ public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveVie
     }
 }
 
+// MARK: - CoordinatorRenderable
+
+extension NavigationLink: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Register a click handler (no-op for now; actual push/pop navigation deferred)
+        let handlerID = context.registerClickHandler({ })
+
+        // Render the label content
+        let labelNode = context.renderChild(label)
+
+        // Spacer between label and chevron
+        let spacerProps: [String: VProperty] = [
+            "flex": .style(name: "flex", value: "1"),
+        ]
+        let spacerNode = VNode.element("div", props: spacerProps, children: [])
+
+        // Chevron indicator
+        let chevronNode = VNode.text(" \u{203A}")
+
+        // Button element
+        let props: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-navigation-link"),
+            "role": .attribute(name: "role", value: "link"),
+            "onClick": .eventHandler(event: "click", handlerID: handlerID),
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "width": .style(name: "width", value: "100%"),
+            "padding": .style(name: "padding", value: "12px 16px"),
+            "border": .style(name: "border", value: "none"),
+            "background": .style(name: "background", value: "transparent"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+            "color": .style(name: "color", value: "#007AFF"),
+            "font-size": .style(name: "font-size", value: "inherit"),
+            "text-align": .style(name: "text-align", value: "left"),
+            "gap": .style(name: "gap", value: "8px"),
+        ]
+        return VNode.element("button", props: props, children: [labelNode, spacerNode, chevronNode])
+    }
+}
+
 // MARK: - Text Label Convenience
 
 extension NavigationLink where Label == Text {
