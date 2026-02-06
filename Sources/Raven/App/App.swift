@@ -19,7 +19,7 @@ import Foundation
 /// The system calls your app's `body` property to obtain the scenes that define
 /// the app's user interface. Each scene contains a root view and has a lifecycle
 /// managed by the system.
-public protocol App: Sendable {
+@MainActor public protocol App: Sendable {
     /// The type of scene representing the body of this app.
     associatedtype Body: Scene
 

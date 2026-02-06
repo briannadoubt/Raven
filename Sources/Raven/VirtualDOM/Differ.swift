@@ -116,8 +116,8 @@ public struct Differ: Sendable {
         switch (old.type, new.type) {
         case (.element(let oldTag), .element(let newTag)):
             return oldTag == newTag
-        case (.text, .text):
-            return true
+        case (.text(let oldText), .text(let newText)):
+            return oldText == newText
         case (.component, .component):
             return true
         case (.fragment, .fragment):

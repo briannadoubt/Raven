@@ -668,7 +668,7 @@ final class FormValidationTests: XCTestCase {
     }
 
     func testAsyncValidationDebouncing() async {
-        var callCount = 0
+        nonisolated(unsafe) var callCount = 0
 
         let rule = AsyncValidationRule.custom(
             field: "search",

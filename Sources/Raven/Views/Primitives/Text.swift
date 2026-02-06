@@ -115,7 +115,7 @@ public struct Text: View, PrimitiveView, Sendable {
     /// Creates a text view that displays a string literal.
     ///
     /// - Parameter content: The string to display.
-    public init(_ content: String) {
+    nonisolated public init(_ content: String) {
         self.content = content
         self.isLocalized = false
     }
@@ -123,7 +123,7 @@ public struct Text: View, PrimitiveView, Sendable {
     /// Creates a text view that displays localized content.
     ///
     /// - Parameter key: The localized string key to look up in the string table.
-    public init(_ key: LocalizedStringKey) {
+    nonisolated public init(_ key: LocalizedStringKey) {
         // For now, extract the string from the key
         // In a full implementation, this would perform localization lookup
         self.content = key.stringValue
@@ -137,7 +137,7 @@ public struct Text: View, PrimitiveView, Sendable {
     /// let name = "Alice"
     /// Text("Hello, \(name)!")
     /// ```
-    public init(verbatim content: String) {
+    nonisolated public init(verbatim content: String) {
         self.content = content
         self.isLocalized = false
     }
@@ -148,7 +148,7 @@ public struct Text: View, PrimitiveView, Sendable {
     ///
     /// This is used by other components like Picker to extract the text
     /// content for rendering purposes.
-    internal var textContent: String {
+    nonisolated internal var textContent: String {
         content
     }
 
@@ -176,7 +176,7 @@ extension Text: ExpressibleByStringLiteral {
     /// ```swift
     /// let text: Text = "Hello, World!"
     /// ```
-    public init(stringLiteral value: String) {
+    nonisolated public init(stringLiteral value: String) {
         self.init(value)
     }
 }
@@ -188,19 +188,19 @@ extension Text: ExpressibleByStringInterpolation {
     public struct StringInterpolation: StringInterpolationProtocol, Sendable {
         var output: String = ""
 
-        public init(literalCapacity: Int, interpolationCount: Int) {
+        nonisolated public init(literalCapacity: Int, interpolationCount: Int) {
             output.reserveCapacity(literalCapacity)
         }
 
-        public mutating func appendLiteral(_ literal: String) {
+        nonisolated public mutating func appendLiteral(_ literal: String) {
             output.append(literal)
         }
 
-        public mutating func appendInterpolation<T>(_ value: T) where T: CustomStringConvertible {
+        nonisolated public mutating func appendInterpolation<T>(_ value: T) where T: CustomStringConvertible {
             output.append(value.description)
         }
 
-        public mutating func appendInterpolation<T>(_ value: T) {
+        nonisolated public mutating func appendInterpolation<T>(_ value: T) {
             output.append(String(describing: value))
         }
     }
@@ -212,7 +212,7 @@ extension Text: ExpressibleByStringInterpolation {
     /// let count = 5
     /// Text("You have \(count) items")
     /// ```
-    public init(stringInterpolation: StringInterpolation) {
+    nonisolated public init(stringInterpolation: StringInterpolation) {
         self.init(verbatim: stringInterpolation.output)
     }
 }

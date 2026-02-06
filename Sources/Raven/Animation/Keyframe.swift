@@ -144,6 +144,132 @@ public enum Keyframe<Value: Interpolatable>: Sendable {
     }
 }
 
+// MARK: - Spring Type
+
+/// A spring animation configuration.
+///
+/// `Spring` defines the physical characteristics of a spring animation,
+/// including how much it bounces and how quickly it settles.
+public struct Spring: Sendable {
+    /// The amount of bounce in the spring, from 0.0 (no bounce) to 1.0 (maximum bounce).
+    public let bounce: Double
+
+    /// The duration of the spring animation.
+    public let duration: TimeInterval
+
+    /// Creates a spring with the specified parameters.
+    ///
+    /// - Parameters:
+    ///   - bounce: The amount of bounce. Default is 0.0.
+    ///   - duration: The duration. Default is 0.5.
+    public init(bounce: Double = 0.0, duration: TimeInterval = 0.5) {
+        self.bounce = bounce
+        self.duration = duration
+    }
+
+    /// A spring with no bounce, settling quickly.
+    public static var `default`: Spring {
+        Spring(bounce: 0.0, duration: 0.5)
+    }
+
+    /// A smooth spring with no bounce.
+    public static var smooth: Spring {
+        Spring(bounce: 0.0, duration: 0.5)
+    }
+
+    /// A snappy, responsive spring.
+    public static var snappy: Spring {
+        Spring(bounce: 0.15, duration: 0.35)
+    }
+
+    /// A playful, bouncy spring.
+    public static var bouncy: Spring {
+        Spring(bounce: 0.4, duration: 0.6)
+    }
+}
+
+// MARK: - Convenience Keyframe Types
+
+/// A protocol for keyframe content used in result builders.
+public protocol KeyframeTrackContent: Sendable {}
+
+/// A linear keyframe that interpolates to a target value at constant speed.
+public struct LinearKeyframe<Value: Interpolatable>: KeyframeTrackContent {
+    public let value: Value
+    public let duration: TimeInterval
+
+    public init(_ value: Value, duration: TimeInterval) {
+        self.value = value
+        self.duration = duration
+    }
+}
+
+/// A spring keyframe that uses spring physics to reach a target value.
+public struct SpringKeyframe<Value: Interpolatable>: KeyframeTrackContent {
+    public let value: Value
+    public let duration: TimeInterval
+    public let spring: Spring
+
+    public init(_ value: Value, duration: TimeInterval, spring: Spring = .default) {
+        self.value = value
+        self.duration = duration
+        self.spring = spring
+    }
+
+    public init(_ value: Value, duration: TimeInterval, bounce: Double) {
+        self.value = value
+        self.duration = duration
+        self.spring = Spring(bounce: bounce)
+    }
+}
+
+/// A cubic keyframe that uses cubic bezier interpolation.
+public struct CubicKeyframe<Value: Interpolatable>: KeyframeTrackContent {
+    public let value: Value
+    public let duration: TimeInterval
+
+    public init(_ value: Value, duration: TimeInterval) {
+        self.value = value
+        self.duration = duration
+    }
+}
+
+// MARK: - Keyframe Track Content Builder
+
+/// A result builder for constructing keyframe track content.
+@resultBuilder
+public struct KeyframeTrackContentBuilder {
+    public static func buildBlock(_ components: any KeyframeTrackContent...) -> [any KeyframeTrackContent] {
+        Array(components)
+    }
+}
+
+// MARK: - KeyframeTrack KeyPath Initializer
+
+extension KeyframeTrack {
+    /// Creates a keyframe track targeting a specific property via key path.
+    ///
+    /// - Parameters:
+    ///   - keyPath: The key path to the property to animate.
+    ///   - content: A builder that produces the keyframe content.
+    public init<Root>(
+        _ keyPath: WritableKeyPath<Root, Value>,
+        @KeyframeTrackContentBuilder content: () -> [any KeyframeTrackContent]
+    ) {
+        self.init()
+        let items = content()
+        for item in items {
+            if let linear = item as? LinearKeyframe<Value> {
+                self.linear(linear.value, duration: linear.duration)
+            } else if let spring = item as? SpringKeyframe<Value> {
+                self.spring(spring.value, duration: spring.duration, bounce: spring.spring.bounce)
+            } else if let cubic = item as? CubicKeyframe<Value> {
+                self.cubic(cubic.value, duration: cubic.duration)
+            }
+        }
+    }
+}
+
 // MARK: - KeyframeSequence
 
 /// Internal structure that collects and manages keyframes in a sequence.

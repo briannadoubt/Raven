@@ -2,6 +2,7 @@ import XCTest
 @testable import Raven
 
 /// Tests for layout modifiers (.clipped, .aspectRatio, .fixedSize)
+@MainActor
 final class LayoutModifiersTests: XCTestCase {
 
     // MARK: - Clipped Modifier Tests
@@ -34,11 +35,11 @@ final class LayoutModifiersTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's an element
-        if case .element(let tag, let props, _) = vnode {
+        if case .element(let tag) = vnode.type {
             XCTAssertEqual(tag, "div")
 
             // Check for overflow: hidden style
-            if case .style(let name, let value) = props["overflow"] {
+            if case .style(let name, let value) = vnode.props["overflow"] {
                 XCTAssertEqual(name, "overflow")
                 XCTAssertEqual(value, "hidden")
             } else {
@@ -119,11 +120,11 @@ final class LayoutModifiersTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's an element
-        if case .element(let tag, let props, _) = vnode {
+        if case .element(let tag) = vnode.type {
             XCTAssertEqual(tag, "div")
 
             // Check for aspect-ratio style
-            if case .style(let name, let value) = props["aspect-ratio"] {
+            if case .style(let name, let value) = vnode.props["aspect-ratio"] {
                 XCTAssertEqual(name, "aspect-ratio")
                 XCTAssertEqual(value, "2.0")
             } else {
@@ -131,7 +132,7 @@ final class LayoutModifiersTests: XCTestCase {
             }
 
             // Check for object-fit: contain
-            if case .style(let name, let value) = props["object-fit"] {
+            if case .style(let name, let value) = vnode.props["object-fit"] {
                 XCTAssertEqual(name, "object-fit")
                 XCTAssertEqual(value, "contain")
             } else {
@@ -150,11 +151,11 @@ final class LayoutModifiersTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's an element
-        if case .element(let tag, let props, _) = vnode {
+        if case .element(let tag) = vnode.type {
             XCTAssertEqual(tag, "div")
 
             // Check for object-fit: cover
-            if case .style(let name, let value) = props["object-fit"] {
+            if case .style(let name, let value) = vnode.props["object-fit"] {
                 XCTAssertEqual(name, "object-fit")
                 XCTAssertEqual(value, "cover")
             } else {
@@ -225,11 +226,11 @@ final class LayoutModifiersTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's an element
-        if case .element(let tag, let props, _) = vnode {
+        if case .element(let tag) = vnode.type {
             XCTAssertEqual(tag, "div")
 
             // Check for width: fit-content
-            if case .style(let name, let value) = props["width"] {
+            if case .style(let name, let value) = vnode.props["width"] {
                 XCTAssertEqual(name, "width")
                 XCTAssertEqual(value, "fit-content")
             } else {
@@ -237,7 +238,7 @@ final class LayoutModifiersTests: XCTestCase {
             }
 
             // Check for height: fit-content
-            if case .style(let name, let value) = props["height"] {
+            if case .style(let name, let value) = vnode.props["height"] {
                 XCTAssertEqual(name, "height")
                 XCTAssertEqual(value, "fit-content")
             } else {
@@ -245,7 +246,7 @@ final class LayoutModifiersTests: XCTestCase {
             }
 
             // Check for flex-shrink: 0
-            if case .style(let name, let value) = props["flex-shrink"] {
+            if case .style(let name, let value) = vnode.props["flex-shrink"] {
                 XCTAssertEqual(name, "flex-shrink")
                 XCTAssertEqual(value, "0")
             } else {
@@ -264,11 +265,11 @@ final class LayoutModifiersTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's an element
-        if case .element(let tag, let props, _) = vnode {
+        if case .element(let tag) = vnode.type {
             XCTAssertEqual(tag, "div")
 
             // Check for width: fit-content
-            if case .style(let name, let value) = props["width"] {
+            if case .style(let name, let value) = vnode.props["width"] {
                 XCTAssertEqual(name, "width")
                 XCTAssertEqual(value, "fit-content")
             } else {
@@ -276,7 +277,7 @@ final class LayoutModifiersTests: XCTestCase {
             }
 
             // Height should not be set
-            XCTAssertNil(props["height"])
+            XCTAssertNil(vnode.props["height"])
         } else {
             XCTFail("Expected element VNode")
         }
@@ -359,9 +360,9 @@ final class LayoutModifiersTests: XCTestCase {
 
     @MainActor
     func testContentModeSendable() {
-        // Test that ContentMode is Sendable
-        let mode: ContentMode & Sendable = .fit
-        let _ = mode
+        // Test that ContentMode is Sendable (ContentMode already conforms to Sendable)
+        let mode: ContentMode = .fit
+        let _: any Sendable = mode
     }
 
     // MARK: - Sendable and Concurrency Tests

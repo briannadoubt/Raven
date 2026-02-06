@@ -32,7 +32,7 @@ public struct RavenApp<Content: View>: App {
     /// Creates a simple app with the given root view.
     ///
     /// - Parameter rootView: A closure that creates the root view of the app.
-    @MainActor public init(@ViewBuilder rootView: @Sendable @escaping () -> Content) {
+    @MainActor public init(@ViewBuilder rootView: @MainActor @Sendable @escaping () -> Content) {
         self._body = WindowGroup(content: rootView)
     }
 
@@ -43,7 +43,7 @@ public struct RavenApp<Content: View>: App {
     /// - Parameter rootView: The root view of the app.
     @MainActor public init(rootView: Content) {
         // Create a closure that returns the root view
-        let closure: @Sendable () -> Content = { rootView }
+        let closure: @MainActor @Sendable () -> Content = { rootView }
         self._body = WindowGroup(content: closure)
     }
 

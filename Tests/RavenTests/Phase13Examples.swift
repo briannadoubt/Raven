@@ -51,7 +51,7 @@ struct Phase13Examples {
     @Test("Example: Sequential long press then drag")
     func exampleSequentialLongPressDrag() throws {
         struct DraggableView: View {
-            @State var offset = CGSize.zero
+            @State var dragOffset = Raven.CGSize(width: 0, height: 0)
 
             var body: some View {
                 Rectangle()
@@ -134,13 +134,13 @@ struct Phase13Examples {
         struct ComplexGestureView: View {
             @State var rotation: Angle = .zero
             @State var scale: Double = 1.0
-            @State var offset = CGSize.zero
+            @State var dragOffset = Raven.CGSize(width: 0, height: 0)
 
             var body: some View {
                 Rectangle()
                     .rotationEffect(rotation)
                     .scaleEffect(scale)
-                    .offset(offset)
+                    .offset(x: dragOffset.width, y: dragOffset.height)
                     .gesture(
                         RotationGesture()
                             .simultaneously(with: MagnificationGesture())
@@ -157,7 +157,7 @@ struct Phase13Examples {
                                 case .first:
                                     break
                                 case .second(_, let drag):
-                                    offset = drag?.translation ?? .zero
+                                    dragOffset = drag?.translation ?? Raven.CGSize(width: 0, height: 0)
                                 }
                             }
                     )
@@ -239,9 +239,9 @@ struct Phase13Examples {
     /// Test SequenceGestureValue switch handling
     @Test("SequenceGestureValue switch patterns")
     func sequenceGestureValueSwitchPatterns() throws {
-        let value1: SequenceGestureValue<Bool, CGSize> = .first(true)
-        let value2: SequenceGestureValue<Bool, CGSize> = .second(true, nil)
-        let value3: SequenceGestureValue<Bool, CGSize> = .second(true, CGSize(width: 10, height: 20))
+        let value1: SequenceGestureValue<Bool, Raven.CGSize> = .first(true)
+        let value2: SequenceGestureValue<Bool, Raven.CGSize> = .second(true, nil)
+        let value3: SequenceGestureValue<Bool, Raven.CGSize> = .second(true, Raven.CGSize(width: 10, height: 20))
 
         var matchedFirst = false
         var matchedSecondNil = false

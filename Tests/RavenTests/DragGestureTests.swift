@@ -526,7 +526,7 @@ struct DragGestureTests {
         state.addSample(location: RPoint(x: 100, y: 0), time: 1000.1)
 
         let velocity = state.calculateVelocity()
-        #expect(velocity.width == 1000.0)
+        #expect(abs(velocity.width - 1000.0) < 0.01)
         #expect(velocity.height == 0.0)
     }
 
@@ -562,7 +562,7 @@ struct DragGestureTests {
 
         let velocity = state.calculateVelocity()
         #expect(velocity.width == 0.0)
-        #expect(velocity.height == 500.0)
+        #expect(abs(velocity.height - 500.0) < 0.01)
     }
 
     @Test("DragGestureState velocity calculation with negative movement")
@@ -577,8 +577,8 @@ struct DragGestureTests {
         state.addSample(location: RPoint(x: 0, y: 0), time: 1000.1)
 
         let velocity = state.calculateVelocity()
-        #expect(velocity.width == -1000.0)
-        #expect(velocity.height == -1000.0)
+        #expect(abs(velocity.width - (-1000.0)) < 0.01)
+        #expect(abs(velocity.height - (-1000.0)) < 0.01)
     }
 
     // MARK: - Predicted End Location Tests

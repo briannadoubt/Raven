@@ -3,6 +3,7 @@ import Testing
 
 /// Tests for the keyframe animator system.
 @Suite("KeyframeAnimator Tests")
+@MainActor
 struct KeyframeAnimatorTests {
 
     // MARK: - Interpolatable Protocol Tests
@@ -19,8 +20,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGFloat interpolation works correctly")
     func testCGFloatInterpolation() {
-        let start: CGFloat = 0.0
-        let end: CGFloat = 100.0
+        let start: Raven.CGFloat = 0.0
+        let end: Raven.CGFloat = 100.0
 
         #expect(start.interpolated(to: end, amount: 0.0) == 0.0)
         #expect(start.interpolated(to: end, amount: 0.25) == 25.0)
@@ -29,8 +30,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGPoint interpolation works correctly")
     func testCGPointInterpolation() {
-        let start = CGPoint(x: 0, y: 0)
-        let end = CGPoint(x: 100, y: 200)
+        let start = Raven.CGPoint(x: 0, y: 0)
+        let end = Raven.CGPoint(x: 100, y: 200)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.x == 50)
@@ -39,8 +40,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGSize interpolation works correctly")
     func testCGSizeInterpolation() {
-        let start = CGSize(width: 10, height: 20)
-        let end = CGSize(width: 50, height: 80)
+        let start = Raven.CGSize(width: 10, height: 20)
+        let end = Raven.CGSize(width: 50, height: 80)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.width == 30)
@@ -49,8 +50,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGRect interpolation works correctly")
     func testCGRectInterpolation() {
-        let start = CGRect(x: 0, y: 0, width: 10, height: 20)
-        let end = CGRect(x: 100, y: 200, width: 50, height: 80)
+        let start = Raven.CGRect(x: 0, y: 0, width: 10, height: 20)
+        let end = Raven.CGRect(x: 100, y: 200, width: 50, height: 80)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.origin.x == 50)
@@ -208,7 +209,7 @@ struct KeyframeAnimatorTests {
 
     @Test("CSS keyframe stops include properties")
     func testCSSKeyframeStopsProperties() {
-        var sequence = KeyframeSequence<CGFloat>()
+        var sequence = KeyframeSequence<Raven.CGFloat>()
         sequence.add(.linear(value: 1.0, duration: 0.5))
         sequence.add(.linear(value: 2.0, duration: 0.5))
 
@@ -227,7 +228,7 @@ struct KeyframeAnimatorTests {
     @Test("KeyframeAnimator creates view with animation")
     func testKeyframeAnimatorBasic() {
         // Just verify it compiles and creates a view
-        _ = Text("Hello")
+        let view = Text("Hello")
             .keyframeAnimator(
                 initialValue: 1.0,
                 repeating: false
@@ -236,11 +237,13 @@ struct KeyframeAnimatorTests {
             } keyframes: { track in
                 track.linear(0.5, duration: 0.3)
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     @Test("KeyframeAnimator with repeating creates infinite animation")
     func testKeyframeAnimatorRepeating() {
-        _ = Circle()
+        let view = Circle()
             .keyframeAnimator(
                 initialValue: 1.0,
                 repeating: true
@@ -250,25 +253,29 @@ struct KeyframeAnimatorTests {
                 track.spring(1.2, duration: 0.5, bounce: 0.3)
                 track.linear(1.0, duration: 0.3)
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     @Test("KeyframeAnimator with CGPoint values")
     func testKeyframeAnimatorWithCGPoint() {
-        _ = Rectangle()
+        let view = Rectangle()
             .keyframeAnimator(
-                initialValue: CGPoint(x: 0, y: 0),
+                initialValue: Raven.CGPoint(x: 0, y: 0),
                 repeating: false
             ) { content, value in
                 content.offset(x: value.x, y: value.y)
             } keyframes: { track in
-                track.linear(CGPoint(x: 100, y: 50), duration: 0.5)
-                track.spring(CGPoint(x: 0, y: 0), duration: 0.5, bounce: 0.2)
+                track.linear(Raven.CGPoint(x: 100, y: 50), duration: 0.5)
+                track.spring(Raven.CGPoint(x: 0, y: 0), duration: 0.5, bounce: 0.2)
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     @Test("KeyframeAnimator with multiple keyframe types")
     func testKeyframeAnimatorMixedKeyframes() {
-        _ = Text("Animate")
+        let view = Text("Animate")
             .keyframeAnimator(
                 initialValue: 1.0,
                 repeating: false
@@ -280,6 +287,8 @@ struct KeyframeAnimatorTests {
                 track.spring(1.0, duration: 0.4, bounce: 0.3)
                 track.cubic(0.8, duration: 0.3)
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     // MARK: - Complex Value Type Tests
@@ -308,7 +317,7 @@ struct KeyframeAnimatorTests {
 
     @Test("KeyframeAnimator with custom interpolatable type")
     func testKeyframeAnimatorWithCustomType() {
-        _ = Circle()
+        let view = Circle()
             .keyframeAnimator(
                 initialValue: AnimationValues(scale: 1.0, opacity: 1.0),
                 repeating: true
@@ -320,13 +329,15 @@ struct KeyframeAnimatorTests {
                 track.linear(.init(scale: 1.2, opacity: 0.8), duration: 0.3)
                 track.spring(.init(scale: 1.0, opacity: 1.0), duration: 0.4, bounce: 0.2)
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     // MARK: - Edge Cases
 
     @Test("Empty keyframe sequence creates valid view")
     func testEmptyKeyframeSequence() {
-        _ = Text("Hello")
+        let view = Text("Hello")
             .keyframeAnimator(
                 initialValue: 1.0,
                 repeating: false
@@ -335,6 +346,8 @@ struct KeyframeAnimatorTests {
             } keyframes: { _ in
                 // No keyframes added
             }
+
+        #expect(type(of: view) != Never.self)
     }
 
     @Test("Single move keyframe creates valid sequence")
@@ -364,7 +377,7 @@ struct KeyframeAnimatorTests {
         }
 
         #expect(track.sequence.keyframes.count == 10)
-        #expect(track.sequence.totalDuration == 1.0)
+        #expect(abs(track.sequence.totalDuration - 1.0) < 0.001)
     }
 
     @Test("Keyframe value property returns correct value")

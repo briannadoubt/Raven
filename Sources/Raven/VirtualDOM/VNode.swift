@@ -8,6 +8,24 @@ public struct NodeID: Hashable, Sendable, CustomStringConvertible {
         self.uuid = UUID()
     }
 
+    /// Create a stable NodeID from a path string using FNV-1a hash.
+    /// The same path always produces the same NodeID, enabling the Differ
+    /// to match nodes across renders.
+    public init(stablePath: String) {
+        var hash: UInt64 = 14695981039346656037 // FNV-1a offset basis
+        for byte in stablePath.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 1099511628211 // FNV-1a prime
+        }
+        // Split the 64-bit hash into two 32-bit halves for UUID construction
+        let highHex = String(hash >> 32, radix: 16, uppercase: false)
+        let lowHex = String(hash & 0xFFFFFFFF, radix: 16, uppercase: false)
+        let high = String(repeating: "0", count: max(0, 8 - highHex.count)) + highHex
+        let low = String(repeating: "0", count: max(0, 12 - lowHex.count)) + lowHex
+        let uuidString = "\(high)-0000-4000-8000-\(low)"
+        self.uuid = UUID(uuidString: uuidString) ?? UUID()
+    }
+
     public var description: String {
         uuid.uuidString
     }

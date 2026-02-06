@@ -53,8 +53,8 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusStateBooleanWithView() {
-        struct TestView: View {
-            @FocusState private var isFocused: Bool
+        @MainActor struct TestView: View {
+            @FocusState var isFocused: Bool = false
 
             var body: some View {
                 TextField("Test", text: .constant(""))
@@ -130,8 +130,8 @@ final class AccessibilityTests: XCTestCase {
             case address
         }
 
-        struct TestView: View {
-            @FocusState private var focusedField: Field?
+        @MainActor struct TestView: View {
+            @FocusState var focusedField: Field?
 
             var body: some View {
                 VStack {
@@ -157,8 +157,8 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - Programmatic Focus Tests
 
     func testProgrammaticFocusChange() {
-        struct TestView: View {
-            @FocusState private var isFocused: Bool
+        @MainActor struct TestView: View {
+            @FocusState var isFocused: Bool = false
 
             var body: some View {
                 TextField("Test", text: .constant(""))
@@ -179,8 +179,8 @@ final class AccessibilityTests: XCTestCase {
             case second
         }
 
-        struct TestView: View {
-            @FocusState private var focusedField: Field?
+        @MainActor struct TestView: View {
+            @FocusState var focusedField: Field?
 
             var body: some View {
                 VStack {
@@ -206,8 +206,8 @@ final class AccessibilityTests: XCTestCase {
             case password
         }
 
-        struct TestView: View {
-            @FocusState private var focusedField: Field?
+        @MainActor struct TestView: View {
+            @FocusState var focusedField: Field?
             @State private var username = ""
             @State private var password = ""
 
@@ -232,7 +232,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - Tab Order Management Tests
 
     func testTabIndexModifier() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("First", text: .constant(""))
@@ -252,7 +252,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testCustomTabOrder() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("Third", text: .constant(""))
@@ -272,7 +272,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusableModifier() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var hasFocus = false
 
             var body: some View {
@@ -288,7 +288,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusableWithCallback() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var focusCount = 0
 
             var body: some View {
@@ -321,7 +321,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusScopeModifier() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("Test", text: .constant(""))
@@ -335,7 +335,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusScopeWithPriority() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("Test", text: .constant(""))
@@ -349,7 +349,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testNestedFocusScopes() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("Outer", text: .constant(""))
@@ -369,7 +369,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testFocusScopeInModal() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var showModal = false
 
             var body: some View {
@@ -390,7 +390,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - ARIA Role Tests
 
     func testAccessibilityRoleButton() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Text("Click me")
                     .accessibilityRole(.button)
@@ -403,7 +403,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityRoleHeading() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Text("Title")
                     .accessibilityRole(.heading)
@@ -416,7 +416,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityRoleNavigation() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Text("Home")
@@ -432,7 +432,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityRoleMain() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Text("Main content")
@@ -469,7 +469,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - ARIA Attribute Tests
 
     func testAccessibilityLabel() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Image(systemName: "star")
                     .accessibilityLabel("Favorite")
@@ -481,7 +481,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityHint() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Button("Delete") {}
                     .accessibilityHint("Removes the item permanently")
@@ -493,7 +493,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityValue() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var volume: Double = 50
 
             var body: some View {
@@ -508,7 +508,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityHidden() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Image("decorative")
@@ -524,7 +524,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityLabelledBy() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Text("Username")
@@ -541,7 +541,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityDescribedBy() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     TextField("Password", text: .constant(""))
@@ -558,7 +558,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityControls() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var isExpanded = false
 
             var body: some View {
@@ -582,7 +582,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityExpanded() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var isExpanded = false
 
             var body: some View {
@@ -596,7 +596,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityPressed() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var isBold = false
 
             var body: some View {
@@ -612,7 +612,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - Live Region Tests
 
     func testAccessibilityLiveRegionPolite() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var status = "Ready"
 
             var body: some View {
@@ -627,7 +627,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityLiveRegionAssertive() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var alert = "Error occurred"
 
             var body: some View {
@@ -650,7 +650,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - Accessibility Helper Tests
 
     func testAccessibilityHeading() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Text("Main Title")
@@ -670,7 +670,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityListItem() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     ForEach(0..<5, id: \.self) { index in
@@ -686,7 +686,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityInvalid() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = true
 
@@ -709,7 +709,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityRequired() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 TextField("Name", text: .constant(""))
                     .accessibilityRequired(true)
@@ -722,7 +722,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityReadonly() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 TextField("User ID", text: .constant("12345"))
                     .accessibilityReadonly(true)
@@ -734,7 +734,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilitySelected() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var selectedID: String? = "item1"
 
             var body: some View {
@@ -753,7 +753,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityLandmark() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     VStack {
@@ -779,7 +779,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityAlert() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var error: String?
 
             var body: some View {
@@ -797,7 +797,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityStatus() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var status = "Saving..."
 
             var body: some View {
@@ -811,7 +811,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityToggleButton() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var isBold = false
 
             var body: some View {
@@ -825,7 +825,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityDisclosureButton() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var isExpanded = false
 
             var body: some View {
@@ -851,7 +851,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityProgress() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var progress: Double = 0.5
 
             var body: some View {
@@ -869,7 +869,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityFormField() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = true
 
@@ -913,7 +913,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityTraitsModifier() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Button("Important") {}
                     .accessibilityTraits([.isButton, .isHeader])
@@ -927,7 +927,7 @@ final class AccessibilityTests: XCTestCase {
     // MARK: - WCAG 2.1 Compliance Tests
 
     func testWCAGLandmarkRoles() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     VStack {
@@ -958,7 +958,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testWCAGFormLabels() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var name = ""
             @State private var email = ""
 
@@ -980,7 +980,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testWCAGErrorIdentification() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = false
 
@@ -1003,7 +1003,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testWCAGHeadingHierarchy() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 VStack {
                     Text("Page Title")
@@ -1026,7 +1026,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testWCAGStatusMessages() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var saveStatus = "Saving..."
 
             var body: some View {
@@ -1053,8 +1053,8 @@ final class AccessibilityTests: XCTestCase {
             case confirm
         }
 
-        struct TestView: View {
-            @FocusState private var focusedField: Field?
+        @MainActor struct TestView: View {
+            @FocusState var focusedField: Field?
             @State private var name = ""
             @State private var email = ""
             @State private var password = ""
@@ -1098,9 +1098,9 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibleModalDialog() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var showDialog = false
-            @FocusState private var isFocused: Bool
+            @FocusState var isFocused: Bool = false
 
             var body: some View {
                 Button("Show Dialog") { showDialog = true }
@@ -1131,7 +1131,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibleListWithSelection() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var selectedItems: Set<String> = []
 
             var body: some View {
@@ -1180,7 +1180,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testEmptyAccessibilityLabel() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Text("Content")
                     .accessibilityLabel("")
@@ -1192,7 +1192,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testMultipleAccessibilityModifiers() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Button("Action") {}
                     .accessibilityLabel("Perform action")
@@ -1207,7 +1207,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityWithConditionalContent() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var showError = false
 
             var body: some View {
@@ -1241,7 +1241,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityIdentifier() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             var body: some View {
                 Text("Test")
                     .accessibilityIdentifier("test-element")
@@ -1253,7 +1253,7 @@ final class AccessibilityTests: XCTestCase {
     }
 
     func testAccessibilityAction() {
-        struct TestView: View {
+        @MainActor struct TestView: View {
             @State private var actionCount = 0
 
             var body: some View {
@@ -1293,8 +1293,8 @@ final class AccessibilityTests: XCTestCase {
             case result
         }
 
-        struct TestView: View {
-            @FocusState private var focusedField: FormField?
+        @MainActor struct TestView: View {
+            @FocusState var focusedField: FormField?
             @State private var searchText = ""
             @State private var filterText = ""
             @State private var resultCount = 0

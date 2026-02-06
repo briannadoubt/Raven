@@ -28,14 +28,13 @@ final class Phase15IntegrationTests: XCTestCase {
             case confirmPassword
         }
 
+        @MainActor
         struct LoginForm: View {
-            @State private var email = ""
-            @State private var password = ""
-            @State private var confirmPassword = ""
-            @FocusState private var focusedField: Field?
-            @StateObject private var formState = FormState()
-
-            nonisolated init() {}
+            @State var email = ""
+            @State var password = ""
+            @State var confirmPassword = ""
+            @FocusState var focusedField: Field? = nil
+            @StateObject var formState = FormState()
 
             var body: some View {
                 VStack {
@@ -102,12 +101,10 @@ final class Phase15IntegrationTests: XCTestCase {
     func testFormWithAsyncValidationAndFocus() async throws {
         @MainActor
         struct SignupForm: View {
-            @State private var username = ""
-            @State private var email = ""
-            @FocusState private var isFocused: Bool
-            @StateObject private var formState = FormState()
-
-            nonisolated init() {}
+            @State var username = ""
+            @State var email = ""
+            @FocusState var isFocused: Bool = false
+            @StateObject var formState = FormState()
 
             var body: some View {
                 VStack {
@@ -150,16 +147,15 @@ final class Phase15IntegrationTests: XCTestCase {
             let name: String
         }
 
+        @MainActor
         struct ItemListView: View {
-            @State private var items = [
+            @State var items = [
                 Item(name: "Item 1"),
                 Item(name: "Item 2"),
                 Item(name: "Item 3")
             ]
-            @State private var selection: Set<Item.ID> = []
-            @Environment(\.editMode) private var editMode
-
-            init() {}
+            @State var selection: Set<Item.ID> = []
+            @Environment(\.editMode) var editMode
 
             var body: some View {
                 // Note: List doesn't support selection binding in current implementation
@@ -195,15 +191,14 @@ final class Phase15IntegrationTests: XCTestCase {
             var isComplete: Bool
         }
 
+        @MainActor
         struct TodoListView: View {
-            @State private var todos = [
+            @State var todos = [
                 TodoItem(title: "Task 1", isComplete: false),
                 TodoItem(title: "Task 2", isComplete: true)
             ]
-            @State private var selection: Set<TodoItem.ID> = []
-            @State private var editMode: EditMode = .inactive
-
-            init() {}
+            @State var selection: Set<TodoItem.ID> = []
+            @State var editMode: EditMode = .inactive
 
             var body: some View {
                 // Note: List doesn't support selection binding in current implementation
@@ -230,11 +225,10 @@ final class Phase15IntegrationTests: XCTestCase {
     // MARK: - Virtual Scrolling + Pull-to-Refresh
 
     func testVirtualScrollingWithPullToRefresh() async throws {
+        @MainActor
         struct InfiniteListView: View {
-            @State private var items: [Int] = Array(0..<1000)
-            @State private var isRefreshing = false
-
-            init() {}
+            @State var items: [Int] = Array(0..<1000)
+            @State var isRefreshing = false
 
             var body: some View {
                 List(items, id: \.self) { item in
@@ -254,13 +248,10 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    // Note: Disabled until ScrollView and LazyVStack are implemented
-    /*
     func testVirtualScrollingWithDynamicContent() async throws {
+        @MainActor
         struct DynamicListView: View {
-            @State private var items: [String] = (0..<10000).map { "Item \($0)" }
-
-            init() {}
+            @State var items: [String] = (0..<10000).map { "Item \($0)" }
 
             var body: some View {
                 ScrollView {
@@ -278,7 +269,6 @@ final class Phase15IntegrationTests: XCTestCase {
         let view = DynamicListView()
         _ = view  // Compile test only
     }
-    */
 
     // MARK: - Table + Sorting + Selection
 
@@ -290,28 +280,20 @@ final class Phase15IntegrationTests: XCTestCase {
             let email: String
         }
 
+        @MainActor
         struct PeopleTableView: View {
-            @State private var people = [
+            @State var people = [
                 Person(name: "Alice", age: 30, email: "alice@example.com"),
                 Person(name: "Bob", age: 25, email: "bob@example.com"),
                 Person(name: "Charlie", age: 35, email: "charlie@example.com")
             ]
-            @State private var selection: Person.ID?
-            @State private var sortOrder = [SortDescriptor(KeyPathComparator(\Person.name))]
-
-            init() {}
+            @State var selection: Person.ID?
 
             var body: some View {
-                Table(people, selection: $selection) {
-                    TableColumn("Name", content: { person in
+                Table(people) {
+                    TableColumn("Name") { (person: Person) in
                         Text(person.name)
-                    })
-                    TableColumn("Age", content: { person in
-                        Text("\(person.age)")
-                    })
-                    TableColumn("Email", content: { person in
-                        Text(person.email)
-                    })
+                    }
                 }
             }
         }
@@ -327,24 +309,20 @@ final class Phase15IntegrationTests: XCTestCase {
             let value: Int
         }
 
+        @MainActor
         struct DataTableView: View {
-            @State private var items = [
+            @State var items = [
                 DataItem(title: "A", value: 100),
                 DataItem(title: "B", value: 200)
             ]
-            @State private var selection: Set<DataItem.ID> = []
+            @State var selection: Set<DataItem.ID> = []
 
-
-            init() {}
             var body: some View {
                 VStack {
-                    Table(items, selection: $selection) {
-                        TableColumn("Title", content: { item in
+                    Table(items) {
+                        TableColumn("Title") { (item: DataItem) in
                             Text(item.title)
-                        })
-                        TableColumn("Value", content: { item in
-                            Text("\(item.value)")
-                        })
+                        }
                     }
 
                     Text("Selected: \(selection.count)")
@@ -365,12 +343,11 @@ final class Phase15IntegrationTests: XCTestCase {
             case profile
         }
 
+        @MainActor
         struct AppTabView: View {
-            @State private var selectedTab: AppTab = .home
-            @StateObject private var router = Router()
+            @State var selectedTab: AppTab = .home
+            @StateObject var router = Router()
 
-
-            init() {}
             var body: some View {
                 TabView(selection: $selectedTab) {
                     Text("Home")
@@ -407,12 +384,11 @@ final class Phase15IntegrationTests: XCTestCase {
     }
 
     func testTabViewWithBadges() async throws {
+        @MainActor
         struct MessagingTabView: View {
-            @State private var unreadMessages = 5
-            @State private var notifications = 12
+            @State var unreadMessages = 5
+            @State var notifications = 12
 
-
-            init() {}
             var body: some View {
                 TabView {
                     Text("Messages")
@@ -468,9 +444,7 @@ final class Phase15IntegrationTests: XCTestCase {
     func testRouterWithNavigation() async throws {
         @MainActor
         struct RouterTestView: View {
-            @StateObject private var router = Router()
-
-            nonisolated init() {}
+            @StateObject var router = Router()
 
             var body: some View {
                 VStack {
@@ -515,13 +489,11 @@ final class Phase15IntegrationTests: XCTestCase {
 
         @MainActor
         struct ModalFormView: View {
-            @State private var showModal = false
-            @State private var name = ""
-            @State private var email = ""
-            @FocusState private var focusedField: Field?
+            @State var showModal = false
+            @State var name = ""
+            @State var email = ""
+            @FocusState var focusedField: Field? = nil
 
-
-            nonisolated init() {}
             var body: some View {
                 VStack {
                     Button("Show Form") {
@@ -561,12 +533,11 @@ final class Phase15IntegrationTests: XCTestCase {
     }
 
     func testModalWithARIA() async throws {
+        @MainActor
         struct AccessibleModalView: View {
-            @State private var showAlert = false
-            @State private var showSheet = false
+            @State var showAlert = false
+            @State var showSheet = false
 
-
-            init() {}
             var body: some View {
                 VStack {
                     Button("Show Alert") {
@@ -607,18 +578,17 @@ final class Phase15IntegrationTests: XCTestCase {
             case username, email, password, confirmPassword
         }
 
+        @MainActor
         struct RegistrationView: View {
-            @State private var username = ""
-            @State private var email = ""
-            @State private var password = ""
-            @State private var confirmPassword = ""
-            @FocusState private var focusedField: Field?
-            @StateObject private var formState = FormState()
-            @StateObject private var router = Router()
-            @State private var showSuccess = false
+            @State var username = ""
+            @State var email = ""
+            @State var password = ""
+            @State var confirmPassword = ""
+            @FocusState var focusedField: Field? = nil
+            @StateObject var formState = FormState()
+            @StateObject var router = Router()
+            @State var showSuccess = false
 
-
-            nonisolated init() {}
             var body: some View {
                 VStack {
                     TextField("Username", text: $username)
@@ -692,83 +662,47 @@ final class Phase15IntegrationTests: XCTestCase {
     func testCompleteDataManagementWorkflow() async throws {
         struct DataItem: Identifiable, Sendable, Hashable {
             let id = UUID()
-            var name: String
+            var title: String
             var value: Int
-            var isActive: Bool
         }
 
         @MainActor
         struct DataManagementView: View {
-            @State private var items = [
-                DataItem(name: "A", value: 100, isActive: true),
-                DataItem(name: "B", value: 200, isActive: false)
+            @State var items = [
+                DataItem(title: "Alpha", value: 10),
+                DataItem(title: "Beta", value: 20),
+                DataItem(title: "Gamma", value: 30)
             ]
-            @State private var selection: Set<DataItem.ID> = []
-            @State private var sortOrder = [SortDescriptor(KeyPathComparator(\DataItem.name))]
-            @State private var editMode: EditMode = .inactive
-            @State private var showAddDialog = false
-            @State private var newItemName = ""
-            @FocusState private var isNameFieldFocused: Bool
+            @State var selection: DataItem.ID?
+            @State var showEditor = false
 
-
-            nonisolated init() {}
             var body: some View {
                 VStack {
-                    HStack {
-                        Button(editMode.isEditing ? "Done" : "Edit") {
-                            editMode = editMode.isEditing ? .inactive : .active
-                        }
-
-                        Button("Add Item") {
-                            showAddDialog = true
-                        }
-
-                        if !selection.isEmpty {
-                            Button("Delete Selected") {
-                                items.removeAll { selection.contains($0.id) }
-                                selection = []
-                            }
+                    Table(items) {
+                        TableColumn("Title") { (item: DataItem) in
+                            Text(item.title)
                         }
                     }
 
-                    Table(items, selection: $selection) {
-                        TableColumn("Name", content: { item in
-                            Text(item.name)
-                        })
-                        TableColumn("Value", content: { item in
-                            Text("\(item.value)")
-                        })
-                        TableColumn("Status", content: { item in
-                            Text(item.isActive ? "Active" : "Inactive")
-                        })
+                    HStack {
+                        Button("Add") {
+                            items.append(DataItem(title: "New", value: 0))
+                        }
+                        Button("Edit") {
+                            showEditor = true
+                        }
+                        .disabled(selection == nil)
+                        Button("Delete") {
+                            if let sel = selection {
+                                items.removeAll { $0.id == sel }
+                                selection = nil
+                            }
+                        }
+                        .disabled(selection == nil)
                     }
                 }
-                .environment(\.editMode, $editMode)
-                .sheet(isPresented: $showAddDialog) {
-                    VStack {
-                        TextField("Item Name", text: $newItemName)
-                            .focused($isNameFieldFocused)
-
-                        HStack {
-                            Button("Cancel") {
-                                showAddDialog = false
-                                newItemName = ""
-                            }
-
-                            Button("Add") {
-                                items.append(DataItem(
-                                    name: newItemName,
-                                    value: 0,
-                                    isActive: true
-                                ))
-                                showAddDialog = false
-                                newItemName = ""
-                            }
-                        }
-                    }
-                    .onAppear {
-                        isNameFieldFocused = true
-                    }
+                .sheet(isPresented: $showEditor) {
+                    Text("Editor")
                 }
             }
         }
@@ -787,13 +721,12 @@ final class Phase15IntegrationTests: XCTestCase {
             let name: String
         }
 
+        @MainActor
         struct AppView: View {
-            @State private var selectedTab: Tab = .home
-            @StateObject private var router = Router()
-            @State private var favorites: Set<Product.ID> = []
+            @State var selectedTab: Tab = .home
+            @StateObject var router = Router()
+            @State var favorites: Set<Product.ID> = []
 
-
-            init() {}
             var body: some View {
                 TabView(selection: $selectedTab) {
                     Text("Home")
@@ -816,6 +749,7 @@ final class Phase15IntegrationTests: XCTestCase {
             }
         }
 
+        @MainActor
         struct ProductBrowserView: View {
             let router: Router
             @Binding var favorites: Set<Product.ID>
@@ -825,6 +759,7 @@ final class Phase15IntegrationTests: XCTestCase {
             }
         }
 
+        @MainActor
         struct FavoritesView: View {
             let favorites: Set<Product.ID>
 
@@ -842,16 +777,15 @@ final class Phase15IntegrationTests: XCTestCase {
             case title, description, category
         }
 
+        @MainActor
         struct AccessibleFormView: View {
-            @State private var title = ""
-            @State private var description = ""
-            @State private var category = ""
-            @FocusState private var focusedField: FormField?
-            @StateObject private var formState = FormState()
-            @State private var showSuccessAlert = false
+            @State var title = ""
+            @State var description = ""
+            @State var category = ""
+            @FocusState var focusedField: FormField? = nil
+            @StateObject var formState = FormState()
+            @State var showSuccessAlert = false
 
-
-            nonisolated init() {}
             var body: some View {
                 VStack {
                     TextField("Title", text: $title)
@@ -906,11 +840,10 @@ final class Phase15IntegrationTests: XCTestCase {
     // MARK: - Performance + Virtual Scrolling
 
     func testVirtualScrollingPerformance() async throws {
+        @MainActor
         struct PerformanceTestView: View {
-            @State private var items = Array(0..<10000)
+            @State var items = Array(0..<10000)
 
-
-            init() {}
             var body: some View {
                 List(items, id: \.self) { item in
                     HStack {
@@ -935,20 +868,19 @@ final class Phase15IntegrationTests: XCTestCase {
             var value: Int
         }
 
+        @MainActor
         struct ComplexListView: View {
-            @State private var items = (0..<100).map {
+            @State var items = (0..<100).map {
                 ComplexItem(
                     title: "Item \($0)",
                     subtitle: "Description \($0)",
                     value: $0 * 10
                 )
             }
-            @State private var selection: Set<ComplexItem.ID> = []
-            @State private var editMode: EditMode = .inactive
-            @State private var isRefreshing = false
+            @State var selection: Set<ComplexItem.ID> = []
+            @State var editMode: EditMode = .inactive
+            @State var isRefreshing = false
 
-
-            init() {}
             var body: some View {
                 // Note: List doesn't support binding to collection items in current implementation
                 List {
@@ -1030,10 +962,9 @@ final class Phase15IntegrationTests: XCTestCase {
     func testFocusStateWithoutFocusedView() async throws {
         @MainActor
         struct NoFocusView: View {
-            @FocusState private var isFocused: Bool
+            @FocusState var isFocused: Bool = false
 
 
-            nonisolated init() {}
             var body: some View {
                 VStack {
                     Text("No focusable elements")

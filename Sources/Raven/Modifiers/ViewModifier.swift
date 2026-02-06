@@ -45,7 +45,7 @@ import Foundation
 ///
 /// Text("Hello").border(.blue)
 /// ```
-public protocol ViewModifier: Sendable {
+@MainActor public protocol ViewModifier: Sendable {
     /// The type of view representing the body of this modifier.
     associatedtype Body: View
 

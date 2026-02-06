@@ -35,11 +35,9 @@ final class ListFeaturesTests: XCTestCase {
     func testSwipeActionsTrailingEdge() {
         let text = Text("Swipeable Item")
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
+                Button("Delete", role: .destructive, action: {
                     // Delete action
-                } label: {
-                    Text("Delete")
-                }
+                })
             }
 
         XCTAssertNotNil(text, "SwipeActions modifier should be applied")
@@ -68,11 +66,9 @@ final class ListFeaturesTests: XCTestCase {
                 }
             }
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
+                Button("Delete", role: .destructive, action: {
                     // Delete action
-                } label: {
-                    Text("Delete")
-                }
+                })
             }
 
         XCTAssertNotNil(text, "SwipeActions on both edges should be applied")
@@ -283,8 +279,7 @@ final class ListFeaturesTests: XCTestCase {
             ForEach(items, id: \.self) { item in
                 Text(item)
             }
-            .onDelete { indices in
-                items.remove(atOffsets: indices)
+            .onDelete { _ in
                 deleted.fulfill()
             }
         }
@@ -747,7 +742,7 @@ final class ListFeaturesTests: XCTestCase {
         let list = List(model.items, id: \.self, selection: selectionBinding) { item in
             Text(item)
                 .swipeActions {
-                    Button(role: .destructive) { } label: { Text("Delete") }
+                    Button("Delete", role: .destructive, action: { })
                 }
         }
         .environment(\.editMode, editModeBinding)

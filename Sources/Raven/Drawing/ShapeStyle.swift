@@ -83,7 +83,7 @@ extension Color: ShapeStyle {
     /// Solid colors are rendered directly as their CSS color value.
     ///
     /// - Returns: The CSS color value suitable for SVG fill attributes.
-    public func svgFillValue() -> String {
+    nonisolated public func svgFillValue() -> String {
         cssValue
     }
 
@@ -92,7 +92,7 @@ extension Color: ShapeStyle {
     /// Solid colors are rendered directly as their CSS color value.
     ///
     /// - Returns: The CSS color value suitable for SVG stroke attributes.
-    public func svgStrokeValue() -> String {
+    nonisolated public func svgStrokeValue() -> String {
         cssValue
     }
 
@@ -100,7 +100,7 @@ extension Color: ShapeStyle {
     ///
     /// - Parameter id: Unused for solid colors.
     /// - Returns: An empty string.
-    public func svgDefinitions(id: String) -> String {
+    nonisolated public func svgDefinitions(id: String) -> String {
         ""
     }
 }

@@ -67,7 +67,7 @@
 /// - ``ViewBuilder``
 /// - ``AnyView``
 /// - ``body``
-public protocol View: Sendable {
+@MainActor public protocol View: Sendable {
     /// The type of view representing the body of this view.
     ///
     /// When `Body` is `Never`, this view is a primitive that renders directly

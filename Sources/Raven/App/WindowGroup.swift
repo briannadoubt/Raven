@@ -34,14 +34,14 @@ public struct WindowGroup<Content: View>: Scene {
     let title: String?
 
     /// The content closure that creates the root view.
-    public let content: @Sendable () -> Content
+    public let content: @MainActor @Sendable () -> Content
 
     /// Creates a window group with an identifier and content.
     ///
     /// - Parameters:
     ///   - id: A unique identifier for this window group.
     ///   - content: A closure that creates the root view for windows in this group.
-    public init(id: String = "main", @ViewBuilder content: @escaping @Sendable () -> Content) {
+    public init(id: String = "main", @ViewBuilder content: @escaping @MainActor @Sendable () -> Content) {
         self.id = id
         self.title = nil
         self.content = content
@@ -53,7 +53,7 @@ public struct WindowGroup<Content: View>: Scene {
     ///   - title: The title for windows in this group.
     ///   - id: A unique identifier for this window group.
     ///   - content: A closure that creates the root view for windows in this group.
-    public init(_ title: String, id: String = "main", @ViewBuilder content: @escaping @Sendable () -> Content) {
+    public init(_ title: String, id: String = "main", @ViewBuilder content: @escaping @MainActor @Sendable () -> Content) {
         self.id = id
         self.title = title
         self.content = content
@@ -65,7 +65,7 @@ public struct WindowGroup<Content: View>: Scene {
     ///   - title: A localized string key for the window title.
     ///   - id: A unique identifier for this window group.
     ///   - content: A closure that creates the root view for windows in this group.
-    public init(_ title: LocalizedStringKey, id: String = "main", @ViewBuilder content: @escaping @Sendable () -> Content) {
+    public init(_ title: LocalizedStringKey, id: String = "main", @ViewBuilder content: @escaping @MainActor @Sendable () -> Content) {
         self.id = id
         self.title = title.stringValue // Store the key as the title
         self.content = content

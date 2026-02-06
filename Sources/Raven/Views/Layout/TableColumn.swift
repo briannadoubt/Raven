@@ -90,7 +90,7 @@ public struct TableColumn<RowValue: Sendable, Sort, Content: View, Label: View>:
     @MainActor public init(
         @ViewBuilder label: () -> Label,
         @ViewBuilder content: @escaping @Sendable @MainActor (RowValue) -> Content
-    ) {
+    ) where Sort == Never {
         self.label = label()
         self.content = content
         self.comparatorID = nil
@@ -130,7 +130,7 @@ extension TableColumn where Label == Text {
     @MainActor public init(
         _ title: String,
         @ViewBuilder content: @escaping @Sendable @MainActor (RowValue) -> Content
-    ) {
+    ) where Sort == Never {
         self.label = Text(title)
         self.content = content
         self.comparatorID = nil
@@ -166,7 +166,7 @@ extension TableColumn where Label == Text {
     @MainActor public init(
         _ titleKey: LocalizedStringKey,
         @ViewBuilder content: @escaping @Sendable @MainActor (RowValue) -> Content
-    ) {
+    ) where Sort == Never {
         let title = titleKey.stringValue
         self.label = Text(title)
         self.content = content
@@ -191,7 +191,7 @@ extension TableColumn where Label == Text, Content == Text {
     @MainActor public init<V: CustomStringConvertible & Sendable>(
         _ title: String,
         value: KeyPath<RowValue, V>
-    ) {
+    ) where Sort == Never {
         self.label = Text(title)
         self.content = { (row: RowValue) in
             Text(String(describing: row[keyPath: value]))
@@ -243,6 +243,21 @@ extension TableColumn where Label == Text, Content == Text {
         self.compareFunc = comparator.compare
         self.id = "\(comparator)"
         self.title = title
+    }
+}
+
+// MARK: - View Conformance
+
+extension TableColumn: View, PrimitiveView {
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        // TableColumn is a structural descriptor used by Table.
+        // Its VNode carries column metadata for the Table renderer.
+        VNode.element("raven-table-column", props: [
+            "data-title": .attribute(name: "data-title", value: title),
+            "data-column-id": .attribute(name: "data-column-id", value: id),
+        ])
     }
 }
 

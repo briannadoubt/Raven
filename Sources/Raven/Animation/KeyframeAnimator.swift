@@ -211,7 +211,7 @@ extension View {
     public func keyframeAnimator<Value>(
         initialValue: Value,
         repeating: Bool = false,
-        @ViewBuilder content: @escaping @Sendable (Self, Value) -> some View,
+        @ViewBuilder content: @escaping @MainActor @Sendable (Self, Value) -> some View,
         keyframes: @escaping @Sendable (inout KeyframeTrack<Value>) -> Void
     ) -> some View where Value: Interpolatable {
         _KeyframeAnimatorView(
@@ -232,7 +232,7 @@ internal struct _KeyframeAnimatorView<Base: View, Value: Interpolatable, Content
     let base: Base
     let initialValue: Value
     let repeating: Bool
-    let content: @Sendable (Base, Value) -> Content
+    let content: @MainActor @Sendable (Base, Value) -> Content
     let keyframesBuilder: @Sendable (inout KeyframeTrack<Value>) -> Void
 
     public var body: some View {

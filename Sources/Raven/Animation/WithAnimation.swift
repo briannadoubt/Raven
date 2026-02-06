@@ -116,7 +116,7 @@ internal final class AnimationContext: Sendable {
     ///
     /// This callback will be invoked when the animation completes. It's stored
     /// separately from the animation itself to keep `Animation` a simple value type.
-    nonisolated(unsafe) static var currentCompletion: (@Sendable () -> Void)? = nil
+    nonisolated(unsafe) static var currentCompletion: (@MainActor @Sendable () -> Void)? = nil
 
     /// Executes a closure within an animation transaction context.
     ///
@@ -134,20 +134,21 @@ internal final class AnimationContext: Sendable {
     static func withAnimation<T>(
         _ animation: Animation?,
         _ body: () throws -> T,
-        completion: (@Sendable () -> Void)? = nil
+        completion: (@MainActor @Sendable () -> Void)? = nil
     ) rethrows -> T {
         // Save the previous animation context
         let previousAnimation = current
-        let previousCompletion = currentCompletion
 
         // Set the new animation context
         current = animation
         currentCompletion = completion
 
-        // Ensure we always restore the previous context
+        // Ensure we always restore the previous animation
+        // Note: completion is intentionally NOT restored - it persists after
+        // withAnimation returns so the render system can pick it up via
+        // takeCompletionCallback()
         defer {
             current = previousAnimation
-            currentCompletion = previousCompletion
         }
 
         // Execute the body with the new context
@@ -169,7 +170,7 @@ internal final class AnimationContext: Sendable {
     /// ensuring the callback is invoked only once.
     ///
     /// - Returns: The completion callback, or `nil` if none is set.
-    static func takeCompletionCallback() -> (@Sendable () -> Void)? {
+    static func takeCompletionCallback() -> (@MainActor @Sendable () -> Void)? {
         let callback = currentCompletion
         currentCompletion = nil
         return callback
@@ -370,7 +371,7 @@ public func withAnimation<Result>(
 public func withAnimation<Result>(
     _ animation: Animation? = .default,
     _ body: () throws -> Result,
-    completion: @escaping @Sendable () -> Void
+    completion: @escaping @MainActor @Sendable () -> Void
 ) rethrows -> Result {
     try AnimationContext.withAnimation(animation, body, completion: completion)
 }

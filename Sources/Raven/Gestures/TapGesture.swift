@@ -161,6 +161,52 @@ public struct TapGesture: Gesture, Sendable {
     }
 }
 
+// MARK: - Gesture Modifiers
+
+extension TapGesture {
+    /// Adds an action to perform when the tap gesture ends.
+    ///
+    /// - Parameter action: The action to perform when the gesture ends.
+    /// - Returns: A gesture with the action attached.
+    public func onEnded(
+        _ action: @escaping @MainActor @Sendable () -> Void
+    ) -> _ModifiedGesture<TapGesture, _EndedGestureModifier<Void>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _EndedGestureModifier(action: { _ in action() })
+        )
+    }
+
+    /// Adds an action to perform when the tap gesture changes.
+    ///
+    /// - Parameter action: The action to perform when the gesture changes.
+    /// - Returns: A gesture with the action attached.
+    public func onChanged(
+        _ action: @escaping @MainActor @Sendable (Value) -> Void
+    ) -> _ModifiedGesture<TapGesture, _ChangedGestureModifier<Value>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _ChangedGestureModifier(action: action)
+        )
+    }
+
+    /// Adds a state update to perform during the gesture.
+    ///
+    /// - Parameters:
+    ///   - state: The gesture state to update.
+    ///   - body: The update closure.
+    /// - Returns: A gesture with the state update attached.
+    public func updating<State>(
+        _ state: GestureState<State>,
+        body: @escaping @MainActor @Sendable (Value, inout State, inout Transaction) -> Void
+    ) -> _ModifiedGesture<TapGesture, _UpdatingGestureModifier<State, Value>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _UpdatingGestureModifier(state: state, body: body)
+        )
+    }
+}
+
 // MARK: - Web Event Mapping
 
 extension TapGesture {

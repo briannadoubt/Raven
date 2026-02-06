@@ -20,42 +20,42 @@ import Foundation
 @resultBuilder
 public struct SceneBuilder: Sendable {
     /// Builds a scene from a single scene component.
-    nonisolated public static func buildBlock<Content: Scene>(_ content: Content) -> Content {
+    @MainActor public static func buildBlock<Content: Scene>(_ content: Content) -> Content {
         content
     }
 
     /// Builds a scene from two scene components.
-    nonisolated public static func buildBlock<C0: Scene, C1: Scene>(_ c0: C0, _ c1: C1) -> some Scene {
+    @MainActor public static func buildBlock<C0: Scene, C1: Scene>(_ c0: C0, _ c1: C1) -> some Scene {
         TupleScene((c0, c1))
     }
 
     /// Builds a scene from three scene components.
-    nonisolated public static func buildBlock<C0: Scene, C1: Scene, C2: Scene>(_ c0: C0, _ c1: C1, _ c2: C2) -> some Scene {
+    @MainActor public static func buildBlock<C0: Scene, C1: Scene, C2: Scene>(_ c0: C0, _ c1: C1, _ c2: C2) -> some Scene {
         TupleScene((c0, c1, c2))
     }
 
     /// Builds a scene from four scene components.
-    nonisolated public static func buildBlock<C0: Scene, C1: Scene, C2: Scene, C3: Scene>(_ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> some Scene {
+    @MainActor public static func buildBlock<C0: Scene, C1: Scene, C2: Scene, C3: Scene>(_ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> some Scene {
         TupleScene((c0, c1, c2, c3))
     }
 
     /// Builds a scene from five scene components.
-    nonisolated public static func buildBlock<C0: Scene, C1: Scene, C2: Scene, C3: Scene, C4: Scene>(_ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4) -> some Scene {
+    @MainActor public static func buildBlock<C0: Scene, C1: Scene, C2: Scene, C3: Scene, C4: Scene>(_ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3, _ c4: C4) -> some Scene {
         TupleScene((c0, c1, c2, c3, c4))
     }
 
     /// Provides support for optional scenes.
-    nonisolated public static func buildOptional<Content: Scene>(_ content: Content?) -> some Scene {
+    @MainActor public static func buildOptional<Content: Scene>(_ content: Content?) -> some Scene {
         OptionalScene(content)
     }
 
     /// Provides support for if-else branches.
-    nonisolated public static func buildEither<TrueContent: Scene, FalseContent: Scene>(first: TrueContent) -> ConditionalScene<TrueContent, FalseContent> {
+    @MainActor public static func buildEither<TrueContent: Scene, FalseContent: Scene>(first: TrueContent) -> ConditionalScene<TrueContent, FalseContent> {
         ConditionalScene(trueContent: first, condition: true)
     }
 
     /// Provides support for if-else branches.
-    nonisolated public static func buildEither<TrueContent: Scene, FalseContent: Scene>(second: FalseContent) -> ConditionalScene<TrueContent, FalseContent> {
+    @MainActor public static func buildEither<TrueContent: Scene, FalseContent: Scene>(second: FalseContent) -> ConditionalScene<TrueContent, FalseContent> {
         ConditionalScene(falseContent: second, condition: false)
     }
 }

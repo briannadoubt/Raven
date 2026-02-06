@@ -407,21 +407,22 @@ final class Phase1VerificationTests: XCTestCase {
     func testTupleViewTwoElements() async throws {
         let text1 = Text("First")
         let text2 = Text("Second")
-        let tuple = TupleView((text1, text2))
+        let tuple = TupleView(text1, text2)
 
-        XCTAssertNotNil(tuple.content.0)
-        XCTAssertNotNil(tuple.content.1)
+        // Verify the tuple view can extract children
+        let children = tuple._extractChildren()
+        XCTAssertEqual(children.count, 2)
     }
 
     func testTupleViewThreeElements() async throws {
         let text1 = Text("First")
         let text2 = Text("Second")
         let text3 = Text("Third")
-        let tuple = TupleView((text1, text2, text3))
+        let tuple = TupleView(text1, text2, text3)
 
-        XCTAssertNotNil(tuple.content.0)
-        XCTAssertNotNil(tuple.content.1)
-        XCTAssertNotNil(tuple.content.2)
+        // Verify the tuple view can extract children
+        let children = tuple._extractChildren()
+        XCTAssertEqual(children.count, 3)
     }
 
     func testViewBuilderSingleElement() async throws {
@@ -452,8 +453,9 @@ final class Phase1VerificationTests: XCTestCase {
         }
 
         let view = makeView()
-        // Should return a TupleView
-        XCTAssertTrue(type(of: view) is TupleView<(Text, Text)>.Type)
+        // Should return a TupleView (parameter pack generic, check via string)
+        let typeName = String(describing: type(of: view))
+        XCTAssertTrue(typeName.contains("TupleView"), "Expected TupleView, got \(typeName)")
     }
 
     func testViewBuilderThreeElements() async throws {
@@ -465,7 +467,8 @@ final class Phase1VerificationTests: XCTestCase {
         }
 
         let view = makeView()
-        XCTAssertTrue(type(of: view) is TupleView<(Text, Text, Text)>.Type)
+        let typeName = String(describing: type(of: view))
+        XCTAssertTrue(typeName.contains("TupleView"), "Expected TupleView, got \(typeName)")
     }
 
     func testConditionalContent() async throws {

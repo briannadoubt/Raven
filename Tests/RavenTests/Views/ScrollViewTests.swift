@@ -3,6 +3,7 @@ import Testing
 
 /// Tests for ScrollView rendering and configuration
 @Suite("ScrollView Tests")
+@MainActor
 struct ScrollViewTests {
 
     // MARK: - Basic Rendering Tests

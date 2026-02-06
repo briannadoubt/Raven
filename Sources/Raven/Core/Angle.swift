@@ -101,6 +101,26 @@ public struct Angle: Hashable, Sendable, Codable {
         self.degrees = radians * 180.0 / .pi
     }
 
+    /// Creates an angle measured in degrees.
+    ///
+    /// This static factory method provides an alternative to the initializer.
+    ///
+    /// - Parameter value: The angle value in degrees.
+    /// - Returns: An angle with the specified degree value.
+    public static func degrees(_ value: Double) -> Angle {
+        Angle(degrees: value)
+    }
+
+    /// Creates an angle measured in radians.
+    ///
+    /// This static factory method provides an alternative to the initializer.
+    ///
+    /// - Parameter value: The angle value in radians.
+    /// - Returns: An angle with the specified radian value.
+    public static func radians(_ value: Double) -> Angle {
+        Angle(radians: value)
+    }
+
     /// An angle of zero degrees.
     ///
     /// This is a convenience property for the common case of no rotation.

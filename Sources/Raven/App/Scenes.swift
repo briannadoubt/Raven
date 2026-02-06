@@ -25,12 +25,12 @@ public struct Settings<Content: View>: Scene {
     public typealias Body = _EmptyScene
 
     /// The content closure that creates the settings view.
-    let content: @Sendable () -> Content
+    let content: @MainActor @Sendable () -> Content
 
     /// Creates a settings scene with the given content.
     ///
     /// - Parameter content: A closure that creates the settings view.
-    public init(@ViewBuilder content: @escaping @Sendable () -> Content) {
+    public init(@ViewBuilder content: @escaping @MainActor @Sendable () -> Content) {
         self.content = content
     }
 }

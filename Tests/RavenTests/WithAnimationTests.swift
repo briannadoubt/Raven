@@ -232,7 +232,7 @@ struct WithAnimationTests {
     @Test("withAnimation with completion callback")
     func testWithAnimationCompletion() async {
         var bodyExecuted = false
-        var completionExecuted = false
+        nonisolated(unsafe) var completionExecuted = false
 
         withAnimation(.default, {
             bodyExecuted = true
@@ -247,7 +247,7 @@ struct WithAnimationTests {
 
     @Test("withAnimation stores completion callback")
     func testWithAnimationStoresCompletion() async {
-        var callbackInvoked = false
+        nonisolated(unsafe) var callbackInvoked = false
 
         withAnimation(.default, {
             // Body
@@ -285,31 +285,33 @@ struct WithAnimationTests {
 
     @Test("Nested animations with completion callbacks")
     func testNestedAnimationsWithCompletion() async {
-        var outerCompleted = false
-        var innerCompleted = false
+        nonisolated(unsafe) var outerCompleted = false
+        nonisolated(unsafe) var innerCompleted = false
+        nonisolated(unsafe) var outerCallback: (@MainActor @Sendable () -> Void)?
+        nonisolated(unsafe) var innerCallback: (@MainActor @Sendable () -> Void)?
 
         withAnimation(.default, {
+            // Take outer completion before inner withAnimation overwrites it
+            outerCallback = AnimationContext.takeCompletionCallback()
+
             withAnimation(.spring(), {
                 // Inner body
             }, completion: {
                 innerCompleted = true
             })
 
-            // Inner completion should be set
-            let innerCallback = AnimationContext.takeCompletionCallback()
-            #expect(innerCallback != nil)
-            innerCallback?()
+            // Take inner completion
+            innerCallback = AnimationContext.takeCompletionCallback()
         }, completion: {
             outerCompleted = true
         })
 
-        // Outer completion should be set
-        let outerCallback = AnimationContext.takeCompletionCallback()
         #expect(outerCallback != nil)
+        #expect(innerCallback != nil)
         outerCallback?()
-
-        #expect(innerCompleted == true)
+        innerCallback?()
         #expect(outerCompleted == true)
+        #expect(innerCompleted == true)
     }
 
     // MARK: - Context Management Tests

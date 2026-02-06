@@ -4,6 +4,7 @@ import Foundation
 
 /// Tests for AsyncImage view
 @Suite("AsyncImage Tests")
+@MainActor
 struct AsyncImageTests {
 
     // MARK: - Basic Initialization Tests
@@ -119,10 +120,8 @@ struct AsyncImageTests {
             }
         }
 
-        let vnode = asyncImage.toVNode()
-
-        // Should render the empty phase content
-        #expect(vnode != nil)
+        // AsyncImage is not a PrimitiveView; verify it can produce a body
+        _ = asyncImage.body
     }
 
     @Test("AsyncImage renders container with valid URL")
@@ -140,10 +139,8 @@ struct AsyncImageTests {
             }
         }
 
-        let vnode = asyncImage.toVNode()
-
-        // Should render a container with placeholder and img element
-        #expect(vnode != nil)
+        // AsyncImage is not a PrimitiveView; verify it can produce a body
+        _ = asyncImage.body
     }
 
     @Test("AsyncImage simple initializer renders correctly")
@@ -152,9 +149,8 @@ struct AsyncImageTests {
         let url = URL(string: "https://example.com/image.png")
         let asyncImage = AsyncImage(url: url, scale: 1.0)
 
-        let vnode = asyncImage.toVNode()
-
-        #expect(vnode != nil)
+        // AsyncImage is not a PrimitiveView; verify it can produce a body
+        _ = asyncImage.body
     }
 
     // MARK: - Transaction Tests
@@ -243,8 +239,8 @@ struct AsyncImageTests {
             }
         }
 
-        let vnode = asyncImage.toVNode()
-        #expect(vnode != nil)
+        // AsyncImage is not a PrimitiveView; verify it can produce a body
+        _ = asyncImage.body
     }
 
     @Test("AsyncImage with custom styling")
@@ -262,8 +258,8 @@ struct AsyncImageTests {
             }
         }
 
-        let vnode = asyncImage.toVNode()
-        #expect(vnode != nil)
+        // AsyncImage is not a PrimitiveView; verify it can produce a body
+        _ = asyncImage.body
     }
 
     // MARK: - URL Variants Tests
@@ -281,8 +277,8 @@ struct AsyncImageTests {
 
         for url in urls {
             let asyncImage = AsyncImage(url: url)
-            let vnode = asyncImage.toVNode()
-            #expect(vnode != nil)
+            // AsyncImage is not a PrimitiveView; verify it can produce a body
+            _ = asyncImage.body
         }
     }
 

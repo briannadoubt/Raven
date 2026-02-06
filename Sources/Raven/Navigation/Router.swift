@@ -150,6 +150,21 @@ public final class Router: ObservableObject {
         deepLinkHandler.register(pattern: path)
     }
 
+    /// Registers a route with a parameterless view builder closure.
+    ///
+    /// This is a convenience overload that wraps a parameterless closure
+    /// into the standard `(RouteParameters) -> Content` handler form.
+    ///
+    /// - Parameters:
+    ///   - path: The URL pattern to match
+    ///   - content: Closure that returns a view for this route
+    public func register<Content: View>(
+        path: String,
+        @ViewBuilder content: @escaping @Sendable @MainActor () -> Content
+    ) {
+        register(path: path) { (_: RouteParameters) in content() }
+    }
+
     /// Unregisters a route by path pattern.
     ///
     /// - Parameter path: The path pattern to unregister

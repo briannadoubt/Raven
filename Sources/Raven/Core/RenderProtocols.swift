@@ -12,9 +12,11 @@ import JavaScriptKit
     func renderChild(_ view: any View) -> VNode
 
     /// Register a click/action handler and return its unique ID.
+    /// The ID is stable across renders based on position in the view tree.
     func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID
 
     /// Register an input handler that receives the raw DOM event and return its unique ID.
+    /// The ID is stable across renders based on position in the view tree.
     func registerInputHandler(_ handler: @escaping @Sendable @MainActor (JSValue) -> Void) -> UUID
 }
 

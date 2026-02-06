@@ -16,7 +16,7 @@ import Foundation
 ///     }
 /// }
 /// ```
-public protocol Scene: Sendable {
+@MainActor public protocol Scene: Sendable {
     /// The type of scene representing the body of this scene.
     associatedtype Body: Scene
 

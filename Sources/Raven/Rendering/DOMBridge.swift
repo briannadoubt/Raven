@@ -336,6 +336,30 @@ public final class DOMBridge {
         eventClosures.removeAll()
     }
 
+    // MARK: - Incremental Handler Updates
+
+    /// Update the Swift closure for an existing click/action handler without
+    /// re-creating the JSClosure or DOM event listener.
+    /// The JSClosure looks up ``eventHandlers[id]`` on each invocation, so
+    /// swapping the entry is sufficient.
+    public func updateEventHandler(id: UUID, handler: @escaping @Sendable @MainActor () -> Void) {
+        eventHandlers[id] = handler
+    }
+
+    /// Update the Swift closure for an existing input/gesture handler.
+    public func updateInputEventHandler(id: UUID, handler: @escaping @Sendable @MainActor (JSValue) -> Void) {
+        gestureEventHandlers[id] = handler
+    }
+
+    /// Remove a single handler and its JSClosure.
+    /// Called for handlers that were active in the previous render but are no
+    /// longer present in the current render.
+    public func cleanupStaleHandler(id: UUID) {
+        eventHandlers.removeValue(forKey: id)
+        gestureEventHandlers.removeValue(forKey: id)
+        eventClosures.removeValue(forKey: id)
+    }
+
     // MARK: - Query Methods
 
     /// Query the DOM for an element by ID

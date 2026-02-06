@@ -101,7 +101,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     ///   - green: The green component (0.0 to 1.0).
     ///   - blue: The blue component (0.0 to 1.0).
     ///   - opacity: The opacity (0.0 to 1.0). Defaults to 1.0.
-    public init(red: Double, green: Double, blue: Double, opacity: Double = 1.0) {
+    nonisolated public init(red: Double, green: Double, blue: Double, opacity: Double = 1.0) {
         self.storage = .rgb(
             red: min(max(red, 0.0), 1.0),
             green: min(max(green, 0.0), 1.0),
@@ -113,21 +113,21 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     /// Creates a color from a hex string.
     ///
     /// - Parameter hex: A hex color string (e.g., "#FF0000" or "FF0000").
-    public init(hex: String) {
+    nonisolated public init(hex: String) {
         self.storage = .hex(hex.hasPrefix("#") ? hex : "#\(hex)")
     }
 
     /// Creates a color from a named CSS color.
     ///
     /// - Parameter name: The CSS color name (e.g., "red", "blue", "transparent").
-    private init(named: String) {
+    nonisolated private init(named: String) {
         self.storage = .named(named)
     }
 
     /// Creates a color from a storage value.
     ///
     /// - Parameter storage: The storage representation of the color.
-    private init(storage: Storage) {
+    nonisolated private init(storage: Storage) {
         self.storage = storage
     }
 
@@ -142,7 +142,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     /// ```swift
     /// Color.custom("theme-primary")  // References var(--theme-primary)
     /// ```
-    public static func custom(_ name: String) -> Color {
+    nonisolated public static func custom(_ name: String) -> Color {
         Color(storage: .cssVariable(name))
     }
 
@@ -152,107 +152,107 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     ///
     /// - Parameter name: The system color name (e.g., "primary", "secondary").
     /// - Returns: A color that references the system color.
-    private init(systemColor: String) {
+    nonisolated private init(systemColor: String) {
         self.storage = .systemColor(systemColor)
     }
 
     // MARK: - Common Colors
 
     /// A pure black color
-    public static let black = Color(named: "black")
+    nonisolated public static let black = Color(named: "black")
 
     /// A pure white color
-    public static let white = Color(named: "white")
+    nonisolated public static let white = Color(named: "white")
 
     /// A red color
-    public static let red = Color(named: "red")
+    nonisolated public static let red = Color(named: "red")
 
     /// A green color
-    public static let green = Color(named: "green")
+    nonisolated public static let green = Color(named: "green")
 
     /// A blue color
-    public static let blue = Color(named: "blue")
+    nonisolated public static let blue = Color(named: "blue")
 
     /// A yellow color
-    public static let yellow = Color(named: "yellow")
+    nonisolated public static let yellow = Color(named: "yellow")
 
     /// An orange color
-    public static let orange = Color(named: "orange")
+    nonisolated public static let orange = Color(named: "orange")
 
     /// A purple color
-    public static let purple = Color(named: "purple")
+    nonisolated public static let purple = Color(named: "purple")
 
     /// A pink color
-    public static let pink = Color(named: "pink")
+    nonisolated public static let pink = Color(named: "pink")
 
     /// A gray color
-    public static let gray = Color(named: "gray")
+    nonisolated public static let gray = Color(named: "gray")
 
     /// An indigo color
-    public static let indigo = Color(named: "indigo")
+    nonisolated public static let indigo = Color(named: "indigo")
 
     /// A teal color
-    public static let teal = Color(named: "teal")
+    nonisolated public static let teal = Color(named: "teal")
 
     /// A cyan color
-    public static let cyan = Color(named: "cyan")
+    nonisolated public static let cyan = Color(named: "cyan")
 
     /// A mint color
-    public static let mint = Color(red: 0.0, green: 0.78, blue: 0.75)
+    nonisolated public static let mint = Color(red: 0.0, green: 0.78, blue: 0.75)
 
     /// A brown color
-    public static let brown = Color(named: "brown")
+    nonisolated public static let brown = Color(named: "brown")
 
     /// A clear (transparent) color
-    public static let clear = Color(named: "transparent")
+    nonisolated public static let clear = Color(named: "transparent")
 
     // MARK: - Semantic Colors
 
     /// Primary color for the current theme
-    public static let primary = Color(systemColor: "primary")
+    nonisolated public static let primary = Color(systemColor: "primary")
 
     /// Secondary color for the current theme
-    public static let secondary = Color(systemColor: "secondary")
+    nonisolated public static let secondary = Color(systemColor: "secondary")
 
     /// Accent color for the current theme
-    public static let accent = Color(systemColor: "accent")
+    nonisolated public static let accent = Color(systemColor: "accent")
 
     /// Label color for primary text content
-    public static let label = Color(systemColor: "label")
+    nonisolated public static let label = Color(systemColor: "label")
 
     /// Label color for secondary text content
-    public static let secondaryLabel = Color(systemColor: "secondary-label")
+    nonisolated public static let secondaryLabel = Color(systemColor: "secondary-label")
 
     /// Label color for tertiary text content
-    public static let tertiaryLabel = Color(systemColor: "tertiary-label")
+    nonisolated public static let tertiaryLabel = Color(systemColor: "tertiary-label")
 
     /// Primary background color
-    public static let systemBackground = Color(systemColor: "background")
+    nonisolated public static let systemBackground = Color(systemColor: "background")
 
     /// Secondary background color for grouped content
-    public static let secondarySystemBackground = Color(systemColor: "secondary-background")
+    nonisolated public static let secondarySystemBackground = Color(systemColor: "secondary-background")
 
     /// Tertiary background color
-    public static let tertiarySystemBackground = Color(systemColor: "tertiary-background")
+    nonisolated public static let tertiarySystemBackground = Color(systemColor: "tertiary-background")
 
     /// Background color for grouped content areas
-    public static let groupedBackground = Color(systemColor: "grouped-background")
+    nonisolated public static let groupedBackground = Color(systemColor: "grouped-background")
 
     /// Color for thin separator lines
-    public static let separator = Color(systemColor: "separator")
+    nonisolated public static let separator = Color(systemColor: "separator")
 
     /// Color for fill areas
-    public static let fill = Color(systemColor: "fill")
+    nonisolated public static let fill = Color(systemColor: "fill")
 
     /// Color for secondary fill areas
-    public static let secondaryFill = Color(systemColor: "secondary-fill")
+    nonisolated public static let secondaryFill = Color(systemColor: "secondary-fill")
 
     // MARK: - CSS Conversion
 
     /// Converts this color to a CSS color string.
     ///
     /// - Returns: A CSS-compatible color string.
-    public var cssValue: String {
+    nonisolated public var cssValue: String {
         switch storage {
         case .rgb(let red, let green, let blue, let opacity):
             let r = Int(red * 255)
@@ -300,7 +300,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     ///
     /// - Parameter opacity: The opacity value (0.0 to 1.0).
     /// - Returns: A new color with the specified opacity.
-    public func opacity(_ opacity: Double) -> Color {
+    nonisolated public func opacity(_ opacity: Double) -> Color {
         let clampedOpacity = min(max(opacity, 0.0), 1.0)
 
         switch storage {
@@ -343,7 +343,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     /// ```swift
     /// Color.blue.gradient  // Creates a blue gradient
     /// ```
-    public var gradient: LinearGradient {
+    nonisolated public var gradient: LinearGradient {
         // Create a gradient from this color to a slightly lighter version
         switch storage {
         case .rgb(let red, let green, let blue, let opacity):
@@ -367,7 +367,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     ///
     /// - Parameter hex: The hex color string (e.g., "#FF0000" or "FF0000").
     /// - Returns: A tuple of RGB values (0.0 to 1.0), or nil if parsing fails.
-    private func parseHex(_ hex: String) -> (Double, Double, Double)? {
+    nonisolated private func parseHex(_ hex: String) -> (Double, Double, Double)? {
         let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
 
         guard cleaned.count == 6 || cleaned.count == 8 else {
@@ -388,7 +388,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     ///
     /// - Parameter name: The CSS color name.
     /// - Returns: A tuple of RGB values (0.0 to 1.0), or nil if not a known color.
-    private func namedColorToRGB(_ name: String) -> (Double, Double, Double)? {
+    nonisolated private func namedColorToRGB(_ name: String) -> (Double, Double, Double)? {
         switch name.lowercased() {
         case "black": return (0.0, 0.0, 0.0)
         case "white": return (1.0, 1.0, 1.0)

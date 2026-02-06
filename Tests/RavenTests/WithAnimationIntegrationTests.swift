@@ -141,7 +141,7 @@ struct WithAnimationIntegrationTests {
     @Test("Animation with completion callback pattern")
     func testCompletionCallbackPattern() async {
         var animationStarted = false
-        var completionCalled = false
+        nonisolated(unsafe) var completionCalled = false
 
         withAnimation(.default, {
             animationStarted = true
@@ -159,10 +159,10 @@ struct WithAnimationIntegrationTests {
     }
 
     @Test("Chained animations with completion")
-    func testChainedAnimations() async {
+    @MainActor func testChainedAnimations() async {
         var step1 = false
-        var step2 = false
-        var step3 = false
+        nonisolated(unsafe) var step2 = false
+        nonisolated(unsafe) var step3 = false
 
         // Step 1
         withAnimation(.easeIn, {
@@ -284,6 +284,8 @@ struct WithAnimationIntegrationTests {
         } catch AppError.validationFailed {
             // Expected error
             #expect(stateChanged == true)
+        } catch {
+            #expect(Bool(false), "Unexpected error type: \(error)")
         }
 
         // Context should be cleared even after error

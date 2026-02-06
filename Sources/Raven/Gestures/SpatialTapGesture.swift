@@ -200,6 +200,52 @@ public struct SpatialTapGesture: Gesture, Sendable {
     }
 }
 
+// MARK: - Gesture Modifiers
+
+extension SpatialTapGesture {
+    /// Adds an action to perform when the spatial tap gesture ends.
+    ///
+    /// - Parameter action: The action to perform when the gesture ends.
+    /// - Returns: A gesture with the action attached.
+    public func onEnded(
+        _ action: @escaping @MainActor @Sendable (Value) -> Void
+    ) -> _ModifiedGesture<SpatialTapGesture, _EndedGestureModifier<Value>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _EndedGestureModifier(action: action)
+        )
+    }
+
+    /// Adds an action to perform when the spatial tap gesture changes.
+    ///
+    /// - Parameter action: The action to perform when the gesture changes.
+    /// - Returns: A gesture with the action attached.
+    public func onChanged(
+        _ action: @escaping @MainActor @Sendable (Value) -> Void
+    ) -> _ModifiedGesture<SpatialTapGesture, _ChangedGestureModifier<Value>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _ChangedGestureModifier(action: action)
+        )
+    }
+
+    /// Adds a state update to perform during the gesture.
+    ///
+    /// - Parameters:
+    ///   - state: The gesture state to update.
+    ///   - body: The update closure.
+    /// - Returns: A gesture with the state update attached.
+    public func updating<State>(
+        _ state: GestureState<State>,
+        body: @escaping @MainActor @Sendable (Value, inout State, inout Transaction) -> Void
+    ) -> _ModifiedGesture<SpatialTapGesture, _UpdatingGestureModifier<State, Value>> {
+        _ModifiedGesture(
+            gesture: self,
+            modifier: _UpdatingGestureModifier(state: state, body: body)
+        )
+    }
+}
+
 // MARK: - Web Event Mapping
 
 extension SpatialTapGesture {

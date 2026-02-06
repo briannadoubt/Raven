@@ -14,7 +14,7 @@ extension Color {
     ///   - white: The grayscale value from 0.0 (black) to 1.0 (white).
     ///   - opacity: The opacity from 0.0 (transparent) to 1.0 (opaque).
     /// - Returns: A grayscale color.
-    public init(white: Double, opacity: Double = 1.0) {
+    nonisolated public init(white: Double, opacity: Double = 1.0) {
         self.init(red: white, green: white, blue: white, opacity: opacity)
     }
 }

@@ -113,6 +113,26 @@ public struct _OnDisappearView<Content: View>: View, PrimitiveView, Sendable {
     }
 }
 
+// MARK: - OnSubmit Modifier
+
+/// A view wrapper that runs an action when a form or text field is submitted.
+///
+/// In a web context, this handles the "submit" event (pressing Return/Enter).
+public struct _OnSubmitView<Content: View>: View, PrimitiveView, Sendable {
+    let content: Content
+    let action: @Sendable @MainActor () -> Void
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        let handlerID = UUID()
+        let props: [String: VProperty] = [
+            "data-on-submit": .eventHandler(event: "submit", handlerID: handlerID)
+        ]
+        return VNode.element("div", props: props, children: [])
+    }
+}
+
 // MARK: - OnChange Modifier
 
 /// A storage structure for onChange callbacks.
@@ -294,6 +314,17 @@ extension View {
     ) -> _OnChangeView<Self, V> {
         _OnChangeView(content: self, value: value, action: action)
     }
+
+    /// Adds an action to perform when the user submits a value (e.g., pressing
+    /// Return in a text field).
+    ///
+    /// - Parameter action: The action to perform on submit.
+    /// - Returns: A view that runs the specified action on submit.
+    @MainActor public func onSubmit(
+        _ action: @escaping @Sendable @MainActor () -> Void
+    ) -> _OnSubmitView<Self> {
+        _OnSubmitView(content: self, action: action)
+    }
 }
 
 // MARK: - Modifier Renderable Conformances
@@ -315,5 +346,9 @@ extension _OnDisappearView: _ModifierRenderable {
 }
 
 extension _OnChangeView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _OnSubmitView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }

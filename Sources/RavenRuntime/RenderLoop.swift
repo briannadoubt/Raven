@@ -61,6 +61,30 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     /// Guard against reentrant renders (e.g., from stale event handlers firing during mount)
     private var isRendering: Bool = false
 
+    // MARK: - Path Tracking (for stable handler & node IDs)
+
+    /// Stack of path components describing the current position in the view tree.
+    /// Example: ["VStack", "0", "HStack", "1", "Button"]
+    private var pathStack: [String] = []
+
+    /// Stack tracking how many children have been rendered at each nesting level.
+    /// Each entry corresponds to a `convertViewToVNode` depth; the value is
+    /// incremented each time `renderChild` is called at that depth.
+    private var childCounterStack: [Int] = []
+
+    /// Stack tracking how many handlers have been registered at each nesting level.
+    /// Used to disambiguate multiple handlers in the same view (e.g., Stepper's
+    /// decrement and increment buttons).
+    private var handlerCounterStack: [Int] = []
+
+    /// Set of handler IDs that were registered during the *current* render pass.
+    /// After the render pass completes, any handler from the previous pass that
+    /// is NOT in this set is stale and should be cleaned up.
+    private var activeHandlerIDs: Set<UUID> = []
+
+    /// Set of handler IDs from the *previous* render pass, used for stale cleanup.
+    private var previousHandlerIDs: Set<UUID> = []
+
     // MARK: - Initialization
 
     /// Initialize the render coordinator
@@ -68,7 +92,7 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         self.differ = Differ()
     }
 
-    /// Generate a unique handler ID
+    /// Generate a unique handler ID (fallback for non-path contexts).
     private func generateHandlerID() -> UUID {
         handlerIDCounter += 1
         // String.format() is broken in WASM, so use manual hex conversion
@@ -80,24 +104,73 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         return UUID(uuidString: uuidString) ?? UUID()
     }
 
+    /// Generate a stable UUID from a path string using FNV-1a hash.
+    /// The same path always produces the same UUID across renders.
+    private func stableUUID(from path: String) -> UUID {
+        var hash: UInt64 = 14695981039346656037 // FNV-1a offset basis
+        for byte in path.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 1099511628211 // FNV-1a prime
+        }
+        let highHex = String(hash >> 32, radix: 16, uppercase: false)
+        let lowHex = String(hash & 0xFFFFFFFF, radix: 16, uppercase: false)
+        let high = String(repeating: "0", count: max(0, 8 - highHex.count)) + highHex
+        let low = String(repeating: "0", count: max(0, 12 - lowHex.count)) + lowHex
+        let uuidString = "\(high)-0000-4000-8000-\(low)"
+        return UUID(uuidString: uuidString) ?? UUID()
+    }
+
+    /// Build the current path string from the path stack and append a handler
+    /// suffix (e.g., ".h0", ".h1") to disambiguate multiple handlers in the
+    /// same view.
+    private func nextStableHandlerID() -> UUID {
+        let handlerIdx: Int
+        if !handlerCounterStack.isEmpty {
+            handlerIdx = handlerCounterStack[handlerCounterStack.count - 1]
+            handlerCounterStack[handlerCounterStack.count - 1] += 1
+        } else {
+            handlerIdx = 0
+        }
+        let path = pathStack.joined(separator: ".") + ".h\(handlerIdx)"
+        return stableUUID(from: path)
+    }
+
     // MARK: - _RenderContext Conformance
 
     /// Recursively convert a child view into its VNode representation.
+    /// Automatically tracks the child index in the path stack for stable IDs.
     public func renderChild(_ view: any View) -> VNode {
+        // Record the child index at the current level
+        let childIdx: Int
+        if !childCounterStack.isEmpty {
+            childIdx = childCounterStack[childCounterStack.count - 1]
+            childCounterStack[childCounterStack.count - 1] += 1
+        } else {
+            childIdx = 0
+        }
+        pathStack.append(String(childIdx))
+        defer { pathStack.removeLast() }
         return convertViewToVNode(view)
     }
 
-    /// Register a click/action handler and return its unique ID.
+    /// Register a click/action handler and return a stable ID.
+    /// On first render the handler is stored; on re-renders the closure is
+    /// updated in-place so the existing JSClosure picks it up.
     public func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID {
-        let id = generateHandlerID()
+        let id = nextStableHandlerID()
         eventHandlerRegistry[id] = action
+        activeHandlerIDs.insert(id)
+        // Update DOMBridge's closure so existing JSClosure invokes the latest action
+        DOMBridge.shared.updateEventHandler(id: id, handler: action)
         return id
     }
 
-    /// Register an input handler that receives the raw DOM event and return its unique ID.
+    /// Register an input handler that receives the raw DOM event and return a stable ID.
     public func registerInputHandler(_ handler: @escaping @Sendable @MainActor (JSValue) -> Void) -> UUID {
-        let id = generateHandlerID()
+        let id = nextStableHandlerID()
         inputEventHandlerRegistry[id] = handler
+        activeHandlerIDs.insert(id)
+        DOMBridge.shared.updateInputEventHandler(id: id, handler: handler)
         return id
     }
 
@@ -132,7 +205,12 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         // which calls the rerenderClosure stored on the coordinator.
     }
 
-    /// Internal render method that performs the actual rendering
+    /// Internal render method that performs the actual rendering.
+    ///
+    /// On the first render the full VNode tree is mounted to the DOM.
+    /// On subsequent renders the Differ computes a minimal set of patches
+    /// and only the changed DOM nodes are touched (incremental reconciliation).
+    ///
     /// - Parameter view: SwiftUI-style view to render
     private func internalRender<V: View>(view: V) {
         let console = JSObject.global.console
@@ -144,63 +222,66 @@ public final class RenderCoordinator: Sendable, _RenderContext {
 
         let isRerender = currentTree != nil
 
-        // Save focused element info before clearing DOM so we can restore focus after re-render.
-        // Without this, typing in TextField/SecureField or dragging Slider causes focus loss
-        // because the full DOM is cleared and rebuilt on every state change.
-        var savedFocusInfo: (ariaLabel: String, tagName: String, inputType: String, selectionStart: Int?, selectionEnd: Int?)?
-        if isRerender {
-            let doc = JSObject.global["document"]
-            if let activeEl = doc.activeElement.object {
-                let tag = activeEl.tagName.string ?? ""
-                let ariaLabel = activeEl.getAttribute!("aria-label").string ?? ""
-                let inputType = activeEl.getAttribute!("type").string ?? ""
-                let selStart = activeEl.selectionStart.number.flatMap { Int($0) }
-                let selEnd = activeEl.selectionEnd.number.flatMap { Int($0) }
-                if !ariaLabel.isEmpty {
-                    savedFocusInfo = (ariaLabel: ariaLabel, tagName: tag, inputType: inputType, selectionStart: selStart, selectionEnd: selEnd)
-                }
-            }
+        // -- Reset path tracking for this render pass --
+        pathStack.removeAll()
+        childCounterStack.removeAll()
+        handlerCounterStack.removeAll()
+        previousHandlerIDs = activeHandlerIDs
+        activeHandlerIDs.removeAll()
 
-            // Re-render: clear DOM and reset handler state BEFORE view conversion
-            // convertViewToVNode registers handlers, so registry must be empty first
-            if let container = rootContainer {
-                DOMBridge.shared.clearChildren(container)
-            }
-            DOMBridge.shared.clearRegistry()
-            eventHandlerRegistry.removeAll()
-            inputEventHandlerRegistry.removeAll()
-        }
+        // -- Convert view to VNode tree --
+        // This registers event handlers (populating activeHandlerIDs)
+        let rawRoot = convertViewToVNode(view)
 
-        // Convert view to VNode tree (this registers event handlers in eventHandlerRegistry)
-        let newRoot = convertViewToVNode(view)
+        // Assign stable node IDs based on tree position so the Differ
+        // can match old and new nodes across renders.
+        let newRoot = assignStableIDs(rawRoot, path: "root")
 
         _ = console.log("[Raven] Render: \(newRoot.children.count) children, rerender=\(isRerender)")
 
-        let newTree = VTree(root: newRoot)
-
-        // Mount the tree to DOM (this uses eventHandlerRegistry to attach listeners)
-        mountTree(newRoot)
-        currentTree = newTree
-
-        // Restore focus to the element that was focused before re-render
-        if let focusInfo = savedFocusInfo,
-           let doc = JSObject.global["document"].object {
-            // Build a specific selector using tag, type, and aria-label
-            var selector = focusInfo.tagName.lowercased()
-            if !focusInfo.inputType.isEmpty {
-                selector += "[type=\"\(focusInfo.inputType)\"]"
-            }
-            selector += "[aria-label=\"\(focusInfo.ariaLabel)\"]"
-            if let el = doc.querySelector!(selector).object {
-                _ = el.focus!()
-                // Restore cursor position for text-like inputs (not range/color/etc.)
-                let textTypes = ["text", "password", "email", "search", "url", "tel"]
-                if textTypes.contains(focusInfo.inputType), let selStart = focusInfo.selectionStart, let selEnd = focusInfo.selectionEnd {
-                    el.selectionStart = .number(Double(selStart))
-                    el.selectionEnd = .number(Double(selEnd))
-                }
-            }
+        if isRerender, let oldTree = currentTree {
+            // -- Incremental reconciliation --
+            let patches = differ.diff(old: oldTree.root, new: newRoot)
+            applyPatches(patches)
+        } else {
+            // -- Initial mount --
+            mountTree(newRoot)
         }
+
+        currentTree = VTree(root: newRoot)
+
+        // -- Clean up stale handlers --
+        // Any handler that was active last render but not this render is stale.
+        let staleHandlers = previousHandlerIDs.subtracting(activeHandlerIDs)
+        for id in staleHandlers {
+            eventHandlerRegistry.removeValue(forKey: id)
+            inputEventHandlerRegistry.removeValue(forKey: id)
+            DOMBridge.shared.cleanupStaleHandler(id: id)
+        }
+    }
+
+    /// Walk a VNode tree and replace every random NodeID with a deterministic
+    /// one derived from the node's structural position.
+    ///
+    /// This makes the Differ's output patches reference the correct DOM
+    /// elements: the "old" tree (from the previous render) and the "new" tree
+    /// (from this render) share the same NodeIDs for structurally-equivalent
+    /// positions, so `Patch.updateProps(nodeID:…)` can look up the right
+    /// JSObject in DOMBridge's node registry.
+    private func assignStableIDs(_ node: VNode, path: String) -> VNode {
+        let stableID = NodeID(stablePath: path)
+        let children = node.children.enumerated().map { (i, child) in
+            let childKey = child.key ?? String(i)
+            return assignStableIDs(child, path: "\(path).\(childKey)")
+        }
+        return VNode(
+            id: stableID,
+            type: node.type,
+            props: node.props,
+            children: children,
+            key: node.key,
+            gestures: node.gestures
+        )
     }
 
     /// Schedule an update to be batched with other pending updates
@@ -231,15 +312,38 @@ public final class RenderCoordinator: Sendable, _RenderContext {
 
     // MARK: - View to VNode Conversion
 
-    /// Recursively convert a View into a VNode
+    /// Recursively convert a View into a VNode.
+    /// Pushes the view type name onto the path stack so that handler and node
+    /// IDs produced inside this subtree are deterministic.
     /// - Parameter view: View to convert
     /// - Returns: VNode representation
     private func convertViewToVNode<V: View>(_ view: V) -> VNode {
+        // Push the (simplified) type name for path tracking
+        let typeName = _typeName(V.self)
+        pathStack.append(typeName)
+        childCounterStack.append(0)
+        handlerCounterStack.append(0)
+        defer {
+            pathStack.removeLast()
+            childCounterStack.removeLast()
+            handlerCounterStack.removeLast()
+        }
+
         if isPrimitiveView(view) {
             return convertPrimitiveView(view)
         }
         let bodyView = view.body
         return convertViewToVNode(bodyView)
+    }
+
+    /// Short, human-readable type name without module prefix or generic params.
+    private func _typeName<T>(_ type: T.Type) -> String {
+        let full = String(describing: type)
+        // Strip generic parameters: "VStack<TupleView<...>>" → "VStack"
+        if let idx = full.firstIndex(of: "<") {
+            return String(full[full.startIndex..<idx])
+        }
+        return full
     }
 
     /// Check if a view is a primitive (has no body to evaluate)
@@ -481,9 +585,29 @@ public final class RenderCoordinator: Sendable, _RenderContext {
             }
 
         case .reorder(let parentID, let moves):
-            // Reordering children is complex and requires careful handling
-            // For now, we'll skip this in the initial implementation
-            print("Warning: Reorder patch not yet implemented for parent: \(parentID)")
+            guard let parentElement = DOMBridge.shared.getNode(id: parentID) else {
+                return
+            }
+            // Collect current child elements in order
+            let childCount = Int(parentElement.childNodes.length.number ?? 0)
+            var childElements: [JSObject] = []
+            for i in 0..<childCount {
+                if let child = parentElement.childNodes[i].object {
+                    childElements.append(child)
+                }
+            }
+            // Apply each move by reinserting the element at the target position
+            for move in moves {
+                guard move.from < childElements.count else { continue }
+                let element = childElements[move.from]
+                if move.to < childCount {
+                    if let reference = parentElement.childNodes[move.to].object {
+                        DOMBridge.shared.insertBefore(parent: parentElement, new: element, reference: reference)
+                    }
+                } else {
+                    DOMBridge.shared.appendChild(parent: parentElement, child: element)
+                }
+            }
         }
     }
 
@@ -493,12 +617,10 @@ public final class RenderCoordinator: Sendable, _RenderContext {
     ///   - element: JSObject representing the DOM element
     private func applyPropPatch(_ patch: PropPatch, to element: JSObject) {
         switch patch {
-        case .add(let key, let value), .update(let key, let value):
+        case .add(_, let value), .update(_, let value):
             applyProperty(value, to: element)
 
         case .remove(let key):
-            // Determine the property type from the key and remove it
-            // This is simplified; in a real implementation, we'd track property types
             DOMBridge.shared.removeAttribute(element: element, name: key)
         }
     }
