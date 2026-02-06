@@ -200,7 +200,7 @@ public final class RenderProfiler: Sendable {
     /// - Parameter operation: The patching operation to measure
     /// - Returns: The result of the operation
     @discardableResult
-    public func measurePatching<T>(
+    public func measurePatching<T: Sendable>(
         label: String = "patch",
         _ operation: () async -> T
     ) async -> T {
@@ -233,7 +233,7 @@ public final class RenderProfiler: Sendable {
     /// - Parameter operation: The render operation to measure
     /// - Returns: The result of the operation
     @discardableResult
-    public func measureRender<T>(
+    public func measureRender<T: Sendable>(
         label: String = "render",
         _ operation: () async -> T
     ) async -> T {

@@ -62,7 +62,7 @@ public final class ComponentMetrics: Sendable {
     ///   - operation: The async render operation to measure
     /// - Returns: The result of the operation
     @discardableResult
-    public func measureAsync<T>(
+    public func measureAsync<T: Sendable>(
         componentName: String,
         _ operation: () async -> T
     ) async -> T {
