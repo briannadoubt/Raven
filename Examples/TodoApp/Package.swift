@@ -28,7 +28,6 @@ let package = Package(
             ],
             path: "Sources/TodoApp",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("AccessLevelOnImport")
             ],
             linkerSettings: [

@@ -44,7 +44,7 @@ let package = Package(
             ],
             path: "Sources/Raven",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport"),
                 // Size optimization for release builds
                 .unsafeFlags(["-Osize"], .when(configuration: .release)),
@@ -69,7 +69,7 @@ let package = Package(
             ],
             path: "Sources/RavenRuntime",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport"),
                 // Size optimization for release builds
                 .unsafeFlags(["-Osize"], .when(configuration: .release)),
@@ -95,7 +95,7 @@ let package = Package(
             ],
             path: "Sources/RavenCLI",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport")
             ]
         ),
@@ -108,7 +108,7 @@ let package = Package(
             dependencies: ["Raven"],
             path: "Tests/RavenTests",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport")
             ]
         ),
@@ -119,7 +119,7 @@ let package = Package(
             dependencies: ["Raven"],
             path: "Tests/VirtualDOMTests",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport")
             ]
         ),
@@ -133,7 +133,7 @@ let package = Package(
             ],
             path: "Tests/IntegrationTests",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport")
             ]
         ),
@@ -146,7 +146,7 @@ let package = Package(
             ],
             path: "Tests/RavenCLI",
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
+
                 .enableExperimentalFeature("AccessLevelOnImport")
             ]
         )
