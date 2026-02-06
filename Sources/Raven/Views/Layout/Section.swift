@@ -203,3 +203,52 @@ extension Section where Header == Text {
         self.content = content()
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension Section: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let wrapperNode = toVNode()
+        var children: [VNode] = []
+
+        // Render header as legend if present
+        if let header = header, !(header is EmptyView) {
+            let headerNode = context.renderChild(header)
+            let legendProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: "raven-section-legend"),
+                "font-weight": .style(name: "font-weight", value: "600"),
+                "font-size": .style(name: "font-size", value: "14px"),
+                "color": .style(name: "color", value: "#374151"),
+            ]
+            children.append(VNode.element("legend", props: legendProps, children: [headerNode]))
+        }
+
+        // Render content
+        let contentNode = context.renderChild(content)
+        if case .fragment = contentNode.type {
+            children.append(contentsOf: contentNode.children)
+        } else {
+            children.append(contentNode)
+        }
+
+        // Render footer if present
+        if let footer = footer, !(footer is EmptyView) {
+            let footerNode = context.renderChild(footer)
+            let footerProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: "raven-section-footer"),
+                "font-size": .style(name: "font-size", value: "12px"),
+                "color": .style(name: "color", value: "#6b7280"),
+                "margin-top": .style(name: "margin-top", value: "8px"),
+            ]
+            children.append(VNode.element("div", props: footerProps, children: [footerNode]))
+        }
+
+        return VNode(
+            id: wrapperNode.id,
+            type: wrapperNode.type,
+            props: wrapperNode.props,
+            children: children,
+            key: wrapperNode.key
+        )
+    }
+}

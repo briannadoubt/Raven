@@ -41,11 +41,10 @@ extension TupleView: TupleViewProtocol {
 
     @MainActor private func extractFromView<Selection: Hashable>(_ view: any View, into options: inout [PickerOption<Selection>]) where Selection: Sendable {
         if let taggedView = view as? TaggedView<Selection> {
-            let label = extractLabel(from: taggedView.content)
             let option = PickerOption(
-                id: UUID().uuidString,
+                id: nextPickerOptionID(),
                 value: taggedView.tagValue,
-                label: label
+                label: taggedView.textLabel
             )
             options.append(option)
         } else if let tupleView = view as? any TupleViewProtocol {
@@ -81,11 +80,10 @@ extension ConditionalContent: ConditionalContentProtocol {
 
     @MainActor private func extractFromView<Selection: Hashable>(_ view: any View, into options: inout [PickerOption<Selection>]) where Selection: Sendable {
         if let taggedView = view as? TaggedView<Selection> {
-            let label = extractLabel(from: taggedView.content)
             let option = PickerOption(
-                id: UUID().uuidString,
+                id: nextPickerOptionID(),
                 value: taggedView.tagValue,
-                label: label
+                label: taggedView.textLabel
             )
             options.append(option)
         } else if let tupleView = view as? any TupleViewProtocol {
@@ -118,11 +116,10 @@ extension OptionalContent: OptionalContentProtocol {
 
     @MainActor private func extractFromView<Selection: Hashable>(_ view: any View, into options: inout [PickerOption<Selection>]) where Selection: Sendable {
         if let taggedView = view as? TaggedView<Selection> {
-            let label = extractLabel(from: taggedView.content)
             let option = PickerOption(
-                id: UUID().uuidString,
+                id: nextPickerOptionID(),
                 value: taggedView.tagValue,
-                label: label
+                label: taggedView.textLabel
             )
             options.append(option)
         } else if let tupleView = view as? any TupleViewProtocol {
@@ -155,11 +152,10 @@ extension ForEachView: ForEachViewProtocol {
 
     @MainActor private func extractFromView<Selection: Hashable>(_ view: any View, into options: inout [PickerOption<Selection>]) where Selection: Sendable {
         if let taggedView = view as? TaggedView<Selection> {
-            let label = extractLabel(from: taggedView.content)
             let option = PickerOption(
-                id: UUID().uuidString,
+                id: nextPickerOptionID(),
                 value: taggedView.tagValue,
-                label: label
+                label: taggedView.textLabel
             )
             options.append(option)
         } else if let tupleView = view as? any TupleViewProtocol {

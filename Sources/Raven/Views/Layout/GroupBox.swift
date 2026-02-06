@@ -209,3 +209,46 @@ extension GroupBox where Label == Text {
         self.hasLabel = true
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension GroupBox: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        var children: [VNode] = []
+
+        // Render label as legend if present
+        if hasLabel, let label = label {
+            let labelNode = context.renderChild(label)
+            let legendProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: "raven-groupbox-legend"),
+            ]
+            children.append(VNode.element("legend", props: legendProps, children: [labelNode]))
+        }
+
+        // Render content
+        let contentNode = context.renderChild(content)
+        if case .fragment = contentNode.type {
+            children.append(contentsOf: contentNode.children)
+        } else {
+            children.append(contentNode)
+        }
+
+        // Create the fieldset properties
+        let fieldsetProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-groupbox"),
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "gap": .style(name: "gap", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #e0e0e0"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "padding": .style(name: "padding", value: "12px"),
+            "margin": .style(name: "margin", value: "8px 0"),
+        ]
+
+        return VNode.element(
+            "fieldset",
+            props: fieldsetProps,
+            children: children
+        )
+    }
+}

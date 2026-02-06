@@ -79,3 +79,27 @@ public struct Form<Content: View>: View, PrimitiveView, Sendable {
         )
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension Form: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let wrapperNode = toVNode()
+        let contentNode = context.renderChild(content)
+
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+
+        return VNode(
+            id: wrapperNode.id,
+            type: wrapperNode.type,
+            props: wrapperNode.props,
+            children: children,
+            key: wrapperNode.key
+        )
+    }
+}

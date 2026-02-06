@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control that presents a menu of actions when clicked.
 ///
@@ -308,3 +309,88 @@ extension Menu where Label == Text {
 
 // Note: Menu item extraction uses the existing protocols defined in Picker.swift
 // for TupleViewProtocol, ConditionalContentProtocol, OptionalContentProtocol, and ForEachViewProtocol
+
+// MARK: - Coordinator Renderable
+
+extension Menu: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let menuID = UUID().uuidString
+        let dropdownID = "menu-dropdown-\(menuID)"
+
+        // Register click handler that toggles dropdown via JS attribute
+        let clickHandlerID = context.registerClickHandler {
+            // Toggle dropdown display using JavaScript
+            let document = JSObject.global.document
+            if let dropdown = document.getElementById(dropdownID).object {
+                let currentDisplay = dropdown.style.display.string ?? "none"
+                if currentDisplay == "none" {
+                    _ = dropdown.style.setProperty("display", "block")
+                } else {
+                    _ = dropdown.style.setProperty("display", "none")
+                }
+            }
+        }
+
+        // Render label
+        let labelNode = context.renderChild(label)
+
+        // Trigger button
+        let triggerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-menu-trigger"),
+            "aria-haspopup": .attribute(name: "aria-haspopup", value: "true"),
+            "aria-expanded": .attribute(name: "aria-expanded", value: "false"),
+            "aria-controls": .attribute(name: "aria-controls", value: dropdownID),
+            "onClick": .eventHandler(event: "click", handlerID: clickHandlerID),
+            "cursor": .style(name: "cursor", value: "pointer"),
+            "padding": .style(name: "padding", value: "8px 12px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "background-color": .style(name: "background-color", value: "white"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "display": .style(name: "display", value: "inline-flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "4px"),
+        ]
+
+        // Add dropdown arrow
+        let arrowNode = VNode.text(" \u{25BC}")
+        let triggerButton = VNode.element("button", props: triggerProps, children: [labelNode, arrowNode])
+
+        // Render dropdown content
+        let contentNode = context.renderChild(content)
+        var dropdownChildren: [VNode] = []
+        if case .fragment = contentNode.type {
+            dropdownChildren = contentNode.children
+        } else {
+            dropdownChildren = [contentNode]
+        }
+
+        let dropdownProps: [String: VProperty] = [
+            "id": .attribute(name: "id", value: dropdownID),
+            "class": .attribute(name: "class", value: "raven-menu-dropdown"),
+            "role": .attribute(name: "role", value: "menu"),
+            "display": .style(name: "display", value: "none"),
+            "position": .style(name: "position", value: "absolute"),
+            "top": .style(name: "top", value: "100%"),
+            "left": .style(name: "left", value: "0"),
+            "margin-top": .style(name: "margin-top", value: "4px"),
+            "background-color": .style(name: "background-color", value: "white"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "box-shadow": .style(name: "box-shadow", value: "0 2px 8px rgba(0,0,0,0.15)"),
+            "min-width": .style(name: "min-width", value: "160px"),
+            "z-index": .style(name: "z-index", value: "1000"),
+            "padding": .style(name: "padding", value: "4px 0"),
+        ]
+        let dropdown = VNode.element("div", props: dropdownProps, children: dropdownChildren)
+
+        // Container
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-menu"),
+            "position": .style(name: "position", value: "relative"),
+            "display": .style(name: "display", value: "inline-block"),
+        ]
+
+        return VNode.element("div", props: containerProps, children: [triggerButton, dropdown])
+    }
+}

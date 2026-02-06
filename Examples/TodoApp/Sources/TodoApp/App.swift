@@ -68,6 +68,8 @@ final class ShowcaseStore: ObservableObject {
     @Published var stepperValue: Int = 0
     @Published var secureText: String = ""
     @Published var progressValue: Double = 0.65
+    @Published var pickerSelection: String = "option1"
+    @Published var disclosureExpanded: Bool = false
 
     init() {
         setupPublished()
@@ -156,6 +158,9 @@ struct TodoApp: View {
             if store.selectedTab == "layout" {
                 LayoutTab()
             }
+            if store.selectedTab == "forms" {
+                FormsTab(store: store)
+            }
         }
     }
 }
@@ -192,6 +197,7 @@ struct TabBar: View {
             TabButton(label: "Controls", tab: "controls", isSelected: selectedTab == "controls", onSelect: onSelect)
             TabButton(label: "Display", tab: "display", isSelected: selectedTab == "display", onSelect: onSelect)
             TabButton(label: "Layout", tab: "layout", isSelected: selectedTab == "layout", onSelect: onSelect)
+            TabButton(label: "Forms", tab: "forms", isSelected: selectedTab == "forms", onSelect: onSelect)
         }
         .background(Color(hex: "#f1f5f9"))
     }
@@ -652,6 +658,206 @@ struct ModifierShowcase: View {
                     .background(Color(hex: "#8b5cf6"))
                     .foregroundColor(.white)
                     .cornerRadius(20)
+            }
+        }
+    }
+}
+
+// MARK: - Forms Tab
+
+@MainActor
+struct FormsTab: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(spacing: 16) {
+            FormDemo(store: store)
+            PickerDemo(store: store)
+            GroupBoxDemo()
+            ScrollViewDemo()
+            DisclosureGroupDemo(store: store)
+            LinkDemo()
+            MenuDemo()
+        }
+        .padding(16)
+    }
+}
+
+// MARK: - Form Demo
+
+@MainActor
+struct FormDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "Form & Section") {
+            Form {
+                Section(header: "User Info") {
+                    Text("Forms render as semantic HTML form elements")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+
+                    Toggle("Dark Mode", isOn: Binding(
+                        get: { store.toggleValue },
+                        set: { store.toggleValue = $0 }
+                    ))
+                }
+
+                Section(header: "Preferences") {
+                    Text("Sections render as fieldset elements with legend headers")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Picker Demo
+
+@MainActor
+struct PickerDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "Picker") {
+            VStack(spacing: 8) {
+                Picker("Theme", selection: Binding(
+                    get: { store.pickerSelection },
+                    set: { store.pickerSelection = $0 }
+                )) {
+                    Text("Light").tag("option1")
+                    Text("Dark").tag("option2")
+                    Text("System").tag("option3")
+                }
+
+                Text("Selected: \(store.pickerSelection)")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+            }
+        }
+    }
+}
+
+// MARK: - GroupBox Demo
+
+@MainActor
+struct GroupBoxDemo: View {
+    var body: some View {
+        SectionCard(title: "GroupBox") {
+            GroupBox("Appearance Settings") {
+                VStack(spacing: 8) {
+                    Text("GroupBox renders as a fieldset with a legend label")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+
+                    Text("It provides visual grouping of related content")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "#64748b"))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - ScrollView Demo
+
+@MainActor
+struct ScrollViewDemo: View {
+    var body: some View {
+        SectionCard(title: "ScrollView") {
+            ScrollView {
+                VStack(spacing: 4) {
+                    Text("Item 1")
+                        .padding(8)
+                        .background(Color(hex: "#dbeafe"))
+                        .cornerRadius(4)
+                    Text("Item 2")
+                        .padding(8)
+                        .background(Color(hex: "#dcfce7"))
+                        .cornerRadius(4)
+                    Text("Item 3")
+                        .padding(8)
+                        .background(Color(hex: "#fef9c3"))
+                        .cornerRadius(4)
+                    Text("Item 4")
+                        .padding(8)
+                        .background(Color(hex: "#fce7f3"))
+                        .cornerRadius(4)
+                    Text("Item 5")
+                        .padding(8)
+                        .background(Color(hex: "#e0e7ff"))
+                        .cornerRadius(4)
+                    Text("Item 6")
+                        .padding(8)
+                        .background(Color(hex: "#ccfbf1"))
+                        .cornerRadius(4)
+                }
+            }
+            .frame(height: 150)
+        }
+    }
+}
+
+// MARK: - DisclosureGroup Demo
+
+@MainActor
+struct DisclosureGroupDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "DisclosureGroup") {
+            VStack(spacing: 4) {
+                DisclosureGroup("Settings", isExpanded: Binding(
+                    get: { store.disclosureExpanded },
+                    set: { store.disclosureExpanded = $0 }
+                )) {
+                    VStack(spacing: 8) {
+                        Text("Hidden content revealed!")
+                            .font(.body)
+                            .foregroundColor(Color(hex: "#1e293b"))
+                        Text("Click the header to collapse")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "#64748b"))
+                    }
+                }
+
+                Text(store.disclosureExpanded ? "State: Expanded" : "State: Collapsed")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+            }
+        }
+    }
+}
+
+// MARK: - Link Demo
+
+@MainActor
+struct LinkDemo: View {
+    var body: some View {
+        SectionCard(title: "Link") {
+            VStack(spacing: 8) {
+                Link("Swift.org", destination: URL(string: "https://swift.org")!)
+                Link("WebAssembly", destination: URL(string: "https://webassembly.org")!)
+                Link(destination: URL(string: "https://github.com")!) {
+                    Text("GitHub (custom label)")
+                        .font(.headline)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Menu Demo
+
+@MainActor
+struct MenuDemo: View {
+    var body: some View {
+        SectionCard(title: "Menu") {
+            Menu("Actions") {
+                Button("Copy") { }
+                Button("Paste") { }
+                Button("Delete") { }
             }
         }
     }

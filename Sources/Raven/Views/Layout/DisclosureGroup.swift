@@ -397,3 +397,74 @@ extension DisclosureGroup where Label == Text {
         self.label = Text(title)
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension DisclosureGroup: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let expanded = isExpandedBinding?.wrappedValue ?? internalExpanded
+        let handlerID = context.registerClickHandler(clickHandler)
+
+        // Generate unique IDs
+        let groupID = UUID().uuidString
+        let contentID = "disclosure-content-\(groupID)"
+
+        // Chevron indicator
+        let chevronProps: [String: VProperty] = [
+            "aria-hidden": .attribute(name: "aria-hidden", value: "true"),
+            "display": .style(name: "display", value: "inline-block"),
+            "transition": .style(name: "transition", value: "transform 0.2s ease"),
+            "transform": .style(name: "transform", value: expanded ? "rotate(90deg)" : "rotate(0deg)"),
+            "margin-right": .style(name: "margin-right", value: "8px"),
+        ]
+        let chevronNode = VNode.element("span", props: chevronProps, children: [VNode.text("\u{25B6}")])
+
+        // Render label
+        let labelNode = context.renderChild(label)
+
+        // Header div (clickable)
+        let headerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-disclosure-header"),
+            "role": .attribute(name: "role", value: "button"),
+            "aria-expanded": .attribute(name: "aria-expanded", value: expanded ? "true" : "false"),
+            "aria-controls": .attribute(name: "aria-controls", value: contentID),
+            "tabindex": .attribute(name: "tabindex", value: "0"),
+            "onClick": .eventHandler(event: "click", handlerID: handlerID),
+            "cursor": .style(name: "cursor", value: "pointer"),
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "padding": .style(name: "padding", value: "8px 0"),
+            "user-select": .style(name: "user-select", value: "none"),
+        ]
+        let headerNode = VNode.element("div", props: headerProps, children: [chevronNode, labelNode])
+
+        // Content div (conditionally displayed)
+        var contentChildren: [VNode] = []
+        if expanded {
+            let contentNode = context.renderChild(content)
+            if case .fragment = contentNode.type {
+                contentChildren = contentNode.children
+            } else {
+                contentChildren = [contentNode]
+            }
+        }
+
+        var contentProps: [String: VProperty] = [
+            "id": .attribute(name: "id", value: contentID),
+            "class": .attribute(name: "class", value: "raven-disclosure-content"),
+            "padding-left": .style(name: "padding-left", value: "24px"),
+        ]
+        if !expanded {
+            contentProps["display"] = .style(name: "display", value: "none")
+        }
+        let contentDiv = VNode.element("div", props: contentProps, children: contentChildren)
+
+        // Container
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-disclosure-group"),
+            "border-bottom": .style(name: "border-bottom", value: "1px solid #e5e7eb"),
+        ]
+
+        return VNode.element("div", props: containerProps, children: [headerNode, contentDiv])
+    }
+}

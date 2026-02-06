@@ -1,5 +1,19 @@
 import Foundation
 
+// MARK: - Picker Option ID Generator
+
+/// Counter-based unique ID generator for picker options.
+/// Foundation's UUID() relies on WASI random_get which returns 0 in WASM,
+/// producing identical UUIDs. This counter ensures unique option IDs.
+@MainActor
+private var _pickerOptionIDCounter: UInt64 = 0
+
+@MainActor
+func nextPickerOptionID() -> String {
+    _pickerOptionIDCounter += 1
+    return "picker-opt-\(_pickerOptionIDCounter)"
+}
+
 // MARK: - Picker Option
 
 /// Represents a single option in a picker.
@@ -32,9 +46,18 @@ public struct TaggedView<SelectionValue: Hashable>: View, Sendable where Selecti
     /// The tag value associated with this view
     let tagValue: SelectionValue
 
+    /// The text content extracted before type erasure (for picker option labels)
+    let textLabel: String
+
     @MainActor init<Content: View>(content: Content, tag: SelectionValue) {
         self.content = AnyView(content)
         self.tagValue = tag
+        // Extract text label before type erasure loses the concrete type
+        if let text = content as? Text {
+            self.textLabel = text.textContent
+        } else {
+            self.textLabel = ""
+        }
     }
 }
 

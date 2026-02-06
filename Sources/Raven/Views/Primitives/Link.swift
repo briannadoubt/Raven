@@ -265,3 +265,31 @@ extension Link where Label == Text {
         self.label = Text(titleKey)
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension Link: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Build anchor properties
+        var props: [String: VProperty] = [
+            "href": .attribute(name: "href", value: destination.absoluteString),
+            "color": .style(name: "color", value: "#0066cc"),
+            "text-decoration": .style(name: "text-decoration", value: "underline"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+        ]
+
+        // Add target="_blank" for external links
+        if let scheme = destination.scheme,
+           (scheme == "http" || scheme == "https"),
+           let host = destination.host,
+           !host.isEmpty {
+            props["target"] = .attribute(name: "target", value: "_blank")
+            props["rel"] = .attribute(name: "rel", value: "noopener noreferrer")
+        }
+
+        // Render label through context instead of manual cast
+        let children = [context.renderChild(label)]
+
+        return VNode.element("a", props: props, children: children)
+    }
+}

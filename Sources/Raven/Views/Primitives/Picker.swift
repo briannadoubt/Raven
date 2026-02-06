@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A control that displays a selectable list of mutually exclusive options.
 ///
@@ -578,11 +579,10 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
     @MainActor private func extractOptionsRecursive(from view: some View, into options: inout [PickerOption<Selection>]) {
         // Check if this view is a tagged view
         if let taggedView = view as? TaggedView<Selection> {
-            let label = extractLabel(from: taggedView.content)
             let option = PickerOption(
-                id: UUID().uuidString,
+                id: nextPickerOptionID(),
                 value: taggedView.tagValue,
-                label: label
+                label: taggedView.textLabel
             )
             options.append(option)
             return
@@ -620,5 +620,64 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
         }
         // Default to empty string for non-text views
         return ""
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension Picker: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let opts = self.options
+
+        // Register input handler for selection changes
+        let handlerID = context.registerInputHandler { event in
+            // Get the selected value from the event target
+            if let selectedValue = event.target.value.string {
+                // Find the option with matching ID and update selection
+                if let option = opts.first(where: { $0.id == selectedValue }) {
+                    self.selection.wrappedValue = option.value
+                }
+            }
+        }
+
+        // Build option elements
+        let optionNodes: [VNode] = opts.map { option in
+            let isSelected = option.value == selection.wrappedValue
+            var optionProps: [String: VProperty] = [
+                "value": .attribute(name: "value", value: option.id),
+            ]
+            if isSelected {
+                optionProps["selected"] = .boolAttribute(name: "selected", value: true)
+            }
+            return VNode.element("option", props: optionProps, children: [VNode.text(option.label)])
+        }
+
+        // Create select element
+        let selectProps: [String: VProperty] = [
+            "aria-label": .attribute(name: "aria-label", value: label),
+            "onChange": .eventHandler(event: "change", handlerID: handlerID),
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "background-color": .style(name: "background-color", value: "white"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+        ]
+        let selectNode = VNode.element("select", props: selectProps, children: optionNodes)
+
+        // Create label + select wrapper
+        let labelNode = VNode.element("span", props: [
+            "font-size": .style(name: "font-size", value: "14px"),
+            "margin-right": .style(name: "margin-right", value: "8px"),
+        ], children: [VNode.text(label)])
+
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-picker"),
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "8px"),
+        ]
+
+        return VNode.element("div", props: containerProps, children: [labelNode, selectNode])
     }
 }
