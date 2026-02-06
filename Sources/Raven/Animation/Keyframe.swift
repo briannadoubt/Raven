@@ -39,14 +39,8 @@ extension Float: Interpolatable {
     }
 }
 
-#if !(os(macOS) || os(iOS) || os(tvOS) || os(watchOS)) && !arch(wasm32)
-// Only add CGFloat conformance on platforms where it's not Double
-extension CGFloat: Interpolatable {
-    public func interpolated(to other: CGFloat, amount: Double) -> CGFloat {
-        self + (other - self) * CGFloat(amount)
-    }
-}
-#endif
+// CGFloat is a typealias for Double on all supported platforms,
+// so it inherits the Double conformance above.
 
 extension CGPoint: Interpolatable {
     public func interpolated(to other: CGPoint, amount: Double) -> CGPoint {
