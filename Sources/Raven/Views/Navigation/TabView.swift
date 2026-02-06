@@ -574,8 +574,9 @@ extension TabViewContainer: _CoordinatorRenderable {
             )
             buttonChildren.append(labelWrapper)
 
-            // Active indicator: blue bottom border for selected tab
-            let borderBottom = isSelected ? "2px solid #007AFF" : "2px solid transparent"
+            // Active indicator: accent-colored bottom border for selected tab
+            let borderBottom = isSelected ? "2px solid var(--system-accent, #007AFF)" : "2px solid transparent"
+            let textColor = isSelected ? "var(--system-accent, #007AFF)" : "var(--system-secondary-label, #8E8E93)"
 
             let buttonProps: [String: VProperty] = [
                 "class": .attribute(name: "class", value: isSelected ? "raven-tab-button raven-tab-button-selected" : "raven-tab-button"),
@@ -594,7 +595,7 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "border-bottom": .style(name: "border-bottom", value: borderBottom),
                 "background": .style(name: "background", value: "transparent"),
                 "cursor": .style(name: "cursor", value: "pointer"),
-                "color": .style(name: "color", value: isSelected ? "#007AFF" : "#8E8E93"),
+                "color": .style(name: "color", value: textColor),
                 "position": .style(name: "position", value: "relative"),
             ]
 
@@ -614,8 +615,8 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "aria-label": .attribute(name: "aria-label", value: "Tab navigation"),
                 "display": .style(name: "display", value: "flex"),
                 "flex-direction": .style(name: "flex-direction", value: "row"),
-                "border-top": .style(name: "border-top", value: "1px solid #e0e0e0"),
-                "background-color": .style(name: "background-color", value: "#ffffff"),
+                "border-bottom": .style(name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)"),
+                "background-color": .style(name: "background-color", value: "var(--system-secondary-background, #f2f2f7)"),
             ],
             children: tabButtons
         )

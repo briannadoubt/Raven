@@ -222,8 +222,8 @@ struct TabButton: View {
             onSelect(tab)
         }
         .padding(12)
-        .background(isSelected ? Color.white : Color.clear)
-        .foregroundColor(isSelected ? Color.label : Color.secondaryLabel)
+        .background(isSelected ? Color.systemBackground : Color.clear)
+        .foregroundColor(isSelected ? Color.accent : Color.secondaryLabel)
         .font(.body)
     }
 }
