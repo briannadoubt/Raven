@@ -397,3 +397,91 @@ public struct ColorPicker: View, PrimitiveView, Sendable {
         return 1.0
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension ColorPicker: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let hexColor = colorToHex(selection.wrappedValue)
+
+        // Register color input handler
+        let colorHandlerID = context.registerInputHandler { jsValue in
+            let value = jsValue.target.value.string ?? ""
+            // Parse hex color string like "#ff0000"
+            let cleaned = value.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+            guard cleaned.count == 6 else { return }
+            let scanner = cleaned
+            let rStr = String(scanner.prefix(2))
+            let gStr = String(scanner.dropFirst(2).prefix(2))
+            let bStr = String(scanner.dropFirst(4).prefix(2))
+            guard let r = UInt8(rStr, radix: 16),
+                  let g = UInt8(gStr, radix: 16),
+                  let b = UInt8(bStr, radix: 16) else { return }
+            let newColor = Color(red: Double(r) / 255.0, green: Double(g) / 255.0, blue: Double(b) / 255.0)
+            self.selection.wrappedValue = newColor
+        }
+
+        let colorProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "color"),
+            "value": .attribute(name: "value", value: hexColor),
+            "onChange": .eventHandler(event: "change", handlerID: colorHandlerID),
+            "aria-label": .attribute(name: "aria-label", value: label),
+            "width": .style(name: "width", value: "60px"),
+            "height": .style(name: "height", value: "40px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "cursor": .style(name: "cursor", value: "pointer"),
+        ]
+        let colorInput = VNode.element("input", props: colorProps, children: [])
+
+        if !supportsOpacity {
+            return colorInput
+        }
+
+        // Register opacity handler
+        let currentOpacity = extractOpacity(selection.wrappedValue)
+        let opacityHandlerID = context.registerInputHandler { jsValue in
+            let value = jsValue.target.value.string ?? "1"
+            guard let newOpacity = Double(value) else { return }
+            self.selection.wrappedValue = self.selection.wrappedValue.opacity(newOpacity)
+        }
+
+        let opacityProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "range"),
+            "min": .attribute(name: "min", value: "0"),
+            "max": .attribute(name: "max", value: "1"),
+            "step": .attribute(name: "step", value: "0.01"),
+            "value": .attribute(name: "value", value: String(currentOpacity)),
+            "onInput": .eventHandler(event: "input", handlerID: opacityHandlerID),
+            "aria-label": .attribute(name: "aria-label", value: "\(label) opacity"),
+            "width": .style(name: "width", value: "120px"),
+            "margin-left": .style(name: "margin-left", value: "8px"),
+        ]
+        let opacityInput = VNode.element("input", props: opacityProps, children: [])
+
+        // Label
+        let labelText = VNode.text(label)
+        let labelProps: [String: VProperty] = [
+            "display": .style(name: "display", value: "block"),
+            "margin-bottom": .style(name: "margin-bottom", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "font-weight": .style(name: "font-weight", value: "500"),
+        ]
+        let labelNode = VNode.element("label", props: labelProps, children: [labelText])
+
+        // Controls container
+        let controlsProps: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "8px"),
+        ]
+        let controlsContainer = VNode.element("div", props: controlsProps, children: [colorInput, opacityInput])
+
+        // Main container
+        let containerProps: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+        ]
+        return VNode.element("div", props: containerProps, children: [labelNode, controlsContainer])
+    }
+}

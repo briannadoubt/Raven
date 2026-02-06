@@ -144,7 +144,23 @@ public final class RenderCoordinator: Sendable, _RenderContext {
 
         let isRerender = currentTree != nil
 
+        // Save focused element info before clearing DOM so we can restore focus after re-render.
+        // Without this, typing in TextField/SecureField or dragging Slider causes focus loss
+        // because the full DOM is cleared and rebuilt on every state change.
+        var savedFocusInfo: (ariaLabel: String, tagName: String, inputType: String, selectionStart: Int?, selectionEnd: Int?)?
         if isRerender {
+            let doc = JSObject.global["document"]
+            if let activeEl = doc.activeElement.object {
+                let tag = activeEl.tagName.string ?? ""
+                let ariaLabel = activeEl.getAttribute!("aria-label").string ?? ""
+                let inputType = activeEl.getAttribute!("type").string ?? ""
+                let selStart = activeEl.selectionStart.number.flatMap { Int($0) }
+                let selEnd = activeEl.selectionEnd.number.flatMap { Int($0) }
+                if !ariaLabel.isEmpty {
+                    savedFocusInfo = (ariaLabel: ariaLabel, tagName: tag, inputType: inputType, selectionStart: selStart, selectionEnd: selEnd)
+                }
+            }
+
             // Re-render: clear DOM and reset handler state BEFORE view conversion
             // convertViewToVNode registers handlers, so registry must be empty first
             if let container = rootContainer {
@@ -165,6 +181,26 @@ public final class RenderCoordinator: Sendable, _RenderContext {
         // Mount the tree to DOM (this uses eventHandlerRegistry to attach listeners)
         mountTree(newRoot)
         currentTree = newTree
+
+        // Restore focus to the element that was focused before re-render
+        if let focusInfo = savedFocusInfo,
+           let doc = JSObject.global["document"].object {
+            // Build a specific selector using tag, type, and aria-label
+            var selector = focusInfo.tagName.lowercased()
+            if !focusInfo.inputType.isEmpty {
+                selector += "[type=\"\(focusInfo.inputType)\"]"
+            }
+            selector += "[aria-label=\"\(focusInfo.ariaLabel)\"]"
+            if let el = doc.querySelector!(selector).object {
+                _ = el.focus!()
+                // Restore cursor position for text-like inputs (not range/color/etc.)
+                let textTypes = ["text", "password", "email", "search", "url", "tel"]
+                if textTypes.contains(focusInfo.inputType), let selStart = focusInfo.selectionStart, let selEnd = focusInfo.selectionEnd {
+                    el.selectionStart = .number(Double(selStart))
+                    el.selectionEnd = .number(Double(selEnd))
+                }
+            }
+        }
     }
 
     /// Schedule an update to be batched with other pending updates

@@ -159,3 +159,32 @@ public struct LazyHGrid<Content: View>: View, PrimitiveView, Sendable {
         return templates.joined(separator: " ")
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension LazyHGrid: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "grid"),
+            "grid-auto-flow": .style(name: "grid-auto-flow", value: "column")
+        ]
+        let templateRows = generateGridTemplateRows()
+        props["grid-template-rows"] = .style(
+            name: "grid-template-rows",
+            value: templateRows
+        )
+        if let spacing = spacing {
+            props["gap"] = .style(name: "gap", value: "\(spacing)px")
+        }
+        props["place-items"] = .style(name: "place-items", value: alignment.cssValue)
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: props, children: children)
+    }
+}

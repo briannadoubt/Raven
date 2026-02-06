@@ -388,25 +388,36 @@ public struct DatePicker: View, PrimitiveView, Sendable {
     }
 
     /// Formats a date for the HTML input value attribute.
+    /// Uses manual string construction to avoid ISO8601DateFormatter and String(format:)
+    /// which crash or produce incorrect results in Swift WASM.
     @MainActor private func formatDateForInput(_ date: Date) -> String {
-        let formatter = ISO8601DateFormatter()
+        let calendar = Calendar(identifier: .gregorian)
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let year = components.year ?? 2026
+        let month = components.month ?? 1
+        let day = components.day ?? 1
+        let hour = components.hour ?? 0
+        let minute = components.minute ?? 0
+
+        func pad2(_ n: Int) -> String {
+            n < 10 ? "0\(n)" : "\(n)"
+        }
+        func pad4(_ n: Int) -> String {
+            if n < 10 { return "000\(n)" }
+            if n < 100 { return "00\(n)" }
+            if n < 1000 { return "0\(n)" }
+            return "\(n)"
+        }
 
         if displayedComponents.contains(.date) && displayedComponents.contains(.hourAndMinute) {
             // datetime-local format: YYYY-MM-DDTHH:mm
-            formatter.formatOptions = [.withYear, .withMonth, .withDay, .withTime, .withColonSeparatorInTime]
-            let formatted = formatter.string(from: date)
-            // Remove timezone info for datetime-local
-            return formatted.replacingOccurrences(of: "Z", with: "")
+            return "\(pad4(year))-\(pad2(month))-\(pad2(day))T\(pad2(hour)):\(pad2(minute))"
         } else if displayedComponents.contains(.hourAndMinute) {
             // time format: HH:mm
-            let calendar = Calendar.current
-            let hour = calendar.component(.hour, from: date)
-            let minute = calendar.component(.minute, from: date)
-            return String(format: "%02d:%02d", hour, minute)
+            return "\(pad2(hour)):\(pad2(minute))"
         } else {
             // date format: YYYY-MM-DD
-            formatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
-            return formatter.string(from: date)
+            return "\(pad4(year))-\(pad2(month))-\(pad2(day))"
         }
     }
 }
@@ -434,4 +445,95 @@ private enum DateRange: Sendable {
     case closed(ClosedRange<Date>)
     case from(Date)
     case through(Date)
+}
+
+// MARK: - Coordinator Renderable
+
+extension DatePicker: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let inputType = inputTypeString()
+        let formattedValue = formatDateForInput(selection.wrappedValue)
+
+        // Register input handler
+        // Avoids ISO8601DateFormatter which crashes in Swift WASM
+        let handlerID = context.registerInputHandler { jsValue in
+            let value = jsValue.target.value.string ?? ""
+            guard !value.isEmpty else { return }
+
+            if self.displayedComponents.contains(.date) && self.displayedComponents.contains(.hourAndMinute) {
+                // datetime-local format: YYYY-MM-DDTHH:mm
+                // Parse manually: split on T, then parse date and time parts
+                let parts = value.split(separator: "T")
+                if parts.count == 2 {
+                    let dateParts = parts[0].split(separator: "-")
+                    let timeParts = parts[1].split(separator: ":")
+                    if dateParts.count == 3 && timeParts.count >= 2,
+                       let year = Int(dateParts[0]), let month = Int(dateParts[1]), let day = Int(dateParts[2]),
+                       let hour = Int(timeParts[0]), let minute = Int(timeParts[1]) {
+                        let calendar = Calendar(identifier: .gregorian)
+                        var components = DateComponents()
+                        components.year = year
+                        components.month = month
+                        components.day = day
+                        components.hour = hour
+                        components.minute = minute
+                        if let date = calendar.date(from: components) {
+                            self.selection.wrappedValue = date
+                        }
+                    }
+                }
+            } else if self.displayedComponents.contains(.hourAndMinute) {
+                // time format: HH:mm - combine with current date
+                let timeParts = value.split(separator: ":")
+                if timeParts.count >= 2, let hour = Int(timeParts[0]), let minute = Int(timeParts[1]) {
+                    let calendar = Calendar(identifier: .gregorian)
+                    var components = calendar.dateComponents([.year, .month, .day], from: self.selection.wrappedValue)
+                    components.hour = hour
+                    components.minute = minute
+                    if let date = calendar.date(from: components) {
+                        self.selection.wrappedValue = date
+                    }
+                }
+            } else {
+                // date format: YYYY-MM-DD
+                let dateParts = value.split(separator: "-")
+                if dateParts.count == 3,
+                   let year = Int(dateParts[0]), let month = Int(dateParts[1]), let day = Int(dateParts[2]) {
+                    let calendar = Calendar(identifier: .gregorian)
+                    var components = DateComponents()
+                    components.year = year
+                    components.month = month
+                    components.day = day
+                    if let date = calendar.date(from: components) {
+                        self.selection.wrappedValue = date
+                    }
+                }
+            }
+        }
+
+        var props: [String: VProperty] = [
+            "type": .attribute(name: "type", value: inputType),
+            "value": .attribute(name: "value", value: formattedValue),
+            "onChange": .eventHandler(event: "change", handlerID: handlerID),
+            "aria-label": .attribute(name: "aria-label", value: label),
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid #ccc"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+        ]
+
+        switch dateRange {
+        case .unlimited:
+            break
+        case .closed(let range):
+            props["min"] = .attribute(name: "min", value: formatDateForInput(range.lowerBound))
+            props["max"] = .attribute(name: "max", value: formatDateForInput(range.upperBound))
+        case .from(let minDate):
+            props["min"] = .attribute(name: "min", value: formatDateForInput(minDate))
+        case .through(let maxDate):
+            props["max"] = .attribute(name: "max", value: formatDateForInput(maxDate))
+        }
+
+        return VNode.element("input", props: props, children: [])
+    }
 }

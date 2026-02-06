@@ -103,15 +103,22 @@ public struct Image: View, PrimitiveView, Sendable {
             // For now, treat as a relative path to an assets folder
             srcValue = "/assets/\(name)"
         case .system(let systemName):
-            // System icons could map to an icon font or SVG sprite
-            // For now, use a placeholder approach with data attributes
-            // In a real implementation, this might render as an SVG or icon font
-            srcValue = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3E\(systemName)%3C/text%3E%3C/svg%3E"
+            // System icons rendered as inline SVG with the name as text placeholder.
+            // Explicit width/height on the SVG prevent the img from scaling unbounded.
+            srcValue = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ctext x='50%25' y='50%25' font-size='10' dominant-baseline='middle' text-anchor='middle'%3E\(systemName)%3C/text%3E%3C/svg%3E"
         case .url(let urlString):
             srcValue = urlString
         }
 
         props["src"] = .attribute(name: "src", value: srcValue)
+
+        // System icons get a fixed size to prevent unbounded scaling
+        if case .system = source {
+            props["width"] = .attribute(name: "width", value: "24")
+            props["height"] = .attribute(name: "height", value: "24")
+            props["display"] = .style(name: "display", value: "inline-block")
+            props["vertical-align"] = .style(name: "vertical-align", value: "middle")
+        }
 
         // Set accessibility attributes
         if isDecorative {

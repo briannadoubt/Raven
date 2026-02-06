@@ -176,3 +176,32 @@ public struct PinnedScrollableViews: OptionSet, Sendable {
     /// Pin section footers to the bottom of the scrollable area.
     public static let sectionFooters = PinnedScrollableViews(rawValue: 1 << 1)
 }
+
+// MARK: - Coordinator Renderable
+
+extension LazyVGrid: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "grid"),
+            "grid-auto-flow": .style(name: "grid-auto-flow", value: "row")
+        ]
+        let templateColumns = generateGridTemplateColumns()
+        props["grid-template-columns"] = .style(
+            name: "grid-template-columns",
+            value: templateColumns
+        )
+        if let spacing = spacing {
+            props["gap"] = .style(name: "gap", value: "\(spacing)px")
+        }
+        props["place-items"] = .style(name: "place-items", value: alignment.cssValue)
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: props, children: children)
+    }
+}

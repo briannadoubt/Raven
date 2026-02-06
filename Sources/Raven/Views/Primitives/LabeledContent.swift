@@ -248,3 +248,44 @@ extension LabeledContent where Label == Text {
         self.content = content()
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension LabeledContent: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Render label
+        let labelNode = context.renderChild(label)
+        let labelProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-labeled-content-label"),
+            "style": .style(name: "style", value: "flex: 0 0 auto; margin-right: 12px; min-width: 100px;")
+        ]
+        let labelChildren: [VNode]
+        if case .fragment = labelNode.type {
+            labelChildren = labelNode.children
+        } else {
+            labelChildren = [labelNode]
+        }
+        let labelContainer = VNode.element("div", props: labelProps, children: labelChildren)
+
+        // Render content
+        let contentNode = context.renderChild(content)
+        let contentProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-labeled-content-content"),
+            "style": .style(name: "style", value: "flex: 1 1 auto;")
+        ]
+        let contentChildren: [VNode]
+        if case .fragment = contentNode.type {
+            contentChildren = contentNode.children
+        } else {
+            contentChildren = [contentNode]
+        }
+        let contentContainer = VNode.element("div", props: contentProps, children: contentChildren)
+
+        // Outer container
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-labeled-content"),
+            "style": .style(name: "style", value: "display: flex; flex-direction: row; align-items: center; gap: 8px;")
+        ]
+        return VNode.element("div", props: containerProps, children: [labelContainer, contentContainer])
+    }
+}

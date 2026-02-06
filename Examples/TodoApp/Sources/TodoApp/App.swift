@@ -70,6 +70,8 @@ final class ShowcaseStore: ObservableObject {
     @Published var progressValue: Double = 0.65
     @Published var pickerSelection: String = "option1"
     @Published var disclosureExpanded: Bool = false
+    @Published var colorPickerValue: Color = .blue
+    @Published var datePickerValue: Date = Date()
 
     init() {
         setupPublished()
@@ -161,6 +163,9 @@ struct TodoApp: View {
             if store.selectedTab == "forms" {
                 FormsTab(store: store)
             }
+            if store.selectedTab == "effects" {
+                EffectsTab()
+            }
         }
     }
 }
@@ -198,6 +203,7 @@ struct TabBar: View {
             TabButton(label: "Display", tab: "display", isSelected: selectedTab == "display", onSelect: onSelect)
             TabButton(label: "Layout", tab: "layout", isSelected: selectedTab == "layout", onSelect: onSelect)
             TabButton(label: "Forms", tab: "forms", isSelected: selectedTab == "forms", onSelect: onSelect)
+            TabButton(label: "Effects", tab: "effects", isSelected: selectedTab == "effects", onSelect: onSelect)
         }
         .background(Color(hex: "#f1f5f9"))
     }
@@ -389,8 +395,76 @@ struct ControlsTab: View {
                         .foregroundColor(Color(hex: "#64748b"))
                 }
             }
+
+            ColorPickerDemo(store: store)
+            DatePickerDemo(store: store)
+            LabeledContentDemo()
         }
         .padding(16)
+    }
+}
+
+// MARK: - ColorPicker Demo
+
+@MainActor
+struct ColorPickerDemo: View {
+    let store: ShowcaseStore
+    var body: some View {
+        SectionCard(title: "ColorPicker") {
+            VStack(spacing: 8) {
+                ColorPicker("Theme Color", selection: Binding(
+                    get: { store.colorPickerValue },
+                    set: { store.colorPickerValue = $0 }
+                ), supportsOpacity: false)
+
+                Text("Selected color applied below:")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+
+                Text("Sample")
+                    .padding(12)
+                    .background(store.colorPickerValue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+        }
+    }
+}
+
+// MARK: - DatePicker Demo
+
+@MainActor
+struct DatePickerDemo: View {
+    let store: ShowcaseStore
+    var body: some View {
+        SectionCard(title: "DatePicker") {
+            VStack(spacing: 8) {
+                DatePicker("Event Date", selection: Binding(
+                    get: { store.datePickerValue },
+                    set: { store.datePickerValue = $0 }
+                ), displayedComponents: .date)
+
+                Text("Date selected")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+            }
+        }
+    }
+}
+
+// MARK: - LabeledContent Demo
+
+@MainActor
+struct LabeledContentDemo: View {
+    var body: some View {
+        SectionCard(title: "LabeledContent") {
+            VStack(spacing: 8) {
+                LabeledContent("Name", value: "Raven Framework")
+                LabeledContent("Version", value: "0.1.0")
+                LabeledContent("Platform", value: "WebAssembly")
+                LabeledContent("Language", value: "Swift 6.2")
+            }
+        }
     }
 }
 
@@ -486,8 +560,76 @@ struct DisplayTab: View {
                     .cornerRadius(4)
                 }
             }
+
+            ImageDemo()
+            ContentUnavailableDemo()
+            ShapesDemo()
         }
         .padding(16)
+    }
+}
+
+// MARK: - Image Demo
+
+@MainActor
+struct ImageDemo: View {
+    var body: some View {
+        SectionCard(title: "Image") {
+            VStack(spacing: 8) {
+                HStack(spacing: 16) {
+                    Image(systemName: "star.fill")
+                    Image(systemName: "heart.fill")
+                    Image(systemName: "bell.fill")
+                    Image(systemName: "gear")
+                }
+
+                Text("System SF Symbol icons")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+            }
+        }
+    }
+}
+
+// MARK: - ContentUnavailableView Demo
+
+@MainActor
+struct ContentUnavailableDemo: View {
+    var body: some View {
+        SectionCard(title: "ContentUnavailableView") {
+            ContentUnavailableView(
+                "No Results",
+                systemImage: "magnifyingglass",
+                description: Text("Try a different search term")
+            )
+        }
+    }
+}
+
+// MARK: - Shapes Demo
+
+@MainActor
+struct ShapesDemo: View {
+    var body: some View {
+        SectionCard(title: "Shapes") {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(Color(hex: "#3b82f6"))
+                    .frame(width: 50, height: 50)
+
+                Rectangle()
+                    .fill(Color(hex: "#ef4444"))
+                    .frame(width: 50, height: 50)
+
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(hex: "#22c55e"))
+                    .frame(width: 50, height: 50)
+
+                Capsule()
+                    .fill(Color(hex: "#f59e0b"))
+                    .frame(width: 80, height: 40)
+            }
+        }
     }
 }
 
@@ -505,6 +647,10 @@ struct LayoutTab: View {
             ZStackDemo()
             NestedLayoutDemo()
             ModifierShowcase()
+            GridDemo()
+            LazyVGridDemo()
+            LazyVStackDemo()
+            GeometryReaderDemo()
         }
         .padding(16)
     }
@@ -663,6 +809,129 @@ struct ModifierShowcase: View {
     }
 }
 
+// MARK: - Grid Demo
+
+@MainActor
+struct GridDemo: View {
+    var body: some View {
+        SectionCard(title: "Grid") {
+            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                GridRow {
+                    Text("R1C1")
+                        .padding(8)
+                        .background(Color(hex: "#dbeafe"))
+                        .cornerRadius(4)
+                    Text("R1C2")
+                        .padding(8)
+                        .background(Color(hex: "#dbeafe"))
+                        .cornerRadius(4)
+                    Text("R1C3")
+                        .padding(8)
+                        .background(Color(hex: "#dbeafe"))
+                        .cornerRadius(4)
+                }
+                GridRow {
+                    Text("R2C1")
+                        .padding(8)
+                        .background(Color(hex: "#dcfce7"))
+                        .cornerRadius(4)
+                    Text("R2C2")
+                        .padding(8)
+                        .background(Color(hex: "#dcfce7"))
+                        .cornerRadius(4)
+                    Text("R2C3")
+                        .padding(8)
+                        .background(Color(hex: "#dcfce7"))
+                        .cornerRadius(4)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - LazyVGrid Demo
+
+@MainActor
+struct LazyVGridDemo: View {
+    var body: some View {
+        SectionCard(title: "LazyVGrid") {
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 8) {
+                Text("1")
+                    .padding(12)
+                    .background(Color(hex: "#e0e7ff"))
+                    .cornerRadius(4)
+                Text("2")
+                    .padding(12)
+                    .background(Color(hex: "#fce7f3"))
+                    .cornerRadius(4)
+                Text("3")
+                    .padding(12)
+                    .background(Color(hex: "#ccfbf1"))
+                    .cornerRadius(4)
+                Text("4")
+                    .padding(12)
+                    .background(Color(hex: "#fef9c3"))
+                    .cornerRadius(4)
+                Text("5")
+                    .padding(12)
+                    .background(Color(hex: "#fee2e2"))
+                    .cornerRadius(4)
+                Text("6")
+                    .padding(12)
+                    .background(Color(hex: "#dbeafe"))
+                    .cornerRadius(4)
+            }
+        }
+    }
+}
+
+// MARK: - LazyVStack Demo
+
+@MainActor
+struct LazyVStackDemo: View {
+    var body: some View {
+        SectionCard(title: "LazyVStack") {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    Text("Lazy Item 1")
+                        .padding(8)
+                        .background(Color(hex: "#dbeafe"))
+                        .cornerRadius(4)
+                    Text("Lazy Item 2")
+                        .padding(8)
+                        .background(Color(hex: "#dcfce7"))
+                        .cornerRadius(4)
+                    Text("Lazy Item 3")
+                        .padding(8)
+                        .background(Color(hex: "#fef9c3"))
+                        .cornerRadius(4)
+                }
+            }
+            .frame(height: 120)
+        }
+    }
+}
+
+// MARK: - GeometryReader Demo
+
+@MainActor
+struct GeometryReaderDemo: View {
+    var body: some View {
+        SectionCard(title: "GeometryReader") {
+            GeometryReader { proxy in
+                Text("Size: \(Int(proxy.size.width))x\(Int(proxy.size.height))")
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "#64748b"))
+            }
+            .frame(height: 40)
+        }
+    }
+}
+
 // MARK: - Forms Tab
 
 @MainActor
@@ -678,6 +947,7 @@ struct FormsTab: View {
             DisclosureGroupDemo(store: store)
             LinkDemo()
             MenuDemo()
+            ControlGroupDemo()
         }
         .padding(16)
     }
@@ -858,6 +1128,112 @@ struct MenuDemo: View {
                 Button("Copy") { }
                 Button("Paste") { }
                 Button("Delete") { }
+            }
+        }
+    }
+}
+
+// MARK: - ControlGroup Demo
+
+@MainActor
+struct ControlGroupDemo: View {
+    var body: some View {
+        SectionCard(title: "ControlGroup") {
+            ControlGroup {
+                Button("Bold") { }
+                Button("Italic") { }
+                Button("Underline") { }
+            }
+        }
+    }
+}
+
+// MARK: - Effects Tab
+
+@MainActor
+struct EffectsTab: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            VisualEffectsDemo()
+            TransformDemo()
+        }
+        .padding(16)
+    }
+}
+
+// MARK: - Visual Effects Demo
+
+@MainActor
+struct VisualEffectsDemo: View {
+    var body: some View {
+        SectionCard(title: "Visual Effects") {
+            VStack(spacing: 12) {
+                Text("Blur Effect")
+                    .padding(12)
+                    .background(Color(hex: "#3b82f6"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .blur(radius: 2)
+
+                Text("Grayscale")
+                    .padding(12)
+                    .background(Color(hex: "#ef4444"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .grayscale(0.8)
+
+                Text("Brightness 1.3")
+                    .padding(12)
+                    .background(Color(hex: "#22c55e"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .brightness(0.3)
+
+                Text("Contrast 1.5")
+                    .padding(12)
+                    .background(Color(hex: "#8b5cf6"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .contrast(1.5)
+
+                Text("Saturation 2.0")
+                    .padding(12)
+                    .background(Color(hex: "#f59e0b"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .saturation(2.0)
+            }
+        }
+    }
+}
+
+// MARK: - Transform Effects Demo
+
+@MainActor
+struct TransformDemo: View {
+    var body: some View {
+        SectionCard(title: "Transform Effects") {
+            HStack(spacing: 24) {
+                Text("Rotated")
+                    .padding(12)
+                    .background(Color(hex: "#3b82f6"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .rotationEffect(Angle(degrees: 15))
+
+                Text("Scaled")
+                    .padding(12)
+                    .background(Color(hex: "#ef4444"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .scaleEffect(1.2)
+
+                Text("Offset")
+                    .padding(12)
+                    .background(Color(hex: "#22c55e"))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .offset(x: 0, y: -8)
             }
         }
     }

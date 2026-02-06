@@ -144,3 +144,27 @@ public struct ControlGroup<Content: View>: View, PrimitiveView, Sendable {
         )
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension ControlGroup: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let containerProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-control-group"),
+            "role": .attribute(name: "role", value: "group"),
+            "style": .style(
+                name: "style",
+                value: "display: flex; flex-direction: row; border: 1px solid #d0d0d0; border-radius: 4px; overflow: hidden; background-color: #f5f5f5;"
+            )
+        ]
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: containerProps, children: children)
+    }
+}

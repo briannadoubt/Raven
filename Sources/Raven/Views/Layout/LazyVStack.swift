@@ -192,3 +192,41 @@ public struct LazyVStack<Content: View>: View, PrimitiveView, Sendable {
         )
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension LazyVStack: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "align-items": .style(name: "align-items", value: alignment.cssValue),
+            "class": .attribute(name: "class", value: "raven-lazy-vstack")
+        ]
+        if let spacing = spacing {
+            props["gap"] = .style(name: "gap", value: "\(spacing)px")
+        }
+        if !pinnedViews.isEmpty {
+            var pinnedTypes: [String] = []
+            if pinnedViews.contains(.sectionHeaders) {
+                pinnedTypes.append("headers")
+            }
+            if pinnedViews.contains(.sectionFooters) {
+                pinnedTypes.append("footers")
+            }
+            props["data-pinned-views"] = .attribute(
+                name: "data-pinned-views",
+                value: pinnedTypes.joined(separator: ",")
+            )
+        }
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: props, children: children)
+    }
+}

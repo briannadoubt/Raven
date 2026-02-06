@@ -44,6 +44,7 @@ public final class AppRuntime: Sendable {
     ///
     /// - Parameter app: The app to run.
     public func run<A: App>(app: A) {
+        injectFrameworkCSS()
         currentApp = app
 
         // Extract root view from app's scene hierarchy
@@ -67,6 +68,40 @@ public final class AppRuntime: Sendable {
 
         // Render the root view (now synchronous!)
         coordinator.render(view: rootView)
+    }
+
+    /// Injects framework-level CSS that cannot be applied via inline styles.
+    ///
+    /// This includes pseudo-element styles (progress bar, range input thumb),
+    /// keyframe animations, and basic reset styles. This ensures apps don't
+    /// need any custom CSS files.
+    private func injectFrameworkCSS() {
+        let document = JSObject.global.document
+
+        guard let styleElement = document.createElement("style").object else { return }
+
+        let css = """
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        button { cursor: pointer; transition: all 0.15s; border: none; background: transparent; padding: 0; font: inherit; color: inherit; text-align: inherit; }
+        button:hover { filter: brightness(0.95); }
+        button:active { transform: translateY(1px); }
+        .raven-progress-bar { width: 100%; height: 8px; border-radius: 4px; appearance: none; -webkit-appearance: none; -moz-appearance: none; }
+        .raven-progress-bar::-webkit-progress-bar { background-color: rgba(0, 0, 0, 0.1); border-radius: 4px; }
+        .raven-progress-bar::-webkit-progress-value { background-color: #007AFF; border-radius: 4px; transition: width 0.3s ease; }
+        .raven-progress-bar::-moz-progress-bar { background-color: #007AFF; border-radius: 4px; transition: width 0.3s ease; }
+        .raven-progress-container { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+        @keyframes raven-spinner-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: #e5e7eb; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #007AFF; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #007AFF; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        """
+
+        styleElement.textContent = .string(css)
+
+        if let head = document.head.object {
+            _ = head.appendChild!(styleElement)
+        }
     }
 
     /// Extracts the root view from a scene hierarchy.

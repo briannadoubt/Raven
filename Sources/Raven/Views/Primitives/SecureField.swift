@@ -148,6 +148,7 @@ extension SecureField: _CoordinatorRenderable {
             "type": .attribute(name: "type", value: "password"),
             "placeholder": .attribute(name: "placeholder", value: placeholder),
             "value": .attribute(name: "value", value: binding.wrappedValue),
+            "aria-label": .attribute(name: "aria-label", value: placeholder),
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
             "padding": .style(name: "padding", value: "8px"),
             "border": .style(name: "border", value: "1px solid #ccc"),

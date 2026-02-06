@@ -226,7 +226,11 @@ extension Slider: _CoordinatorRenderable {
             "min": .attribute(name: "min", value: String(bounds.lowerBound)),
             "max": .attribute(name: "max", value: String(bounds.upperBound)),
             "value": .attribute(name: "value", value: String(binding.wrappedValue)),
-            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+            "aria-label": .attribute(name: "aria-label", value: "Slider"),
+            // Use "change" instead of "input" so the binding only updates on mouseup.
+            // "input" fires on every drag tick, causing a full DOM rebuild that kills
+            // the browser's native drag tracking on the range input.
+            "onChange": .eventHandler(event: "change", handlerID: handlerID),
             "width": .style(name: "width", value: "100%"),
         ]
         if let step = step {

@@ -4,143 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raven Component Showcase</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        #loading {
-            color: white;
-            text-align: center;
-        }
-
-        #loading h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        #loading .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        #root {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 2rem;
-            max-width: 600px;
-            width: 100%;
-            min-height: 400px;
-        }
-
-        #error {
-            color: #ff6b6b;
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 100%;
-        }
-
-        #error h2 {
-            margin-bottom: 1rem;
-        }
-
-        #error pre {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 0.875rem;
-        }
-    </style>
-    <link rel="stylesheet" href="todoapp.css">
 </head>
 <body>
-    <div id="loading">
-        <h1>🐦 Loading Raven Showcase...</h1>
-        <div class="spinner"></div>
-        <p style="margin-top: 1rem;">Initializing Swift WASM</p>
+    <!-- Loading indicator shown before WASM initializes -->
+    <div id="loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;color:#666;">
+        <p>Loading Raven Showcase...</p>
     </div>
 
     <!-- Root element for Raven to mount to -->
-    <div id="root" style="display: none;"></div>
-
-    <!-- Error display -->
-    <div id="error" style="display: none;">
-        <h2>❌ Failed to load</h2>
-        <p id="error-message"></p>
-        <pre id="error-stack"></pre>
-    </div>
+    <div id="root" style="display:none;"></div>
 
     <!-- JavaScriptKit Runtime -->
     <script src="runtime.js"></script>
 
     <!-- Raven Event Handler Helper -->
     <script>
-        // Helper function for Swift to properly add event listeners
-        // This bypasses JavaScriptKit's method calling limitations by providing
-        // a global function with correct 'this' binding context
-        // Store registered events for debugging
         window.__ravenEvents = [];
-
         window.__ravenAddEventListener = function(element, eventName, handler) {
-            // Store event info
             window.__ravenEvents.push({
                 element: element ? element.tagName : 'null',
                 eventName: eventName,
                 handlerType: typeof handler
             });
-
-            // Log first few
-            if (window.__ravenEvents.length <= 5) {
-                console.log('[RAVEN] Event #' + window.__ravenEvents.length + ':',
-                    element ? element.tagName : 'null',
-                    'eventName="' + eventName + '"',
-                    typeof handler);
-            }
-
             if (element && typeof element.addEventListener === 'function' && typeof handler === 'function') {
-                // Wrap the handler to log when it fires and catch errors
                 const wrappedHandler = function(event) {
-                    console.log('[RAVEN] 🔥 Handler FIRED for', eventName, 'on', element.tagName);
                     try {
-                        console.log('[RAVEN] Calling Swift JSClosure...');
-                        const result = handler(event);
-                        console.log('[RAVEN] ✅ JSClosure returned:', result);
-                        return result;
+                        return handler(event);
                     } catch (error) {
-                        console.error('[RAVEN] ❌ JSClosure threw error:', error);
-                        console.error('[RAVEN] Error stack:', error.stack);
+                        console.error('[RAVEN] Handler error:', error);
                         throw error;
                     }
                 };
@@ -149,7 +40,6 @@
             }
             return false;
         };
-
         window.__ravenRemoveEventListener = function(element, eventName, handler) {
             if (element && typeof element.removeEventListener === 'function') {
                 element.removeEventListener(eventName, handler);
@@ -160,9 +50,7 @@
     </script>
 
     <script type="module">
-        // WASI polyfill for browser
         let wasmMemory;
-
         const wasiPolyfill = {
             args_get: () => 0,
             args_sizes_get: () => 0,
@@ -191,7 +79,6 @@
             fd_sync: () => 0,
             fd_tell: () => 0,
             fd_write: (fd, iov, iovcnt, nwritten) => {
-                // Proper stdout/stderr implementation that reads from WASM memory
                 if ((fd === 1 || fd === 2) && wasmMemory) {
                     try {
                         const buffers = new Uint32Array(wasmMemory.buffer, iov, iovcnt * 2);
@@ -202,15 +89,9 @@
                             const buffer = new Uint8Array(wasmMemory.buffer, ptr, len);
                             output += new TextDecoder().decode(buffer);
                         }
-                        if (fd === 1) {
-                            console.log('[Swift]', output);
-                        } else {
-                            console.error('[Swift Error]', output);
-                        }
-                        // Write the number of bytes written
-                        if (nwritten) {
-                            new Uint32Array(wasmMemory.buffer, nwritten, 1)[0] = output.length;
-                        }
+                        if (fd === 1) console.log('[Swift]', output);
+                        else console.error('[Swift Error]', output);
+                        if (nwritten) new Uint32Array(wasmMemory.buffer, nwritten, 1)[0] = output.length;
                         return 0;
                     } catch (e) {
                         console.error('fd_write error:', e);
@@ -230,9 +111,7 @@
             path_symlink: () => 0,
             path_unlink_file: () => 0,
             poll_oneoff: () => 0,
-            proc_exit: (code) => {
-                console.log('[WASM] Exit code:', code);
-            },
+            proc_exit: (code) => { console.log('[WASM] Exit code:', code); },
             proc_raise: () => 0,
             sched_yield: () => 0,
             random_get: () => 0,
@@ -243,108 +122,37 @@
 
         async function loadWASM() {
             try {
-                console.log('🚀 Loading TodoApp.wasm...');
-
                 const response = await fetch('TodoApp.wasm?t=' + Date.now());
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch WASM: ${response.status} ${response.statusText}`);
-                }
-
+                if (!response.ok) throw new Error('Failed to fetch WASM: ' + response.status);
                 const bytes = await response.arrayBuffer();
-                console.log(`📦 Loaded ${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB`);
+                console.log('Loaded ' + (bytes.byteLength / 1024 / 1024).toFixed(2) + ' MB');
 
-                // Initialize JavaScriptKit bridge
                 const { SwiftRuntime } = JavaScriptKit;
                 const swift = new SwiftRuntime();
-
                 const { instance } = await WebAssembly.instantiate(bytes, {
                     wasi_snapshot_preview1: wasiPolyfill,
                     javascript_kit: swift.importObjects(),
                 });
 
-                console.log('✅ WASM instantiated successfully');
-
-                // Store memory reference for WASI polyfill
                 wasmMemory = instance.exports.memory;
-
-                // Set up SwiftRuntime (patched runtime.js allows command ABI)
                 swift.setInstance(instance);
-                console.log('✅ SwiftRuntime instance set (using patched runtime)');
 
-                // Initialize if needed
-                if (instance.exports._initialize) {
-                    console.log('🔧 Calling _initialize()...');
-                    instance.exports._initialize();
-                }
+                if (instance.exports._initialize) instance.exports._initialize();
 
-                // Hide loading, show root
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('root').style.display = 'block';
 
-                // Log all available exports
-                console.log('📋 Available exports:', Object.keys(instance.exports));
-
-                // With command ABI, call _start to run main()
                 if (instance.exports._start) {
-                    console.log('🎯 Calling _start() to run Swift main...');
-                    try {
-                        instance.exports._start();
-                        console.log('✅ _start completed');
-                    } catch (e) {
-                        console.error('❌ Error in _start:', e);
-                        console.error('Stack:', e.stack);
-                        throw e;
-                    }
-                } else {
-                    console.error('❌ _start export not found!');
+                    instance.exports._start();
                 }
-
-                console.log('🎉 App initialized!');
-
             } catch (error) {
-                console.error('❌ Error loading WASM:', error);
-                document.getElementById('loading').style.display = 'none';
-                const errorDiv = document.getElementById('error');
-                errorDiv.style.display = 'block';
-                document.getElementById('error-message').textContent = error.message;
-                document.getElementById('error-stack').textContent = error.stack || 'No stack trace';
+                console.error('Failed to load WASM:', error);
+                document.getElementById('loading').textContent = 'Failed to load: ' + error.message;
             }
         }
 
-        // Start loading when JavaScriptKit runtime is ready
-        if (typeof JavaScriptKit !== 'undefined') {
-            loadWASM();
-        } else {
-            console.error('JavaScriptKit runtime not loaded!');
-        }
+        if (typeof JavaScriptKit !== 'undefined') loadWASM();
+        else console.error('JavaScriptKit runtime not loaded!');
     </script>
-
-    <!-- Raven Hot Reload (DISABLED - causing 404s) -->
-    <!--
-    <script id="raven-hot-reload">
-    (function() {
-        let lastHash = null;
-        function checkForUpdates() {
-            fetch('/api/status')
-                .then(r => r.json())
-                .then(data => {
-                    if (lastHash === null) {
-                        lastHash = data.wasm_hash;
-                        console.log('🔥 Hot reload active');
-                        return;
-                    }
-                    if (data.wasm_hash && data.wasm_hash !== lastHash) {
-                        console.log('🔄 Reloading...');
-                        window.location.reload();
-                    }
-                })
-                .catch(() => {});
-        }
-        setInterval(checkForUpdates, 2000);
-        checkForUpdates();
-    })();
-    </script>
-    -->
-    
 </body>
 </html>

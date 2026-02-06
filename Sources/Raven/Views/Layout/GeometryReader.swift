@@ -311,3 +311,33 @@ extension DOMBridge {
         )
     }
 }
+
+// MARK: - Coordinator Renderable
+
+extension _GeometryReaderContainer: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let props: [String: VProperty] = [
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative"),
+            "width": .style(name: "width", value: "100%"),
+            "height": .style(name: "height", value: "100%"),
+            "data-geometry-reader": .attribute(name: "data-geometry-reader", value: "true")
+        ]
+
+        // Create a default proxy with zero size for initial render
+        let defaultProxy = GeometryProxy(
+            size: .zero,
+            localFrame: .zero,
+            globalFrame: .zero
+        )
+        let childView = content(defaultProxy)
+        let contentNode = context.renderChild(childView)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+        return VNode.element("div", props: props, children: children)
+    }
+}
