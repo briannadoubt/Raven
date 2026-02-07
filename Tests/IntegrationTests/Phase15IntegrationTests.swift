@@ -1,4 +1,5 @@
-import XCTest
+import Testing
+import Foundation
 @testable import Raven
 
 // MARK: - Phase 15 Integration Tests
@@ -17,11 +18,11 @@ import XCTest
 // - Complete end-to-end workflows
 
 @MainActor
-final class Phase15IntegrationTests: XCTestCase {
+@Suite struct Phase15IntegrationTests {
 
     // MARK: - Form Validation + Focus Management
 
-    func testFormValidationWithFocusManagement() async throws {
+    @Test func formValidationWithFocusManagement() async throws {
         enum Field: Hashable {
             case email
             case password
@@ -98,7 +99,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testFormWithAsyncValidationAndFocus() async throws {
+    @Test func formWithAsyncValidationAndFocus() async throws {
         @MainActor
         struct SignupForm: View {
             @State var username = ""
@@ -141,7 +142,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - List + Swipe Actions + Selection
 
-    func testListWithSwipeActionsAndSelection() async throws {
+    @Test func listWithSwipeActionsAndSelection() async throws {
         struct Item: Identifiable, Hashable, Sendable {
             let id = UUID()
             let name: String
@@ -184,7 +185,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testListWithReorderingAndSelection() async throws {
+    @Test func listWithReorderingAndSelection() async throws {
         struct TodoItem: Identifiable, Hashable, Sendable {
             let id = UUID()
             var title: String
@@ -224,7 +225,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Virtual Scrolling + Pull-to-Refresh
 
-    func testVirtualScrollingWithPullToRefresh() async throws {
+    @Test func virtualScrollingWithPullToRefresh() async throws {
         @MainActor
         struct InfiniteListView: View {
             @State var items: [Int] = Array(0..<1000)
@@ -248,7 +249,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testVirtualScrollingWithDynamicContent() async throws {
+    @Test func virtualScrollingWithDynamicContent() async throws {
         @MainActor
         struct DynamicListView: View {
             @State var items: [String] = (0..<10000).map { "Item \($0)" }
@@ -272,7 +273,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Table + Sorting + Selection
 
-    func testTableWithSortingAndSelection() async throws {
+    @Test func tableWithSortingAndSelection() async throws {
         struct Person: Identifiable, Sendable, Hashable {
             let id = UUID()
             let name: String
@@ -302,7 +303,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testTableWithMultipleSelection() async throws {
+    @Test func tableWithMultipleSelection() async throws {
         struct DataItem: Identifiable, Sendable, Hashable {
             let id = UUID()
             let title: String
@@ -336,7 +337,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - TabView + Routing
 
-    func testTabViewWithRouting() async throws {
+    @Test func tabViewWithRouting() async throws {
         enum AppTab: Hashable, Sendable {
             case home
             case search
@@ -383,7 +384,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testTabViewWithBadges() async throws {
+    @Test func tabViewWithBadges() async throws {
         @MainActor
         struct MessagingTabView: View {
             @State var unreadMessages = 5
@@ -411,7 +412,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Router + Deep Links + Navigation
 
-    func testRouterWithDeepLinks() async throws {
+    @Test func routerWithDeepLinks() async throws {
         let router = Router()
 
         // Register routes
@@ -432,16 +433,16 @@ final class Phase15IntegrationTests: XCTestCase {
 
         // Test navigation
         router.navigate(to: "/products/123")
-        XCTAssertEqual(router.currentPath, "/products/123")
-        XCTAssertEqual(router.currentParameters.string("id"), "123")
+        #expect(router.currentPath == "/products/123")
+        #expect(router.currentParameters.string("id") == "123")
 
         router.navigate(to: "/users/42/posts/99")
-        XCTAssertEqual(router.currentPath, "/users/42/posts/99")
-        XCTAssertEqual(router.currentParameters.string("userId"), "42")
-        XCTAssertEqual(router.currentParameters.string("postId"), "99")
+        #expect(router.currentPath == "/users/42/posts/99")
+        #expect(router.currentParameters.string("userId") == "42")
+        #expect(router.currentParameters.string("postId") == "99")
     }
 
-    func testRouterWithNavigation() async throws {
+    @Test func routerWithNavigation() async throws {
         @MainActor
         struct RouterTestView: View {
             @StateObject var router = Router()
@@ -481,7 +482,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Modal + Focus Trap + ARIA
 
-    func testModalWithFocusTrap() async throws {
+    @Test func modalWithFocusTrap() async throws {
         enum Field: Hashable {
             case name
             case email
@@ -532,7 +533,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testModalWithARIA() async throws {
+    @Test func modalWithARIA() async throws {
         @MainActor
         struct AccessibleModalView: View {
             @State var showAlert = false
@@ -573,7 +574,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Complete Workflows
 
-    func testCompleteUserRegistrationWorkflow() async throws {
+    @Test func completeUserRegistrationWorkflow() async throws {
         enum Field: Hashable {
             case username, email, password, confirmPassword
         }
@@ -659,7 +660,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testCompleteDataManagementWorkflow() async throws {
+    @Test func completeDataManagementWorkflow() async throws {
         struct DataItem: Identifiable, Sendable, Hashable {
             let id = UUID()
             var title: String
@@ -711,7 +712,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testCompleteNavigationWithTabsAndRouting() async throws {
+    @Test func completeNavigationWithTabsAndRouting() async throws {
         enum Tab: Hashable, Sendable {
             case home, browse, favorites
         }
@@ -772,7 +773,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testCompleteAccessibilityWorkflow() async throws {
+    @Test func completeAccessibilityWorkflow() async throws {
         enum FormField: Hashable {
             case title, description, category
         }
@@ -839,7 +840,7 @@ final class Phase15IntegrationTests: XCTestCase {
 
     // MARK: - Performance + Virtual Scrolling
 
-    func testVirtualScrollingPerformance() async throws {
+    @Test func virtualScrollingPerformance() async throws {
         @MainActor
         struct PerformanceTestView: View {
             @State var items = Array(0..<10000)
@@ -860,7 +861,7 @@ final class Phase15IntegrationTests: XCTestCase {
         _ = view  // Compile test only
     }
 
-    func testComplexListWithAllFeatures() async throws {
+    @Test func complexListWithAllFeatures() async throws {
         struct ComplexItem: Identifiable, Hashable, Sendable {
             let id = UUID()
             var title: String
@@ -933,7 +934,7 @@ final class Phase15IntegrationTests: XCTestCase {
     // MARK: - Edge Cases and Error Handling
 
     @MainActor
-    func testFormValidationWithEmptyFields() async throws {
+    @Test func formValidationWithEmptyFields() async throws {
         let formState = FormState()
 
         let emailRule = ValidationRule.email(field: "email")
@@ -941,25 +942,25 @@ final class Phase15IntegrationTests: XCTestCase {
 
         // Email rule allows empty (use required() separately)
         if case .success = result {
-            XCTAssertTrue(true)
+            #expect(true)
         } else {
-            XCTFail("Empty email should be valid (use required rule separately)")
+            Issue.record("Empty email should be valid (use required rule separately)")
         }
     }
 
     @MainActor
-    func testRouterWithInvalidPath() async throws {
+    @Test func routerWithInvalidPath() async throws {
         let router = Router()
 
         router.setNotFoundView(Text("404 Not Found"))
 
         router.navigate(to: "/nonexistent/path")
 
-        XCTAssertEqual(router.currentPath, "/nonexistent/path")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/nonexistent/path")
+        #expect(router.currentView != nil)
     }
 
-    func testFocusStateWithoutFocusedView() async throws {
+    @Test func focusStateWithoutFocusedView() async throws {
         @MainActor
         struct NoFocusView: View {
             @FocusState var isFocused: Bool = false

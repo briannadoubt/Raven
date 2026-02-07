@@ -1,45 +1,46 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for the ViewModifier protocol and custom modifiers
-final class ViewModifierTests: XCTestCase {
+@MainActor
+@Suite struct ViewModifierTests {
 
     // MARK: - Basic ViewModifier Tests
 
     @MainActor
-    func testBorderModifier() {
+    @Test func borderModifier() {
         // Create a view with a custom border modifier
         let view = Text("Hello")
             .modifier(BorderModifier(color: .blue, width: 2))
 
         // Verify the type is correct
-        XCTAssertTrue(view is ModifiedContent<Text, BorderModifier>)
+        #expect(view is ModifiedContent<Text, BorderModifier>)
     }
 
     @MainActor
-    func testCardModifier() {
+    @Test func cardModifier() {
         // Create a view with a custom card modifier
         let view = Text("Card Content")
             .modifier(CardModifier())
 
         // Verify the type is correct
-        XCTAssertTrue(view is ModifiedContent<Text, CardModifier>)
+        #expect(view is ModifiedContent<Text, CardModifier>)
     }
 
     @MainActor
-    func testTitleModifier() {
+    @Test func titleModifier() {
         // Create a view with a custom title modifier
         let view = Text("Title")
             .modifier(TitleModifier())
 
         // Verify the type is correct
-        XCTAssertTrue(view is ModifiedContent<Text, TitleModifier>)
+        #expect(view is ModifiedContent<Text, TitleModifier>)
     }
 
     // MARK: - Convenience Extension Tests
 
     @MainActor
-    func testBorderConvenienceMethod() {
+    @Test func borderConvenienceMethod() {
         // Use the convenience method
         let view = Text("Bordered")
             .border(.red, width: 3)
@@ -49,7 +50,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testCardConvenienceMethod() {
+    @Test func cardConvenienceMethod() {
         // Use the convenience method
         let view = Text("Card")
             .card()
@@ -59,7 +60,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testTitleConvenienceMethod() {
+    @Test func titleConvenienceMethod() {
         // Use the convenience method
         let view = Text("Title")
             .title()
@@ -71,7 +72,7 @@ final class ViewModifierTests: XCTestCase {
     // MARK: - Modifier Composition Tests
 
     @MainActor
-    func testModifierComposition() {
+    @Test func modifierComposition() {
         // Chain multiple custom modifiers
         let view = Text("Complex")
             .modifier(TitleModifier())
@@ -83,7 +84,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testMixedModifiers() {
+    @Test func mixedModifiers() {
         // Mix custom modifiers with basic modifiers
         let view = Text("Mixed")
             .padding(10)
@@ -110,7 +111,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testCustomModifier() {
+    @Test func customModifier() {
         // Create a custom modifier
         let modifier = TestModifier(value: 20)
 
@@ -119,11 +120,11 @@ final class ViewModifierTests: XCTestCase {
             .modifier(modifier)
 
         // Verify the type
-        XCTAssertTrue(view is ModifiedContent<Text, TestModifier>)
+        #expect(view is ModifiedContent<Text, TestModifier>)
     }
 
     @MainActor
-    func testCustomModifierWithParameters() {
+    @Test func customModifierWithParameters() {
         // Test a custom modifier with different parameters
         let view1 = Text("Small").modifier(TestModifier(value: 5))
         let view2 = Text("Large").modifier(TestModifier(value: 20))
@@ -136,7 +137,7 @@ final class ViewModifierTests: XCTestCase {
     // MARK: - SendableAndConcurrency Tests
 
     @MainActor
-    func testModifierIsSendable() {
+    @Test func modifierIsSendable() {
         // Verify that our modifiers conform to Sendable
         let border: any ViewModifier & Sendable = BorderModifier(color: .red, width: 1)
         let card: any ViewModifier & Sendable = CardModifier()
@@ -149,7 +150,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testModifiedContentIsSendable() {
+    @Test func modifiedContentIsSendable() {
         // Verify that ModifiedContent conforms to Sendable
         let view = Text("Test")
             .modifier(BorderModifier(color: .blue, width: 2))
@@ -162,7 +163,7 @@ final class ViewModifierTests: XCTestCase {
     // MARK: - Type Erasure Tests
 
     @MainActor
-    func testModifierWithTypeErasure() {
+    @Test func modifierWithTypeErasure() {
         // Use AnyView with modifiers
         let view = AnyView(
             Text("Erased")
@@ -176,7 +177,7 @@ final class ViewModifierTests: XCTestCase {
     // MARK: - Edge Cases
 
     @MainActor
-    func testEmptyModifierBody() {
+    @Test func emptyModifierBody() {
         /// A modifier that does nothing
         struct EmptyModifier: ViewModifier, Sendable {
             @MainActor
@@ -193,7 +194,7 @@ final class ViewModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testNestedModifierComposition() {
+    @Test func nestedModifierComposition() {
         /// A modifier that applies another modifier
         struct WrapperModifier: ViewModifier, Sendable {
             @MainActor

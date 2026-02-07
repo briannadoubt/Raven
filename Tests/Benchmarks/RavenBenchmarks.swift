@@ -28,7 +28,6 @@ import Foundation
 /// - Each benchmark runs 10 times to average results
 /// - Times are measured using ContinuousClock for accuracy
 /// - Results include min, max, mean, and median times
-@available(macOS 13, *)
 @MainActor
 public struct RavenBenchmarks: Sendable {
 
@@ -260,7 +259,6 @@ public struct RavenBenchmarks: Sendable {
 
 // MARK: - Executable
 
-@available(macOS 13, *)
 @main
 struct BenchmarkRunner {
     static func main() async {

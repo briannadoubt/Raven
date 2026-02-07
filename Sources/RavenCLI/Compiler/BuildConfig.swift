@@ -23,6 +23,12 @@ struct BuildConfig: Sendable {
     /// Whether to enable verbose output
     let verbose: Bool
 
+    /// The name of the Swift SDK to use (e.g. "swift-6.2.3-RELEASE_wasm")
+    let swiftSDKName: String?
+
+    /// The name of the executable target (e.g. "TodoApp")
+    let executableTargetName: String?
+
     enum OptimizationLevel: String, Sendable {
         case debug = "debug"
         case release = "release"
@@ -67,7 +73,9 @@ struct BuildConfig: Sendable {
         targetTriple: String = "wasm32-unknown-wasi",
         additionalFlags: [String] = [],
         debugSymbols: Bool = true,
-        verbose: Bool = false
+        verbose: Bool = false,
+        swiftSDKName: String? = nil,
+        executableTargetName: String? = nil
     ) {
         self.sourceDirectory = sourceDirectory
         self.outputDirectory = outputDirectory
@@ -76,6 +84,8 @@ struct BuildConfig: Sendable {
         self.additionalFlags = additionalFlags
         self.debugSymbols = debugSymbols
         self.verbose = verbose
+        self.swiftSDKName = swiftSDKName
+        self.executableTargetName = executableTargetName
     }
 
     /// The build directory path
@@ -96,6 +106,14 @@ struct BuildConfig: Sendable {
             .appendingPathComponent(targetTriple)
             .appendingPathComponent(optimizationLevel.rawValue)
             .appendingPathComponent("app.wasm")
+    }
+
+    /// The expected WASM output path for swift SDK builds
+    var swiftSDKWasmPath: URL {
+        let targetName = executableTargetName ?? "App"
+        return buildDirectory
+            .appendingPathComponent(optimizationLevel == .debug ? "debug" : "release")
+            .appendingPathComponent("\(targetName).wasm")
     }
 
     /// Creates a BuildConfig with default values for the current directory
@@ -133,7 +151,9 @@ struct BuildConfig: Sendable {
             targetTriple: targetTriple,
             additionalFlags: additionalFlags,
             debugSymbols: false,
-            verbose: verbose
+            verbose: verbose,
+            swiftSDKName: swiftSDKName,
+            executableTargetName: executableTargetName
         )
     }
 
@@ -146,7 +166,9 @@ struct BuildConfig: Sendable {
             targetTriple: targetTriple,
             additionalFlags: additionalFlags,
             debugSymbols: false,
-            verbose: verbose
+            verbose: verbose,
+            swiftSDKName: swiftSDKName,
+            executableTargetName: executableTargetName
         )
     }
 
@@ -159,7 +181,9 @@ struct BuildConfig: Sendable {
             targetTriple: targetTriple,
             additionalFlags: additionalFlags,
             debugSymbols: true,
-            verbose: verbose
+            verbose: verbose,
+            swiftSDKName: swiftSDKName,
+            executableTargetName: executableTargetName
         )
     }
 
@@ -172,7 +196,9 @@ struct BuildConfig: Sendable {
             targetTriple: targetTriple,
             additionalFlags: additionalFlags,
             debugSymbols: debugSymbols,
-            verbose: enabled
+            verbose: enabled,
+            swiftSDKName: swiftSDKName,
+            executableTargetName: executableTargetName
         )
     }
 }

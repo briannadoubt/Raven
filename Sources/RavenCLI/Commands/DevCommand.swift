@@ -1,7 +1,7 @@
 import ArgumentParser
 import Foundation
 
-struct DevCommand: ParsableCommand {
+struct DevCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "dev",
         abstract: "Start a development server with hot reload"
@@ -16,16 +16,22 @@ struct DevCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "The input SwiftUI project directory")
     var input: String?
 
-    @Option(name: .shortAndLong, help: "The output directory for built files")
-    var output: String?
-
     @Flag(name: .long, help: "Enable verbose logging")
     var verbose: Bool = false
 
     @Option(name: .long, help: "Port for hot reload WebSocket server")
     var hotReloadPort: Int = 35729
 
-    func run() throws {
+    @Option(name: .long, help: "Override the Swift SDK name for WASM compilation")
+    var swiftSdk: String?
+
+    @Flag(name: .long, help: "Build in release mode")
+    var release: Bool = false
+
+    @Flag(name: .long, inversion: .prefixedNo, help: "Open browser after starting server")
+    var open: Bool = true
+
+    func run() async throws {
         print("Starting Raven development server...")
 
         if verbose {
@@ -34,70 +40,120 @@ struct DevCommand: ParsableCommand {
             print("Hot reload port: \(hotReloadPort)")
         }
 
-        // Run the async dev server
-        try runAsync {
-            try await self.runDevServer()
-        }
+        try await runDevServer()
     }
 
     private func runDevServer() async throws {
         let startTime = Date()
 
-        // Resolve paths
-        let inputPath = resolveInputPath()
-        let outputPath = resolveOutputPath()
+        // Resolve project path
+        let projectPath = resolveInputPath()
+
+        // Validate project structure
+        try validateProjectStructure(at: projectPath)
+
+        // Detect executable target name from Package.swift
+        let targetName = WasmCompiler.detectExecutableTarget(
+            in: URL(fileURLWithPath: projectPath)
+        )
 
         if verbose {
-            print("  Input: \(inputPath)")
-            print("  Output: \(outputPath)")
+            print("  Project: \(projectPath)")
+            if let targetName {
+                print("  Target: \(targetName)")
+            }
         }
+
+        // Resolve the public/ directory (where we serve from)
+        let publicPath = resolvePublicDirectory(in: projectPath)
+
+        if verbose {
+            print("  Serve directory: \(publicPath)")
+        }
+
+        // Determine if we should use generated HTML (no custom index.html in public/)
+        let hasCustomHTML = FileManager.default.fileExists(
+            atPath: (publicPath as NSString).appendingPathComponent("index.html")
+        )
 
         // Step 1: Initial build
         print("\n[1/5] Performing initial build...")
-        try await performBuild(inputPath: inputPath, outputPath: outputPath)
+        try await performBuild(
+            projectPath: projectPath,
+            publicPath: publicPath,
+            targetName: targetName,
+            copyWasmToPublic: true
+        )
 
         let initialBuildTime = Date().timeIntervalSince(startTime)
-        print("  ✓ Initial build complete (\(String(format: "%.2fs", initialBuildTime)))")
+        print("  Build complete (\(String(format: "%.2fs", initialBuildTime)))")
+
+        // Generate HTML if no custom index.html exists
+        var generatedHTML: String? = nil
+        if !hasCustomHTML {
+            // Find JavaScriptKit runtime for inlining
+            let jsKitRuntime = WasmCompiler.findJavaScriptKitRuntime(in: projectPath)
+            if verbose && jsKitRuntime == nil {
+                print("  Warning: JavaScriptKit runtime not found in .build/checkouts/")
+                print("  HTML will fall back to loading runtime.js from disk")
+            }
+
+            let wasmFileName = targetName.map { "\($0).wasm" } ?? "app.wasm"
+            let htmlConfig = HTMLConfig(
+                projectName: targetName ?? "RavenApp",
+                wasmFile: wasmFileName,
+                isDevelopment: true,
+                hotReloadPort: hotReloadPort,
+                javaScriptKitRuntimeSource: jsKitRuntime
+            )
+
+            let generator = HTMLGenerator()
+            generatedHTML = generator.generate(config: htmlConfig)
+            print("  Generated index.html (all JS inlined)")
+        }
 
         // Step 2: Start HTTP server
         print("[2/5] Starting HTTP server...")
         let httpServer = HTTPServer(
             port: port,
-            serveDirectory: outputPath,
-            injectHotReload: true,
-            hotReloadPort: hotReloadPort
+            serveDirectory: publicPath,
+            injectHotReload: hasCustomHTML, // Only inject for custom HTML; generated HTML already has it
+            hotReloadPort: hotReloadPort,
+            generatedHTML: generatedHTML
         )
         try await httpServer.start()
-        print("  ✓ HTTP server started on http://\(host):\(port)")
+        print("  HTTP server started on http://\(host):\(port)")
 
         // Step 3: Start hot reload server
         print("[3/5] Starting hot reload server...")
         let hotReloadServer = WebSocketServer(port: hotReloadPort)
         try await hotReloadServer.start()
-        print("  ✓ Hot reload server started on port \(hotReloadPort)")
+        print("  Hot reload server started on port \(hotReloadPort)")
 
         // Step 4: Start file watcher
         print("[4/5] Starting file watcher...")
-        let sourcesPath = (inputPath as NSString).appendingPathComponent("Sources")
-        let debouncer = ChangeDebouncer(delayMilliseconds: 300) { [inputPath, outputPath, hotReloadServer] in
+        let sourcesPath = (projectPath as NSString).appendingPathComponent("Sources")
+        let debouncer = ChangeDebouncer(delayMilliseconds: 300) { [projectPath, publicPath, hasCustomHTML, hotReloadServer] in
             print("\n[File Change Detected] Rebuilding...")
             let rebuildStart = Date()
 
             do {
-                // Send notification that build started
                 await hotReloadServer.sendNotification("Building...")
 
-                try await self.performBuild(inputPath: inputPath, outputPath: outputPath, incremental: true)
+                try await self.performBuild(
+                    projectPath: projectPath,
+                    publicPath: publicPath,
+                    targetName: targetName,
+                    incremental: true,
+                    copyWasmToPublic: true
+                )
                 let rebuildTime = Date().timeIntervalSince(rebuildStart)
-                print("  ✓ Rebuild complete (\(String(format: "%.2fs", rebuildTime)))")
+                print("  Rebuild complete (\(String(format: "%.2fs", rebuildTime)))")
 
-                // Broadcast reload to clients with metrics
                 await hotReloadServer.sendReloadWithMetrics(buildTime: rebuildTime, changeDescription: "Source files")
             } catch {
                 let errorMessage = error.localizedDescription
-                print("  ✗ Build failed: \(errorMessage)")
-
-                // Broadcast error to clients
+                print("  Build failed: \(errorMessage)")
                 await hotReloadServer.sendError(errorMessage)
             }
         }
@@ -106,25 +162,28 @@ struct DevCommand: ParsableCommand {
             await debouncer.trigger()
         }
         try await fileWatcher.start()
-        print("  ✓ Watching for changes in \(sourcesPath)")
+        print("  Watching for changes in \(sourcesPath)")
 
         // Step 5: Ready
         print("[5/5] Development server ready!")
-        print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("  🚀 Raven Development Server")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("  Server:      http://\(host):\(port)")
+        let serverURL = "http://\(host):\(port)"
+        print("")
+        print("  Raven Development Server")
+        print("  Server:      \(serverURL)")
         print("  Hot Reload:  ws://\(host):\(hotReloadPort)")
-        print("  Project:     \(inputPath)")
-        print("  Output:      \(outputPath)")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("\nPress Ctrl+C to stop the server\n")
+        print("  Project:     \(projectPath)")
+        print("")
+        print("Press Ctrl+C to stop the server\n")
+
+        // Open browser
+        if open {
+            openBrowser(url: serverURL)
+        }
 
         // Keep running until interrupted
-        // Set up signal handler for Ctrl+C
         let shutdownFlag = ShutdownFlag()
 
-        signal(SIGINT, SIG_IGN) // Ignore default handler
+        signal(SIGINT, SIG_IGN)
         let signalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
         signalSource.setEventHandler {
             print("\n\nShutting down development server...")
@@ -132,7 +191,6 @@ struct DevCommand: ParsableCommand {
         }
         signalSource.resume()
 
-        // Wait for shutdown signal
         await shutdownFlag.wait()
         signalSource.cancel()
 
@@ -147,32 +205,25 @@ struct DevCommand: ParsableCommand {
 
     // MARK: - Build Logic
 
-    private func performBuild(inputPath: String, outputPath: String, incremental: Bool = false) async throws {
-        // Validate project structure
-        try validateProjectStructure(at: inputPath)
+    private func performBuild(
+        projectPath: String,
+        publicPath: String,
+        targetName: String?,
+        incremental: Bool = false,
+        copyWasmToPublic: Bool = true
+    ) async throws {
+        // Compile Swift to WASM
+        let wasmPath = try await compileToWasm(
+            projectPath: projectPath,
+            targetName: targetName,
+            isIncremental: incremental
+        )
 
-        // Compile Swift to WASM (use incremental compilation for rebuilds)
-        let wasmPath = try await compileToWasm(projectPath: inputPath, outputPath: outputPath, isIncremental: incremental)
-
-        // Copy WASM to dist/
-        let wasmOutputPath = (outputPath as NSString).appendingPathComponent("app.wasm")
-        try copyWasmBinary(from: wasmPath.path, to: wasmOutputPath)
-
-        // Generate index.html (only if it doesn't exist or not incremental)
-        let htmlPath = (outputPath as NSString).appendingPathComponent("index.html")
-        if !incremental || !FileManager.default.fileExists(atPath: htmlPath) {
-            try generateHTML(outputPath: outputPath, projectPath: inputPath)
-        }
-
-        // Copy runtime.js (only if it doesn't exist or not incremental)
-        let runtimePath = (outputPath as NSString).appendingPathComponent("runtime.js")
-        if !incremental || !FileManager.default.fileExists(atPath: runtimePath) {
-            try copyRuntimeJS(to: outputPath)
-        }
-
-        // Copy assets (only if not incremental)
-        if !incremental {
-            try bundleAssets(from: inputPath, to: outputPath)
+        // Copy .wasm to public/ only if needed (custom HTML setup)
+        if copyWasmToPublic {
+            let wasmFileName = targetName.map { "\($0).wasm" } ?? wasmPath.lastPathComponent
+            let wasmDestination = (publicPath as NSString).appendingPathComponent(wasmFileName)
+            try copyFile(from: wasmPath.path, to: wasmDestination)
         }
     }
 
@@ -191,22 +242,27 @@ struct DevCommand: ParsableCommand {
         }
     }
 
-    private func compileToWasm(projectPath: String, outputPath: String, isIncremental: Bool = false) async throws -> URL {
+    private func compileToWasm(
+        projectPath: String,
+        targetName: String?,
+        isIncremental: Bool = false
+    ) async throws -> URL {
         let sourceDir = URL(fileURLWithPath: projectPath)
-        let outputDir = URL(fileURLWithPath: outputPath)
 
         let config = BuildConfig(
             sourceDirectory: sourceDir,
-            outputDirectory: outputDir,
-            optimizationLevel: .debug, // Always use debug for dev mode
-            verbose: verbose
+            outputDirectory: sourceDir, // not used for swift SDK builds
+            optimizationLevel: release ? .release : .debug,
+            verbose: verbose,
+            swiftSDKName: swiftSdk,
+            executableTargetName: targetName
         )
 
         let compiler = WasmCompiler(config: config)
         return try await compiler.compile(isIncremental: isIncremental)
     }
 
-    private func copyWasmBinary(from source: String, to destination: String) throws {
+    private func copyFile(from source: String, to destination: String) throws {
         let fileManager = FileManager.default
 
         if fileManager.fileExists(atPath: destination) {
@@ -214,142 +270,55 @@ struct DevCommand: ParsableCommand {
         }
 
         try fileManager.copyItem(atPath: source, toPath: destination)
-
-        if source.contains(".temp.wasm") {
-            try? fileManager.removeItem(atPath: source)
-        }
-    }
-
-    private func generateHTML(outputPath: String, projectPath: String) throws {
-        let projectName = extractProjectName(from: projectPath)
-
-        let config = HTMLConfig(
-            projectName: projectName,
-            title: projectName,
-            wasmFile: "app.wasm",
-            runtimeJSFile: "runtime.js",
-            cssFiles: checkForStylesheet(in: projectPath) ? ["styles.css"] : [],
-            metaTags: [
-                "description": "Built with Raven - SwiftUI to DOM",
-                "generator": "Raven 0.1.0 (dev)"
-            ],
-            isDevelopment: true, // Enable development mode with error overlay
-            hotReloadPort: hotReloadPort
-        )
-
-        let generator = HTMLGenerator()
-        let htmlPath = (outputPath as NSString).appendingPathComponent("index.html")
-        try generator.writeToFile(config: config, path: htmlPath)
-    }
-
-    private func copyRuntimeJS(to outputPath: String) throws {
-        let fileManager = FileManager.default
-
-        let possiblePaths = [
-            "Resources/runtime.js",
-            "../../../Resources/runtime.js",
-            "/usr/local/share/raven/runtime.js"
-        ]
-
-        var runtimeSource: String?
-        for path in possiblePaths {
-            let fullPath = (fileManager.currentDirectoryPath as NSString).appendingPathComponent(path)
-            if fileManager.fileExists(atPath: fullPath) {
-                runtimeSource = fullPath
-                break
-            }
-        }
-
-        guard let source = runtimeSource else {
-            throw DevError.resourceNotFound("runtime.js not found. Please ensure Raven is properly installed.")
-        }
-
-        let destination = (outputPath as NSString).appendingPathComponent("runtime.js")
-        if fileManager.fileExists(atPath: destination) {
-            try fileManager.removeItem(atPath: destination)
-        }
-
-        try fileManager.copyItem(atPath: source, toPath: destination)
-    }
-
-    private func bundleAssets(from inputPath: String, to outputPath: String) throws {
-        let publicPath = (inputPath as NSString).appendingPathComponent("Public")
-        let bundler = AssetBundler(verbose: verbose)
-        _ = try bundler.bundleAssets(from: publicPath, to: outputPath)
     }
 
     // MARK: - Helpers
 
     private func resolveInputPath() -> String {
-        let path = input ?? "."
-        let fileManager = FileManager.default
-
-        if path.hasPrefix("/") {
-            return path
+        if let input, input.hasPrefix("/") {
+            return input
+        } else if let input {
+            return (FileManager.default.currentDirectoryPath as NSString)
+                .appendingPathComponent(input)
         } else {
-            return (fileManager.currentDirectoryPath as NSString).appendingPathComponent(path)
+            return FileManager.default.currentDirectoryPath
         }
     }
 
-    private func resolveOutputPath() -> String {
-        let path = output ?? "./dist"
+    /// Finds the public/ directory in the project (checks lowercase then uppercase)
+    private func resolvePublicDirectory(in projectPath: String) -> String {
         let fileManager = FileManager.default
 
-        let resolvedPath = path.hasPrefix("/")
-            ? path
-            : (fileManager.currentDirectoryPath as NSString).appendingPathComponent(path)
-
-        try? fileManager.createDirectory(
-            atPath: resolvedPath,
-            withIntermediateDirectories: true
-        )
-
-        return resolvedPath
-    }
-
-    private func extractProjectName(from path: String) -> String {
-        let pathComponents = (path as NSString).pathComponents
-        let lastComponent = pathComponents.last ?? "RavenApp"
-
-        if lastComponent.hasPrefix(".") {
-            return "RavenApp"
+        // Check lowercase first (preferred convention)
+        let lowercasePath = (projectPath as NSString).appendingPathComponent("public")
+        if fileManager.fileExists(atPath: lowercasePath) {
+            return lowercasePath
         }
 
-        return lastComponent
-    }
-
-    private func checkForStylesheet(in projectPath: String) -> Bool {
-        let fileManager = FileManager.default
-        let publicPath = (projectPath as NSString).appendingPathComponent("Public")
-        let stylesPath = (publicPath as NSString).appendingPathComponent("styles.css")
-        return fileManager.fileExists(atPath: stylesPath)
-    }
-
-    private func runAsync<T: Sendable>(_ block: @Sendable @escaping () async throws -> T) throws -> T {
-        var result: Result<T, Error>?
-        let semaphore = DispatchSemaphore(value: 0)
-
-        Task {
-            do {
-                let value = try await block()
-                result = .success(value)
-            } catch {
-                result = .failure(error)
-            }
-            semaphore.signal()
+        // Check uppercase
+        let uppercasePath = (projectPath as NSString).appendingPathComponent("Public")
+        if fileManager.fileExists(atPath: uppercasePath) {
+            return uppercasePath
         }
 
-        semaphore.wait()
-
-        switch result {
-        case .success(let value):
-            return value
-        case .failure(let error):
-            throw error
-        case .none:
-            fatalError("Async operation completed without result")
-        }
+        // Default to lowercase (will be created if needed, or HTTP server will 404)
+        return lowercasePath
     }
+
+    private func openBrowser(url: String) {
+        #if os(macOS)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = [url]
+        try? process.run()
+        #elseif os(Linux)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xdg-open")
+        process.arguments = [url]
+        try? process.run()
+        #endif
+    }
+
 }
 
 // MARK: - Errors

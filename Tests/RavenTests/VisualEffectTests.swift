@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for visual effect modifiers: blur, brightness, contrast, and saturation
@@ -10,20 +10,20 @@ import XCTest
 /// - Edge cases and default values
 /// - Type safety and Sendable conformance
 @MainActor
-final class VisualEffectTests: XCTestCase {
+@Suite struct VisualEffectTests {
 
     // MARK: - Blur Tests
 
-    func testBlurModifierCreation() {
+    @Test func blurModifierCreation() {
         // Create a view with blur
         let view = Text("Blurred")
             .blur(radius: 10)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _BlurView<Text>)
+        #expect(view is _BlurView<Text>)
     }
 
-    func testBlurVNodeGeneration() {
+    @Test func blurVNodeGeneration() {
         // Create a blurred view
         let view = Text("Test")
             .blur(radius: 5)
@@ -31,18 +31,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "blur(5.0px)")
+            #expect(name == "filter")
+            #expect(value == "blur(5.0px)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testBlurWithZeroRadius() {
+    @Test func blurWithZeroRadius() {
         // Test blur with zero radius (no effect)
         let view = Text("Test")
             .blur(radius: 0)
@@ -50,13 +50,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "blur(0.0px)")
+            #expect(value == "blur(0.0px)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testBlurWithLargeRadius() {
+    @Test func blurWithLargeRadius() {
         // Test blur with large radius
         let view = Text("Test")
             .blur(radius: 50)
@@ -64,24 +64,24 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "blur(50.0px)")
+            #expect(value == "blur(50.0px)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
     // MARK: - Brightness Tests
 
-    func testBrightnessModifierCreation() {
+    @Test func brightnessModifierCreation() {
         // Create a view with brightness adjustment
         let view = Text("Bright")
             .brightness(1.5)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _BrightnessView<Text>)
+        #expect(view is _BrightnessView<Text>)
     }
 
-    func testBrightnessVNodeGeneration() {
+    @Test func brightnessVNodeGeneration() {
         // Create a brightness-adjusted view
         let view = Text("Test")
             .brightness(0.8)
@@ -89,18 +89,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "brightness(0.8)")
+            #expect(name == "filter")
+            #expect(value == "brightness(0.8)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testBrightnessNormalValue() {
+    @Test func brightnessNormalValue() {
         // Test brightness with normal value (1.0 = no change)
         let view = Text("Test")
             .brightness(1.0)
@@ -108,13 +108,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "brightness(1.0)")
+            #expect(value == "brightness(1.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testBrightnessBlack() {
+    @Test func brightnessBlack() {
         // Test brightness at 0 (completely black)
         let view = Text("Test")
             .brightness(0)
@@ -122,13 +122,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "brightness(0.0)")
+            #expect(value == "brightness(0.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testBrightnessAboveNormal() {
+    @Test func brightnessAboveNormal() {
         // Test brightness above 1.0 (brighter)
         let view = Text("Test")
             .brightness(2.0)
@@ -136,24 +136,24 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "brightness(2.0)")
+            #expect(value == "brightness(2.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
     // MARK: - Contrast Tests
 
-    func testContrastModifierCreation() {
+    @Test func contrastModifierCreation() {
         // Create a view with contrast adjustment
         let view = Text("High Contrast")
             .contrast(1.5)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ContrastView<Text>)
+        #expect(view is _ContrastView<Text>)
     }
 
-    func testContrastVNodeGeneration() {
+    @Test func contrastVNodeGeneration() {
         // Create a contrast-adjusted view
         let view = Text("Test")
             .contrast(1.2)
@@ -161,18 +161,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "contrast(1.2)")
+            #expect(name == "filter")
+            #expect(value == "contrast(1.2)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testContrastNormalValue() {
+    @Test func contrastNormalValue() {
         // Test contrast with normal value (1.0 = no change)
         let view = Text("Test")
             .contrast(1.0)
@@ -180,13 +180,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "contrast(1.0)")
+            #expect(value == "contrast(1.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testContrastGray() {
+    @Test func contrastGray() {
         // Test contrast at 0 (completely gray)
         let view = Text("Test")
             .contrast(0)
@@ -194,13 +194,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "contrast(0.0)")
+            #expect(value == "contrast(0.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testContrastHighValue() {
+    @Test func contrastHighValue() {
         // Test high contrast
         let view = Text("Test")
             .contrast(3.0)
@@ -208,24 +208,24 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "contrast(3.0)")
+            #expect(value == "contrast(3.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
     // MARK: - Saturation Tests
 
-    func testSaturationModifierCreation() {
+    @Test func saturationModifierCreation() {
         // Create a view with saturation adjustment
         let view = Text("Vibrant")
             .saturation(1.5)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _SaturationView<Text>)
+        #expect(view is _SaturationView<Text>)
     }
 
-    func testSaturationVNodeGeneration() {
+    @Test func saturationVNodeGeneration() {
         // Create a saturation-adjusted view
         let view = Text("Test")
             .saturation(0.5)
@@ -233,18 +233,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "saturate(0.5)")
+            #expect(name == "filter")
+            #expect(value == "saturate(0.5)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testSaturationNormalValue() {
+    @Test func saturationNormalValue() {
         // Test saturation with normal value (1.0 = no change)
         let view = Text("Test")
             .saturation(1.0)
@@ -252,13 +252,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "saturate(1.0)")
+            #expect(value == "saturate(1.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testSaturationGrayscale() {
+    @Test func saturationGrayscale() {
         // Test saturation at 0 (grayscale)
         let view = Text("Test")
             .saturation(0)
@@ -266,13 +266,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "saturate(0.0)")
+            #expect(value == "saturate(0.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testSaturationSupersaturated() {
+    @Test func saturationSupersaturated() {
         // Test high saturation (supersaturated colors)
         let view = Text("Test")
             .saturation(2.5)
@@ -280,25 +280,25 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "saturate(2.5)")
+            #expect(value == "saturate(2.5)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
     // MARK: - Modifier Composition Tests
 
-    func testBlurAndBrightness() {
+    @Test func blurAndBrightness() {
         // Test combining blur and brightness
         let view = Text("Combined")
             .blur(radius: 5)
             .brightness(1.2)
 
         // Should create nested views
-        XCTAssertTrue(view is _BrightnessView<_BlurView<Text>>)
+        #expect(view is _BrightnessView<_BlurView<Text>>)
     }
 
-    func testMultipleEffects() {
+    @Test func multipleEffects() {
         // Test combining all visual effects
         let view = Text("All Effects")
             .blur(radius: 3)
@@ -310,7 +310,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testEffectCompositionOrder() {
+    @Test func effectCompositionOrder() {
         // Test that effects can be applied in any order
         let view1 = Text("Test")
             .brightness(1.2)
@@ -327,7 +327,7 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Integration with Other Modifiers
 
-    func testVisualEffectsWithBasicModifiers() {
+    @Test func visualEffectsWithBasicModifiers() {
         // Test combining visual effects with basic modifiers
         let view = Text("Complex")
             .padding(10)
@@ -340,7 +340,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testVisualEffectsWithAdvancedModifiers() {
+    @Test func visualEffectsWithAdvancedModifiers() {
         // Test combining visual effects with advanced modifiers
         let view = Text("Advanced")
             .opacity(0.8)
@@ -354,28 +354,28 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Sendable Conformance Tests
 
-    func testBlurViewIsSendable() {
+    @Test func blurViewIsSendable() {
         // Verify that _BlurView conforms to Sendable
         let view = Text("Test").blur(radius: 5)
         let sendableView: any View & Sendable = view
         let _ = sendableView
     }
 
-    func testBrightnessViewIsSendable() {
+    @Test func brightnessViewIsSendable() {
         // Verify that _BrightnessView conforms to Sendable
         let view = Text("Test").brightness(1.2)
         let sendableView: any View & Sendable = view
         let _ = sendableView
     }
 
-    func testContrastViewIsSendable() {
+    @Test func contrastViewIsSendable() {
         // Verify that _ContrastView conforms to Sendable
         let view = Text("Test").contrast(1.3)
         let sendableView: any View & Sendable = view
         let _ = sendableView
     }
 
-    func testSaturationViewIsSendable() {
+    @Test func saturationViewIsSendable() {
         // Verify that _SaturationView conforms to Sendable
         let view = Text("Test").saturation(0.8)
         let sendableView: any View & Sendable = view
@@ -384,7 +384,7 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Edge Cases
 
-    func testNegativeBlurRadius() {
+    @Test func negativeBlurRadius() {
         // While not typical, negative values should still work
         // (CSS will treat them as 0)
         let view = Text("Test")
@@ -393,13 +393,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "blur(-5.0px)")
+            #expect(value == "blur(-5.0px)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testNegativeBrightness() {
+    @Test func negativeBrightness() {
         // Negative brightness values (CSS treats as 0)
         let view = Text("Test")
             .brightness(-0.5)
@@ -407,13 +407,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "brightness(-0.5)")
+            #expect(value == "brightness(-0.5)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testVerySmallValues() {
+    @Test func verySmallValues() {
         // Test with very small decimal values
         let view = Text("Test")
             .brightness(0.001)
@@ -424,7 +424,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testVeryLargeValues() {
+    @Test func veryLargeValues() {
         // Test with very large values
         let view = Text("Test")
             .blur(radius: 1000)
@@ -438,16 +438,16 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Grayscale Tests
 
-    func testGrayscaleModifierCreation() {
+    @Test func grayscaleModifierCreation() {
         // Create a view with grayscale
         let view = Text("Gray")
             .grayscale(0.8)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _GrayscaleView<Text>)
+        #expect(view is _GrayscaleView<Text>)
     }
 
-    func testGrayscaleVNodeGeneration() {
+    @Test func grayscaleVNodeGeneration() {
         // Create a grayscale view
         let view = Text("Test")
             .grayscale(0.5)
@@ -455,18 +455,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "grayscale(0.5)")
+            #expect(name == "filter")
+            #expect(value == "grayscale(0.5)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testGrayscaleFullColor() {
+    @Test func grayscaleFullColor() {
         // Test grayscale with 0 (full color)
         let view = Text("Test")
             .grayscale(0)
@@ -474,13 +474,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "grayscale(0.0)")
+            #expect(value == "grayscale(0.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testGrayscaleFullGrayscale() {
+    @Test func grayscaleFullGrayscale() {
         // Test grayscale with 1.0 (full grayscale)
         let view = Text("Test")
             .grayscale(1.0)
@@ -488,13 +488,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "grayscale(1.0)")
+            #expect(value == "grayscale(1.0)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testGrayscalePartialValue() {
+    @Test func grayscalePartialValue() {
         // Test grayscale with partial value
         let view = Text("Test")
             .grayscale(0.75)
@@ -502,13 +502,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "grayscale(0.75)")
+            #expect(value == "grayscale(0.75)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testGrayscaleViewIsSendable() {
+    @Test func grayscaleViewIsSendable() {
         // Verify that _GrayscaleView conforms to Sendable
         let view = Text("Test").grayscale(0.5)
         let sendableView: any View & Sendable = view
@@ -517,16 +517,16 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Hue Rotation Tests
 
-    func testHueRotationModifierCreation() {
+    @Test func hueRotationModifierCreation() {
         // Create a view with hue rotation
         let view = Text("Rainbow")
             .hueRotation(Angle(degrees: 180))
 
         // Verify the type is correct
-        XCTAssertTrue(view is _HueRotationView<Text>)
+        #expect(view is _HueRotationView<Text>)
     }
 
-    func testHueRotationVNodeGeneration() {
+    @Test func hueRotationVNodeGeneration() {
         // Create a hue-rotated view
         let view = Text("Test")
             .hueRotation(Angle(degrees: 90))
@@ -534,18 +534,18 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify the VNode is a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the filter property is set correctly
         if case .style(let name, let value) = vnode.props["filter"] {
-            XCTAssertEqual(name, "filter")
-            XCTAssertEqual(value, "hue-rotate(90.0deg)")
+            #expect(name == "filter")
+            #expect(value == "hue-rotate(90.0deg)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotationZeroDegrees() {
+    @Test func hueRotationZeroDegrees() {
         // Test hue rotation with 0 degrees (no effect)
         let view = Text("Test")
             .hueRotation(Angle(degrees: 0))
@@ -553,13 +553,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "hue-rotate(0.0deg)")
+            #expect(value == "hue-rotate(0.0deg)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotation180Degrees() {
+    @Test func hueRotation180Degrees() {
         // Test hue rotation with 180 degrees (complementary colors)
         let view = Text("Test")
             .hueRotation(Angle(degrees: 180))
@@ -567,13 +567,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "hue-rotate(180.0deg)")
+            #expect(value == "hue-rotate(180.0deg)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotation360Degrees() {
+    @Test func hueRotation360Degrees() {
         // Test hue rotation with 360 degrees (full rotation)
         let view = Text("Test")
             .hueRotation(Angle(degrees: 360))
@@ -581,13 +581,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "hue-rotate(360.0deg)")
+            #expect(value == "hue-rotate(360.0deg)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotationWithRadians() {
+    @Test func hueRotationWithRadians() {
         // Test hue rotation using radians
         let view = Text("Test")
             .hueRotation(Angle(radians: .pi))
@@ -595,21 +595,21 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            // π radians ≈ 180 degrees
-            XCTAssertTrue(value.contains("hue-rotate("))
-            XCTAssertTrue(value.contains("deg)"))
+            // pi radians ~ 180 degrees
+            #expect(value.contains("hue-rotate("))
+            #expect(value.contains("deg)"))
             // Check that the value is approximately 180
             let degrees = value.replacingOccurrences(of: "hue-rotate(", with: "")
                 .replacingOccurrences(of: "deg)", with: "")
             if let degreesValue = Double(degrees) {
-                XCTAssertEqual(degreesValue, 180.0, accuracy: 0.01)
+                #expect(abs(degreesValue - 180.0) < 0.01)
             }
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotationNegativeDegrees() {
+    @Test func hueRotationNegativeDegrees() {
         // Test hue rotation with negative degrees
         let view = Text("Test")
             .hueRotation(Angle(degrees: -45))
@@ -617,13 +617,13 @@ final class VisualEffectTests: XCTestCase {
         let vnode = view.toVNode()
 
         if case .style(_, let value) = vnode.props["filter"] {
-            XCTAssertEqual(value, "hue-rotate(-45.0deg)")
+            #expect(value == "hue-rotate(-45.0deg)")
         } else {
-            XCTFail("Expected filter style property")
+            Issue.record("Expected filter style property")
         }
     }
 
-    func testHueRotationViewIsSendable() {
+    @Test func hueRotationViewIsSendable() {
         // Verify that _HueRotationView conforms to Sendable
         let view = Text("Test").hueRotation(Angle(degrees: 45))
         let sendableView: any View & Sendable = view
@@ -632,16 +632,16 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Clip Shape Tests
 
-    func testClipShapeModifierCreation() {
+    @Test func clipShapeModifierCreation() {
         // Create a view with clip shape
         let view = Text("Clipped")
             .clipShape(Circle())
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ClipShapeView<Text, Circle>)
+        #expect(view is _ClipShapeView<Text, Circle>)
     }
 
-    func testClipShapeWithCircle() {
+    @Test func clipShapeWithCircle() {
         // Create a clipped view with circle
         let view = Text("Test")
             .clipShape(Circle())
@@ -650,7 +650,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeWithRectangle() {
+    @Test func clipShapeWithRectangle() {
         // Create a clipped view with rectangle
         let view = Text("Test")
             .clipShape(Rectangle())
@@ -659,7 +659,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeWithRoundedRectangle() {
+    @Test func clipShapeWithRoundedRectangle() {
         // Create a clipped view with rounded rectangle
         let view = Text("Test")
             .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -668,7 +668,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeWithFillStyle() {
+    @Test func clipShapeWithFillStyle() {
         // Create a clipped view with specific fill style
         let view = Text("Test")
             .clipShape(Circle(), style: FillStyle(rule: .evenOdd))
@@ -677,7 +677,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeDefaultFillStyle() {
+    @Test func clipShapeDefaultFillStyle() {
         // Create a clipped view with default fill style
         let view = Text("Test")
             .clipShape(Circle())
@@ -686,7 +686,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeViewIsSendable() {
+    @Test func clipShapeViewIsSendable() {
         // Verify that _ClipShapeView conforms to Sendable
         let view = Text("Test").clipShape(Circle())
         let sendableView: any View & Sendable = view
@@ -695,7 +695,7 @@ final class VisualEffectTests: XCTestCase {
 
     // MARK: - Combined Effects Tests
 
-    func testGrayscaleWithOtherEffects() {
+    @Test func grayscaleWithOtherEffects() {
         // Test combining grayscale with other effects
         let view = Text("Combined")
             .grayscale(0.8)
@@ -706,7 +706,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testHueRotationWithSaturation() {
+    @Test func hueRotationWithSaturation() {
         // Test combining hue rotation with saturation
         let view = Text("Vibrant")
             .hueRotation(Angle(degrees: 45))
@@ -716,7 +716,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testClipShapeWithVisualEffects() {
+    @Test func clipShapeWithVisualEffects() {
         // Test combining clip shape with visual effects
         let view = Text("Complex")
             .clipShape(Circle())
@@ -727,7 +727,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testAllNewEffectsTogether() {
+    @Test func allNewEffectsTogether() {
         // Test all new effects combined
         let view = Text("Everything")
             .grayscale(0.5)
@@ -738,7 +738,7 @@ final class VisualEffectTests: XCTestCase {
         let _ = view
     }
 
-    func testNewEffectsCompositionOrder() {
+    @Test func newEffectsCompositionOrder() {
         // Test that new effects can be applied in any order
         let view1 = Text("Test")
             .grayscale(0.5)

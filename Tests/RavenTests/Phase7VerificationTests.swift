@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 import Foundation
 
@@ -13,18 +13,38 @@ import Foundation
 /// - Performance benchmarks are available
 ///
 /// Run before releasing v0.1.0 to ensure everything is ready.
-@available(macOS 13.0, *)
-final class Phase7VerificationTests: XCTestCase {
+@Suite struct Phase7VerificationTests {
+
+    // MARK: - Helper Methods
+
+    private func getProjectPath() -> URL {
+        // Try current directory first (most reliable for SPM tests)
+        let currentDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+
+        // Walk up to find the project root containing Package.swift
+        var projectPath = currentDir
+        while projectPath.path != "/" && projectPath.pathComponents.count > 1 {
+            if projectPath.lastPathComponent == "Raven" {
+                return projectPath
+            }
+            if FileManager.default.fileExists(atPath: projectPath.appendingPathComponent("Package.swift").path) {
+                return projectPath
+            }
+            projectPath = projectPath.deletingLastPathComponent()
+        }
+
+        // Fallback to current directory
+        return currentDir
+    }
 
     // MARK: - Documentation Verification
 
-    func testREADMEExists() {
+    @Test func readmeExists() {
         let readme = getProjectPath().appendingPathComponent("README.md")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: readme.path),
-                     "README.md must exist in project root")
+        #expect(FileManager.default.fileExists(atPath: readme.path))
     }
 
-    func testREADMEHasRequiredSections() throws {
+    @Test func readmeHasRequiredSections() throws {
         let readme = getProjectPath().appendingPathComponent("README.md")
         let content = try String(contentsOf: readme, encoding: .utf8)
 
@@ -42,31 +62,27 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         for section in requiredSections {
-            XCTAssertTrue(content.contains(section),
-                         "README.md must contain '\(section)' section")
+            #expect(content.contains(section))
         }
     }
 
-    func testREADMEHasExampleCode() throws {
+    @Test func readmeHasExampleCode() throws {
         let readme = getProjectPath().appendingPathComponent("README.md")
         let content = try String(contentsOf: readme, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("```swift"),
-                     "README.md must contain Swift code examples")
-        XCTAssertTrue(content.contains("import Raven"),
-                     "README.md examples must import Raven")
+        #expect(content.contains("```swift"))
+        #expect(content.contains("import Raven"))
     }
 
-    func testGettingStartedGuideExists() {
+    @Test func gettingStartedGuideExists() {
         let guide = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("GettingStarted.md")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: guide.path),
-                     "Documentation/GettingStarted.md must exist")
+        #expect(FileManager.default.fileExists(atPath: guide.path))
     }
 
-    func testGettingStartedGuideIsComprehensive() throws {
+    @Test func gettingStartedGuideIsComprehensive() throws {
         let guide = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("GettingStarted.md")
@@ -82,21 +98,19 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         for topic in requiredTopics {
-            XCTAssertTrue(content.contains(topic),
-                         "Getting Started guide must cover '\(topic)'")
+            #expect(content.contains(topic))
         }
     }
 
-    func testAPIOverviewExists() {
+    @Test func apiOverviewExists() {
         let overview = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("API-Overview.md")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: overview.path),
-                     "Documentation/API-Overview.md must exist")
+        #expect(FileManager.default.fileExists(atPath: overview.path))
     }
 
-    func testAPIOverviewHasAllCategories() throws {
+    @Test func apiOverviewHasAllCategories() throws {
         let overview = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("API-Overview.md")
@@ -111,103 +125,90 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         for category in categories {
-            XCTAssertTrue(content.contains(category),
-                         "API Overview must document '\(category)'")
+            #expect(content.contains(category))
         }
     }
 
-    func testDocCGenerationGuideExists() {
+    @Test func docCGenerationGuideExists() {
         let guide = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("DocC-Generation.md")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: guide.path),
-                     "Documentation/DocC-Generation.md must exist")
+        #expect(FileManager.default.fileExists(atPath: guide.path))
     }
 
-    func testDocCGenerationGuideHasInstructions() throws {
+    @Test func docCGenerationGuideHasInstructions() throws {
         let guide = getProjectPath()
             .appendingPathComponent("Documentation")
             .appendingPathComponent("DocC-Generation.md")
 
         let content = try String(contentsOf: guide, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("swift package generate-documentation"),
-                     "DocC guide must include generation command")
-        XCTAssertTrue(content.contains("DocC Syntax"),
-                     "DocC guide must explain syntax")
+        #expect(content.contains("swift package generate-documentation"))
+        #expect(content.contains("DocC Syntax"))
     }
 
-    func testReleaseChecklistExists() {
+    @Test func releaseChecklistExists() {
         let release = getProjectPath().appendingPathComponent("RELEASE.md")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: release.path),
-                     "RELEASE.md must exist")
+        #expect(FileManager.default.fileExists(atPath: release.path))
     }
 
-    func testReleaseChecklistHasVersion() throws {
+    @Test func releaseChecklistHasVersion() throws {
         let release = getProjectPath().appendingPathComponent("RELEASE.md")
         let content = try String(contentsOf: release, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("0.1.0"),
-                     "RELEASE.md must specify version 0.1.0")
-        XCTAssertTrue(content.contains("Release Checklist"),
-                     "RELEASE.md must have release checklist")
+        #expect(content.contains("0.1.0"))
+        #expect(content.contains("Release Checklist"))
     }
 
-    func testLicenseExists() {
+    @Test func licenseExists() {
         let license = getProjectPath().appendingPathComponent("LICENSE")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: license.path),
-                     "LICENSE file must exist")
+        #expect(FileManager.default.fileExists(atPath: license.path))
     }
 
     // MARK: - Examples Verification
 
-    func testExamplesDirectoryExists() {
+    @Test func examplesDirectoryExists() {
         let examples = getProjectPath().appendingPathComponent("Examples")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: examples.path),
-                     "Examples directory must exist")
+        #expect(FileManager.default.fileExists(atPath: examples.path))
     }
 
-    func testStateExampleExists() {
+    @Test func stateExampleExists() {
         let example = getProjectPath()
             .appendingPathComponent("Examples")
             .appendingPathComponent("StateExample.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: example.path),
-                     "StateExample.swift must exist")
+        #expect(FileManager.default.fileExists(atPath: example.path))
     }
 
-    func testStateExampleCompiles() throws {
+    @Test func stateExampleCompiles() throws {
         let example = getProjectPath()
             .appendingPathComponent("Examples")
             .appendingPathComponent("StateExample.swift")
 
         let content = try String(contentsOf: example, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("import Raven"),
-                     "StateExample must import Raven")
-        XCTAssertTrue(content.contains("@State"),
-                     "StateExample must demonstrate @State")
+        #expect(content.contains("import Raven"))
+        #expect(content.contains("@State"))
     }
 
-    func testForEachExampleExists() {
+    @Test func forEachExampleExists() {
         let example = getProjectPath()
             .appendingPathComponent("Examples")
             .appendingPathComponent("ForEachExample.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: example.path),
-                     "ForEachExample.swift must exist")
+        #expect(FileManager.default.fileExists(atPath: example.path))
     }
 
-    func testAllExamplesImportRaven() throws {
+    @Test func allExamplesImportRaven() throws {
         let examples = getProjectPath().appendingPathComponent("Examples")
         let fileManager = FileManager.default
 
         guard let enumerator = fileManager.enumerator(atPath: examples.path) else {
-            XCTFail("Could not enumerate Examples directory")
+            Issue.record("Could not enumerate Examples directory")
             return
         }
 
@@ -223,18 +224,16 @@ final class Phase7VerificationTests: XCTestCase {
             let filePath = examples.appendingPathComponent(file)
             let content = try String(contentsOf: filePath, encoding: .utf8)
 
-            XCTAssertTrue(content.contains("import Raven"),
-                         "\(file) must import Raven")
+            #expect(content.contains("import Raven"))
             exampleCount += 1
         }
 
-        XCTAssertGreaterThan(exampleCount, 5,
-                            "Should have at least 5 example files")
+        #expect(exampleCount > 5)
     }
 
     // MARK: - Test Coverage Verification
 
-    func testAllTestTargetsExist() {
+    @Test func allTestTargetsExist() {
         let tests = getProjectPath().appendingPathComponent("Tests")
 
         let requiredTargets = [
@@ -246,22 +245,20 @@ final class Phase7VerificationTests: XCTestCase {
 
         for target in requiredTargets {
             let targetPath = tests.appendingPathComponent(target)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: targetPath.path),
-                         "\(target) test directory must exist")
+            #expect(FileManager.default.fileExists(atPath: targetPath.path))
         }
     }
 
-    func testAdditionalCoverageTestsExist() {
+    @Test func additionalCoverageTestsExist() {
         let testFile = getProjectPath()
             .appendingPathComponent("Tests")
             .appendingPathComponent("RavenTests")
             .appendingPathComponent("AdditionalCoverageTests.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: testFile.path),
-                     "AdditionalCoverageTests.swift must exist for Phase 7")
+        #expect(FileManager.default.fileExists(atPath: testFile.path))
     }
 
-    func testPhaseVerificationTestsExist() {
+    @Test func phaseVerificationTestsExist() {
         let phases = ["Phase1", "Phase2", "Phase3", "Phase4", "Phase5", "Phase6", "Phase7"]
 
         for phase in phases {
@@ -270,24 +267,22 @@ final class Phase7VerificationTests: XCTestCase {
                 .appendingPathComponent("RavenTests")
                 .appendingPathComponent("\(phase)VerificationTests.swift")
 
-            XCTAssertTrue(FileManager.default.fileExists(atPath: testFile.path),
-                         "\(phase)VerificationTests.swift must exist")
+            #expect(FileManager.default.fileExists(atPath: testFile.path))
         }
     }
 
     // MARK: - Benchmark Verification
 
-    func testBenchmarksExist() {
+    @Test func benchmarksExist() {
         let benchmarks = getProjectPath()
             .appendingPathComponent("Tests")
             .appendingPathComponent("Benchmarks")
             .appendingPathComponent("RavenBenchmarks.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: benchmarks.path),
-                     "RavenBenchmarks.swift must exist")
+        #expect(FileManager.default.fileExists(atPath: benchmarks.path))
     }
 
-    func testBenchmarksHaveRequiredTests() throws {
+    @Test func benchmarksHaveRequiredTests() throws {
         let benchmarks = getProjectPath()
             .appendingPathComponent("Tests")
             .appendingPathComponent("Benchmarks")
@@ -303,12 +298,11 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         for benchmark in requiredBenchmarks {
-            XCTAssertTrue(content.contains(benchmark),
-                         "Benchmarks must include \(benchmark)")
+            #expect(content.contains(benchmark))
         }
     }
 
-    func testBenchmarksDocumentExpectedPerformance() throws {
+    @Test func benchmarksDocumentExpectedPerformance() throws {
         let benchmarks = getProjectPath()
             .appendingPathComponent("Tests")
             .appendingPathComponent("Benchmarks")
@@ -316,29 +310,26 @@ final class Phase7VerificationTests: XCTestCase {
 
         let content = try String(contentsOf: benchmarks, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("Expected:") || content.contains("expected performance"),
-                     "Benchmarks must document expected performance characteristics")
+        #expect(content.contains("Expected:") || content.contains("expected performance"))
     }
 
     // MARK: - Package Configuration Verification
 
-    func testPackageSwiftExists() {
+    @Test func packageSwiftExists() {
         let package = getProjectPath().appendingPathComponent("Package.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: package.path),
-                     "Package.swift must exist")
+        #expect(FileManager.default.fileExists(atPath: package.path))
     }
 
-    func testPackageSwiftHasCorrectSwiftVersion() throws {
+    @Test func packageSwiftHasCorrectSwiftVersion() throws {
         let package = getProjectPath().appendingPathComponent("Package.swift")
         let content = try String(contentsOf: package, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("swift-tools-version: 6.2") ||
-                     content.contains("swift-tools-version:6.2"),
-                     "Package.swift must specify Swift 6.2")
+        #expect(content.contains("swift-tools-version: 6.2") ||
+               content.contains("swift-tools-version:6.2"))
     }
 
-    func testPackageHasAllTargets() throws {
+    @Test func packageHasAllTargets() throws {
         let package = getProjectPath().appendingPathComponent("Package.swift")
         let content = try String(contentsOf: package, encoding: .utf8)
 
@@ -350,24 +341,21 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         for target in requiredTargets {
-            XCTAssertTrue(content.contains("\"\(target)\""),
-                         "Package.swift must define \(target) target")
+            #expect(content.contains("\"\(target)\""))
         }
     }
 
-    func testPackageHasDependencies() throws {
+    @Test func packageHasDependencies() throws {
         let package = getProjectPath().appendingPathComponent("Package.swift")
         let content = try String(contentsOf: package, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("JavaScriptKit"),
-                     "Package.swift must depend on JavaScriptKit")
-        XCTAssertTrue(content.contains("swift-argument-parser"),
-                     "Package.swift must depend on swift-argument-parser")
+        #expect(content.contains("JavaScriptKit"))
+        #expect(content.contains("swift-argument-parser"))
     }
 
     // MARK: - Source Code Structure Verification
 
-    func testCoreTypesExist() {
+    @Test func coreTypesExist() {
         let coreTypes = [
             "View.swift",
             "ViewBuilder.swift",
@@ -381,12 +369,11 @@ final class Phase7VerificationTests: XCTestCase {
 
         for file in coreTypes {
             let filePath = corePath.appendingPathComponent(file)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: filePath.path),
-                         "Core type \(file) must exist")
+            #expect(FileManager.default.fileExists(atPath: filePath.path))
         }
     }
 
-    func testVirtualDOMTypesExist() {
+    @Test func virtualDOMTypesExist() {
         let virtualDOMTypes = [
             "VNode.swift",
             "Differ.swift",
@@ -400,12 +387,11 @@ final class Phase7VerificationTests: XCTestCase {
 
         for file in virtualDOMTypes {
             let filePath = virtualDOMPath.appendingPathComponent(file)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: filePath.path),
-                         "VirtualDOM type \(file) must exist")
+            #expect(FileManager.default.fileExists(atPath: filePath.path))
         }
     }
 
-    func testStateManagementTypesExist() {
+    @Test func stateManagementTypesExist() {
         let stateTypes = [
             "State.swift",
             "ObservableObject.swift",
@@ -420,12 +406,11 @@ final class Phase7VerificationTests: XCTestCase {
 
         for file in stateTypes {
             let filePath = statePath.appendingPathComponent(file)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: filePath.path),
-                         "State type \(file) must exist")
+            #expect(FileManager.default.fileExists(atPath: filePath.path))
         }
     }
 
-    func testPrimitiveViewsExist() {
+    @Test func primitiveViewsExist() {
         let primitives = [
             "Text.swift",
             "Button.swift",
@@ -444,12 +429,11 @@ final class Phase7VerificationTests: XCTestCase {
 
         for file in primitives {
             let filePath = primitivesPath.appendingPathComponent(file)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: filePath.path),
-                         "Primitive view \(file) must exist")
+            #expect(FileManager.default.fileExists(atPath: filePath.path))
         }
     }
 
-    func testLayoutViewsExist() {
+    @Test func layoutViewsExist() {
         let layouts = [
             "VStack.swift",
             "HStack.swift",
@@ -471,50 +455,45 @@ final class Phase7VerificationTests: XCTestCase {
 
         for file in layouts {
             let filePath = layoutsPath.appendingPathComponent(file)
-            XCTAssertTrue(FileManager.default.fileExists(atPath: filePath.path),
-                         "Layout view \(file) must exist")
+            #expect(FileManager.default.fileExists(atPath: filePath.path))
         }
     }
 
     // MARK: - CLI Verification
 
-    func testCLIMainExists() {
+    @Test func cliMainExists() {
         let cliMain = getProjectPath()
             .appendingPathComponent("Sources")
             .appendingPathComponent("RavenCLI")
             .appendingPathComponent("main.swift")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: cliMain.path),
-                     "RavenCLI/main.swift must exist")
+        #expect(FileManager.default.fileExists(atPath: cliMain.path))
     }
 
     // MARK: - Version Verification
 
-    func testVersionIs010() throws {
+    @Test func versionIs010() throws {
         // Check that RELEASE.md specifies 0.1.0
         let release = getProjectPath().appendingPathComponent("RELEASE.md")
         let content = try String(contentsOf: release, encoding: .utf8)
 
-        XCTAssertTrue(content.contains("0.1.0"),
-                     "Version must be 0.1.0 for initial release")
-        XCTAssertTrue(content.contains("Initial Alpha Release") ||
-                     content.contains("initial alpha release"),
-                     "Must be marked as initial alpha release")
+        #expect(content.contains("0.1.0"))
+        #expect(content.contains("Initial Alpha Release") ||
+               content.contains("initial alpha release"))
     }
 
-    func testREADMEDoesNotClaim10() throws {
+    @Test func readmeDoesNotClaim10() throws {
         // Ensure README doesn't incorrectly claim to be v1.0
         let readme = getProjectPath().appendingPathComponent("README.md")
         let content = try String(contentsOf: readme, encoding: .utf8)
 
         // Check if it mentions version (should not claim 1.0.0 or v1.0)
-        XCTAssertFalse(content.contains("v1.0.0") || content.contains("version 1.0"),
-                      "README should not claim v1.0 for initial release")
+        #expect(!(content.contains("v1.0.0") || content.contains("version 1.0")))
     }
 
     // MARK: - Final Checklist Verification
 
-    func testAllPhase7DeliverablesComplete() {
+    @Test func allPhase7DeliverablesComplete() {
         // This is the master verification test
         // Runs all sub-verifications to ensure everything is ready
 
@@ -551,39 +530,12 @@ final class Phase7VerificationTests: XCTestCase {
         ]
 
         var allComplete = true
-        for (deliverable, complete) in deliverables {
+        for (_, complete) in deliverables {
             if !complete {
-                print("❌ \(deliverable)")
                 allComplete = false
-            } else {
-                print("✅ \(deliverable)")
             }
         }
 
-        XCTAssertTrue(allComplete, "All Phase 7 deliverables must be complete")
-    }
-
-    // MARK: - Helper Methods
-
-    private func getProjectPath() -> URL {
-        // Navigate from test bundle to project root
-        let testBundle = Bundle(for: type(of: self))
-        let bundlePath = testBundle.bundleURL
-
-        // From Tests bundle, go up to project root
-        // Typically: .build/debug/RavenPackageTests.xctest -> project root
-        var projectPath = bundlePath
-        while projectPath.lastPathComponent != "Raven" &&
-              projectPath.path != "/" &&
-              projectPath.pathComponents.count > 1 {
-            projectPath = projectPath.deletingLastPathComponent()
-        }
-
-        // If we didn't find it, try current directory
-        if projectPath.path == "/" || projectPath.lastPathComponent != "Raven" {
-            projectPath = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        }
-
-        return projectPath
+        #expect(allComplete)
     }
 }

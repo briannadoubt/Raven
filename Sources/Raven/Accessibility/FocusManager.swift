@@ -49,7 +49,9 @@ public final class FocusManager {
     // MARK: - Initialization
 
     private init() {
+        #if arch(wasm32)
         setupGlobalFocusHandlers()
+        #endif
     }
 
     // MARK: - Focus Registration

@@ -84,7 +84,11 @@ public final class RenderProfiler: Sendable {
         self.frameRateMonitor = FrameRateMonitor()
 
         // Get JavaScript Performance API reference
+        #if arch(wasm32)
         self.jsPerformance = JSObject.global.performance.isUndefined ? nil : JSObject.global.performance.object
+        #else
+        self.jsPerformance = nil
+        #endif
 
         // Set up DevTools integration
         setupDevToolsIntegration()
@@ -391,6 +395,9 @@ public final class RenderProfiler: Sendable {
 
     /// Set up DevTools integration via window.__RAVEN_PERF__
     private func setupDevToolsIntegration() {
+        #if !arch(wasm32)
+        return
+        #else
         guard let window = JSObject.global.window.object else { return }
 
         // Create Raven performance object
@@ -430,6 +437,7 @@ public final class RenderProfiler: Sendable {
         window.__RAVEN_PERF__ = .object(perfObject)
 
         print("🔍 Raven Profiler: DevTools integration enabled at window.__RAVEN_PERF__")
+        #endif
     }
 }
 

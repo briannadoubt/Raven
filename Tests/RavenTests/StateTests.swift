@@ -1,66 +1,66 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for @State property wrapper
 @MainActor
-final class StateTests: XCTestCase {
+@Suite struct StateTests {
 
     // MARK: - State Basic Tests
 
-    func testStateInitialization() {
+    @Test func stateInitialization() {
         var state = State(wrappedValue: 42)
-        XCTAssertEqual(state.wrappedValue, 42)
+        #expect(state.wrappedValue == 42)
     }
 
-    func testStateInitialValue() {
+    @Test func stateInitialValue() {
         var state = State(initialValue: "Hello")
-        XCTAssertEqual(state.wrappedValue, "Hello")
+        #expect(state.wrappedValue == "Hello")
     }
 
-    func testStateModification() {
+    @Test func stateModification() {
         var state = State(wrappedValue: 0)
-        XCTAssertEqual(state.wrappedValue, 0)
+        #expect(state.wrappedValue == 0)
 
         state.wrappedValue = 10
-        XCTAssertEqual(state.wrappedValue, 10)
+        #expect(state.wrappedValue == 10)
 
         state.wrappedValue = 100
-        XCTAssertEqual(state.wrappedValue, 100)
+        #expect(state.wrappedValue == 100)
     }
 
-    func testStateWithDifferentTypes() {
+    @Test func stateWithDifferentTypes() {
         var intState = State(wrappedValue: 42)
         var stringState = State(wrappedValue: "test")
         var boolState = State(wrappedValue: true)
         var doubleState = State(wrappedValue: 3.14)
 
-        XCTAssertEqual(intState.wrappedValue, 42)
-        XCTAssertEqual(stringState.wrappedValue, "test")
-        XCTAssertEqual(boolState.wrappedValue, true)
-        XCTAssertEqual(doubleState.wrappedValue, 3.14)
+        #expect(intState.wrappedValue == 42)
+        #expect(stringState.wrappedValue == "test")
+        #expect(boolState.wrappedValue == true)
+        #expect(doubleState.wrappedValue == 3.14)
     }
 
     // MARK: - Binding Tests
 
-    func testBindingFromState() {
+    @Test func bindingFromState() {
         var state = State(wrappedValue: 42)
         let binding = state.projectedValue
 
         // Reading from binding should return state value
-        XCTAssertEqual(binding.wrappedValue, 42)
+        #expect(binding.wrappedValue == 42)
     }
 
-    func testBindingModifiesState() {
+    @Test func bindingModifiesState() {
         var state = State(wrappedValue: 42)
         let binding = state.projectedValue
 
         // Writing to binding should update state
         binding.wrappedValue = 100
-        XCTAssertEqual(state.wrappedValue, 100)
-        XCTAssertEqual(binding.wrappedValue, 100)
+        #expect(state.wrappedValue == 100)
+        #expect(binding.wrappedValue == 100)
     }
 
-    func testBindingCreation() {
+    @Test func bindingCreation() {
         var value = 42
 
         let binding = Binding(
@@ -68,38 +68,38 @@ final class StateTests: XCTestCase {
             set: { value = $0 }
         )
 
-        XCTAssertEqual(binding.wrappedValue, 42)
+        #expect(binding.wrappedValue == 42)
 
         binding.wrappedValue = 100
-        XCTAssertEqual(value, 100)
-        XCTAssertEqual(binding.wrappedValue, 100)
+        #expect(value == 100)
+        #expect(binding.wrappedValue == 100)
     }
 
-    func testConstantBinding() {
+    @Test func constantBinding() {
         let binding = Binding.constant(42)
 
-        XCTAssertEqual(binding.wrappedValue, 42)
+        #expect(binding.wrappedValue == 42)
 
         // Writing to constant binding should be ignored
         binding.wrappedValue = 100
-        XCTAssertEqual(binding.wrappedValue, 42)
+        #expect(binding.wrappedValue == 42)
     }
 
-    func testBindingProjectedValue() {
+    @Test func bindingProjectedValue() {
         var state = State(wrappedValue: 42)
         let binding = state.projectedValue
         let projected = binding.projectedValue
 
         // Projected value of binding should be itself
-        XCTAssertEqual(projected.wrappedValue, 42)
+        #expect(projected.wrappedValue == 42)
 
         projected.wrappedValue = 100
-        XCTAssertEqual(state.wrappedValue, 100)
+        #expect(state.wrappedValue == 100)
     }
 
     // MARK: - Binding Transformation Tests
 
-    func testBindingTransformation() {
+    @Test func bindingTransformation() {
         var state = State(wrappedValue: 20.0)
 
         // Create a binding that converts Celsius to Fahrenheit
@@ -109,17 +109,17 @@ final class StateTests: XCTestCase {
             set: { (celsius: Double, fahrenheit: Double) -> Double in (fahrenheit - 32) * 5/9 }
         )
 
-        // 20°C should be 68°F
-        XCTAssertEqual(fahrenheit.wrappedValue, 68.0, accuracy: 0.01)
+        // 20C should be 68F
+        #expect(abs(fahrenheit.wrappedValue - 68.0) < 0.01)
 
-        // Set to 32°F (0°C)
+        // Set to 32F (0C)
         fahrenheit.wrappedValue = 32.0
-        XCTAssertEqual(state.wrappedValue, 0.0, accuracy: 0.01)
+        #expect(abs(state.wrappedValue - 0.0) < 0.01)
     }
 
     // MARK: - Dynamic Member Lookup Tests
 
-    func testBindingDynamicMemberLookup() {
+    @Test func bindingDynamicMemberLookup() {
         struct Person: Sendable {
             var name: String
             var age: Int
@@ -129,23 +129,23 @@ final class StateTests: XCTestCase {
 
         // Get a binding to the name property using dynamic member lookup
         let nameBinding = state.projectedValue.name
-        XCTAssertEqual(nameBinding.wrappedValue, "Alice")
+        #expect(nameBinding.wrappedValue == "Alice")
 
         // Modify through the nested binding
         nameBinding.wrappedValue = "Bob"
-        XCTAssertEqual(state.wrappedValue.name, "Bob")
-        XCTAssertEqual(nameBinding.wrappedValue, "Bob")
+        #expect(state.wrappedValue.name == "Bob")
+        #expect(nameBinding.wrappedValue == "Bob")
 
         // Get a binding to the age property
         let ageBinding = state.projectedValue.age
-        XCTAssertEqual(ageBinding.wrappedValue, 30)
+        #expect(ageBinding.wrappedValue == 30)
 
         ageBinding.wrappedValue = 25
-        XCTAssertEqual(state.wrappedValue.age, 25)
-        XCTAssertEqual(state.wrappedValue.name, "Bob")
+        #expect(state.wrappedValue.age == 25)
+        #expect(state.wrappedValue.name == "Bob")
     }
 
-    func testBindingDynamicMemberLookupNested() {
+    @Test func bindingDynamicMemberLookupNested() {
         struct Address: Sendable {
             var street: String
             var city: String
@@ -163,18 +163,18 @@ final class StateTests: XCTestCase {
 
         // Access nested properties using dynamic member lookup
         let addressBinding = state.projectedValue.address
-        XCTAssertEqual(addressBinding.wrappedValue.city, "Springfield")
+        #expect(addressBinding.wrappedValue.city == "Springfield")
 
         let cityBinding = addressBinding.city
-        XCTAssertEqual(cityBinding.wrappedValue, "Springfield")
+        #expect(cityBinding.wrappedValue == "Springfield")
 
         cityBinding.wrappedValue = "Shelbyville"
-        XCTAssertEqual(state.wrappedValue.address.city, "Shelbyville")
+        #expect(state.wrappedValue.address.city == "Shelbyville")
     }
 
     // MARK: - Update Callback Tests
 
-    func testStateUpdateCallback() {
+    @Test func stateUpdateCallback() {
         var state = State(wrappedValue: 0)
         var callbackCount = 0
 
@@ -185,16 +185,16 @@ final class StateTests: XCTestCase {
 
         // Changing state should trigger callback
         state.wrappedValue = 1
-        XCTAssertEqual(callbackCount, 1)
+        #expect(callbackCount == 1)
 
         state.wrappedValue = 2
-        XCTAssertEqual(callbackCount, 2)
+        #expect(callbackCount == 2)
 
         state.wrappedValue = 3
-        XCTAssertEqual(callbackCount, 3)
+        #expect(callbackCount == 3)
     }
 
-    func testStateUpdateCallbackNotCalledOnRead() {
+    @Test func stateUpdateCallbackNotCalledOnRead() {
         var state = State(wrappedValue: 42)
         var callbackCount = 0
 
@@ -207,73 +207,73 @@ final class StateTests: XCTestCase {
         let _ = state.wrappedValue
         let _ = state.wrappedValue
 
-        XCTAssertEqual(callbackCount, 0)
+        #expect(callbackCount == 0)
     }
 
     // MARK: - DynamicProperty Tests
 
-    func testStateDynamicProperty() {
+    @Test func stateDynamicProperty() {
         var state = State(wrappedValue: 42)
 
         // State conforms to DynamicProperty
-        XCTAssert(state is any DynamicProperty)
+        #expect(state is any DynamicProperty)
 
         // Update should be callable (even if it does nothing by default)
         state.update()
 
-        XCTAssertEqual(state.wrappedValue, 42)
+        #expect(state.wrappedValue == 42)
     }
 
-    func testBindingDynamicProperty() {
+    @Test func bindingDynamicProperty() {
         let binding = Binding.constant(42)
 
         // Binding conforms to DynamicProperty
-        XCTAssert(binding is any DynamicProperty)
+        #expect(binding is any DynamicProperty)
 
         // Update should be callable
         var mutableBinding = binding
         mutableBinding.update()
 
-        XCTAssertEqual(binding.wrappedValue, 42)
+        #expect(binding.wrappedValue == 42)
     }
 
     // MARK: - Complex State Tests
 
-    func testStateWithArrays() {
+    @Test func stateWithArrays() {
         var state = State(wrappedValue: [1, 2, 3])
 
-        XCTAssertEqual(state.wrappedValue, [1, 2, 3])
+        #expect(state.wrappedValue == [1, 2, 3])
 
         state.wrappedValue.append(4)
-        XCTAssertEqual(state.wrappedValue, [1, 2, 3, 4])
+        #expect(state.wrappedValue == [1, 2, 3, 4])
 
         state.wrappedValue = [10, 20]
-        XCTAssertEqual(state.wrappedValue, [10, 20])
+        #expect(state.wrappedValue == [10, 20])
     }
 
-    func testStateWithOptionals() {
+    @Test func stateWithOptionals() {
         var state = State<Int?>(wrappedValue: nil)
 
-        XCTAssertNil(state.wrappedValue)
+        #expect(state.wrappedValue == nil)
 
         state.wrappedValue = 42
-        XCTAssertEqual(state.wrappedValue, 42)
+        #expect(state.wrappedValue == 42)
 
         state.wrappedValue = nil
-        XCTAssertNil(state.wrappedValue)
+        #expect(state.wrappedValue == nil)
     }
 
     // MARK: - Sendable Tests
 
-    func testStateSendable() {
+    @Test func stateSendable() {
         // State should be Sendable
-        XCTAssert(State<Int>.self is any Sendable.Type)
-        XCTAssert(State<String>.self is any Sendable.Type)
+        #expect(State<Int>.self is any Sendable.Type)
+        #expect(State<String>.self is any Sendable.Type)
     }
 
-    func testBindingSendable() {
+    @Test func bindingSendable() {
         // Binding should be Sendable
-        XCTAssert(Binding<Int>.self is any Sendable.Type)
-        XCTAssert(Binding<String>.self is any Sendable.Type)
+        #expect(Binding<Int>.self is any Sendable.Type)
+        #expect(Binding<String>.self is any Sendable.Type)
     }
 }

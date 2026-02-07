@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for text modifiers (.lineLimit, .multilineTextAlignment, .truncationMode)
@@ -13,59 +13,58 @@ import XCTest
 /// - Correct CSS values for different parameters
 /// - Integration with Text views
 /// - Edge cases and parameter variations
-@available(macOS 13.0, *)
 @MainActor
-final class TextModifiersTests: XCTestCase {
+@Suite struct TextModifiersTests {
 
     // MARK: - Line Limit Tests (4 tests)
 
-    func testLineLimitBasicUsage() {
+    @Test func lineLimitBasicUsage() {
         let text = Text("This is a long text that should be limited")
             .lineLimit(2)
 
         let node = text.toVNode()
 
         // Verify wrapper element
-        XCTAssertEqual(node.elementTag, "div", "Line limit should wrap content in div")
+        #expect(node.elementTag == "div")
 
         // Verify -webkit-line-clamp
         if case .style(name: "-webkit-line-clamp", value: let clamp) = node.props["-webkit-line-clamp"] {
-            XCTAssertEqual(clamp, "2", "Line limit should set -webkit-line-clamp to 2")
+            #expect(clamp == "2")
         } else {
-            XCTFail("Line limit should have -webkit-line-clamp property")
+            Issue.record("Line limit should have -webkit-line-clamp property")
         }
 
         // Verify display: -webkit-box
         if case .style(name: "display", value: let display) = node.props["display"] {
-            XCTAssertEqual(display, "-webkit-box", "Line limit should set display to -webkit-box")
+            #expect(display == "-webkit-box")
         } else {
-            XCTFail("Line limit should have display property")
+            Issue.record("Line limit should have display property")
         }
 
         // Verify -webkit-box-orient: vertical
         if case .style(name: "-webkit-box-orient", value: let orient) = node.props["-webkit-box-orient"] {
-            XCTAssertEqual(orient, "vertical", "Line limit should set -webkit-box-orient to vertical")
+            #expect(orient == "vertical")
         } else {
-            XCTFail("Line limit should have -webkit-box-orient property")
+            Issue.record("Line limit should have -webkit-box-orient property")
         }
 
         // Verify overflow: hidden
         if case .style(name: "overflow", value: let overflow) = node.props["overflow"] {
-            XCTAssertEqual(overflow, "hidden", "Line limit should set overflow to hidden")
+            #expect(overflow == "hidden")
         } else {
-            XCTFail("Line limit should have overflow property")
+            Issue.record("Line limit should have overflow property")
         }
     }
 
-    func testLineLimitWithDifferentValues() {
+    @Test func lineLimitWithDifferentValues() {
         // Test with 1 line
         let oneLineText = Text("Short text").lineLimit(1)
         let oneLineNode = oneLineText.toVNode()
 
         if case .style(name: "-webkit-line-clamp", value: let clamp) = oneLineNode.props["-webkit-line-clamp"] {
-            XCTAssertEqual(clamp, "1", "Line limit should handle single line")
+            #expect(clamp == "1")
         } else {
-            XCTFail("Single line limit should have -webkit-line-clamp")
+            Issue.record("Single line limit should have -webkit-line-clamp")
         }
 
         // Test with 5 lines
@@ -73,33 +72,33 @@ final class TextModifiersTests: XCTestCase {
         let fiveLineNode = fiveLineText.toVNode()
 
         if case .style(name: "-webkit-line-clamp", value: let clamp) = fiveLineNode.props["-webkit-line-clamp"] {
-            XCTAssertEqual(clamp, "5", "Line limit should handle 5 lines")
+            #expect(clamp == "5")
         } else {
-            XCTFail("Five line limit should have -webkit-line-clamp")
+            Issue.record("Five line limit should have -webkit-line-clamp")
         }
     }
 
-    func testLineLimitWithNilValue() {
+    @Test func lineLimitWithNilValue() {
         let text = Text("Unlimited text").lineLimit(nil)
         let node = text.toVNode()
 
         // With nil, the wrapper should exist but not have the line-clamp properties
-        XCTAssertEqual(node.elementTag, "div", "Line limit with nil should still wrap in div")
+        #expect(node.elementTag == "div")
 
         // Verify no line-clamp properties when nil
-        XCTAssertNil(node.props["-webkit-line-clamp"], "Nil line limit should not set -webkit-line-clamp")
-        XCTAssertNil(node.props["display"], "Nil line limit should not set display")
+        #expect(node.props["-webkit-line-clamp"] == nil)
+        #expect(node.props["display"] == nil)
     }
 
-    func testLineLimitVNodeStructure() {
+    @Test func lineLimitVNodeStructure() {
         let text = Text("Sample text").lineLimit(3)
         let node = text.toVNode()
 
         // Verify all required CSS properties are present
-        XCTAssertNotNil(node.props["display"], "Should have display property")
-        XCTAssertNotNil(node.props["-webkit-line-clamp"], "Should have -webkit-line-clamp property")
-        XCTAssertNotNil(node.props["-webkit-box-orient"], "Should have -webkit-box-orient property")
-        XCTAssertNotNil(node.props["overflow"], "Should have overflow property")
+        #expect(node.props["display"] != nil)
+        #expect(node.props["-webkit-line-clamp"] != nil)
+        #expect(node.props["-webkit-box-orient"] != nil)
+        #expect(node.props["overflow"] != nil)
 
         // Count style properties
         let styleCount = node.props.values.filter { prop in
@@ -107,53 +106,53 @@ final class TextModifiersTests: XCTestCase {
             return false
         }.count
 
-        XCTAssertEqual(styleCount, 4, "Line limit should set exactly 4 style properties")
+        #expect(styleCount == 4)
     }
 
     // MARK: - Multiline Text Alignment Tests (4 tests)
 
-    func testMultilineTextAlignmentLeading() {
+    @Test func multilineTextAlignmentLeading() {
         let text = Text("Left aligned\nMultiple lines")
             .multilineTextAlignment(.leading)
 
         let node = text.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Multiline alignment should wrap content in div")
+        #expect(node.elementTag == "div")
 
         if case .style(name: "text-align", value: let align) = node.props["text-align"] {
-            XCTAssertEqual(align, "left", "Leading alignment should map to left")
+            #expect(align == "left")
         } else {
-            XCTFail("Multiline alignment should have text-align property")
+            Issue.record("Multiline alignment should have text-align property")
         }
     }
 
-    func testMultilineTextAlignmentCenter() {
+    @Test func multilineTextAlignmentCenter() {
         let text = Text("Centered\nMultiple lines")
             .multilineTextAlignment(.center)
 
         let node = text.toVNode()
 
         if case .style(name: "text-align", value: let align) = node.props["text-align"] {
-            XCTAssertEqual(align, "center", "Center alignment should map to center")
+            #expect(align == "center")
         } else {
-            XCTFail("Center alignment should have text-align property")
+            Issue.record("Center alignment should have text-align property")
         }
     }
 
-    func testMultilineTextAlignmentTrailing() {
+    @Test func multilineTextAlignmentTrailing() {
         let text = Text("Right aligned\nMultiple lines")
             .multilineTextAlignment(.trailing)
 
         let node = text.toVNode()
 
         if case .style(name: "text-align", value: let align) = node.props["text-align"] {
-            XCTAssertEqual(align, "right", "Trailing alignment should map to right")
+            #expect(align == "right")
         } else {
-            XCTFail("Trailing alignment should have text-align property")
+            Issue.record("Trailing alignment should have text-align property")
         }
     }
 
-    func testMultilineTextAlignmentVNodeStructure() {
+    @Test func multilineTextAlignmentVNodeStructure() {
         let text = Text("Sample text").multilineTextAlignment(.center)
         let node = text.toVNode()
 
@@ -163,46 +162,46 @@ final class TextModifiersTests: XCTestCase {
             return false
         }.count
 
-        XCTAssertEqual(styleCount, 1, "Multiline alignment should set exactly 1 style property")
-        XCTAssertNotNil(node.props["text-align"], "Should have text-align property")
+        #expect(styleCount == 1)
+        #expect(node.props["text-align"] != nil)
     }
 
     // MARK: - Truncation Mode Tests (4 tests)
 
-    func testTruncationModeTail() {
+    @Test func truncationModeTail() {
         let text = Text("This is a very long text that will be truncated at the end")
             .truncationMode(.tail)
 
         let node = text.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Truncation mode should wrap content in div")
+        #expect(node.elementTag == "div")
 
         // Verify text-overflow: ellipsis
         if case .style(name: "text-overflow", value: let overflow) = node.props["text-overflow"] {
-            XCTAssertEqual(overflow, "ellipsis", "Tail truncation should use text-overflow ellipsis")
+            #expect(overflow == "ellipsis")
         } else {
-            XCTFail("Tail truncation should have text-overflow property")
+            Issue.record("Tail truncation should have text-overflow property")
         }
 
         // Verify overflow: hidden
         if case .style(name: "overflow", value: let overflow) = node.props["overflow"] {
-            XCTAssertEqual(overflow, "hidden", "Truncation should set overflow hidden")
+            #expect(overflow == "hidden")
         } else {
-            XCTFail("Truncation should have overflow property")
+            Issue.record("Truncation should have overflow property")
         }
 
         // Verify white-space: nowrap
         if case .style(name: "white-space", value: let whitespace) = node.props["white-space"] {
-            XCTAssertEqual(whitespace, "nowrap", "Truncation should set white-space nowrap")
+            #expect(whitespace == "nowrap")
         } else {
-            XCTFail("Truncation should have white-space property")
+            Issue.record("Truncation should have white-space property")
         }
 
         // Tail should not have direction property
-        XCTAssertNil(node.props["direction"], "Tail truncation should not set direction")
+        #expect(node.props["direction"] == nil)
     }
 
-    func testTruncationModeHead() {
+    @Test func truncationModeHead() {
         let text = Text("This is a very long text that will be truncated at the beginning")
             .truncationMode(.head)
 
@@ -210,23 +209,23 @@ final class TextModifiersTests: XCTestCase {
 
         // Verify direction: rtl for head truncation
         if case .style(name: "direction", value: let direction) = node.props["direction"] {
-            XCTAssertEqual(direction, "rtl", "Head truncation should use RTL direction")
+            #expect(direction == "rtl")
         } else {
-            XCTFail("Head truncation should have direction property")
+            Issue.record("Head truncation should have direction property")
         }
 
         // Verify text-align: right for head truncation
         if case .style(name: "text-align", value: let align) = node.props["text-align"] {
-            XCTAssertEqual(align, "right", "Head truncation should align right")
+            #expect(align == "right")
         } else {
-            XCTFail("Head truncation should have text-align property")
+            Issue.record("Head truncation should have text-align property")
         }
 
         // Should still have text-overflow
-        XCTAssertNotNil(node.props["text-overflow"], "Head truncation should have text-overflow")
+        #expect(node.props["text-overflow"] != nil)
     }
 
-    func testTruncationModeMiddle() {
+    @Test func truncationModeMiddle() {
         let text = Text("This is a very long text that will be truncated in the middle")
             .truncationMode(.middle)
 
@@ -234,18 +233,18 @@ final class TextModifiersTests: XCTestCase {
 
         // Middle truncation should have data attribute for enhancement
         if case .attribute(name: "data-truncation", value: let mode) = node.props["data-truncation"] {
-            XCTAssertEqual(mode, "middle", "Middle truncation should have data-truncation attribute")
+            #expect(mode == "middle")
         } else {
-            XCTFail("Middle truncation should have data-truncation attribute")
+            Issue.record("Middle truncation should have data-truncation attribute")
         }
 
         // Should still have basic truncation styles
-        XCTAssertNotNil(node.props["overflow"], "Middle truncation should have overflow")
-        XCTAssertNotNil(node.props["white-space"], "Middle truncation should have white-space")
-        XCTAssertNotNil(node.props["text-overflow"], "Middle truncation should have text-overflow")
+        #expect(node.props["overflow"] != nil)
+        #expect(node.props["white-space"] != nil)
+        #expect(node.props["text-overflow"] != nil)
     }
 
-    func testTruncationModeVNodeStructure() {
+    @Test func truncationModeVNodeStructure() {
         let tailText = Text("Sample").truncationMode(.tail)
         let headText = Text("Sample").truncationMode(.head)
         let middleText = Text("Sample").truncationMode(.middle)
@@ -255,21 +254,21 @@ final class TextModifiersTests: XCTestCase {
         let middleNode = middleText.toVNode()
 
         // All should wrap in div
-        XCTAssertEqual(tailNode.elementTag, "div", "Tail truncation should use div")
-        XCTAssertEqual(headNode.elementTag, "div", "Head truncation should use div")
-        XCTAssertEqual(middleNode.elementTag, "div", "Middle truncation should use div")
+        #expect(tailNode.elementTag == "div")
+        #expect(headNode.elementTag == "div")
+        #expect(middleNode.elementTag == "div")
 
         // All should have basic truncation properties
         for node in [tailNode, headNode, middleNode] {
-            XCTAssertNotNil(node.props["overflow"], "Should have overflow property")
-            XCTAssertNotNil(node.props["white-space"], "Should have white-space property")
-            XCTAssertNotNil(node.props["text-overflow"], "Should have text-overflow property")
+            #expect(node.props["overflow"] != nil)
+            #expect(node.props["white-space"] != nil)
+            #expect(node.props["text-overflow"] != nil)
         }
     }
 
     // MARK: - Combined Modifiers Tests (2 tests)
 
-    func testCombinedLineLimitAndAlignment() {
+    @Test func combinedLineLimitAndAlignment() {
         let text = Text("Multiple\nLines\nOf\nText")
             .lineLimit(3)
             .multilineTextAlignment(.center)
@@ -279,10 +278,10 @@ final class TextModifiersTests: XCTestCase {
         let node = text.toVNode()
 
         // The outer node should be the alignment wrapper
-        XCTAssertNotNil(node.props["text-align"], "Combined modifiers should include alignment")
+        #expect(node.props["text-align"] != nil)
     }
 
-    func testCombinedLineLimitAndTruncation() {
+    @Test func combinedLineLimitAndTruncation() {
         let text = Text("Very long text that needs both line limiting and truncation")
             .lineLimit(2)
             .truncationMode(.tail)
@@ -291,19 +290,19 @@ final class TextModifiersTests: XCTestCase {
         let node = text.toVNode()
 
         // The outer node should be the truncation wrapper
-        XCTAssertNotNil(node.props["text-overflow"], "Combined modifiers should include truncation")
+        #expect(node.props["text-overflow"] != nil)
     }
 
     // MARK: - Dynamic Type Scaling Tests (4 tests)
 
-    func testFontScalingWithDefaultSize() {
+    @Test func fontScalingWithDefaultSize() {
         // Test that default size category (1.0) produces correct font size
         let font = Font.body
         let (_, size, _) = font.cssProperties(scale: 1.0)
-        XCTAssertEqual(size, "17.0px", "Body font at default scale should be 17px")
+        #expect(size == "17.0px")
     }
 
-    func testFontScalingWithLargerSize() {
+    @Test func fontScalingWithLargerSize() {
         // Test that larger size category scales the font
         let font = Font.body
         let scale = ContentSizeCategory.extraLarge.scaleFactor
@@ -311,26 +310,26 @@ final class TextModifiersTests: XCTestCase {
 
         // extraLarge has scale factor 1.12, so 17 * 1.12 = 19.04 (approximately)
         // Due to floating point precision, check that it starts with "19.04"
-        XCTAssertTrue(size.hasPrefix("19.04"), "Body font at extraLarge scale should be approximately 19.04px, got \(size)")
+        #expect(size.hasPrefix("19.04"))
     }
 
-    func testFontScalingWithAccessibilitySize() {
+    @Test func fontScalingWithAccessibilitySize() {
         // Test that accessibility sizes produce significantly larger fonts
         let font = Font.caption
         let scale = ContentSizeCategory.accessibilityLarge.scaleFactor
         let (_, size, _) = font.cssProperties(scale: scale)
 
         // Caption is 12px, accessibilityLarge has scale factor 1.90, so 12 * 1.90 = 22.8
-        XCTAssertTrue(size.hasPrefix("22.8"), "Caption font at accessibilityLarge should be approximately 22.8px, got \(size)")
+        #expect(size.hasPrefix("22.8"))
     }
 
-    func testFixedSizeFontDoesNotScale() {
+    @Test func fixedSizeFontDoesNotScale() {
         // Test that fixed size fonts don't scale with ContentSizeCategory
         let font = Font.custom("Helvetica", fixedSize: 20)
         let scale = ContentSizeCategory.extraExtraLarge.scaleFactor
         let (_, size, _) = font.cssProperties(scale: scale)
 
         // Fixed size fonts should not scale
-        XCTAssertEqual(size, "20.0px", "Fixed size fonts should not scale with ContentSizeCategory")
+        #expect(size == "20.0px")
     }
 }

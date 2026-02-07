@@ -180,6 +180,9 @@ public struct StateObject<ObjectType: ObservableObject>: DynamicProperty {
             let subscriptionID = object.objectWillChange.subscribe { [storage] in
                 // Trigger view update when object changes
                 storage.updateCallback?()
+                // Always schedule a render via the global scheduler
+                // (updateCallback may be nil if Mirror-based setup is unavailable)
+                _RenderScheduler.current?.scheduleRender()
             }
             storage.subscriptionID = subscriptionID
         }
@@ -238,6 +241,7 @@ public struct StateObject<ObjectType: ObservableObject>: DynamicProperty {
             storage.object?.objectWillChange.unsubscribe(subscriptionID)
             let newID = storage.object?.objectWillChange.subscribe { [storage] in
                 storage.updateCallback?()
+                _RenderScheduler.current?.scheduleRender()
             }
             storage.subscriptionID = newID
         }

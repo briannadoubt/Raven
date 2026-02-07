@@ -6,6 +6,7 @@ import Foundation
 ///
 /// These tests verify that the `containerRelativeFrame()` modifier correctly
 /// generates VNodes with appropriate CSS for container-relative sizing.
+@MainActor
 @Suite("Container Relative Frame Tests")
 struct ContainerRelativeFrameTests {
 

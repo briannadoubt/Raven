@@ -1,11 +1,11 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Simple verification tests for ContentUnavailableView
 @MainActor
-final class ContentUnavailableViewSimpleTests: XCTestCase {
+@Suite struct ContentUnavailableViewSimpleTests {
 
-    func testBasicContentUnavailableView() throws {
+    @Test func basicContentUnavailableView() throws {
         // Test that a basic ContentUnavailableView can be created
         let view = ContentUnavailableView(
             "No Messages",
@@ -13,26 +13,26 @@ final class ContentUnavailableViewSimpleTests: XCTestCase {
         )
 
         // Since ContentUnavailableView is a composed view, we just verify it initializes
-        XCTAssertNotNil(view, "ContentUnavailableView should initialize successfully")
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithTextDescription() throws {
+    @Test func contentUnavailableViewWithTextDescription() throws {
         let view = ContentUnavailableView(
             "No Messages",
             systemImage: "envelope.open",
             description: Text("You don't have any messages yet.")
         )
 
-        XCTAssertNotNil(view, "ContentUnavailableView with Text description should initialize")
+        #expect(view != nil)
     }
 
-    func testSearchVariantExists() throws {
+    @Test func searchVariantExists() throws {
         let view = ContentUnavailableView<Text, EmptyView>.search
 
-        XCTAssertNotNil(view, "ContentUnavailableView.search should be available")
+        #expect(view != nil)
     }
 
-    func testFullInitializer() throws {
+    @Test func fullInitializer() throws {
         let view = ContentUnavailableView(
             "No Items",
             systemImage: "tray",
@@ -42,6 +42,6 @@ final class ContentUnavailableViewSimpleTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "ContentUnavailableView with all components should initialize")
+        #expect(view != nil)
     }
 }

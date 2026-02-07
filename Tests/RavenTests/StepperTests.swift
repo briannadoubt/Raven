@@ -1,13 +1,13 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for Stepper primitive view
 @MainActor
-final class StepperTests: XCTestCase {
+@Suite struct StepperTests {
 
     // MARK: - Basic Initialization Tests
 
-    func testStepperWithTextLabel() throws {
+    @Test func stepperWithTextLabel() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -17,25 +17,25 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper("Quantity", value: binding, in: 0...10)
         let node = stepper.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Stepper should render as div element")
-        XCTAssertFalse(node.children.isEmpty, "Stepper should have children")
+        #expect(node.elementTag == "div")
+        #expect(!node.children.isEmpty)
 
         // Verify role attribute
         if case .attribute(name: "role", value: let role) = node.props["role"] {
-            XCTAssertEqual(role, "group", "Stepper should have group role")
+            #expect(role == "group")
         } else {
-            XCTFail("Stepper should have role attribute")
+            Issue.record("Stepper should have role attribute")
         }
 
         // Verify flexbox styling
         if case .style(name: "display", value: let display) = node.props["display"] {
-            XCTAssertEqual(display, "flex", "Stepper should use flexbox")
+            #expect(display == "flex")
         } else {
-            XCTFail("Stepper should have display style")
+            Issue.record("Stepper should have display style")
         }
     }
 
-    func testStepperWithoutLabel() throws {
+    @Test func stepperWithoutLabel() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -45,11 +45,11 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper(value: binding, in: 0...10)
         let node = stepper.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Stepper should render as div element")
-        XCTAssertFalse(node.children.isEmpty, "Stepper should have button container")
+        #expect(node.elementTag == "div")
+        #expect(!node.children.isEmpty)
     }
 
-    func testStepperWithLocalizedStringKey() throws {
+    @Test func stepperWithLocalizedStringKey() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -59,12 +59,12 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper(LocalizedStringKey("volume_label"), value: binding, in: 0...100)
         let node = stepper.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Stepper should render as div element")
+        #expect(node.elementTag == "div")
     }
 
     // MARK: - Button Tests
 
-    func testStepperHasDecrementButton() throws {
+    @Test func stepperHasDecrementButton() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -82,7 +82,7 @@ final class StepperTests: XCTestCase {
             return false
         }
 
-        XCTAssertNotNil(buttonsContainer, "Stepper should have buttons container")
+        #expect(buttonsContainer != nil)
 
         // Find decrement button
         if let container = buttonsContainer {
@@ -93,35 +93,35 @@ final class StepperTests: XCTestCase {
                 return false
             }
 
-            XCTAssertNotNil(decrementButton, "Stepper should have decrement button")
+            #expect(decrementButton != nil)
 
             if let button = decrementButton {
                 // Verify button type
                 if case .attribute(name: "type", value: let type) = button.props["type"] {
-                    XCTAssertEqual(type, "button", "Decrement should be button type")
+                    #expect(type == "button")
                 } else {
-                    XCTFail("Decrement button should have type attribute")
+                    Issue.record("Decrement button should have type attribute")
                 }
 
                 // Verify aria-label
                 if case .attribute(name: "aria-label", value: let ariaLabel) = button.props["aria-label"] {
-                    XCTAssertEqual(ariaLabel, "Decrement", "Decrement button should have aria-label")
+                    #expect(ariaLabel == "Decrement")
                 } else {
-                    XCTFail("Decrement button should have aria-label")
+                    Issue.record("Decrement button should have aria-label")
                 }
 
                 // Verify button text
                 let textNode = button.children.first
                 if case .text(let text) = textNode?.type {
-                    XCTAssertEqual(text, "-", "Decrement button should show minus sign")
+                    #expect(text == "-")
                 } else {
-                    XCTFail("Decrement button should have text content")
+                    Issue.record("Decrement button should have text content")
                 }
             }
         }
     }
 
-    func testStepperHasIncrementButton() throws {
+    @Test func stepperHasIncrementButton() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -139,7 +139,7 @@ final class StepperTests: XCTestCase {
             return false
         }
 
-        XCTAssertNotNil(buttonsContainer, "Stepper should have buttons container")
+        #expect(buttonsContainer != nil)
 
         // Find increment button
         if let container = buttonsContainer {
@@ -150,29 +150,29 @@ final class StepperTests: XCTestCase {
                 return false
             }
 
-            XCTAssertNotNil(incrementButton, "Stepper should have increment button")
+            #expect(incrementButton != nil)
 
             if let button = incrementButton {
                 // Verify button type
                 if case .attribute(name: "type", value: let type) = button.props["type"] {
-                    XCTAssertEqual(type, "button", "Increment should be button type")
+                    #expect(type == "button")
                 } else {
-                    XCTFail("Increment button should have type attribute")
+                    Issue.record("Increment button should have type attribute")
                 }
 
                 // Verify aria-label
                 if case .attribute(name: "aria-label", value: let ariaLabel) = button.props["aria-label"] {
-                    XCTAssertEqual(ariaLabel, "Increment", "Increment button should have aria-label")
+                    #expect(ariaLabel == "Increment")
                 } else {
-                    XCTFail("Increment button should have aria-label")
+                    Issue.record("Increment button should have aria-label")
                 }
 
                 // Verify button text
                 let textNode = button.children.first
                 if case .text(let text) = textNode?.type {
-                    XCTAssertEqual(text, "+", "Increment button should show plus sign")
+                    #expect(text == "+")
                 } else {
-                    XCTFail("Increment button should have text content")
+                    Issue.record("Increment button should have text content")
                 }
             }
         }
@@ -180,7 +180,7 @@ final class StepperTests: XCTestCase {
 
     // MARK: - Range Boundary Tests
 
-    func testStepperDisablesDecrementAtMinimum() throws {
+    @Test func stepperDisablesDecrementAtMinimum() throws {
         var value = 0  // At minimum
         let binding = Binding<Int>(
             get: { value },
@@ -210,27 +210,27 @@ final class StepperTests: XCTestCase {
             if let button = decrementButton {
                 // Verify button is disabled
                 if case .boolAttribute(name: "disabled", value: let disabled) = button.props["disabled"] {
-                    XCTAssertTrue(disabled, "Decrement button should be disabled at minimum")
+                    #expect(disabled)
                 } else {
-                    XCTFail("Decrement button should have disabled attribute at minimum")
+                    Issue.record("Decrement button should have disabled attribute at minimum")
                 }
 
                 // Verify aria-disabled
                 if case .attribute(name: "aria-disabled", value: let ariaDisabled) = button.props["aria-disabled"] {
-                    XCTAssertEqual(ariaDisabled, "true", "Decrement button should have aria-disabled")
+                    #expect(ariaDisabled == "true")
                 } else {
-                    XCTFail("Decrement button should have aria-disabled attribute")
+                    Issue.record("Decrement button should have aria-disabled attribute")
                 }
 
                 // Verify no onClick handler when disabled
-                XCTAssertNil(button.props["onClick"], "Decrement button should not have onClick when disabled")
+                #expect(button.props["onClick"] == nil)
             } else {
-                XCTFail("Decrement button not found")
+                Issue.record("Decrement button not found")
             }
         }
     }
 
-    func testStepperDisablesIncrementAtMaximum() throws {
+    @Test func stepperDisablesIncrementAtMaximum() throws {
         var value = 10  // At maximum
         let binding = Binding<Int>(
             get: { value },
@@ -260,27 +260,27 @@ final class StepperTests: XCTestCase {
             if let button = incrementButton {
                 // Verify button is disabled
                 if case .boolAttribute(name: "disabled", value: let disabled) = button.props["disabled"] {
-                    XCTAssertTrue(disabled, "Increment button should be disabled at maximum")
+                    #expect(disabled)
                 } else {
-                    XCTFail("Increment button should have disabled attribute at maximum")
+                    Issue.record("Increment button should have disabled attribute at maximum")
                 }
 
                 // Verify aria-disabled
                 if case .attribute(name: "aria-disabled", value: let ariaDisabled) = button.props["aria-disabled"] {
-                    XCTAssertEqual(ariaDisabled, "true", "Increment button should have aria-disabled")
+                    #expect(ariaDisabled == "true")
                 } else {
-                    XCTFail("Increment button should have aria-disabled attribute")
+                    Issue.record("Increment button should have aria-disabled attribute")
                 }
 
                 // Verify no onClick handler when disabled
-                XCTAssertNil(button.props["onClick"], "Increment button should not have onClick when disabled")
+                #expect(button.props["onClick"] == nil)
             } else {
-                XCTFail("Increment button not found")
+                Issue.record("Increment button not found")
             }
         }
     }
 
-    func testStepperEnablesButtonsInMiddleOfRange() throws {
+    @Test func stepperEnablesButtonsInMiddleOfRange() throws {
         var value = 5  // In middle of range
         let binding = Binding<Int>(
             get: { value },
@@ -308,8 +308,8 @@ final class StepperTests: XCTestCase {
             }
 
             if let button = decrementButton {
-                XCTAssertNil(button.props["disabled"], "Decrement button should be enabled in middle of range")
-                XCTAssertNotNil(button.props["onClick"], "Decrement button should have onClick handler")
+                #expect(button.props["disabled"] == nil)
+                #expect(button.props["onClick"] != nil)
             }
 
             // Check increment button is enabled
@@ -321,15 +321,15 @@ final class StepperTests: XCTestCase {
             }
 
             if let button = incrementButton {
-                XCTAssertNil(button.props["disabled"], "Increment button should be enabled in middle of range")
-                XCTAssertNotNil(button.props["onClick"], "Increment button should have onClick handler")
+                #expect(button.props["disabled"] == nil)
+                #expect(button.props["onClick"] != nil)
             }
         }
     }
 
     // MARK: - Event Handler Tests
 
-    func testIncrementHandler() throws {
+    @Test func incrementHandler() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -339,14 +339,14 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper(value: binding, in: 0...10)
 
         // Execute increment handler
-        XCTAssertEqual(value, 5, "Initial value should be 5")
+        #expect(value == 5)
         stepper.incrementHandler()
-        XCTAssertEqual(value, 6, "Value should increment to 6")
+        #expect(value == 6)
         stepper.incrementHandler()
-        XCTAssertEqual(value, 7, "Value should increment to 7")
+        #expect(value == 7)
     }
 
-    func testDecrementHandler() throws {
+    @Test func decrementHandler() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -356,14 +356,14 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper(value: binding, in: 0...10)
 
         // Execute decrement handler
-        XCTAssertEqual(value, 5, "Initial value should be 5")
+        #expect(value == 5)
         stepper.decrementHandler()
-        XCTAssertEqual(value, 4, "Value should decrement to 4")
+        #expect(value == 4)
         stepper.decrementHandler()
-        XCTAssertEqual(value, 3, "Value should decrement to 3")
+        #expect(value == 3)
     }
 
-    func testIncrementHandlerRespectsBounds() throws {
+    @Test func incrementHandlerRespectsBounds() throws {
         var value = 10  // At maximum
         let binding = Binding<Int>(
             get: { value },
@@ -374,10 +374,10 @@ final class StepperTests: XCTestCase {
 
         // Try to increment beyond maximum
         stepper.incrementHandler()
-        XCTAssertEqual(value, 10, "Value should not exceed maximum")
+        #expect(value == 10)
     }
 
-    func testDecrementHandlerRespectsBounds() throws {
+    @Test func decrementHandlerRespectsBounds() throws {
         var value = 0  // At minimum
         let binding = Binding<Int>(
             get: { value },
@@ -388,10 +388,10 @@ final class StepperTests: XCTestCase {
 
         // Try to decrement below minimum
         stepper.decrementHandler()
-        XCTAssertEqual(value, 0, "Value should not go below minimum")
+        #expect(value == 0)
     }
 
-    func testStepperValueBinding() throws {
+    @Test func stepperValueBinding() throws {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -402,16 +402,16 @@ final class StepperTests: XCTestCase {
 
         // Verify binding is accessible
         let stepperBinding = stepper.valueBinding
-        XCTAssertEqual(stepperBinding.wrappedValue, 5, "Binding should return current value")
+        #expect(stepperBinding.wrappedValue == 5)
 
         // Modify through binding
         stepperBinding.wrappedValue = 8
-        XCTAssertEqual(value, 8, "Binding should update value")
+        #expect(value == 8)
     }
 
     // MARK: - Integration Tests
 
-    func testStepperWithCompleteInteraction() throws {
+    @Test func stepperWithCompleteInteraction() throws {
         var quantity = 1
         let binding = Binding<Int>(
             get: { quantity },
@@ -421,37 +421,37 @@ final class StepperTests: XCTestCase {
         let stepper = Stepper("Quantity", value: binding, in: 1...5)
 
         // Initial state
-        XCTAssertEqual(quantity, 1, "Initial quantity should be 1")
+        #expect(quantity == 1)
 
         // Increment several times
         stepper.incrementHandler()
-        XCTAssertEqual(quantity, 2)
+        #expect(quantity == 2)
         stepper.incrementHandler()
-        XCTAssertEqual(quantity, 3)
+        #expect(quantity == 3)
 
         // Decrement
         stepper.decrementHandler()
-        XCTAssertEqual(quantity, 2)
+        #expect(quantity == 2)
 
         // Increment to maximum
         stepper.incrementHandler()  // 3
         stepper.incrementHandler()  // 4
         stepper.incrementHandler()  // 5
-        XCTAssertEqual(quantity, 5)
+        #expect(quantity == 5)
 
         // Try to exceed maximum
         stepper.incrementHandler()
-        XCTAssertEqual(quantity, 5, "Should stay at maximum")
+        #expect(quantity == 5)
 
         // Decrement to minimum
         stepper.decrementHandler()  // 4
         stepper.decrementHandler()  // 3
         stepper.decrementHandler()  // 2
         stepper.decrementHandler()  // 1
-        XCTAssertEqual(quantity, 1)
+        #expect(quantity == 1)
 
         // Try to go below minimum
         stepper.decrementHandler()
-        XCTAssertEqual(quantity, 1, "Should stay at minimum")
+        #expect(quantity == 1)
     }
 }

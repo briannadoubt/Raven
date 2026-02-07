@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Phase 8 Verification: Form Controls and Interactive Elements
@@ -19,13 +20,12 @@ import XCTest
 /// - Two-way binding behavior
 /// - Accessibility features
 /// - Edge cases and boundary conditions
-@available(macOS 13.0, *)
 @MainActor
-final class Phase8VerificationTests: XCTestCase {
+@Suite struct Phase8VerificationTests {
 
     // MARK: - SecureField Tests (7 tests)
 
-    func testSecureFieldBasicInitialization() {
+    @Test func secureFieldBasicInitialization() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -35,10 +35,10 @@ final class Phase8VerificationTests: XCTestCase {
         let field = SecureField("Enter password", text: binding)
         let node = field.toVNode()
 
-        XCTAssertEqual(node.elementTag, "input", "SecureField should render as input element")
+        #expect(node.elementTag == "input")
     }
 
-    func testSecureFieldWithLocalizedStringKey() {
+    @Test func secureFieldWithLocalizedStringKey() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -48,10 +48,10 @@ final class Phase8VerificationTests: XCTestCase {
         let field = SecureField(LocalizedStringKey("password_placeholder"), text: binding)
         let node = field.toVNode()
 
-        XCTAssertEqual(node.elementTag, "input", "SecureField should render as input element")
+        #expect(node.elementTag == "input")
     }
 
-    func testSecureFieldVNodeStructure() {
+    @Test func secureFieldVNodeStructure() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -63,27 +63,27 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify type attribute
         if case .attribute(name: "type", value: let type) = node.props["type"] {
-            XCTAssertEqual(type, "password", "SecureField should have type='password'")
+            #expect(type == "password")
         } else {
-            XCTFail("SecureField should have type attribute")
+            Issue.record("SecureField should have type attribute")
         }
 
         // Verify placeholder attribute
         if case .attribute(name: "placeholder", value: let placeholder) = node.props["placeholder"] {
-            XCTAssertEqual(placeholder, "Password", "SecureField should have correct placeholder")
+            #expect(placeholder == "Password")
         } else {
-            XCTFail("SecureField should have placeholder attribute")
+            Issue.record("SecureField should have placeholder attribute")
         }
 
         // Verify value attribute
         if case .attribute(name: "value", value: let value) = node.props["value"] {
-            XCTAssertEqual(value, "", "SecureField should have value attribute")
+            #expect(value == "")
         } else {
-            XCTFail("SecureField should have value attribute")
+            Issue.record("SecureField should have value attribute")
         }
     }
 
-    func testSecureFieldEventHandler() {
+    @Test func secureFieldEventHandler() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -95,13 +95,13 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify input event handler exists
         if case .eventHandler(event: "input", handlerID: _) = node.props["onInput"] {
-            XCTAssertTrue(true, "SecureField should have input event handler")
+            #expect(true)
         } else {
-            XCTFail("SecureField should have onInput event handler")
+            Issue.record("SecureField should have onInput event handler")
         }
     }
 
-    func testSecureFieldTwoWayBinding() {
+    @Test func secureFieldTwoWayBinding() {
         var password = "secret"
         let binding = Binding<String>(
             get: { password },
@@ -113,19 +113,19 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify binding value is reflected
         if case .attribute(name: "value", value: let value) = node.props["value"] {
-            XCTAssertEqual(value, "secret", "SecureField should reflect binding value")
+            #expect(value == "secret")
         }
 
         // Verify binding is accessible
         let textBinding = field.textBinding
-        XCTAssertEqual(textBinding.wrappedValue, "secret", "Binding should be accessible")
+        #expect(textBinding.wrappedValue == "secret")
 
         // Update binding
         textBinding.wrappedValue = "newpass"
-        XCTAssertEqual(password, "newpass", "Binding should update source value")
+        #expect(password == "newpass")
     }
 
-    func testSecureFieldDefaultStyling() {
+    @Test func secureFieldDefaultStyling() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -136,13 +136,13 @@ final class Phase8VerificationTests: XCTestCase {
         let node = field.toVNode()
 
         // Verify default styles
-        XCTAssertNotNil(node.props["padding"], "SecureField should have padding style")
-        XCTAssertNotNil(node.props["border"], "SecureField should have border style")
-        XCTAssertNotNil(node.props["border-radius"], "SecureField should have border-radius style")
-        XCTAssertNotNil(node.props["font-size"], "SecureField should have font-size style")
+        #expect(node.props["padding"] != nil)
+        #expect(node.props["border"] != nil)
+        #expect(node.props["border-radius"] != nil)
+        #expect(node.props["font-size"] != nil)
     }
 
-    func testSecureFieldEmptyChildren() {
+    @Test func secureFieldEmptyChildren() {
         var password = ""
         let binding = Binding<String>(
             get: { password },
@@ -152,12 +152,12 @@ final class Phase8VerificationTests: XCTestCase {
         let field = SecureField("Password", text: binding)
         let node = field.toVNode()
 
-        XCTAssertTrue(node.children.isEmpty, "SecureField input element should have no children")
+        #expect(node.children.isEmpty)
     }
 
     // MARK: - Slider Tests (8 tests)
 
-    func testSliderBasicInitialization() {
+    @Test func sliderBasicInitialization() {
         var value = 0.5
         let binding = Binding<Double>(
             get: { value },
@@ -167,10 +167,10 @@ final class Phase8VerificationTests: XCTestCase {
         let slider = Slider(value: binding)
         let node = slider.toVNode()
 
-        XCTAssertEqual(node.elementTag, "input", "Slider should render as input element")
+        #expect(node.elementTag == "input")
     }
 
-    func testSliderWithDefaultRange() {
+    @Test func sliderWithDefaultRange() {
         var value = 0.5
         let binding = Binding<Double>(
             get: { value },
@@ -182,19 +182,19 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify default range (0...1)
         if case .attribute(name: "min", value: let min) = node.props["min"] {
-            XCTAssertEqual(min, "0.0", "Slider should have default min of 0")
+            #expect(min == "0.0")
         } else {
-            XCTFail("Slider should have min attribute")
+            Issue.record("Slider should have min attribute")
         }
 
         if case .attribute(name: "max", value: let max) = node.props["max"] {
-            XCTAssertEqual(max, "1.0", "Slider should have default max of 1")
+            #expect(max == "1.0")
         } else {
-            XCTFail("Slider should have max attribute")
+            Issue.record("Slider should have max attribute")
         }
     }
 
-    func testSliderWithCustomRange() {
+    @Test func sliderWithCustomRange() {
         var value = 50.0
         let binding = Binding<Double>(
             get: { value },
@@ -206,15 +206,15 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify custom range
         if case .attribute(name: "min", value: let min) = node.props["min"] {
-            XCTAssertEqual(min, "0.0", "Slider should have custom min")
+            #expect(min == "0.0")
         }
 
         if case .attribute(name: "max", value: let max) = node.props["max"] {
-            XCTAssertEqual(max, "100.0", "Slider should have custom max")
+            #expect(max == "100.0")
         }
     }
 
-    func testSliderWithStepParameter() {
+    @Test func sliderWithStepParameter() {
         var value = 5.0
         let binding = Binding<Double>(
             get: { value },
@@ -226,13 +226,13 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify step attribute
         if case .attribute(name: "step", value: let step) = node.props["step"] {
-            XCTAssertEqual(step, "1.0", "Slider should have step attribute")
+            #expect(step == "1.0")
         } else {
-            XCTFail("Slider should have step attribute when specified")
+            Issue.record("Slider should have step attribute when specified")
         }
     }
 
-    func testSliderVNodeStructure() {
+    @Test func sliderVNodeStructure() {
         var value = 0.7
         let binding = Binding<Double>(
             get: { value },
@@ -244,20 +244,20 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify type attribute
         if case .attribute(name: "type", value: let type) = node.props["type"] {
-            XCTAssertEqual(type, "range", "Slider should have type='range'")
+            #expect(type == "range")
         } else {
-            XCTFail("Slider should have type attribute")
+            Issue.record("Slider should have type attribute")
         }
 
         // Verify value attribute
         if case .attribute(name: "value", value: let val) = node.props["value"] {
-            XCTAssertEqual(val, "0.7", "Slider should have value attribute")
+            #expect(val == "0.7")
         } else {
-            XCTFail("Slider should have value attribute")
+            Issue.record("Slider should have value attribute")
         }
     }
 
-    func testSliderValueBinding() {
+    @Test func sliderValueBinding() {
         var volume = 0.5
         let binding = Binding<Double>(
             get: { volume },
@@ -268,14 +268,14 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify binding is accessible
         let valueBinding = slider.valueBinding
-        XCTAssertEqual(valueBinding.wrappedValue, 0.5, "Binding should return current value")
+        #expect(valueBinding.wrappedValue == 0.5)
 
         // Update binding
         valueBinding.wrappedValue = 0.8
-        XCTAssertEqual(volume, 0.8, "Binding should update source value")
+        #expect(volume == 0.8)
     }
 
-    func testSliderDefaultStyling() {
+    @Test func sliderDefaultStyling() {
         var value = 0.5
         let binding = Binding<Double>(
             get: { value },
@@ -287,13 +287,13 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify width style
         if case .style(name: "width", value: let width) = node.props["width"] {
-            XCTAssertEqual(width, "100%", "Slider should have full width")
+            #expect(width == "100%")
         } else {
-            XCTFail("Slider should have width style")
+            Issue.record("Slider should have width style")
         }
     }
 
-    func testSliderEventHandler() {
+    @Test func sliderEventHandler() {
         var value = 0.5
         let binding = Binding<Double>(
             get: { value },
@@ -305,15 +305,15 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify input event handler exists
         if case .eventHandler(event: "input", handlerID: _) = node.props["onInput"] {
-            XCTAssertTrue(true, "Slider should have input event handler")
+            #expect(true)
         } else {
-            XCTFail("Slider should have onInput event handler")
+            Issue.record("Slider should have onInput event handler")
         }
     }
 
     // MARK: - Stepper Tests (8 tests)
 
-    func testStepperBasicInitialization() {
+    @Test func stepperBasicInitialization() {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -323,10 +323,10 @@ final class Phase8VerificationTests: XCTestCase {
         let stepper = Stepper("Count", value: binding, in: 0...10)
         let node = stepper.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Stepper should render as div element")
+        #expect(node.elementTag == "div")
     }
 
-    func testStepperWithoutLabel() {
+    @Test func stepperWithoutLabel() {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -336,11 +336,11 @@ final class Phase8VerificationTests: XCTestCase {
         let stepper = Stepper(value: binding, in: 0...10)
         let node = stepper.toVNode()
 
-        XCTAssertEqual(node.elementTag, "div", "Stepper should render as div element")
-        XCTAssertFalse(node.children.isEmpty, "Stepper should have button container")
+        #expect(node.elementTag == "div")
+        #expect(!node.children.isEmpty)
     }
 
-    func testStepperButtonStructure() {
+    @Test func stepperButtonStructure() {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -358,14 +358,14 @@ final class Phase8VerificationTests: XCTestCase {
             return false
         }
 
-        XCTAssertNotNil(buttonsContainer, "Stepper should have buttons container")
+        #expect(buttonsContainer != nil)
 
         if let container = buttonsContainer {
-            XCTAssertEqual(container.children.count, 2, "Stepper should have 2 buttons")
+            #expect(container.children.count == 2)
         }
     }
 
-    func testStepperRangeBoundaryEnforcement() {
+    @Test func stepperRangeBoundaryEnforcement() {
         var value = 0  // At minimum
         let binding = Binding<Int>(
             get: { value },
@@ -376,15 +376,15 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Try to decrement below minimum
         stepper.decrementHandler()
-        XCTAssertEqual(value, 0, "Value should not go below minimum")
+        #expect(value == 0)
 
         // Set to maximum
         value = 10
         stepper.incrementHandler()
-        XCTAssertEqual(value, 10, "Value should not exceed maximum")
+        #expect(value == 10)
     }
 
-    func testStepperDecrementButtonDisabledAtMin() {
+    @Test func stepperDecrementButtonDisabledAtMin() {
         var value = 0
         let binding = Binding<Int>(
             get: { value },
@@ -407,15 +407,15 @@ final class Phase8VerificationTests: XCTestCase {
             if let button = decrementButton {
                 // Verify disabled attribute
                 if case .boolAttribute(name: "disabled", value: let disabled) = button.props["disabled"] {
-                    XCTAssertTrue(disabled, "Decrement button should be disabled at minimum")
+                    #expect(disabled)
                 } else {
-                    XCTFail("Decrement button should have disabled attribute at minimum")
+                    Issue.record("Decrement button should have disabled attribute at minimum")
                 }
             }
         }
     }
 
-    func testStepperIncrementButtonDisabledAtMax() {
+    @Test func stepperIncrementButtonDisabledAtMax() {
         var value = 10
         let binding = Binding<Int>(
             get: { value },
@@ -438,15 +438,15 @@ final class Phase8VerificationTests: XCTestCase {
             if let button = incrementButton {
                 // Verify disabled attribute
                 if case .boolAttribute(name: "disabled", value: let disabled) = button.props["disabled"] {
-                    XCTAssertTrue(disabled, "Increment button should be disabled at maximum")
+                    #expect(disabled)
                 } else {
-                    XCTFail("Increment button should have disabled attribute at maximum")
+                    Issue.record("Increment button should have disabled attribute at maximum")
                 }
             }
         }
     }
 
-    func testStepperEventHandlers() {
+    @Test func stepperEventHandlers() {
         var value = 5
         let binding = Binding<Int>(
             get: { value },
@@ -457,14 +457,14 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Test increment handler
         stepper.incrementHandler()
-        XCTAssertEqual(value, 6, "Increment handler should increase value")
+        #expect(value == 6)
 
         // Test decrement handler
         stepper.decrementHandler()
-        XCTAssertEqual(value, 5, "Decrement handler should decrease value")
+        #expect(value == 5)
     }
 
-    func testStepperValueBinding() {
+    @Test func stepperValueBinding() {
         var count = 5
         let binding = Binding<Int>(
             get: { count },
@@ -474,138 +474,138 @@ final class Phase8VerificationTests: XCTestCase {
         let stepper = Stepper(value: binding, in: 0...10)
 
         let valueBinding = stepper.valueBinding
-        XCTAssertEqual(valueBinding.wrappedValue, 5, "Binding should return current value")
+        #expect(valueBinding.wrappedValue == 5)
 
         valueBinding.wrappedValue = 8
-        XCTAssertEqual(count, 8, "Binding should update source value")
+        #expect(count == 8)
     }
 
     // MARK: - ProgressView Tests (8 tests)
 
-    func testProgressViewIndeterminateMode() {
+    @Test func progressViewIndeterminateMode() {
         let progress = ProgressView()
         let node = progress.toVNode()
 
         // Indeterminate should create a spinner (div)
-        XCTAssertEqual(node.elementTag, "div", "Indeterminate ProgressView should render as div")
+        #expect(node.elementTag == "div")
 
         // Verify spinner role
         if case .attribute(name: "role", value: let role) = node.props["role"] {
-            XCTAssertEqual(role, "progressbar", "ProgressView should have progressbar role")
+            #expect(role == "progressbar")
         }
     }
 
-    func testProgressViewDeterminateMode() {
+    @Test func progressViewDeterminateMode() {
         let progress = ProgressView(value: 0.5, total: 1.0)
         let node = progress.toVNode()
 
         // Determinate should create a progress element
-        XCTAssertEqual(node.elementTag, "progress", "Determinate ProgressView should render as progress element")
+        #expect(node.elementTag == "progress")
     }
 
-    func testProgressViewVNodeStructureIndeterminate() {
+    @Test func progressViewVNodeStructureIndeterminate() {
         let progress = ProgressView()
         let node = progress.toVNode()
 
         // Verify ARIA attributes
         if case .attribute(name: "aria-busy", value: let busy) = node.props["aria-busy"] {
-            XCTAssertEqual(busy, "true", "Indeterminate progress should have aria-busy=true")
+            #expect(busy == "true")
         }
 
         if case .attribute(name: "aria-valuetext", value: let text) = node.props["aria-valuetext"] {
-            XCTAssertEqual(text, "Loading", "Indeterminate progress should have aria-valuetext")
+            #expect(text == "Loading")
         }
     }
 
-    func testProgressViewVNodeStructureDeterminate() {
+    @Test func progressViewVNodeStructureDeterminate() {
         let progress = ProgressView(value: 45.0, total: 100.0)
         let node = progress.toVNode()
 
         // Verify value attribute
         if case .attribute(name: "value", value: let value) = node.props["value"] {
-            XCTAssertEqual(value, "45.0", "ProgressView should have value attribute")
+            #expect(value == "45.0")
         }
 
         // Verify max attribute
         if case .attribute(name: "max", value: let max) = node.props["max"] {
-            XCTAssertEqual(max, "100.0", "ProgressView should have max attribute")
+            #expect(max == "100.0")
         }
 
         // Verify ARIA attributes
         if case .attribute(name: "aria-valuenow", value: let valuenow) = node.props["aria-valuenow"] {
-            XCTAssertEqual(valuenow, "45.0", "ProgressView should have aria-valuenow")
+            #expect(valuenow == "45.0")
         }
 
         if case .attribute(name: "aria-valuemin", value: let valuemin) = node.props["aria-valuemin"] {
-            XCTAssertEqual(valuemin, "0", "ProgressView should have aria-valuemin")
+            #expect(valuemin == "0")
         }
 
         if case .attribute(name: "aria-valuemax", value: let valuemax) = node.props["aria-valuemax"] {
-            XCTAssertEqual(valuemax, "100.0", "ProgressView should have aria-valuemax")
+            #expect(valuemax == "100.0")
         }
     }
 
-    func testProgressViewValueTotalHandling() {
+    @Test func progressViewValueTotalHandling() {
         let progress1 = ProgressView(value: 0.75)  // Default total 1.0
         let node1 = progress1.toVNode()
 
         if case .attribute(name: "max", value: let max) = node1.props["max"] {
-            XCTAssertEqual(max, "1.0", "Default total should be 1.0")
+            #expect(max == "1.0")
         }
 
         let progress2 = ProgressView(value: 75, total: 100)
         let node2 = progress2.toVNode()
 
         if case .attribute(name: "max", value: let max) = node2.props["max"] {
-            XCTAssertEqual(max, "100.0", "Custom total should be used")
+            #expect(max == "100.0")
         }
     }
 
-    func testProgressViewWithLabel() {
+    @Test func progressViewWithLabel() {
         let progress = ProgressView("Loading...", value: 0.5, total: 1.0)
         let node = progress.toVNode()
 
         // With label, should be wrapped in container
-        XCTAssertEqual(node.elementTag, "div", "ProgressView with label should be wrapped in div")
+        #expect(node.elementTag == "div")
 
         // Verify label is in children
-        XCTAssertFalse(node.children.isEmpty, "ProgressView with label should have children")
+        #expect(!node.children.isEmpty)
 
         // Verify aria-label on progress element
         let progressElement = node.children.first { child in
             child.elementTag == "progress"
         }
-        XCTAssertNotNil(progressElement, "Should contain progress element")
+        #expect(progressElement != nil)
     }
 
-    func testProgressViewARIAAttributes() {
+    @Test func progressViewARIAAttributes() {
         let progress = ProgressView(value: 50, total: 100)
         let node = progress.toVNode()
 
         // Verify all ARIA attributes are present
-        XCTAssertNotNil(node.props["role"], "Should have role attribute")
-        XCTAssertNotNil(node.props["aria-valuenow"], "Should have aria-valuenow")
-        XCTAssertNotNil(node.props["aria-valuemin"], "Should have aria-valuemin")
-        XCTAssertNotNil(node.props["aria-valuemax"], "Should have aria-valuemax")
+        #expect(node.props["role"] != nil)
+        #expect(node.props["aria-valuenow"] != nil)
+        #expect(node.props["aria-valuemin"] != nil)
+        #expect(node.props["aria-valuemax"] != nil)
     }
 
-    func testProgressViewSpinnerAnimation() {
+    @Test func progressViewSpinnerAnimation() {
         let progress = ProgressView()
         let node = progress.toVNode()
 
         // Verify spinner has animation styles
         if case .attribute(name: "style", value: let style) = node.props["style"] {
-            XCTAssertTrue(style.contains("animation"), "Spinner should have animation style")
-            XCTAssertTrue(style.contains("border"), "Spinner should have border style")
-            XCTAssertTrue(style.contains("border-radius"), "Spinner should have border-radius")
+            #expect(style.contains("animation"))
+            #expect(style.contains("border"))
+            #expect(style.contains("border-radius"))
         } else {
-            XCTFail("Spinner should have inline styles")
+            Issue.record("Spinner should have inline styles")
         }
     }
 
     // MARK: - Picker Tests (10 tests)
 
-    func testPickerBasicInitialization() {
+    @Test func pickerBasicInitialization() {
         var selection = "red"
         let binding = Binding<String>(
             get: { selection },
@@ -619,10 +619,10 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let node = picker.toVNode()
-        XCTAssertEqual(node.elementTag, "select", "Picker should render as select element")
+        #expect(node.elementTag == "select")
     }
 
-    func testPickerSelectionBinding() {
+    @Test func pickerSelectionBinding() {
         var color = "blue"
         let binding = Binding<String>(
             get: { color },
@@ -635,13 +635,13 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let selectionBinding = picker.selectionBinding
-        XCTAssertEqual(selectionBinding.wrappedValue, "blue", "Binding should return current selection")
+        #expect(selectionBinding.wrappedValue == "blue")
 
         selectionBinding.wrappedValue = "red"
-        XCTAssertEqual(color, "red", "Binding should update selection")
+        #expect(color == "red")
     }
 
-    func testPickerTagExtraction() {
+    @Test func pickerTagExtraction() {
         var selection = 1
         let binding = Binding<Int>(
             get: { selection },
@@ -655,15 +655,15 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let options = picker.options
-        XCTAssertEqual(options.count, 3, "Picker should extract all tagged options")
+        #expect(options.count == 3)
         // Note: Labels are currently empty due to AnyView type erasure
         // The important part is that tag values are correctly extracted
-        XCTAssertEqual(options[0].value, 1, "First option should have correct value")
-        XCTAssertEqual(options[1].value, 2, "Second option should have correct value")
-        XCTAssertEqual(options[2].value, 3, "Third option should have correct value")
+        #expect(options[0].value == 1)
+        #expect(options[1].value == 2)
+        #expect(options[2].value == 3)
     }
 
-    func testPickerVNodeStructure() {
+    @Test func pickerVNodeStructure() {
         var selection = "a"
         let binding = Binding<String>(
             get: { selection },
@@ -679,17 +679,17 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify aria-label
         if case .attribute(name: "aria-label", value: let label) = node.props["aria-label"] {
-            XCTAssertEqual(label, "Letter", "Picker should have aria-label")
+            #expect(label == "Letter")
         }
 
         // Verify children are option elements
-        XCTAssertEqual(node.children.count, 2, "Picker should have 2 option elements")
+        #expect(node.children.count == 2)
         for child in node.children {
-            XCTAssertEqual(child.elementTag, "option", "Children should be option elements")
+            #expect(child.elementTag == "option")
         }
     }
 
-    func testPickerChangeEventHandler() {
+    @Test func pickerChangeEventHandler() {
         var selection = "x"
         let binding = Binding<String>(
             get: { selection },
@@ -705,13 +705,13 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify change event handler
         if case .eventHandler(event: "change", handlerID: _) = node.props["onChange"] {
-            XCTAssertTrue(true, "Picker should have change event handler")
+            #expect(true)
         } else {
-            XCTFail("Picker should have onChange event handler")
+            Issue.record("Picker should have onChange event handler")
         }
     }
 
-    func testPickerOptionElements() {
+    @Test func pickerOptionElements() {
         var selection = "cat"
         let binding = Binding<String>(
             get: { selection },
@@ -727,18 +727,18 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Verify first option
         let firstOption = node.children[0]
-        XCTAssertNotNil(firstOption.props["value"], "Option should have value attribute")
+        #expect(firstOption.props["value"] != nil)
 
         // Verify selected attribute on matching option
         if case .boolAttribute(name: "selected", value: let selected) = firstOption.props["selected"] {
-            XCTAssertTrue(selected, "First option should be selected")
+            #expect(selected)
         }
 
         // Verify option has text child (even if empty due to AnyView type erasure)
-        XCTAssertFalse(firstOption.children.isEmpty, "Option should have text child")
+        #expect(!firstOption.children.isEmpty)
     }
 
-    func testPickerWithLocalizedStringKey() {
+    @Test func pickerWithLocalizedStringKey() {
         var selection = 1
         let binding = Binding<Int>(
             get: { selection },
@@ -751,10 +751,10 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let node = picker.toVNode()
-        XCTAssertEqual(node.elementTag, "select", "Picker with LocalizedStringKey should render as select")
+        #expect(node.elementTag == "select")
     }
 
-    func testPickerDefaultStyling() {
+    @Test func pickerDefaultStyling() {
         var selection = "a"
         let binding = Binding<String>(
             get: { selection },
@@ -768,13 +768,13 @@ final class Phase8VerificationTests: XCTestCase {
         let node = picker.toVNode()
 
         // Verify default styles
-        XCTAssertNotNil(node.props["padding"], "Picker should have padding style")
-        XCTAssertNotNil(node.props["border"], "Picker should have border style")
-        XCTAssertNotNil(node.props["border-radius"], "Picker should have border-radius style")
-        XCTAssertNotNil(node.props["background-color"], "Picker should have background-color style")
+        #expect(node.props["padding"] != nil)
+        #expect(node.props["border"] != nil)
+        #expect(node.props["border-radius"] != nil)
+        #expect(node.props["background-color"] != nil)
     }
 
-    func testPickerWithIntegerSelection() {
+    @Test func pickerWithIntegerSelection() {
         var quantity = 1
         let binding = Binding<Int>(
             get: { quantity },
@@ -788,11 +788,11 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let options = picker.options
-        XCTAssertEqual(options.count, 3, "Picker should handle integer selection")
-        XCTAssertEqual(options[1].value, 2, "Options should have correct integer values")
+        #expect(options.count == 3)
+        #expect(options[1].value == 2)
     }
 
-    func testPickerSelectedOptionHighlighting() {
+    @Test func pickerSelectedOptionHighlighting() {
         var selection = "green"
         let binding = Binding<String>(
             get: { selection },
@@ -814,10 +814,10 @@ final class Phase8VerificationTests: XCTestCase {
             return false
         }
 
-        XCTAssertNotNil(selectedOption, "Should have a selected option")
+        #expect(selectedOption != nil)
 
         // Verify it's the second option (green)
-        if let option = selectedOption {
+        if let _ = selectedOption {
             // The second option should be selected (green)
             let selectedIndex = node.children.firstIndex(where: { child in
                 if case .boolAttribute(name: "selected", value: true) = child.props["selected"] {
@@ -825,88 +825,88 @@ final class Phase8VerificationTests: XCTestCase {
                 }
                 return false
             })
-            XCTAssertEqual(selectedIndex, 1, "Second option (green) should be selected")
+            #expect(selectedIndex == 1)
         }
     }
 
     // MARK: - Link Tests (5 tests)
 
-    func testLinkWithStringLabel() {
+    @Test func linkWithStringLabel() {
         let url = URL(string: "https://example.com")!
         let link = Link("Visit Example", destination: url)
         let node = link.toVNode()
 
-        XCTAssertEqual(node.elementTag, "a", "Link should render as anchor element")
+        #expect(node.elementTag == "a")
 
         // Verify href attribute
         if case .attribute(name: "href", value: let href) = node.props["href"] {
-            XCTAssertEqual(href, "https://example.com", "Link should have correct href")
+            #expect(href == "https://example.com")
         } else {
-            XCTFail("Link should have href attribute")
+            Issue.record("Link should have href attribute")
         }
     }
 
-    func testLinkVNodeStructure() {
+    @Test func linkVNodeStructure() {
         let url = URL(string: "https://swift.org")!
         let link = Link("Swift", destination: url)
         let node = link.toVNode()
 
-        XCTAssertEqual(node.elementTag, "a", "Link should be anchor element")
+        #expect(node.elementTag == "a")
 
         // Verify href
-        XCTAssertNotNil(node.props["href"], "Link should have href")
+        #expect(node.props["href"] != nil)
 
         // Verify default styling
         if case .style(name: "color", value: _) = node.props["style:color"] {
-            XCTAssertTrue(true, "Link should have color style")
+            #expect(true)
         }
 
         if case .style(name: "text-decoration", value: let decoration) = node.props["style:text-decoration"] {
-            XCTAssertEqual(decoration, "underline", "Link should be underlined")
+            #expect(decoration == "underline")
         }
     }
 
-    func testLinkExternalAttributes() {
+    @Test func linkExternalAttributes() {
         let url = URL(string: "https://github.com")!
         let link = Link("GitHub", destination: url)
         let node = link.toVNode()
 
         // Verify target="_blank" for external links
         if case .attribute(name: "target", value: let target) = node.props["target"] {
-            XCTAssertEqual(target, "_blank", "External link should open in new tab")
+            #expect(target == "_blank")
         } else {
-            XCTFail("External link should have target attribute")
+            Issue.record("External link should have target attribute")
         }
 
         // Verify rel attribute for security
         if case .attribute(name: "rel", value: let rel) = node.props["rel"] {
-            XCTAssertEqual(rel, "noopener noreferrer", "External link should have security attributes")
+            #expect(rel == "noopener noreferrer")
         } else {
-            XCTFail("External link should have rel attribute")
+            Issue.record("External link should have rel attribute")
         }
     }
 
-    func testLinkInternalURL() {
+    @Test func linkInternalURL() {
         let url = URL(string: "/profile")!
         let link = Link("Profile", destination: url)
         let node = link.toVNode()
 
         // Internal links should not have target="_blank"
-        XCTAssertNil(node.props["target"], "Internal link should not have target attribute")
-        XCTAssertNil(node.props["rel"], "Internal link should not have rel attribute")
+        #expect(node.props["target"] == nil)
+        #expect(node.props["rel"] == nil)
     }
 
-    func testLinkWithLocalizedStringKey() {
+    @Test func linkWithLocalizedStringKey() {
         let url = URL(string: "https://example.com")!
         let link = Link(LocalizedStringKey("home_link"), destination: url)
         let node = link.toVNode()
 
-        XCTAssertEqual(node.elementTag, "a", "Link with LocalizedStringKey should render as anchor")
+        #expect(node.elementTag == "a")
     }
 
     // MARK: - Label Tests (5 tests)
 
-    func testLabelBasicInitialization() {
+    @Test func labelBasicInitialization() {
         let label = Label {
             Text("Title")
         } icon: {
@@ -915,33 +915,33 @@ final class Phase8VerificationTests: XCTestCase {
 
         // Label has a body, so we test its structure
         let body = label.body
-        XCTAssertNotNil(body, "Label should have a body")
+        #expect(body != nil)
     }
 
-    func testLabelStringConvenienceInitializer() {
+    @Test func labelStringConvenienceInitializer() {
         let label = Label("Settings", systemImage: "gear")
 
         // Verify body is created
         let body = label.body
-        XCTAssertNotNil(body, "Label with string initializer should have a body")
+        #expect(body != nil)
     }
 
-    func testLabelBodyComposition() {
+    @Test func labelBodyComposition() {
         let label = Label("Favorites", systemImage: "star")
 
         // Label body should be an HStack
         let body = label.body
-        XCTAssertNotNil(body, "Label should compose with HStack")
+        #expect(body != nil)
     }
 
-    func testLabelWithLocalizedStringKey() {
+    @Test func labelWithLocalizedStringKey() {
         let label = Label(LocalizedStringKey("settings_label"), systemImage: "gear")
 
         let body = label.body
-        XCTAssertNotNil(body, "Label with LocalizedStringKey should have a body")
+        #expect(body != nil)
     }
 
-    func testLabelIntegrationWithOtherViews() {
+    @Test func labelIntegrationWithOtherViews() {
         // Test that Label can be used in composition
         struct TestView: View {
             var body: some View {
@@ -953,12 +953,12 @@ final class Phase8VerificationTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body, "Label should integrate with other views")
+        #expect(view.body != nil)
     }
 
     // MARK: - Integration Tests
 
-    func testAllPhase8ControlsExist() {
+    @Test func allPhase8ControlsExist() {
         // Verify all Phase 8 types are available
         var text = ""
         let textBinding = Binding<String>(get: { text }, set: { text = $0 })
@@ -984,10 +984,10 @@ final class Phase8VerificationTests: XCTestCase {
         let _ = Link("Test", destination: URL(string: "https://example.com")!)
         let _ = Label("Test", systemImage: "star")
 
-        XCTAssertTrue(true, "All Phase 8 controls should be available")
+        #expect(true)
     }
 
-    func testPhase8FormExample() {
+    @Test func phase8FormExample() {
         // Integration test: create a complete form with all Phase 8 controls
         var username = ""
         var password = ""
@@ -1015,6 +1015,6 @@ final class Phase8VerificationTests: XCTestCase {
         let _ = Link("Privacy Policy", destination: URL(string: "/privacy")!)
         let _ = Label("Help", systemImage: "questionmark.circle")
 
-        XCTAssertTrue(true, "Complete form with all Phase 8 controls should work")
+        #expect(true)
     }
 }

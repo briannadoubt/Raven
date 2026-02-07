@@ -6,6 +6,7 @@ import Foundation
 ///
 /// These tests verify that ViewThatFits correctly generates VNodes with appropriate
 /// CSS container query setup for responsive view selection.
+@MainActor
 @Suite("ViewThatFits Tests")
 struct ViewThatFitsTests {
 

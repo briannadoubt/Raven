@@ -106,10 +106,10 @@ public final class Router: ObservableObject {
     /// Creates a new router instance.
     ///
     /// - Parameters:
-    ///   - history: Navigation history manager (defaults to shared instance)
+    ///   - history: Navigation history manager (defaults to a new instance)
     ///   - deepLinkHandler: Deep link handler (creates new instance if not provided)
     public init(
-        history: NavigationHistory = .shared,
+        history: NavigationHistory = NavigationHistory(),
         deepLinkHandler: DeepLinkHandler? = nil
     ) {
         self.history = history

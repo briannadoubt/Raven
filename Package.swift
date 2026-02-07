@@ -43,20 +43,31 @@ let package = Package(
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
             path: "Sources/Raven",
+            exclude: [
+                "Rendering/Virtualization/README.md",
+                "Accessibility/QUICK_REFERENCE.md",
+                "Accessibility/ARIA_COVERAGE.md",
+                "Presentation/Rendering/README.md",
+                "State/STATE_OBJECT_README.md",
+                "State/OBSERVABLE_OBJECT_README.md",
+                "State/OBSERVABLE_README.md",
+                "State/README.md",
+                "Modifiers/INTERACTION_MODIFIERS_README.md",
+                "Modifiers/LAYOUT_MODIFIERS_README.md",
+                "Modifiers/README.md",
+                "Debug/README.md",
+                "Drawing/PATH_README.md",
+                "Performance/IMPLEMENTATION_SUMMARY.md",
+                "Performance/README.md",
+                "Views/Layout/DisclosureGroup.css",
+                "Views/Layout/ListFeatures/README.md",
+            ],
             swiftSettings: [
 
                 .enableExperimentalFeature("AccessLevelOnImport"),
                 // Size optimization for release builds
                 .unsafeFlags(["-Osize"], .when(configuration: .release)),
                 .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
-            ],
-            linkerSettings: [
-                // Link-time optimization for smaller binaries
-                .unsafeFlags(["-Xlinker", "--lto-O3"], .when(configuration: .release)),
-                // Dead code elimination
-                .unsafeFlags(["-Xlinker", "--gc-sections"], .when(configuration: .release)),
-                // Strip debug info in release
-                .unsafeFlags(["-Xlinker", "--strip-debug"], .when(configuration: .release))
             ]
         ),
 
@@ -65,7 +76,8 @@ let package = Package(
             name: "RavenRuntime",
             dependencies: [
                 "Raven",
-                .product(name: "JavaScriptKit", package: "JavaScriptKit")
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
             path: "Sources/RavenRuntime",
             swiftSettings: [
@@ -74,14 +86,6 @@ let package = Package(
                 // Size optimization for release builds
                 .unsafeFlags(["-Osize"], .when(configuration: .release)),
                 .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
-            ],
-            linkerSettings: [
-                // Link-time optimization for smaller binaries
-                .unsafeFlags(["-Xlinker", "--lto-O3"], .when(configuration: .release)),
-                // Dead code elimination
-                .unsafeFlags(["-Xlinker", "--gc-sections"], .when(configuration: .release)),
-                // Strip debug info in release
-                .unsafeFlags(["-Xlinker", "--strip-debug"], .when(configuration: .release))
             ]
         ),
 

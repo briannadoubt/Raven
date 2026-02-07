@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the confirmation dialog view modifiers.
@@ -11,36 +11,36 @@ import XCTest
 /// - Presenting with data
 /// - Title visibility
 @MainActor
-final class ConfirmationDialogTests: XCTestCase {
+@Suite struct ConfirmationDialogTests {
 
     // MARK: - Visibility Tests
 
-    func testVisibilityAutomatic() {
-        XCTAssertEqual(Visibility.automatic, .automatic)
+    @Test func visibilityAutomatic() {
+        #expect(Visibility.automatic == .automatic)
     }
 
-    func testVisibilityVisible() {
-        XCTAssertEqual(Visibility.visible, .visible)
+    @Test func visibilityVisible() {
+        #expect(Visibility.visible == .visible)
     }
 
-    func testVisibilityHidden() {
-        XCTAssertEqual(Visibility.hidden, .hidden)
+    @Test func visibilityHidden() {
+        #expect(Visibility.hidden == .hidden)
     }
 
-    func testVisibilityEquality() {
-        XCTAssertNotEqual(Visibility.automatic, .visible)
-        XCTAssertNotEqual(Visibility.visible, .hidden)
-        XCTAssertNotEqual(Visibility.hidden, .automatic)
+    @Test func visibilityEquality() {
+        #expect(Visibility.automatic != .visible)
+        #expect(Visibility.visible != .hidden)
+        #expect(Visibility.hidden != .automatic)
     }
 
-    func testVisibilityHashable() {
+    @Test func visibilityHashable() {
         let visibilities: Set<Visibility> = [.automatic, .visible, .hidden]
-        XCTAssertEqual(visibilities.count, 3)
+        #expect(visibilities.count == 3)
     }
 
     // MARK: - Basic Confirmation Dialog Tests
 
-    func testBasicConfirmationDialogModifier() {
+    @Test func basicConfirmationDialogModifier() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -57,12 +57,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Choose Action")
-        XCTAssertEqual(modifier.titleVisibility, .automatic)
+        #expect(modifier != nil)
+        #expect(modifier.title == "Choose Action")
+        #expect(modifier.titleVisibility == .automatic)
     }
 
-    func testConfirmationDialogWithTitleVisibility() {
+    @Test func confirmationDialogWithTitleVisibility() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -78,10 +78,10 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(modifier.titleVisibility, .visible)
+        #expect(modifier.titleVisibility == .visible)
     }
 
-    func testConfirmationDialogWithHiddenTitle() {
+    @Test func confirmationDialogWithHiddenTitle() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -97,10 +97,10 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(modifier.titleVisibility, .hidden)
+        #expect(modifier.titleVisibility == .hidden)
     }
 
-    func testConfirmationDialogPresentation() {
+    @Test func confirmationDialogPresentation() {
         let coordinator = PresentationCoordinator()
         var isPresented = false
 
@@ -117,31 +117,31 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(modifier != nil)
+        #expect(coordinator.count == 0)
 
         // Simulate presentation
         binding.wrappedValue = true
-        XCTAssertTrue(binding.wrappedValue)
+        #expect(binding.wrappedValue)
     }
 
-    func testConfirmationDialogDismissal() {
+    @Test func confirmationDialogDismissal() {
         var isPresented = true
         let binding = Binding(
             get: { isPresented },
             set: { isPresented = $0 }
         )
 
-        XCTAssertTrue(isPresented)
+        #expect(isPresented)
 
         // Simulate dismissal
         binding.wrappedValue = false
-        XCTAssertFalse(isPresented)
+        #expect(!isPresented)
     }
 
     // MARK: - Confirmation Dialog with Message Tests
 
-    func testConfirmationDialogWithMessage() {
+    @Test func confirmationDialogWithMessage() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -160,11 +160,11 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Delete All")
+        #expect(modifier != nil)
+        #expect(modifier.title == "Delete All")
     }
 
-    func testConfirmationDialogWithMessageAndVisibility() {
+    @Test func confirmationDialogWithMessageAndVisibility() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -183,12 +183,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(modifier.titleVisibility, .visible)
+        #expect(modifier.titleVisibility == .visible)
     }
 
     // MARK: - Data-Driven Confirmation Dialog Tests
 
-    func testDataConfirmationDialogModifier() {
+    @Test func dataConfirmationDialogModifier() {
         struct TestItem: Equatable {
             let name: String
         }
@@ -212,11 +212,11 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Item Actions")
+        #expect(modifier != nil)
+        #expect(modifier.title == "Item Actions")
     }
 
-    func testDataConfirmationDialogPresentation() {
+    @Test func dataConfirmationDialogPresentation() {
         struct TestItem: Equatable {
             let name: String
         }
@@ -238,15 +238,15 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNil(selectedItem)
+        #expect(selectedItem == nil)
 
         // Set data to trigger presentation
         binding.wrappedValue = TestItem(name: "Test Item")
-        XCTAssertNotNil(selectedItem)
-        XCTAssertEqual(selectedItem?.name, "Test Item")
+        #expect(selectedItem != nil)
+        #expect(selectedItem?.name == "Test Item")
     }
 
-    func testDataConfirmationDialogDismissal() {
+    @Test func dataConfirmationDialogDismissal() {
         struct TestItem {
             let name: String
         }
@@ -257,16 +257,16 @@ final class ConfirmationDialogTests: XCTestCase {
             set: { selectedItem = $0 }
         )
 
-        XCTAssertNotNil(selectedItem)
+        #expect(selectedItem != nil)
 
         // Simulate dismissal
         binding.wrappedValue = nil
-        XCTAssertNil(selectedItem)
+        #expect(selectedItem == nil)
     }
 
     // MARK: - Multiple Actions Tests
 
-    func testConfirmationDialogWithMultipleActions() {
+    @Test func confirmationDialogWithMultipleActions() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -284,10 +284,10 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testConfirmationDialogWithSingleAction() {
+    @Test func confirmationDialogWithSingleAction() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -302,12 +302,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
     // MARK: - Cancel Button Handling Tests
 
-    func testConfirmationDialogWithCancelButton() {
+    @Test func confirmationDialogWithCancelButton() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -323,10 +323,10 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testConfirmationDialogWithOnlyCancelButton() {
+    @Test func confirmationDialogWithOnlyCancelButton() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -341,12 +341,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
     // MARK: - Destructive Actions Tests
 
-    func testConfirmationDialogWithDestructiveAction() {
+    @Test func confirmationDialogWithDestructiveAction() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -362,10 +362,10 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testConfirmationDialogWithMultipleDestructiveActions() {
+    @Test func confirmationDialogWithMultipleDestructiveActions() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -382,12 +382,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
     // MARK: - Mixed Button Roles Tests
 
-    func testConfirmationDialogWithMixedRoles() {
+    @Test func confirmationDialogWithMixedRoles() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -405,12 +405,12 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
     // MARK: - View Extension Tests
 
-    func testConfirmationDialogViewExtension() {
+    @Test func confirmationDialogViewExtension() {
         @MainActor struct TestView: View {
             @State private var showDialog = false
 
@@ -423,10 +423,10 @@ final class ConfirmationDialogTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testConfirmationDialogWithMessageViewExtension() {
+    @Test func confirmationDialogWithMessageViewExtension() {
         @MainActor struct TestView: View {
             @State private var showDialog = false
 
@@ -441,10 +441,10 @@ final class ConfirmationDialogTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testDataConfirmationDialogViewExtension() {
+    @Test func dataConfirmationDialogViewExtension() {
         struct Item: Equatable {
             let id: Int
         }
@@ -463,15 +463,15 @@ final class ConfirmationDialogTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     // MARK: - Integration Tests
 
-    func testConfirmationDialogWithPresentationCoordinator() {
+    @Test func confirmationDialogWithPresentationCoordinator() {
         let coordinator = PresentationCoordinator()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Simulate presenting a confirmation dialog
         coordinator.present(
@@ -479,11 +479,11 @@ final class ConfirmationDialogTests: XCTestCase {
             content: AnyView(Text("Dialog Content"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.type, .confirmationDialog)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.type == .confirmationDialog)
     }
 
-    func testMultipleConfirmationDialogsSequence() {
+    @Test func multipleConfirmationDialogsSequence() {
         let coordinator = PresentationCoordinator()
 
         // Present first dialog
@@ -492,11 +492,11 @@ final class ConfirmationDialogTests: XCTestCase {
             content: AnyView(Text("Dialog 1"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Dismiss first
         coordinator.dismiss(id1)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Present second dialog
         coordinator.present(
@@ -504,12 +504,12 @@ final class ConfirmationDialogTests: XCTestCase {
             content: AnyView(Text("Dialog 2"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
     }
 
     // MARK: - Edge Cases
 
-    func testConfirmationDialogWithEmptyTitle() {
+    @Test func confirmationDialogWithEmptyTitle() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -524,11 +524,11 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "")
+        #expect(modifier != nil)
+        #expect(modifier.title == "")
     }
 
-    func testConfirmationDialogWithNoActions() {
+    @Test func confirmationDialogWithNoActions() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -543,6 +543,6 @@ final class ConfirmationDialogTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 }

@@ -1,13 +1,14 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Tests for gesture hit testing and priority-based conflict resolution
 @MainActor
-final class GestureHitTestingTests: XCTestCase {
+@Suite struct GestureHitTestingTests {
 
     // MARK: - Hit Testing Tests
 
-    func testHitTestingBasics() async throws {
+    @Test func hitTestingBasics() async throws {
         // Test that gestures only respond to events on their own element or descendants
         // This is a conceptual test - actual implementation would require DOM simulation
 
@@ -36,7 +37,7 @@ final class GestureHitTestingTests: XCTestCase {
 
     // MARK: - Priority Resolution Tests
 
-    func testNormalPriorityGesturesCompete() async throws {
+    @Test func normalPriorityGesturesCompete() async throws {
         // Test that when two normal-priority gestures compete, first to recognize wins
 
         var gesture1Fired = false
@@ -68,7 +69,7 @@ final class GestureHitTestingTests: XCTestCase {
         // (Actual recognition logic tested in state machine tests)
     }
 
-    func testHighPriorityGestureWinsOverNormal() async throws {
+    @Test func highPriorityGestureWinsOverNormal() async throws {
         // Test that high-priority gestures take precedence over normal-priority ones
 
         var normalGestureFired = false
@@ -99,7 +100,7 @@ final class GestureHitTestingTests: XCTestCase {
         // Then: Normal-priority gesture should be failed
     }
 
-    func testSimultaneousGesturesRecognizeTogether() async throws {
+    @Test func simultaneousGesturesRecognizeTogether() async throws {
         // Test that simultaneous gestures can recognize alongside each other
 
         var gesture1Fired = false
@@ -132,7 +133,7 @@ final class GestureHitTestingTests: XCTestCase {
 
     // MARK: - Scroll Conflict Prevention Tests
 
-    func testVerticalDragPreventsScroll() async throws {
+    @Test func verticalDragPreventsScroll() async throws {
         // Test that a recognized vertical drag gesture prevents default scroll behavior
 
         struct TestView: View {
@@ -159,7 +160,7 @@ final class GestureHitTestingTests: XCTestCase {
         // (Tested via integration tests with actual DOM events)
     }
 
-    func testHorizontalSwipePreventsHorizontalScroll() async throws {
+    @Test func horizontalSwipePreventsHorizontalScroll() async throws {
         // Test that a recognized horizontal swipe prevents horizontal scroll
 
         struct TestView: View {
@@ -186,22 +187,22 @@ final class GestureHitTestingTests: XCTestCase {
 
     // MARK: - GesturePriority Enum Tests
 
-    func testGesturePriorityValues() {
+    @Test func gesturePriorityValues() {
         // Test that GesturePriority enum has correct values
-        XCTAssertEqual(GesturePriority.normal.rawValue, "normal")
-        XCTAssertEqual(GesturePriority.simultaneous.rawValue, "simultaneous")
-        XCTAssertEqual(GesturePriority.high.rawValue, "high")
+        #expect(GesturePriority.normal.rawValue == "normal")
+        #expect(GesturePriority.simultaneous.rawValue == "simultaneous")
+        #expect(GesturePriority.high.rawValue == "high")
     }
 
-    func testGesturePriorityHashable() {
+    @Test func gesturePriorityHashable() {
         // Test that GesturePriority is properly hashable
         let priorities: Set<GesturePriority> = [.normal, .simultaneous, .high]
-        XCTAssertEqual(priorities.count, 3)
+        #expect(priorities.count == 3)
     }
 
     // MARK: - GestureRegistration Tests
 
-    func testGestureRegistrationCreation() {
+    @Test func gestureRegistrationCreation() {
         // Test creating a gesture registration with priority
         let handlerID = UUID()
         let registration = GestureRegistration(
@@ -210,12 +211,12 @@ final class GestureHitTestingTests: XCTestCase {
             handlerID: handlerID
         )
 
-        XCTAssertEqual(registration.events, ["pointerdown", "pointermove", "pointerup"])
-        XCTAssertEqual(registration.priority, .high)
-        XCTAssertEqual(registration.handlerID, handlerID)
+        #expect(registration.events == ["pointerdown", "pointermove", "pointerup"])
+        #expect(registration.priority == .high)
+        #expect(registration.handlerID == handlerID)
     }
 
-    func testGestureRegistrationEquality() {
+    @Test func gestureRegistrationEquality() {
         // Test that gesture registrations can be compared
         let handlerID = UUID()
         let registration1 = GestureRegistration(
@@ -229,10 +230,10 @@ final class GestureHitTestingTests: XCTestCase {
             handlerID: handlerID
         )
 
-        XCTAssertEqual(registration1, registration2)
+        #expect(registration1 == registration2)
     }
 
-    func testGestureRegistrationWithDifferentPriorities() {
+    @Test func gestureRegistrationWithDifferentPriorities() {
         // Test gesture registrations with different priorities
         let handlerID = UUID()
         let normalPriority = GestureRegistration(
@@ -246,12 +247,12 @@ final class GestureHitTestingTests: XCTestCase {
             handlerID: handlerID
         )
 
-        XCTAssertNotEqual(normalPriority.priority, highPriority.priority)
+        #expect(normalPriority.priority != highPriority.priority)
     }
 
     // MARK: - VNode Gesture Support Tests
 
-    func testVNodeWithGestures() {
+    @Test func vNodeWithGestures() {
         // Test that VNodes can store gesture registrations
         let handlerID = UUID()
         let registration = GestureRegistration(
@@ -265,12 +266,12 @@ final class GestureHitTestingTests: XCTestCase {
             gestures: [registration]
         )
 
-        XCTAssertEqual(node.gestures.count, 1)
-        XCTAssertEqual(node.gestures.first?.handlerID, handlerID)
-        XCTAssertEqual(node.gestures.first?.priority, .normal)
+        #expect(node.gestures.count == 1)
+        #expect(node.gestures.first?.handlerID == handlerID)
+        #expect(node.gestures.first?.priority == .normal)
     }
 
-    func testVNodeWithMultipleGestures() {
+    @Test func vNodeWithMultipleGestures() {
         // Test that VNodes can store multiple gesture registrations
         let handler1 = UUID()
         let handler2 = UUID()
@@ -291,17 +292,17 @@ final class GestureHitTestingTests: XCTestCase {
             gestures: [registration1, registration2]
         )
 
-        XCTAssertEqual(node.gestures.count, 2)
+        #expect(node.gestures.count == 2)
 
         // Check priorities are preserved
         let priorities = node.gestures.map { $0.priority }
-        XCTAssertTrue(priorities.contains(.normal))
-        XCTAssertTrue(priorities.contains(.high))
+        #expect(priorities.contains(.normal))
+        #expect(priorities.contains(.high))
     }
 
     // MARK: - Edge Cases
 
-    func testGestureOnEmptyView() {
+    @Test func gestureOnEmptyView() {
         // Test that gestures can be attached to empty views
         struct TestView: View {
             var body: some View {
@@ -316,7 +317,7 @@ final class GestureHitTestingTests: XCTestCase {
         // Should compile and run without errors
     }
 
-    func testMultipleHighPriorityGestures() {
+    @Test func multipleHighPriorityGestures() {
         // Test behavior when multiple high-priority gestures are present
         struct TestView: View {
             var body: some View {
@@ -336,7 +337,7 @@ final class GestureHitTestingTests: XCTestCase {
         // First to recognize wins
     }
 
-    func testGesturePriorityMixing() {
+    @Test func gesturePriorityMixing() {
         // Test a complex mix of gesture priorities
         struct TestView: View {
             var body: some View {

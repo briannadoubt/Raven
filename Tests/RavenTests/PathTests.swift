@@ -2,6 +2,7 @@ import Testing
 @testable import Raven
 
 /// Tests for Path drawing functionality
+@MainActor
 struct PathTests {
     // MARK: - Basic Path Commands
 

@@ -165,6 +165,7 @@ public struct ObservedObject<ObjectType: ObservableObject>: DynamicProperty {
         let subscriptionID = wrappedValue.objectWillChange.subscribe { [storage] in
             // Trigger view update when object changes
             storage.updateCallback?()
+            _RenderScheduler.current?.scheduleRender()
         }
         storage.subscriptionID = subscriptionID
     }
@@ -190,11 +191,13 @@ public struct ObservedObject<ObjectType: ObservableObject>: DynamicProperty {
             // Subscribe to new object
             let newID = newValue.objectWillChange.subscribe { [storage] in
                 storage.updateCallback?()
+                _RenderScheduler.current?.scheduleRender()
             }
             storage.subscriptionID = newID
 
             // Trigger immediate update for the object change
             storage.updateCallback?()
+            _RenderScheduler.current?.scheduleRender()
         }
     }
 
@@ -230,6 +233,7 @@ public struct ObservedObject<ObjectType: ObservableObject>: DynamicProperty {
         if storage.subscriptionID == nil {
             let subscriptionID = storage.object.objectWillChange.subscribe { [storage] in
                 storage.updateCallback?()
+                _RenderScheduler.current?.scheduleRender()
             }
             storage.subscriptionID = subscriptionID
         }
@@ -249,6 +253,7 @@ public struct ObservedObject<ObjectType: ObservableObject>: DynamicProperty {
             storage.object.objectWillChange.unsubscribe(subscriptionID)
             let newID = storage.object.objectWillChange.subscribe { [storage] in
                 storage.updateCallback?()
+                _RenderScheduler.current?.scheduleRender()
             }
             storage.subscriptionID = newID
         }

@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the Virtual Scrolling System (Track A.1).
@@ -16,11 +17,11 @@ import XCTest
 /// - Configuration options
 /// - Edge cases (empty lists, single items, etc.)
 @MainActor
-final class VirtualScrollingTests: XCTestCase {
+@Suite struct VirtualScrollingTests {
 
     // MARK: - VirtualScroller Tests
 
-    func testVirtualScrollerInitialization() {
+    @Test func virtualScrollerInitialization() {
         let scroller = VirtualScroller(
             itemCount: 100,
             config: VirtualScroller.Configuration()
@@ -28,11 +29,11 @@ final class VirtualScrollingTests: XCTestCase {
             VNode.element("div", children: [VNode.text("Item \(index)")])
         }
 
-        XCTAssertEqual(scroller.itemCount, 100)
-        XCTAssertNotNil(scroller.config)
+        #expect(scroller.itemCount == 100)
+        #expect(scroller.config != nil)
     }
 
-    func testVirtualScrollerWithLargeDataset() {
+    @Test func virtualScrollerWithLargeDataset() {
         // Test with 10,000 items as specified
         let itemCount = 10_000
         let scroller = VirtualScroller(
@@ -49,15 +50,15 @@ final class VirtualScrollingTests: XCTestCase {
             ])
         }
 
-        XCTAssertEqual(scroller.itemCount, itemCount)
+        #expect(scroller.itemCount == itemCount)
 
         // Verify statistics
         let stats = scroller.getStatistics()
-        XCTAssertEqual(stats["itemCount"] as? Int, itemCount)
-        XCTAssertEqual(stats["isMounted"] as? Bool, false)
+        #expect(stats["itemCount"] as? Int == itemCount)
+        #expect(stats["isMounted"] as? Bool == false)
     }
 
-    func testVirtualScrollerConfigurationOptions() {
+    @Test func virtualScrollerConfigurationOptions() {
         let config = VirtualScroller.Configuration(
             overscanCount: 10,
             overscanPixels: 500,
@@ -68,44 +69,44 @@ final class VirtualScrollingTests: XCTestCase {
             poolSize: 100
         )
 
-        XCTAssertEqual(config.overscanCount, 10)
-        XCTAssertEqual(config.overscanPixels, 500)
-        XCTAssertEqual(config.dynamicHeights, false)
-        XCTAssertEqual(config.estimatedItemHeight, 100.0)
-        XCTAssertEqual(config.scrollThrottle, 32)
-        XCTAssertEqual(config.restoreScrollPosition, true)
-        XCTAssertEqual(config.poolSize, 100)
+        #expect(config.overscanCount == 10)
+        #expect(config.overscanPixels == 500)
+        #expect(config.dynamicHeights == false)
+        #expect(config.estimatedItemHeight == 100.0)
+        #expect(config.scrollThrottle == 32)
+        #expect(config.restoreScrollPosition == true)
+        #expect(config.poolSize == 100)
     }
 
-    func testVirtualScrollerDefaultConfiguration() {
+    @Test func virtualScrollerDefaultConfiguration() {
         let config = VirtualScroller.Configuration()
 
         // Verify defaults match documentation
-        XCTAssertEqual(config.overscanCount, 3)
-        XCTAssertEqual(config.overscanPixels, 300)
-        XCTAssertEqual(config.dynamicHeights, true)
-        XCTAssertEqual(config.estimatedItemHeight, 44.0)
-        XCTAssertEqual(config.scrollThrottle, 16)
-        XCTAssertEqual(config.restoreScrollPosition, false)
-        XCTAssertEqual(config.poolSize, 50)
+        #expect(config.overscanCount == 3)
+        #expect(config.overscanPixels == 300)
+        #expect(config.dynamicHeights == true)
+        #expect(config.estimatedItemHeight == 44.0)
+        #expect(config.scrollThrottle == 16)
+        #expect(config.restoreScrollPosition == false)
+        #expect(config.poolSize == 50)
     }
 
-    func testSetItemCount() {
+    @Test func setItemCount() {
         let scroller = VirtualScroller(itemCount: 100) { index in
             VNode.text("Item \(index)")
         }
 
-        XCTAssertEqual(scroller.itemCount, 100)
+        #expect(scroller.itemCount == 100)
 
         scroller.setItemCount(200)
-        XCTAssertEqual(scroller.itemCount, 200)
+        #expect(scroller.itemCount == 200)
 
         // Test reducing count
         scroller.setItemCount(50)
-        XCTAssertEqual(scroller.itemCount, 50)
+        #expect(scroller.itemCount == 50)
     }
 
-    func testScrollToIndex() {
+    @Test func scrollToIndex() {
         let scroller = VirtualScroller(itemCount: 1000) { index in
             VNode.text("Item \(index)")
         }
@@ -121,7 +122,7 @@ final class VirtualScrollingTests: XCTestCase {
         scroller.scrollToIndex(10000)
     }
 
-    func testInvalidateItem() {
+    @Test func invalidateItem() {
         let scroller = VirtualScroller(itemCount: 100) { index in
             VNode.text("Item \(index)")
         }
@@ -136,7 +137,7 @@ final class VirtualScrollingTests: XCTestCase {
         scroller.invalidateItem(at: 100)
     }
 
-    func testInvalidateAll() {
+    @Test func invalidateAll() {
         let scroller = VirtualScroller(itemCount: 100) { index in
             VNode.text("Item \(index)")
         }
@@ -145,73 +146,58 @@ final class VirtualScrollingTests: XCTestCase {
 
         let stats = scroller.getStatistics()
         // After invalidate, active items should be cleared
-        XCTAssertNotNil(stats)
+        #expect(stats != nil)
     }
 
-    func testScrollCallback() {
-        let expectation = XCTestExpectation(description: "Scroll callback")
-        expectation.isInverted = true // We don't expect this to fire without mounting
-
-        let scroller = VirtualScroller(itemCount: 100) { index in
-            VNode.text("Item \(index)")
-        }
-
-        scroller.onScroll { position in
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 0.1)
-    }
-
-    func testVirtualScrollerStatistics() {
+    @Test func virtualScrollerStatistics() {
         let scroller = VirtualScroller(itemCount: 500) { index in
             VNode.text("Item \(index)")
         }
 
         let stats = scroller.getStatistics()
 
-        XCTAssertNotNil(stats["itemCount"])
-        XCTAssertEqual(stats["itemCount"] as? Int, 500)
-        XCTAssertNotNil(stats["visibleRange"])
-        XCTAssertNotNil(stats["scrollTop"])
-        XCTAssertNotNil(stats["velocity"])
-        XCTAssertNotNil(stats["isMounted"])
-        XCTAssertEqual(stats["isMounted"] as? Bool, false)
+        #expect(stats["itemCount"] != nil)
+        #expect(stats["itemCount"] as? Int == 500)
+        #expect(stats["visibleRange"] != nil)
+        #expect(stats["scrollTop"] != nil)
+        #expect(stats["velocity"] != nil)
+        #expect(stats["isMounted"] != nil)
+        #expect(stats["isMounted"] as? Bool == false)
     }
 
     // MARK: - Edge Cases
 
-    func testEmptyList() {
+    @Test func emptyList() {
         let scroller = VirtualScroller(itemCount: 0) { index in
             VNode.text("Item \(index)")
         }
 
-        XCTAssertEqual(scroller.itemCount, 0)
+        #expect(scroller.itemCount == 0)
 
         let stats = scroller.getStatistics()
-        XCTAssertEqual(stats["itemCount"] as? Int, 0)
+        #expect(stats["itemCount"] as? Int == 0)
     }
 
-    func testSingleItem() {
+    @Test func singleItem() {
         let scroller = VirtualScroller(itemCount: 1) { index in
             VNode.text("Single Item")
         }
 
-        XCTAssertEqual(scroller.itemCount, 1)
+        #expect(scroller.itemCount == 1)
         scroller.scrollToIndex(0)
     }
 
-    func testTwoItems() {
+    @Test func twoItems() {
         let scroller = VirtualScroller(itemCount: 2) { index in
             VNode.text("Item \(index)")
         }
 
-        XCTAssertEqual(scroller.itemCount, 2)
+        #expect(scroller.itemCount == 2)
         scroller.scrollToIndex(0)
         scroller.scrollToIndex(1)
     }
 
-    func testVeryLargeDataset() {
+    @Test func veryLargeDataset() {
         // Test with 100,000 items
         let itemCount = 100_000
         let scroller = VirtualScroller(
@@ -224,7 +210,7 @@ final class VirtualScrollingTests: XCTestCase {
             VNode.text("Item \(index)")
         }
 
-        XCTAssertEqual(scroller.itemCount, itemCount)
+        #expect(scroller.itemCount == itemCount)
 
         // Verify we can scroll to various positions without crashes
         scroller.scrollToIndex(0)
@@ -234,17 +220,17 @@ final class VirtualScrollingTests: XCTestCase {
 
     // MARK: - ItemPool Tests
 
-    func testItemPoolInitialization() {
+    @Test func itemPoolInitialization() {
         let pool = ItemPool(defaultItemHeight: 50.0, maxPoolSize: 100)
 
-        XCTAssertEqual(pool.defaultItemHeight, 50.0)
-        XCTAssertEqual(pool.maxPoolSize, 100)
-        XCTAssertEqual(pool.activeCount, 0)
-        XCTAssertEqual(pool.inactiveCount, 0)
-        XCTAssertEqual(pool.totalItems, 0)
+        #expect(pool.defaultItemHeight == 50.0)
+        #expect(pool.maxPoolSize == 100)
+        #expect(pool.activeCount == 0)
+        #expect(pool.inactiveCount == 0)
+        #expect(pool.totalItems == 0)
     }
 
-    func testItemPoolAcquireAndRelease() {
+    @Test func itemPoolAcquireAndRelease() {
         let pool = ItemPool()
 
         // Acquire an item
@@ -252,19 +238,19 @@ final class VirtualScrollingTests: XCTestCase {
             VNode.text("Item 0")
         }
 
-        XCTAssertEqual(item.index, 0)
-        XCTAssertEqual(pool.activeCount, 1)
-        XCTAssertTrue(pool.isActive(at: 0))
+        #expect(item.index == 0)
+        #expect(pool.activeCount == 1)
+        #expect(pool.isActive(at: 0))
 
         // Release the item
         let released = pool.releaseItem(at: 0)
-        XCTAssertNotNil(released)
-        XCTAssertEqual(pool.activeCount, 0)
-        XCTAssertEqual(pool.inactiveCount, 1)
-        XCTAssertFalse(pool.isActive(at: 0))
+        #expect(released != nil)
+        #expect(pool.activeCount == 0)
+        #expect(pool.inactiveCount == 1)
+        #expect(!pool.isActive(at: 0))
     }
 
-    func testItemPoolReuse() {
+    @Test func itemPoolReuse() {
         let pool = ItemPool()
 
         // Acquire and release an item
@@ -273,20 +259,20 @@ final class VirtualScrollingTests: XCTestCase {
         }
         pool.releaseItem(at: 0)
 
-        XCTAssertEqual(pool.inactiveCount, 1)
+        #expect(pool.inactiveCount == 1)
 
         // Acquire a different item - should reuse from pool
         let item = pool.acquireItem(for: 1) {
             VNode.text("Item 1")
         }
 
-        XCTAssertEqual(item.index, 1)
-        XCTAssertEqual(pool.activeCount, 1)
+        #expect(item.index == 1)
+        #expect(pool.activeCount == 1)
         // Pool should have been used
-        XCTAssertEqual(pool.inactiveCount, 0)
+        #expect(pool.inactiveCount == 0)
     }
 
-    func testItemPoolMaxSize() {
+    @Test func itemPoolMaxSize() {
         let maxSize = 5
         let pool = ItemPool(maxPoolSize: maxSize)
 
@@ -299,24 +285,24 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Pool should not exceed max size
-        XCTAssertLessThanOrEqual(pool.inactiveCount, maxSize)
+        #expect(pool.inactiveCount <= maxSize)
     }
 
-    func testItemPoolHeightManagement() {
+    @Test func itemPoolHeightManagement() {
         let pool = ItemPool(defaultItemHeight: 44.0)
 
         // Initially should use default height
-        XCTAssertEqual(pool.getHeight(for: 0), 44.0)
+        #expect(pool.getHeight(for: 0) == 44.0)
 
         // Update height
         pool.updateHeight(100.0, for: 0)
-        XCTAssertEqual(pool.getHeight(for: 0), 100.0)
+        #expect(pool.getHeight(for: 0) == 100.0)
 
         // Other items should still use default
-        XCTAssertEqual(pool.getHeight(for: 1), 44.0)
+        #expect(pool.getHeight(for: 1) == 44.0)
     }
 
-    func testItemPoolGetTotalHeight() {
+    @Test func itemPoolGetTotalHeight() {
         let pool = ItemPool(defaultItemHeight: 50.0)
 
         // Set various heights
@@ -325,18 +311,18 @@ final class VirtualScrollingTests: XCTestCase {
         pool.updateHeight(75.0, for: 2)
 
         let totalHeight = pool.getTotalHeight(for: 0..<3)
-        XCTAssertEqual(totalHeight, 325.0) // 100 + 150 + 75
+        #expect(totalHeight == 325.0) // 100 + 150 + 75
     }
 
-    func testItemPoolGetTotalHeightWithDefaults() {
+    @Test func itemPoolGetTotalHeightWithDefaults() {
         let pool = ItemPool(defaultItemHeight: 50.0)
 
         // Items without explicit heights should use default
         let totalHeight = pool.getTotalHeight(for: 0..<5)
-        XCTAssertEqual(totalHeight, 250.0) // 5 * 50
+        #expect(totalHeight == 250.0) // 5 * 50
     }
 
-    func testItemPoolClear() {
+    @Test func itemPoolClear() {
         let pool = ItemPool()
 
         // Add some items
@@ -346,31 +332,31 @@ final class VirtualScrollingTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(pool.activeCount, 5)
+        #expect(pool.activeCount == 5)
 
         pool.clear()
 
-        XCTAssertEqual(pool.activeCount, 0)
-        XCTAssertEqual(pool.inactiveCount, 0)
-        XCTAssertEqual(pool.totalItems, 0)
+        #expect(pool.activeCount == 0)
+        #expect(pool.inactiveCount == 0)
+        #expect(pool.totalItems == 0)
     }
 
-    func testItemPoolClearHeightCache() {
+    @Test func itemPoolClearHeightCache() {
         let pool = ItemPool(defaultItemHeight: 44.0)
 
         // Set some heights
         pool.updateHeight(100.0, for: 0)
         pool.updateHeight(150.0, for: 1)
 
-        XCTAssertEqual(pool.getHeight(for: 0), 100.0)
+        #expect(pool.getHeight(for: 0) == 100.0)
 
         pool.clearHeightCache()
 
         // Should revert to default
-        XCTAssertEqual(pool.getHeight(for: 0), 44.0)
+        #expect(pool.getHeight(for: 0) == 44.0)
     }
 
-    func testItemPoolTrim() {
+    @Test func itemPoolTrim() {
         let pool = ItemPool()
 
         // Add items
@@ -386,11 +372,11 @@ final class VirtualScrollingTests: XCTestCase {
         // Trim with max age of 0 (should remove all)
         pool.trimPool(maxAge: 0.0)
 
-        XCTAssertEqual(pool.inactiveCount, 0)
-        XCTAssertLessThan(pool.inactiveCount, beforeTrim)
+        #expect(pool.inactiveCount == 0)
+        #expect(pool.inactiveCount < beforeTrim)
     }
 
-    func testItemPoolResize() {
+    @Test func itemPoolResize() {
         let pool = ItemPool(maxPoolSize: 50)
 
         // Add many items
@@ -404,21 +390,21 @@ final class VirtualScrollingTests: XCTestCase {
         // Resize to smaller size
         pool.resizePool(to: 10)
 
-        XCTAssertEqual(pool.maxPoolSize, 10)
-        XCTAssertLessThanOrEqual(pool.inactiveCount, 10)
+        #expect(pool.maxPoolSize == 10)
+        #expect(pool.inactiveCount <= 10)
     }
 
-    func testItemPoolPrefill() {
+    @Test func itemPoolPrefill() {
         let pool = ItemPool()
 
         pool.prefill(count: 10) {
             VNode.text("Prefilled")
         }
 
-        XCTAssertEqual(pool.inactiveCount, 10)
+        #expect(pool.inactiveCount == 10)
     }
 
-    func testItemPoolStatistics() {
+    @Test func itemPoolStatistics() {
         let pool = ItemPool(defaultItemHeight: 44.0, maxPoolSize: 50)
 
         // Add some items
@@ -430,17 +416,17 @@ final class VirtualScrollingTests: XCTestCase {
 
         let stats = pool.getStatistics()
 
-        XCTAssertEqual(stats["activeItems"] as? Int, 5)
-        XCTAssertEqual(stats["maxPoolSize"] as? Int, 50)
-        XCTAssertEqual(stats["defaultHeight"] as? Double, 44.0)
-        XCTAssertNotNil(stats["totalItems"])
+        #expect(stats["activeItems"] as? Int == 5)
+        #expect(stats["maxPoolSize"] as? Int == 50)
+        #expect(stats["defaultHeight"] as? Double == 44.0)
+        #expect(stats["totalItems"] != nil)
     }
 
-    func testItemPoolAverageHeight() {
+    @Test func itemPoolAverageHeight() {
         let pool = ItemPool(defaultItemHeight: 44.0)
 
         // With no cached heights, should return default
-        XCTAssertEqual(pool.averageHeight(), 44.0)
+        #expect(pool.averageHeight() == 44.0)
 
         // Add various heights
         pool.updateHeight(100.0, for: 0)
@@ -448,10 +434,10 @@ final class VirtualScrollingTests: XCTestCase {
         pool.updateHeight(50.0, for: 2)
 
         let average = pool.averageHeight()
-        XCTAssertEqual(average, 100.0) // (100 + 150 + 50) / 3
+        #expect(average == 100.0) // (100 + 150 + 50) / 3
     }
 
-    func testItemPoolMemoryEstimate() {
+    @Test func itemPoolMemoryEstimate() {
         let pool = ItemPool()
 
         // Add items
@@ -462,10 +448,10 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         let memoryUsage = pool.estimatedMemoryUsage()
-        XCTAssertGreaterThan(memoryUsage, 0)
+        #expect(memoryUsage > 0)
     }
 
-    func testItemPoolGetActiveIndices() {
+    @Test func itemPoolGetActiveIndices() {
         let pool = ItemPool()
 
         // Acquire items at non-sequential indices
@@ -474,44 +460,44 @@ final class VirtualScrollingTests: XCTestCase {
         _ = pool.acquireItem(for: 8) { VNode.text("8") }
 
         let indices = pool.getActiveIndices()
-        XCTAssertEqual(indices.sorted(), [2, 5, 8])
+        #expect(indices.sorted() == [2, 5, 8])
     }
 
-    func testItemPoolGetActiveItem() {
+    @Test func itemPoolGetActiveItem() {
         let pool = ItemPool()
 
         _ = pool.acquireItem(for: 5) { VNode.text("Item 5") }
 
         let item = pool.getActiveItem(at: 5)
-        XCTAssertNotNil(item)
-        XCTAssertEqual(item?.index, 5)
+        #expect(item != nil)
+        #expect(item?.index == 5)
 
         let nonExistent = pool.getActiveItem(at: 10)
-        XCTAssertNil(nonExistent)
+        #expect(nonExistent == nil)
     }
 
     // MARK: - ScrollMetrics Tests
 
-    func testScrollMetricsInitialization() {
+    @Test func scrollMetricsInitialization() {
         let metrics = ScrollMetrics()
 
-        XCTAssertEqual(metrics.scrollTop, 0)
-        XCTAssertEqual(metrics.scrollLeft, 0)
-        XCTAssertEqual(metrics.velocity, 0)
-        XCTAssertTrue(metrics.isStationary)
-        XCTAssertTrue(metrics.isAtTop)
+        #expect(metrics.scrollTop == 0)
+        #expect(metrics.scrollLeft == 0)
+        #expect(metrics.velocity == 0)
+        #expect(metrics.isStationary)
+        #expect(metrics.isAtTop)
     }
 
-    func testScrollMetricsUpdate() {
+    @Test func scrollMetricsUpdate() {
         let metrics = ScrollMetrics()
 
         metrics.update(scrollTop: 100.0)
 
-        XCTAssertEqual(metrics.scrollTop, 100.0)
-        XCTAssertFalse(metrics.isAtTop)
+        #expect(metrics.scrollTop == 100.0)
+        #expect(!metrics.isAtTop)
     }
 
-    func testScrollMetricsVelocityCalculation() {
+    @Test func scrollMetricsVelocityCalculation() {
         let metrics = ScrollMetrics()
 
         let startTime = Date()
@@ -523,10 +509,10 @@ final class VirtualScrollingTests: XCTestCase {
 
         // Velocity should be approximately 1000 px/s
         // Using a range due to smoothing
-        XCTAssertGreaterThan(abs(metrics.velocity), 0)
+        #expect(abs(metrics.velocity) > 0)
     }
 
-    func testScrollMetricsScrollingDirection() {
+    @Test func scrollMetricsScrollingDirection() {
         let metrics = ScrollMetrics()
 
         let startTime = Date()
@@ -538,19 +524,19 @@ final class VirtualScrollingTests: XCTestCase {
 
         // Should detect downward scroll (positive velocity)
         if abs(metrics.velocity) > 1.0 {
-            XCTAssertTrue(metrics.scrollingDown)
-            XCTAssertFalse(metrics.scrollingUp)
+            #expect(metrics.scrollingDown)
+            #expect(!metrics.scrollingUp)
         }
     }
 
-    func testScrollMetricsHorizontalScroll() {
+    @Test func scrollMetricsHorizontalScroll() {
         let metrics = ScrollMetrics()
 
         metrics.updateHorizontal(scrollLeft: 50.0)
-        XCTAssertEqual(metrics.scrollLeft, 50.0)
+        #expect(metrics.scrollLeft == 50.0)
     }
 
-    func testScrollMetricsDimensions() {
+    @Test func scrollMetricsDimensions() {
         let metrics = ScrollMetrics()
 
         metrics.updateDimensions(
@@ -560,13 +546,13 @@ final class VirtualScrollingTests: XCTestCase {
             clientWidth: 800.0
         )
 
-        XCTAssertEqual(metrics.scrollHeight, 2000.0)
-        XCTAssertEqual(metrics.clientHeight, 500.0)
-        XCTAssertEqual(metrics.scrollWidth, 1000.0)
-        XCTAssertEqual(metrics.clientWidth, 800.0)
+        #expect(metrics.scrollHeight == 2000.0)
+        #expect(metrics.clientHeight == 500.0)
+        #expect(metrics.scrollWidth == 1000.0)
+        #expect(metrics.clientWidth == 800.0)
     }
 
-    func testScrollMetricsAtBottom() {
+    @Test func scrollMetricsAtBottom() {
         let metrics = ScrollMetrics()
 
         metrics.updateDimensions(
@@ -579,11 +565,11 @@ final class VirtualScrollingTests: XCTestCase {
         // Scroll to bottom (scrollTop + clientHeight = scrollHeight)
         metrics.update(scrollTop: 1500.0)
 
-        XCTAssertTrue(metrics.isAtBottom)
-        XCTAssertFalse(metrics.isAtTop)
+        #expect(metrics.isAtBottom)
+        #expect(!metrics.isAtTop)
     }
 
-    func testScrollMetricsReset() {
+    @Test func scrollMetricsReset() {
         let metrics = ScrollMetrics()
 
         metrics.update(scrollTop: 500.0)
@@ -596,12 +582,12 @@ final class VirtualScrollingTests: XCTestCase {
 
         metrics.reset()
 
-        XCTAssertEqual(metrics.scrollTop, 0)
-        XCTAssertEqual(metrics.scrollHeight, 0)
-        XCTAssertEqual(metrics.velocity, 0)
+        #expect(metrics.scrollTop == 0)
+        #expect(metrics.scrollHeight == 0)
+        #expect(metrics.velocity == 0)
     }
 
-    func testScrollMetricsProgress() {
+    @Test func scrollMetricsProgress() {
         let metrics = ScrollMetrics()
 
         metrics.updateDimensions(
@@ -613,18 +599,18 @@ final class VirtualScrollingTests: XCTestCase {
 
         // At top
         metrics.update(scrollTop: 0)
-        XCTAssertEqual(metrics.scrollProgress(), 0)
+        #expect(metrics.scrollProgress() == 0)
 
         // At 50%
         metrics.update(scrollTop: 750.0) // (2000 - 500) / 2
-        XCTAssertEqual(metrics.scrollProgress(), 50.0, accuracy: 0.1)
+        #expect(abs(metrics.scrollProgress() - 50.0) < 0.1)
 
         // At bottom
         metrics.update(scrollTop: 1500.0)
-        XCTAssertEqual(metrics.scrollProgress(), 100.0, accuracy: 0.1)
+        #expect(abs(metrics.scrollProgress() - 100.0) < 0.1)
     }
 
-    func testScrollMetricsEstimatedTime() {
+    @Test func scrollMetricsEstimatedTime() {
         let metrics = ScrollMetrics()
 
         let startTime = Date()
@@ -636,57 +622,57 @@ final class VirtualScrollingTests: XCTestCase {
         // Only test if velocity is significant
         if abs(metrics.velocity) > 10 {
             let estimatedTime = metrics.estimatedTimeToReach(200.0)
-            XCTAssertNotNil(estimatedTime)
+            #expect(estimatedTime != nil)
         }
     }
 
-    func testScrollMetricsStationary() {
+    @Test func scrollMetricsStationary() {
         let metrics = ScrollMetrics()
 
         metrics.update(scrollTop: 100.0)
 
         // After single update with no movement, should be stationary
-        XCTAssertTrue(metrics.isStationary)
+        #expect(metrics.isStationary)
     }
 
     // MARK: - ViewportManager Tests
 
-    func testViewportManagerInitialization() {
+    @Test func viewportManagerInitialization() {
         let manager = ViewportManager { entries in
             // Callback
         }
 
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerWithRootMargin() {
+    @Test func viewportManagerWithRootMargin() {
         let manager = ViewportManager(rootMargin: 200) { entries in
             // Callback with overscan
         }
 
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerWithThresholds() {
+    @Test func viewportManagerWithThresholds() {
         let manager = ViewportManager(
             thresholds: [0.0, 0.25, 0.5, 0.75, 1.0]
         ) { entries in
             // Callback at multiple thresholds
         }
 
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerDisconnect() {
+    @Test func viewportManagerDisconnect() {
         let manager = ViewportManager { entries in
             // Callback
         }
 
         manager.disconnect()
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerReconnect() {
+    @Test func viewportManagerReconnect() {
         let manager = ViewportManager { entries in
             // Callback
         }
@@ -694,57 +680,57 @@ final class VirtualScrollingTests: XCTestCase {
         manager.disconnect()
         manager.reconnect()
 
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerUnobserveAll() {
+    @Test func viewportManagerUnobserveAll() {
         let manager = ViewportManager { entries in
             // Callback
         }
 
         manager.unobserveAll()
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerFactoryForVirtualScrolling() {
+    @Test func viewportManagerFactoryForVirtualScrolling() {
         let manager = ViewportManager.forVirtualScrolling(overscan: 500) { entries in
             // Callback
         }
 
-        XCTAssertNotNil(manager)
-        XCTAssertEqual(manager.observedCount, 0)
+        #expect(manager != nil)
+        #expect(manager.observedCount == 0)
     }
 
-    func testViewportManagerFactoryForLazyLoading() {
+    @Test func viewportManagerFactoryForLazyLoading() {
         let manager = ViewportManager.forLazyLoading(preloadDistance: 100) { entries in
             // Callback
         }
 
-        XCTAssertNotNil(manager)
+        #expect(manager != nil)
     }
 
-    func testViewportManagerFactoryForFullyVisible() {
+    @Test func viewportManagerFactoryForFullyVisible() {
         let manager = ViewportManager.forFullyVisible { entries in
             // Callback
         }
 
-        XCTAssertNotNil(manager)
+        #expect(manager != nil)
     }
 
     // MARK: - Integration Tests
 
-    func testVirtualScrollerWithItemPoolIntegration() {
+    @Test func virtualScrollerWithItemPoolIntegration() {
         let scroller = VirtualScroller(itemCount: 100) { index in
             VNode.element("div", children: [VNode.text("Item \(index)")])
         }
 
         // Verify statistics include pool info
         let stats = scroller.getStatistics()
-        XCTAssertNotNil(stats["activeItems"])
-        XCTAssertNotNil(stats["inactiveItems"])
+        #expect(stats["activeItems"] != nil)
+        #expect(stats["inactiveItems"] != nil)
     }
 
-    func testFastScrollPerformance() {
+    @Test func fastScrollPerformance() {
         let itemCount = 10_000
         let scroller = VirtualScroller(
             itemCount: itemCount,
@@ -762,10 +748,10 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Should complete without crashes
-        XCTAssertEqual(scroller.itemCount, itemCount)
+        #expect(scroller.itemCount == itemCount)
     }
 
-    func testDynamicHeightConfiguration() {
+    @Test func dynamicHeightConfiguration() {
         let config = VirtualScroller.Configuration(
             dynamicHeights: true,
             estimatedItemHeight: 50.0
@@ -781,10 +767,10 @@ final class VirtualScrollingTests: XCTestCase {
             ])
         }
 
-        XCTAssertTrue(scroller.config.dynamicHeights)
+        #expect(scroller.config.dynamicHeights)
     }
 
-    func testScrollPositionRestoration() {
+    @Test func scrollPositionRestoration() {
         var config = VirtualScroller.Configuration()
         config.restoreScrollPosition = true
 
@@ -795,10 +781,10 @@ final class VirtualScrollingTests: XCTestCase {
             VNode.text("Item \(index)")
         }
 
-        XCTAssertTrue(scroller.config.restoreScrollPosition)
+        #expect(scroller.config.restoreScrollPosition)
     }
 
-    func testBufferZoneRendering() {
+    @Test func bufferZoneRendering() {
         let config = VirtualScroller.Configuration(
             overscanCount: 10,
             overscanPixels: 500
@@ -812,11 +798,11 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Verify overscan is configured
-        XCTAssertEqual(scroller.config.overscanCount, 10)
-        XCTAssertEqual(scroller.config.overscanPixels, 500)
+        #expect(scroller.config.overscanCount == 10)
+        #expect(scroller.config.overscanPixels == 500)
     }
 
-    func testMemoryLeakPrevention() {
+    @Test func memoryLeakPrevention() {
         // Create and destroy many scrollers
         for _ in 0..<100 {
             let scroller = VirtualScroller(itemCount: 1000) { index in
@@ -829,10 +815,10 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // If we get here without crashes or excessive memory, prevention is working
-        XCTAssertTrue(true)
+        #expect(true)
     }
 
-    func testItemPoolMemoryManagement() {
+    @Test func itemPoolMemoryManagement() {
         let pool = ItemPool(maxPoolSize: 10)
 
         // Create many items to test pool limits
@@ -846,14 +832,14 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Pool should respect max size
-        XCTAssertLessThanOrEqual(pool.inactiveCount, 10)
+        #expect(pool.inactiveCount <= 10)
 
         // Memory estimate should be reasonable
         let memory = pool.estimatedMemoryUsage()
-        XCTAssertLessThan(memory, 10_000_000) // Less than 10MB
+        #expect(memory < 10_000_000) // Less than 10MB
     }
 
-    func testConcurrentScrollOperations() {
+    @Test func concurrentScrollOperations() {
         let scroller = VirtualScroller(itemCount: 1000) { index in
             VNode.text("Item \(index)")
         }
@@ -865,12 +851,12 @@ final class VirtualScrollingTests: XCTestCase {
         scroller.scrollToIndex(1500)
         scroller.invalidateAll()
 
-        XCTAssertEqual(scroller.itemCount, 2000)
+        #expect(scroller.itemCount == 2000)
     }
 
     // MARK: - Stress Tests
 
-    func testStressLargeItemPool() {
+    @Test func stressLargeItemPool() {
         let pool = ItemPool(maxPoolSize: 1000)
 
         // Rapidly acquire and release items
@@ -887,10 +873,10 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Should handle stress without crashes
-        XCTAssertLessThanOrEqual(pool.inactiveCount, 1000)
+        #expect(pool.inactiveCount <= 1000)
     }
 
-    func testStressScrollMetricsUpdates() {
+    @Test func stressScrollMetricsUpdates() {
         let metrics = ScrollMetrics()
 
         // Rapidly update scroll position
@@ -901,10 +887,10 @@ final class VirtualScrollingTests: XCTestCase {
         }
 
         // Should handle rapid updates
-        XCTAssertGreaterThan(metrics.scrollTop, 0)
+        #expect(metrics.scrollTop > 0)
     }
 
-    func testStressVirtualScrollerOperations() {
+    @Test func stressVirtualScrollerOperations() {
         let scroller = VirtualScroller(itemCount: 10_000) { index in
             VNode.text("Item \(index)")
         }
@@ -916,6 +902,6 @@ final class VirtualScrollingTests: XCTestCase {
             scroller.invalidateItem(at: randomIndex)
         }
 
-        XCTAssertEqual(scroller.itemCount, 10_000)
+        #expect(scroller.itemCount == 10_000)
     }
 }

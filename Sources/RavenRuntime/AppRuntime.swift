@@ -1,4 +1,5 @@
 import JavaScriptKit
+import JavaScriptEventLoop
 @_exported import Raven
 import Foundation
 
@@ -310,6 +311,28 @@ public final class AppRuntime: Sendable {
 
         // TODO: Trigger re-render with updated environment
         // This requires integrating environment values into the render pipeline
+    }
+}
+
+// MARK: - Default App Entry Point
+
+extension App {
+    /// Default entry point for Raven apps using the `@main` attribute.
+    ///
+    /// This allows any `@main struct MyApp: App` to work without a manual `main()`:
+    /// ```swift
+    /// @main
+    /// struct MyApp: App {
+    ///     var body: some Scene {
+    ///         WindowGroup {
+    ///             ContentView()
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    public static func main() {
+        JavaScriptEventLoop.installGlobalExecutor()
+        AppRuntime.shared.run(app: Self())
     }
 }
 

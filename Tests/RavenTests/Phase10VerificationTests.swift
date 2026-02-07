@@ -12,6 +12,7 @@ import Foundation
 /// - .clipShape() modifier
 ///
 /// Focus: Integration testing across features, real-world scenarios, edge cases
+@MainActor
 @Suite("Phase 10 Integration Tests")
 struct Phase10VerificationTests {
 

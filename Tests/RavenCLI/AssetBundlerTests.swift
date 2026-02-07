@@ -1,37 +1,34 @@
-import XCTest
+import Testing
 @testable import RavenCLI
+import Foundation
 
-final class AssetBundlerTests: XCTestCase {
-    var tempDir: URL!
-    var publicDir: URL!
-    var distDir: URL!
+@Suite struct AssetBundlerTests {
+    let tempDir: URL
+    let publicDir: URL
+    let distDir: URL
 
-    override func setUp() {
-        super.setUp()
+    init() throws {
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         publicDir = tempDir.appendingPathComponent("Public")
         distDir = tempDir.appendingPathComponent("dist")
 
-        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        try? FileManager.default.createDirectory(at: publicDir, withIntermediateDirectories: true)
-        try? FileManager.default.createDirectory(at: distDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: publicDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: distDir, withIntermediateDirectories: true)
     }
 
-    override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
-        super.tearDown()
-    }
-
-    func testBundleEmptyDirectory() throws {
+    @Test func bundleEmptyDirectory() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         let bundler = AssetBundler(verbose: false)
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
-        XCTAssertEqual(result.filesCopied, 0)
-        XCTAssertEqual(result.totalBytes, 0)
-        XCTAssertTrue(result.errors.isEmpty)
+        #expect(result.filesCopied == 0)
+        #expect(result.totalBytes == 0)
+        #expect(result.errors.isEmpty)
     }
 
-    func testBundleSingleFile() throws {
+    @Test func bundleSingleFile() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create a test file
         let testFile = publicDir.appendingPathComponent("test.txt")
         let content = "Hello, Raven!"
@@ -40,19 +37,20 @@ final class AssetBundlerTests: XCTestCase {
         let bundler = AssetBundler(verbose: false)
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
-        XCTAssertEqual(result.filesCopied, 1)
-        XCTAssertGreaterThan(result.totalBytes, 0)
-        XCTAssertTrue(result.errors.isEmpty)
+        #expect(result.filesCopied == 1)
+        #expect(result.totalBytes > 0)
+        #expect(result.errors.isEmpty)
 
         // Verify file was copied
         let copiedFile = distDir.appendingPathComponent("test.txt")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: copiedFile.path))
+        #expect(FileManager.default.fileExists(atPath: copiedFile.path))
 
         let copiedContent = try String(contentsOf: copiedFile)
-        XCTAssertEqual(copiedContent, content)
+        #expect(copiedContent == content)
     }
 
-    func testBundleMultipleFiles() throws {
+    @Test func bundleMultipleFiles() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create multiple test files
         for i in 1...5 {
             let file = publicDir.appendingPathComponent("test\(i).txt")
@@ -62,12 +60,13 @@ final class AssetBundlerTests: XCTestCase {
         let bundler = AssetBundler(verbose: false)
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
-        XCTAssertEqual(result.filesCopied, 5)
-        XCTAssertGreaterThan(result.totalBytes, 0)
-        XCTAssertTrue(result.errors.isEmpty)
+        #expect(result.filesCopied == 5)
+        #expect(result.totalBytes > 0)
+        #expect(result.errors.isEmpty)
     }
 
-    func testBundleNestedDirectories() throws {
+    @Test func bundleNestedDirectories() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create nested directory structure
         let cssDir = publicDir.appendingPathComponent("css")
         let jsDir = publicDir.appendingPathComponent("js")
@@ -82,17 +81,18 @@ final class AssetBundlerTests: XCTestCase {
         let bundler = AssetBundler(verbose: false)
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
-        XCTAssertEqual(result.filesCopied, 3)
-        XCTAssertGreaterThan(result.totalBytes, 0)
-        XCTAssertTrue(result.errors.isEmpty)
+        #expect(result.filesCopied == 3)
+        #expect(result.totalBytes > 0)
+        #expect(result.errors.isEmpty)
 
         // Verify directory structure was preserved
-        XCTAssertTrue(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("css/styles.css").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("js/app.js").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("README.md").path))
+        #expect(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("css/styles.css").path))
+        #expect(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("js/app.js").path))
+        #expect(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("README.md").path))
     }
 
-    func testSkipHiddenFiles() throws {
+    @Test func skipHiddenFiles() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create visible and hidden files
         try "visible".write(to: publicDir.appendingPathComponent("visible.txt"), atomically: true, encoding: .utf8)
         try "hidden".write(to: publicDir.appendingPathComponent(".hidden"), atomically: true, encoding: .utf8)
@@ -102,23 +102,25 @@ final class AssetBundlerTests: XCTestCase {
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
         // Should only copy the visible file
-        XCTAssertEqual(result.filesCopied, 1)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("visible.txt").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: distDir.appendingPathComponent(".hidden").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: distDir.appendingPathComponent(".DS_Store").path))
+        #expect(result.filesCopied == 1)
+        #expect(FileManager.default.fileExists(atPath: distDir.appendingPathComponent("visible.txt").path))
+        #expect(!FileManager.default.fileExists(atPath: distDir.appendingPathComponent(".hidden").path))
+        #expect(!FileManager.default.fileExists(atPath: distDir.appendingPathComponent(".DS_Store").path))
     }
 
-    func testNonExistentSourceDirectory() throws {
+    @Test func nonExistentSourceDirectory() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         let nonExistent = tempDir.appendingPathComponent("nonexistent")
         let bundler = AssetBundler(verbose: false)
 
         // Should not throw - just return empty result
         let result = try bundler.bundleAssets(from: nonExistent.path, to: distDir.path)
-        XCTAssertEqual(result.filesCopied, 0)
-        XCTAssertEqual(result.totalBytes, 0)
+        #expect(result.filesCopied == 0)
+        #expect(result.totalBytes == 0)
     }
 
-    func testOverwriteExistingFiles() throws {
+    @Test func overwriteExistingFiles() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create initial file in dist
         let distFile = distDir.appendingPathComponent("test.txt")
         try "old content".write(to: distFile, atomically: true, encoding: .utf8)
@@ -130,10 +132,10 @@ final class AssetBundlerTests: XCTestCase {
         let bundler = AssetBundler(verbose: false)
         let result = try bundler.bundleAssets(from: publicDir.path, to: distDir.path)
 
-        XCTAssertEqual(result.filesCopied, 1)
+        #expect(result.filesCopied == 1)
 
         // Verify file was overwritten
         let content = try String(contentsOf: distFile)
-        XCTAssertEqual(content, "new content")
+        #expect(content == "new content")
     }
 }

@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Tests for the Gesture protocol and foundation types.
@@ -10,200 +11,200 @@ import XCTest
 /// - Transaction behavior
 /// - @GestureState property wrapper functionality
 @MainActor
-final class GestureTests: XCTestCase {
+@Suite struct GestureTests {
 
     // MARK: - GestureMask Tests
 
-    func testGestureMaskNone() {
+    @Test func gestureMaskNone() {
         let mask = GestureMask.none
-        XCTAssertEqual(mask.rawValue, 0)
-        XCTAssertFalse(mask.contains(.gesture))
-        XCTAssertFalse(mask.contains(.subviews))
+        #expect(mask.rawValue == 0)
+        #expect(!mask.contains(.gesture))
+        #expect(!mask.contains(.subviews))
     }
 
-    func testGestureMaskGesture() {
+    @Test func gestureMaskGesture() {
         let mask = GestureMask.gesture
-        XCTAssertTrue(mask.contains(.gesture))
-        XCTAssertFalse(mask.contains(.subviews))
+        #expect(mask.contains(.gesture))
+        #expect(!mask.contains(.subviews))
     }
 
-    func testGestureMaskSubviews() {
+    @Test func gestureMaskSubviews() {
         let mask = GestureMask.subviews
-        XCTAssertFalse(mask.contains(.gesture))
-        XCTAssertTrue(mask.contains(.subviews))
+        #expect(!mask.contains(.gesture))
+        #expect(mask.contains(.subviews))
     }
 
-    func testGestureMaskAll() {
+    @Test func gestureMaskAll() {
         let mask = GestureMask.all
-        XCTAssertTrue(mask.contains(.gesture))
-        XCTAssertTrue(mask.contains(.subviews))
+        #expect(mask.contains(.gesture))
+        #expect(mask.contains(.subviews))
     }
 
-    func testGestureMaskCombination() {
+    @Test func gestureMaskCombination() {
         let mask: GestureMask = [.gesture, .subviews]
-        XCTAssertEqual(mask, .all)
-        XCTAssertTrue(mask.contains(.gesture))
-        XCTAssertTrue(mask.contains(.subviews))
+        #expect(mask == .all)
+        #expect(mask.contains(.gesture))
+        #expect(mask.contains(.subviews))
     }
 
-    func testGestureMaskSubtraction() {
+    @Test func gestureMaskSubtraction() {
         var mask = GestureMask.all
         mask.subtract(.subviews)
-        XCTAssertEqual(mask, .gesture)
-        XCTAssertTrue(mask.contains(.gesture))
-        XCTAssertFalse(mask.contains(.subviews))
+        #expect(mask == .gesture)
+        #expect(mask.contains(.gesture))
+        #expect(!mask.contains(.subviews))
     }
 
     // MARK: - EventModifiers Tests
 
-    func testEventModifiersNone() {
+    @Test func eventModifiersNone() {
         let modifiers = EventModifiers(rawValue: 0)
-        XCTAssertFalse(modifiers.contains(.shift))
-        XCTAssertFalse(modifiers.contains(.control))
-        XCTAssertFalse(modifiers.contains(.option))
-        XCTAssertFalse(modifiers.contains(.command))
+        #expect(!modifiers.contains(.shift))
+        #expect(!modifiers.contains(.control))
+        #expect(!modifiers.contains(.option))
+        #expect(!modifiers.contains(.command))
     }
 
-    func testEventModifiersShift() {
+    @Test func eventModifiersShift() {
         let modifiers = EventModifiers.shift
-        XCTAssertTrue(modifiers.contains(.shift))
-        XCTAssertFalse(modifiers.contains(.control))
+        #expect(modifiers.contains(.shift))
+        #expect(!modifiers.contains(.control))
     }
 
-    func testEventModifiersControl() {
+    @Test func eventModifiersControl() {
         let modifiers = EventModifiers.control
-        XCTAssertTrue(modifiers.contains(.control))
-        XCTAssertFalse(modifiers.contains(.shift))
+        #expect(modifiers.contains(.control))
+        #expect(!modifiers.contains(.shift))
     }
 
-    func testEventModifiersOption() {
+    @Test func eventModifiersOption() {
         let modifiers = EventModifiers.option
-        XCTAssertTrue(modifiers.contains(.option))
-        XCTAssertFalse(modifiers.contains(.command))
+        #expect(modifiers.contains(.option))
+        #expect(!modifiers.contains(.command))
     }
 
-    func testEventModifiersCommand() {
+    @Test func eventModifiersCommand() {
         let modifiers = EventModifiers.command
-        XCTAssertTrue(modifiers.contains(.command))
-        XCTAssertFalse(modifiers.contains(.option))
+        #expect(modifiers.contains(.command))
+        #expect(!modifiers.contains(.option))
     }
 
-    func testEventModifiersCapsLock() {
+    @Test func eventModifiersCapsLock() {
         let modifiers = EventModifiers.capsLock
-        XCTAssertTrue(modifiers.contains(.capsLock))
+        #expect(modifiers.contains(.capsLock))
     }
 
-    func testEventModifiersNumericPad() {
+    @Test func eventModifiersNumericPad() {
         let modifiers = EventModifiers.numericPad
-        XCTAssertTrue(modifiers.contains(.numericPad))
+        #expect(modifiers.contains(.numericPad))
     }
 
-    func testEventModifiersFunction() {
+    @Test func eventModifiersFunction() {
         let modifiers = EventModifiers.function
-        XCTAssertTrue(modifiers.contains(.function))
+        #expect(modifiers.contains(.function))
     }
 
-    func testEventModifiersCombination() {
+    @Test func eventModifiersCombination() {
         let modifiers: EventModifiers = [.shift, .command]
-        XCTAssertTrue(modifiers.contains(.shift))
-        XCTAssertTrue(modifiers.contains(.command))
-        XCTAssertFalse(modifiers.contains(.control))
+        #expect(modifiers.contains(.shift))
+        #expect(modifiers.contains(.command))
+        #expect(!modifiers.contains(.control))
     }
 
-    func testEventModifiersAll() {
+    @Test func eventModifiersAll() {
         let modifiers = EventModifiers.all
-        XCTAssertTrue(modifiers.contains(.capsLock))
-        XCTAssertTrue(modifiers.contains(.shift))
-        XCTAssertTrue(modifiers.contains(.control))
-        XCTAssertTrue(modifiers.contains(.option))
-        XCTAssertTrue(modifiers.contains(.command))
-        XCTAssertTrue(modifiers.contains(.numericPad))
-        XCTAssertTrue(modifiers.contains(.function))
+        #expect(modifiers.contains(.capsLock))
+        #expect(modifiers.contains(.shift))
+        #expect(modifiers.contains(.control))
+        #expect(modifiers.contains(.option))
+        #expect(modifiers.contains(.command))
+        #expect(modifiers.contains(.numericPad))
+        #expect(modifiers.contains(.function))
     }
 
-    func testEventModifiersSubtraction() {
+    @Test func eventModifiersSubtraction() {
         var modifiers: EventModifiers = [.shift, .command, .option]
         modifiers.subtract(.command)
-        XCTAssertTrue(modifiers.contains(.shift))
-        XCTAssertTrue(modifiers.contains(.option))
-        XCTAssertFalse(modifiers.contains(.command))
+        #expect(modifiers.contains(.shift))
+        #expect(modifiers.contains(.option))
+        #expect(!modifiers.contains(.command))
     }
 
     // MARK: - Transaction Tests
 
-    func testTransactionInitialization() {
+    @Test func transactionInitialization() {
         let transaction = Transaction()
-        XCTAssertNil(transaction.animation)
-        XCTAssertFalse(transaction.disablesAnimations)
+        #expect(transaction.animation == nil)
+        #expect(!transaction.disablesAnimations)
     }
 
-    func testTransactionWithAnimation() {
+    @Test func transactionWithAnimation() {
         let transaction = Transaction(animation: .default)
-        XCTAssertNotNil(transaction.animation)
-        XCTAssertFalse(transaction.disablesAnimations)
+        #expect(transaction.animation != nil)
+        #expect(!transaction.disablesAnimations)
     }
 
-    func testTransactionWithDisabledAnimations() {
+    @Test func transactionWithDisabledAnimations() {
         let transaction = Transaction(disablesAnimations: true)
-        XCTAssertNil(transaction.animation)
-        XCTAssertTrue(transaction.disablesAnimations)
+        #expect(transaction.animation == nil)
+        #expect(transaction.disablesAnimations)
     }
 
-    func testTransactionModification() {
+    @Test func transactionModification() {
         var transaction = Transaction()
         transaction.animation = .easeIn
         transaction.disablesAnimations = true
 
-        XCTAssertNotNil(transaction.animation)
-        XCTAssertTrue(transaction.disablesAnimations)
+        #expect(transaction.animation != nil)
+        #expect(transaction.disablesAnimations)
     }
 
     // MARK: - GestureState Tests
 
-    func testGestureStateInitialization() {
+    @Test func gestureStateInitialization() {
         let gestureState = GestureState(wrappedValue: 10)
-        XCTAssertEqual(gestureState.wrappedValue, 10)
+        #expect(gestureState.wrappedValue == 10)
     }
 
-    func testGestureStateInitialValue() {
+    @Test func gestureStateInitialValue() {
         let gestureState = GestureState(initialValue: 42)
-        XCTAssertEqual(gestureState.wrappedValue, 42)
+        #expect(gestureState.wrappedValue == 42)
     }
 
-    func testGestureStateWithCGSize() {
+    @Test func gestureStateWithCGSize() {
         let gestureState = GestureState(wrappedValue: Raven.CGSize(width: 0, height: 0))
-        XCTAssertEqual(gestureState.wrappedValue.width, 0)
-        XCTAssertEqual(gestureState.wrappedValue.height, 0)
+        #expect(gestureState.wrappedValue.width == 0)
+        #expect(gestureState.wrappedValue.height == 0)
     }
 
-    func testGestureStateWithCGPoint() {
+    @Test func gestureStateWithCGPoint() {
         let gestureState = GestureState(wrappedValue: Raven.CGPoint(x: 0, y: 0))
-        XCTAssertEqual(gestureState.wrappedValue.x, 0)
-        XCTAssertEqual(gestureState.wrappedValue.y, 0)
+        #expect(gestureState.wrappedValue.x == 0)
+        #expect(gestureState.wrappedValue.y == 0)
     }
 
-    func testGestureStateUpdate() {
+    @Test func gestureStateUpdate() {
         let gestureState = GestureState(wrappedValue: 0)
         var transaction = Transaction()
 
         gestureState.update(value: 100, transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 100)
+        #expect(gestureState.wrappedValue == 100)
     }
 
-    func testGestureStateReset() {
+    @Test func gestureStateReset() {
         let gestureState = GestureState(wrappedValue: 0)
         var transaction = Transaction()
 
         // Update the value
         gestureState.update(value: 100, transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 100)
+        #expect(gestureState.wrappedValue == 100)
 
         // Reset should restore initial value
         gestureState.reset(transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 0)
+        #expect(gestureState.wrappedValue == 0)
     }
 
-    func testGestureStateCustomReset() {
+    @Test func gestureStateCustomReset() {
         var resetCalled = false
         var capturedValue: Int?
 
@@ -219,16 +220,16 @@ final class GestureTests: XCTestCase {
 
         // Update the value
         gestureState.update(value: 50, transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 50)
+        #expect(gestureState.wrappedValue == 50)
 
         // Reset should call custom reset function
         gestureState.reset(transaction: &transaction)
-        XCTAssertTrue(resetCalled)
-        XCTAssertEqual(capturedValue, 50)
-        XCTAssertEqual(gestureState.wrappedValue, 0) // Value should be reset
+        #expect(resetCalled)
+        #expect(capturedValue == 50)
+        #expect(gestureState.wrappedValue == 0) // Value should be reset
     }
 
-    func testGestureStateCustomResetModifiesTransaction() {
+    @Test func gestureStateCustomResetModifiesTransaction() {
         let gestureState = GestureState(
             reset: { _, transaction in
                 transaction.animation = .spring()
@@ -237,7 +238,7 @@ final class GestureTests: XCTestCase {
         )
 
         var transaction = Transaction()
-        XCTAssertNil(transaction.animation)
+        #expect(transaction.animation == nil)
 
         gestureState.update(
             value: Raven.CGSize(width: 100, height: 100),
@@ -245,42 +246,42 @@ final class GestureTests: XCTestCase {
         )
         gestureState.reset(transaction: &transaction)
 
-        XCTAssertNotNil(transaction.animation)
+        #expect(transaction.animation != nil)
     }
 
-    func testGestureStateProjectedValue() {
+    @Test func gestureStateProjectedValue() {
         let gestureState = GestureState(wrappedValue: 10)
         let projected = gestureState.projectedValue
 
         // Projected value should be the same wrapper
-        XCTAssertEqual(projected.wrappedValue, gestureState.wrappedValue)
+        #expect(projected.wrappedValue == gestureState.wrappedValue)
     }
 
-    func testGestureStateWithBool() {
+    @Test func gestureStateWithBool() {
         let gestureState = GestureState(wrappedValue: false)
         var transaction = Transaction()
 
         gestureState.update(value: true, transaction: &transaction)
-        XCTAssertTrue(gestureState.wrappedValue)
+        #expect(gestureState.wrappedValue)
 
         gestureState.reset(transaction: &transaction)
-        XCTAssertFalse(gestureState.wrappedValue)
+        #expect(!gestureState.wrappedValue)
     }
 
-    func testGestureStateWithDouble() {
+    @Test func gestureStateWithDouble() {
         let gestureState = GestureState(wrappedValue: 1.0)
         var transaction = Transaction()
 
         gestureState.update(value: 2.5, transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 2.5, accuracy: 0.001)
+        #expect(abs(gestureState.wrappedValue - 2.5) < 0.001)
 
         gestureState.reset(transaction: &transaction)
-        XCTAssertEqual(gestureState.wrappedValue, 1.0, accuracy: 0.001)
+        #expect(abs(gestureState.wrappedValue - 1.0) < 0.001)
     }
 
     // MARK: - Gesture Protocol Tests
 
-    func testPrimitiveGestureConformance() {
+    @Test func primitiveGestureConformance() {
         // Test that we can create a simple gesture type
         struct TestGesture: Gesture {
             typealias Value = Int
@@ -290,19 +291,19 @@ final class GestureTests: XCTestCase {
 
         // This would crash if we tried to access body, but that's expected
         // for primitive gestures
-        XCTAssertTrue(type(of: gesture.body) == Never.self)
+        #expect(TestGesture.Body.self == Never.self)
     }
 
-    func testGestureValueType() {
+    @Test func gestureValueType() {
         struct TestGesture: Gesture {
             typealias Value = Raven.CGPoint
         }
 
         // Verify the associated type is what we expect
-        XCTAssertTrue(TestGesture.Value.self == Raven.CGPoint.self)
+        #expect(TestGesture.Value.self == Raven.CGPoint.self)
     }
 
-    func testGestureWithCustomValueType() {
+    @Test func gestureWithCustomValueType() {
         struct CustomValue: Sendable, Equatable {
             let x: Double
             let y: Double
@@ -312,63 +313,63 @@ final class GestureTests: XCTestCase {
             typealias Value = CustomValue
         }
 
-        XCTAssertTrue(TestGesture.Value.self == CustomValue.self)
+        #expect(TestGesture.Value.self == CustomValue.self)
     }
 
     // MARK: - GestureRecognitionState Tests
 
-    func testGestureRecognitionStateInitialState() {
+    @Test func gestureRecognitionStateInitialState() {
         let state = GestureRecognitionState.possible
         switch state {
         case .possible:
-            XCTAssertTrue(true, "State should be .possible initially")
+            #expect(true)
         default:
-            XCTFail("Expected .possible state")
+            Issue.record("Expected .possible state")
         }
     }
 
-    func testGestureRecognitionStateTransitions() {
+    @Test func gestureRecognitionStateTransitions() {
         // Test normal flow: possible -> began -> changed -> ended
         var state = GestureRecognitionState.possible
-        XCTAssertTrue(state == .possible)
+        #expect(state == .possible)
 
         state = .began
-        XCTAssertTrue(state == .began)
+        #expect(state == .began)
 
         state = .changed
-        XCTAssertTrue(state == .changed)
+        #expect(state == .changed)
 
         state = .ended
-        XCTAssertTrue(state == .ended)
+        #expect(state == .ended)
     }
 
-    func testGestureRecognitionStateCancellation() {
+    @Test func gestureRecognitionStateCancellation() {
         // Test cancellation from possible
         var state = GestureRecognitionState.possible
         state = .cancelled
-        XCTAssertTrue(state == .cancelled)
+        #expect(state == .cancelled)
 
         // Test cancellation from began
         state = .began
         state = .cancelled
-        XCTAssertTrue(state == .cancelled)
+        #expect(state == .cancelled)
 
         // Test cancellation from changed
         state = .changed
         state = .cancelled
-        XCTAssertTrue(state == .cancelled)
+        #expect(state == .cancelled)
     }
 
-    func testGestureRecognitionStateFailure() {
+    @Test func gestureRecognitionStateFailure() {
         // Test failure from possible
         var state = GestureRecognitionState.possible
         state = .failed
-        XCTAssertTrue(state == .failed)
+        #expect(state == .failed)
     }
 
     // MARK: - DragGestureState Tests
 
-    func testDragGestureStateInitialization() {
+    @Test func dragGestureStateInitialization() {
         let startLocation = Raven.CGPoint(x: 100, y: 200)
         let startTime = Date().timeIntervalSince1970
         let minimumDistance = 10.0
@@ -379,15 +380,15 @@ final class GestureTests: XCTestCase {
             minimumDistance: minimumDistance
         )
 
-        XCTAssertEqual(state.startLocation, startLocation)
-        XCTAssertEqual(state.startTime, startTime)
-        XCTAssertEqual(state.minimumDistance, minimumDistance)
-        XCTAssertEqual(state.recognitionState, .possible)
-        XCTAssertEqual(state.positionSamples.count, 1)
-        XCTAssertEqual(state.positionSamples[0].location, startLocation)
+        #expect(state.startLocation == startLocation)
+        #expect(state.startTime == startTime)
+        #expect(state.minimumDistance == minimumDistance)
+        #expect(state.recognitionState == .possible)
+        #expect(state.positionSamples.count == 1)
+        #expect(state.positionSamples[0].location == startLocation)
     }
 
-    func testDragGestureStateMinimumDistanceCheck() {
+    @Test func dragGestureStateMinimumDistanceCheck() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         let state = DragGestureState(
             startLocation: startLocation,
@@ -397,14 +398,14 @@ final class GestureTests: XCTestCase {
 
         // Test point within minimum distance
         let nearPoint = Raven.CGPoint(x: 5, y: 5)
-        XCTAssertFalse(state.hasExceededMinimumDistance(to: nearPoint))
+        #expect(!state.hasExceededMinimumDistance(to: nearPoint))
 
         // Test point beyond minimum distance
         let farPoint = Raven.CGPoint(x: 10, y: 10)
-        XCTAssertTrue(state.hasExceededMinimumDistance(to: farPoint))
+        #expect(state.hasExceededMinimumDistance(to: farPoint))
     }
 
-    func testDragGestureStateAddSample() {
+    @Test func dragGestureStateAddSample() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -416,11 +417,11 @@ final class GestureTests: XCTestCase {
         state.addSample(location: Raven.CGPoint(x: 10, y: 10), time: 0.1)
         state.addSample(location: Raven.CGPoint(x: 20, y: 20), time: 0.2)
 
-        XCTAssertEqual(state.positionSamples.count, 3)
-        XCTAssertEqual(state.positionSamples.last?.location.x, 20)
+        #expect(state.positionSamples.count == 3)
+        #expect(state.positionSamples.last?.location.x == 20)
     }
 
-    func testDragGestureStateVelocityCalculation() {
+    @Test func dragGestureStateVelocityCalculation() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -434,11 +435,11 @@ final class GestureTests: XCTestCase {
         let velocity = state.calculateVelocity()
 
         // Velocity should be 100 points / 0.1 seconds = 1000 points/second
-        XCTAssertEqual(velocity.width, 1000, accuracy: 0.1)
-        XCTAssertEqual(velocity.height, 1000, accuracy: 0.1)
+        #expect(abs(velocity.width - 1000) < 0.1)
+        #expect(abs(velocity.height - 1000) < 0.1)
     }
 
-    func testDragGestureStateRecognitionStateTransitions() {
+    @Test func dragGestureStateRecognitionStateTransitions() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -447,22 +448,22 @@ final class GestureTests: XCTestCase {
         )
 
         // Initial state should be .possible
-        XCTAssertEqual(state.recognitionState, .possible)
+        #expect(state.recognitionState == .possible)
 
         // Transition to .began
         state.recognitionState = .began
-        XCTAssertEqual(state.recognitionState, .began)
+        #expect(state.recognitionState == .began)
 
         // Transition to .changed
         state.recognitionState = .changed
-        XCTAssertEqual(state.recognitionState, .changed)
+        #expect(state.recognitionState == .changed)
 
         // Transition to .ended
         state.recognitionState = .ended
-        XCTAssertEqual(state.recognitionState, .ended)
+        #expect(state.recognitionState == .ended)
     }
 
-    func testDragGestureStateRecognitionFromPossibleToCancelled() {
+    @Test func dragGestureStateRecognitionFromPossibleToCancelled() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -472,10 +473,10 @@ final class GestureTests: XCTestCase {
 
         // Gesture in .possible state can be cancelled
         state.recognitionState = .cancelled
-        XCTAssertEqual(state.recognitionState, .cancelled)
+        #expect(state.recognitionState == .cancelled)
     }
 
-    func testDragGestureStateRecognitionFromPossibleToFailed() {
+    @Test func dragGestureStateRecognitionFromPossibleToFailed() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -485,10 +486,10 @@ final class GestureTests: XCTestCase {
 
         // Gesture in .possible state can fail
         state.recognitionState = .failed
-        XCTAssertEqual(state.recognitionState, .failed)
+        #expect(state.recognitionState == .failed)
     }
 
-    func testDragGestureStateDeprecatedIsRecognizedGetter() {
+    @Test func dragGestureStateDeprecatedIsRecognizedGetter() {
         let startLocation = Raven.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
@@ -497,26 +498,26 @@ final class GestureTests: XCTestCase {
         )
 
         // .possible -> not recognized
-        XCTAssertFalse(state.isRecognized)
+        #expect(!state.isRecognized)
 
         // .began -> recognized
         state.recognitionState = .began
-        XCTAssertTrue(state.isRecognized)
+        #expect(state.isRecognized)
 
         // .changed -> recognized
         state.recognitionState = .changed
-        XCTAssertTrue(state.isRecognized)
+        #expect(state.isRecognized)
 
         // .ended -> recognized
         state.recognitionState = .ended
-        XCTAssertTrue(state.isRecognized)
+        #expect(state.isRecognized)
 
         // .cancelled -> not recognized
         state.recognitionState = .cancelled
-        XCTAssertFalse(state.isRecognized)
+        #expect(!state.isRecognized)
 
         // .failed -> not recognized
         state.recognitionState = .failed
-        XCTAssertFalse(state.isRecognized)
+        #expect(!state.isRecognized)
     }
 }

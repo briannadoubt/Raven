@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the PresentationCoordinator and related types.
@@ -10,113 +11,113 @@ import XCTest
 /// - Dismiss callbacks
 /// - Memory leak prevention
 @MainActor
-final class PresentationCoordinatorTests: XCTestCase {
+@Suite struct PresentationCoordinatorTests {
 
     // MARK: - Basic Initialization
 
-    func testCoordinatorInitialization() {
+    @Test func coordinatorInitialization() {
         let coordinator = PresentationCoordinator()
-        XCTAssertEqual(coordinator.presentations.count, 0)
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertNil(coordinator.topPresentation())
+        #expect(coordinator.presentations.count == 0)
+        #expect(coordinator.count == 0)
+        #expect(coordinator.topPresentation() == nil)
     }
 
     // MARK: - Single Presentation Tests
 
-    func testPresentSingleSheet() {
+    @Test func presentSingleSheet() {
         let coordinator = PresentationCoordinator()
         let content = AnyView(Text("Sheet Content"))
 
         let id = coordinator.present(type: .sheet, content: content)
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.presentations.count, 1)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.presentations.count == 1)
 
         let entry = coordinator.presentations.first
-        XCTAssertNotNil(entry)
-        XCTAssertEqual(entry?.id, id)
-        XCTAssertEqual(entry?.type, .sheet)
-        XCTAssertEqual(entry?.zIndex, 1000) // Base z-index
+        #expect(entry != nil)
+        #expect(entry?.id == id)
+        #expect(entry?.type == .sheet)
+        #expect(entry?.zIndex == 1000) // Base z-index
     }
 
-    func testPresentSingleAlert() {
+    @Test func presentSingleAlert() {
         let coordinator = PresentationCoordinator()
         let content = AnyView(Text("Alert Content"))
 
         let id = coordinator.present(type: .alert, content: content)
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         let entry = coordinator.presentations.first
-        XCTAssertEqual(entry?.type, .alert)
-        XCTAssertEqual(entry?.id, id)
+        #expect(entry?.type == .alert)
+        #expect(entry?.id == id)
     }
 
-    func testPresentFullScreenCover() {
+    @Test func presentFullScreenCover() {
         let coordinator = PresentationCoordinator()
         let content = AnyView(Text("Full Screen Content"))
 
         coordinator.present(type: .fullScreenCover, content: content)
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.presentations.first?.type, .fullScreenCover)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.presentations.first?.type == .fullScreenCover)
     }
 
-    func testPresentConfirmationDialog() {
+    @Test func presentConfirmationDialog() {
         let coordinator = PresentationCoordinator()
         let content = AnyView(Text("Dialog Content"))
 
         coordinator.present(type: .confirmationDialog, content: content)
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.presentations.first?.type, .confirmationDialog)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.presentations.first?.type == .confirmationDialog)
     }
 
-    func testPresentPopover() {
+    @Test func presentPopover() {
         let coordinator = PresentationCoordinator()
         let content = AnyView(Text("Popover Content"))
 
         coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: content)
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
         if case .popover = coordinator.presentations.first?.type {
-            XCTAssertTrue(true)
+            #expect(true)
         } else {
-            XCTFail("Expected popover presentation type")
+            Issue.record("Expected popover presentation type")
         }
     }
 
     // MARK: - Stack Management Tests
 
-    func testMultiplePresentations() {
+    @Test func multiplePresentations() {
         let coordinator = PresentationCoordinator()
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
         let id2 = coordinator.present(type: .alert, content: AnyView(Text("Second")))
         let id3 = coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: AnyView(Text("Third")))
 
-        XCTAssertEqual(coordinator.count, 3)
-        XCTAssertEqual(coordinator.presentations[0].id, id1)
-        XCTAssertEqual(coordinator.presentations[1].id, id2)
-        XCTAssertEqual(coordinator.presentations[2].id, id3)
+        #expect(coordinator.count == 3)
+        #expect(coordinator.presentations[0].id == id1)
+        #expect(coordinator.presentations[1].id == id2)
+        #expect(coordinator.presentations[2].id == id3)
     }
 
-    func testTopPresentation() {
+    @Test func topPresentation() {
         let coordinator = PresentationCoordinator()
 
-        XCTAssertNil(coordinator.topPresentation())
+        #expect(coordinator.topPresentation() == nil)
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
-        XCTAssertEqual(coordinator.topPresentation()?.id, id1)
+        #expect(coordinator.topPresentation()?.id == id1)
 
         let id2 = coordinator.present(type: .alert, content: AnyView(Text("Second")))
-        XCTAssertEqual(coordinator.topPresentation()?.id, id2)
+        #expect(coordinator.topPresentation()?.id == id2)
 
         let id3 = coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: AnyView(Text("Third")))
-        XCTAssertEqual(coordinator.topPresentation()?.id, id3)
+        #expect(coordinator.topPresentation()?.id == id3)
     }
 
-    func testPresentationOrder() {
+    @Test func presentationOrder() {
         let coordinator = PresentationCoordinator()
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
@@ -124,14 +125,14 @@ final class PresentationCoordinatorTests: XCTestCase {
         let id3 = coordinator.present(type: .fullScreenCover, content: AnyView(Text("Third")))
 
         // Verify order: first presentation is at index 0, last is at the end
-        XCTAssertEqual(coordinator.presentations[0].id, id1)
-        XCTAssertEqual(coordinator.presentations[1].id, id2)
-        XCTAssertEqual(coordinator.presentations[2].id, id3)
+        #expect(coordinator.presentations[0].id == id1)
+        #expect(coordinator.presentations[1].id == id2)
+        #expect(coordinator.presentations[2].id == id3)
     }
 
     // MARK: - Z-Index Tests
 
-    func testZIndexAllocation() {
+    @Test func zIndexAllocation() {
         let coordinator = PresentationCoordinator()
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
@@ -139,23 +140,23 @@ final class PresentationCoordinatorTests: XCTestCase {
         let id3 = coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: AnyView(Text("Third")))
 
         // First presentation: base z-index (1000)
-        XCTAssertEqual(coordinator.presentations[0].zIndex, 1000)
+        #expect(coordinator.presentations[0].zIndex == 1000)
 
         // Second presentation: base + 1 * increment (1010)
-        XCTAssertEqual(coordinator.presentations[1].zIndex, 1010)
+        #expect(coordinator.presentations[1].zIndex == 1010)
 
         // Third presentation: base + 2 * increment (1020)
-        XCTAssertEqual(coordinator.presentations[2].zIndex, 1020)
+        #expect(coordinator.presentations[2].zIndex == 1020)
     }
 
-    func testZIndexAfterDismiss() {
+    @Test func zIndexAfterDismiss() {
         let coordinator = PresentationCoordinator()
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
         let id2 = coordinator.present(type: .alert, content: AnyView(Text("Second")))
 
-        XCTAssertEqual(coordinator.presentations[0].zIndex, 1000)
-        XCTAssertEqual(coordinator.presentations[1].zIndex, 1010)
+        #expect(coordinator.presentations[0].zIndex == 1000)
+        #expect(coordinator.presentations[1].zIndex == 1010)
 
         // Dismiss the first one
         coordinator.dismiss(id1)
@@ -163,11 +164,11 @@ final class PresentationCoordinatorTests: XCTestCase {
         // Add a new presentation - should get z-index based on current count (1)
         let id3 = coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: AnyView(Text("Third")))
 
-        XCTAssertEqual(coordinator.presentations[0].zIndex, 1010) // id2
-        XCTAssertEqual(coordinator.presentations[1].zIndex, 1010) // id3 (count was 1 when created)
+        #expect(coordinator.presentations[0].zIndex == 1010) // id2
+        #expect(coordinator.presentations[1].zIndex == 1010) // id3 (count was 1 when created)
     }
 
-    func testZIndexUniqueness() {
+    @Test func zIndexUniqueness() {
         let coordinator = PresentationCoordinator()
 
         // Present 5 items
@@ -179,43 +180,43 @@ final class PresentationCoordinatorTests: XCTestCase {
         let zIndices = coordinator.presentations.map { $0.zIndex }
         let uniqueZIndices = Set(zIndices)
 
-        XCTAssertEqual(zIndices.count, uniqueZIndices.count)
+        #expect(zIndices.count == uniqueZIndices.count)
     }
 
     // MARK: - Dismiss Tests
 
-    func testDismissSinglePresentation() {
+    @Test func dismissSinglePresentation() {
         let coordinator = PresentationCoordinator()
         let id = coordinator.present(type: .sheet, content: AnyView(Text("Content")))
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         let dismissed = coordinator.dismiss(id)
 
-        XCTAssertTrue(dismissed)
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertNil(coordinator.topPresentation())
+        #expect(dismissed)
+        #expect(coordinator.count == 0)
+        #expect(coordinator.topPresentation() == nil)
     }
 
-    func testDismissMiddlePresentation() {
+    @Test func dismissMiddlePresentation() {
         let coordinator = PresentationCoordinator()
 
         let id1 = coordinator.present(type: .sheet, content: AnyView(Text("First")))
         let id2 = coordinator.present(type: .alert, content: AnyView(Text("Second")))
         let id3 = coordinator.present(type: .popover(anchor: .rect(.bounds), edge: .top), content: AnyView(Text("Third")))
 
-        XCTAssertEqual(coordinator.count, 3)
+        #expect(coordinator.count == 3)
 
         // Dismiss the middle one
         let dismissed = coordinator.dismiss(id2)
 
-        XCTAssertTrue(dismissed)
-        XCTAssertEqual(coordinator.count, 2)
-        XCTAssertEqual(coordinator.presentations[0].id, id1)
-        XCTAssertEqual(coordinator.presentations[1].id, id3)
+        #expect(dismissed)
+        #expect(coordinator.count == 2)
+        #expect(coordinator.presentations[0].id == id1)
+        #expect(coordinator.presentations[1].id == id3)
     }
 
-    func testDismissNonExistentPresentation() {
+    @Test func dismissNonExistentPresentation() {
         let coordinator = PresentationCoordinator()
 
         coordinator.present(type: .sheet, content: AnyView(Text("Content")))
@@ -223,40 +224,40 @@ final class PresentationCoordinatorTests: XCTestCase {
         let randomId = UUID()
         let dismissed = coordinator.dismiss(randomId)
 
-        XCTAssertFalse(dismissed)
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(!dismissed)
+        #expect(coordinator.count == 1)
     }
 
-    func testDismissAll() {
+    @Test func dismissAll() {
         let coordinator = PresentationCoordinator()
 
         coordinator.present(type: .sheet, content: AnyView(Text("First")))
         coordinator.present(type: .alert, content: AnyView(Text("Second")))
         coordinator.present(type: .popover(anchor: .default, edge: .top), content: AnyView(Text("Third")))
 
-        XCTAssertEqual(coordinator.count, 3)
+        #expect(coordinator.count == 3)
 
         coordinator.dismissAll()
 
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertEqual(coordinator.presentations.count, 0)
-        XCTAssertNil(coordinator.topPresentation())
+        #expect(coordinator.count == 0)
+        #expect(coordinator.presentations.count == 0)
+        #expect(coordinator.topPresentation() == nil)
     }
 
-    func testDismissAllWhenEmpty() {
+    @Test func dismissAllWhenEmpty() {
         let coordinator = PresentationCoordinator()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Should not crash
         coordinator.dismissAll()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
     // MARK: - Callback Tests
 
-    func testOnDismissCallback() {
+    @Test func onDismissCallback() {
         let coordinator = PresentationCoordinator()
         var callbackCount = 0
 
@@ -266,14 +267,14 @@ final class PresentationCoordinatorTests: XCTestCase {
             onDismiss: { callbackCount += 1 }
         )
 
-        XCTAssertEqual(callbackCount, 0)
+        #expect(callbackCount == 0)
 
         coordinator.dismiss(id)
 
-        XCTAssertEqual(callbackCount, 1)
+        #expect(callbackCount == 1)
     }
 
-    func testOnDismissCallbackWithDismissAll() {
+    @Test func onDismissCallbackWithDismissAll() {
         let coordinator = PresentationCoordinator()
         var callback1Count = 0
         var callback2Count = 0
@@ -295,19 +296,19 @@ final class PresentationCoordinatorTests: XCTestCase {
             onDismiss: { callback3Count += 1 }
         )
 
-        XCTAssertEqual(callback1Count, 0)
-        XCTAssertEqual(callback2Count, 0)
-        XCTAssertEqual(callback3Count, 0)
+        #expect(callback1Count == 0)
+        #expect(callback2Count == 0)
+        #expect(callback3Count == 0)
 
         coordinator.dismissAll()
 
         // All callbacks should be called once
-        XCTAssertEqual(callback1Count, 1)
-        XCTAssertEqual(callback2Count, 1)
-        XCTAssertEqual(callback3Count, 1)
+        #expect(callback1Count == 1)
+        #expect(callback2Count == 1)
+        #expect(callback3Count == 1)
     }
 
-    func testCallbackNotCalledOnPresent() {
+    @Test func callbackNotCalledOnPresent() {
         let coordinator = PresentationCoordinator()
         var callbackCount = 0
 
@@ -318,10 +319,10 @@ final class PresentationCoordinatorTests: XCTestCase {
         )
 
         // Callback should not be called on present
-        XCTAssertEqual(callbackCount, 0)
+        #expect(callbackCount == 0)
     }
 
-    func testNilCallback() {
+    @Test func nilCallback() {
         let coordinator = PresentationCoordinator()
 
         // Should not crash with nil callback
@@ -330,10 +331,10 @@ final class PresentationCoordinatorTests: XCTestCase {
         coordinator.dismiss(id)
 
         // If we get here without crashing, test passes
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
-    func testMultipleDismissCallbacks() {
+    @Test func multipleDismissCallbacks() {
         let coordinator = PresentationCoordinator()
         var dismissOrder: [Int] = []
 
@@ -358,25 +359,25 @@ final class PresentationCoordinatorTests: XCTestCase {
         coordinator.dismiss(id1)
         coordinator.dismiss(id3)
 
-        XCTAssertEqual(dismissOrder, [2, 1, 3])
+        #expect(dismissOrder == [2, 1, 3])
     }
 
     // MARK: - PresentationType Tests
 
-    func testPresentationTypeEquality() {
-        XCTAssertEqual(PresentationType.sheet, .sheet)
-        XCTAssertEqual(PresentationType.alert, .alert)
-        XCTAssertEqual(PresentationType.fullScreenCover, .fullScreenCover)
-        XCTAssertEqual(PresentationType.confirmationDialog, .confirmationDialog)
-        XCTAssertEqual(PresentationType.popover(anchor: .default, edge: .top), .popover(anchor: .default, edge: .top))
+    @Test func presentationTypeEquality() {
+        #expect(PresentationType.sheet == .sheet)
+        #expect(PresentationType.alert == .alert)
+        #expect(PresentationType.fullScreenCover == .fullScreenCover)
+        #expect(PresentationType.confirmationDialog == .confirmationDialog)
+        #expect(PresentationType.popover(anchor: .default, edge: .top) == .popover(anchor: .default, edge: .top))
 
-        XCTAssertNotEqual(PresentationType.sheet, .alert)
-        XCTAssertNotEqual(PresentationType.alert, .popover(anchor: .default, edge: .top))
+        #expect(PresentationType.sheet != .alert)
+        #expect(PresentationType.alert != .popover(anchor: .default, edge: .top))
     }
 
     // MARK: - PresentationEntry Tests
 
-    func testPresentationEntryIdentifiable() {
+    @Test func presentationEntryIdentifiable() {
         let entry = PresentationEntry(
             type: .sheet,
             content: AnyView(Text("Content")),
@@ -384,10 +385,10 @@ final class PresentationCoordinatorTests: XCTestCase {
         )
 
         // Should have a unique ID
-        XCTAssertNotNil(entry.id)
+        #expect(entry.id != nil)
     }
 
-    func testPresentationEntryCustomId() {
+    @Test func presentationEntryCustomId() {
         let customId = UUID()
         let entry = PresentationEntry(
             id: customId,
@@ -396,10 +397,10 @@ final class PresentationCoordinatorTests: XCTestCase {
             zIndex: 1000
         )
 
-        XCTAssertEqual(entry.id, customId)
+        #expect(entry.id == customId)
     }
 
-    func testPresentationEntryProperties() {
+    @Test func presentationEntryProperties() {
         let id = UUID()
         let content = AnyView(Text("Test"))
         var callbackCalled = false
@@ -413,18 +414,18 @@ final class PresentationCoordinatorTests: XCTestCase {
             onDismiss: callback
         )
 
-        XCTAssertEqual(entry.id, id)
-        XCTAssertEqual(entry.type, .alert)
-        XCTAssertEqual(entry.zIndex, 1020)
+        #expect(entry.id == id)
+        #expect(entry.type == .alert)
+        #expect(entry.zIndex == 1020)
 
         // Call the callback
         entry.onDismiss?()
-        XCTAssertTrue(callbackCalled)
+        #expect(callbackCalled)
     }
 
     // MARK: - Memory and Performance Tests
 
-    func testLargeNumberOfPresentations() {
+    @Test func largeNumberOfPresentations() {
         let coordinator = PresentationCoordinator()
 
         // Present 100 items
@@ -432,14 +433,14 @@ final class PresentationCoordinatorTests: XCTestCase {
             coordinator.present(type: .sheet, content: AnyView(Text("Item \(i)")))
         }
 
-        XCTAssertEqual(coordinator.count, 100)
+        #expect(coordinator.count == 100)
 
         coordinator.dismissAll()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
-    func testRapidPresentAndDismiss() {
+    @Test func rapidPresentAndDismiss() {
         let coordinator = PresentationCoordinator()
         var ids: [UUID] = []
 
@@ -449,17 +450,17 @@ final class PresentationCoordinatorTests: XCTestCase {
             ids.append(id)
         }
 
-        XCTAssertEqual(coordinator.count, 50)
+        #expect(coordinator.count == 50)
 
         // Rapid dismiss
         for id in ids {
             coordinator.dismiss(id)
         }
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
-    func testCallbackMemoryManagement() {
+    @Test func callbackMemoryManagement() {
         let coordinator = PresentationCoordinator()
         var callbackCount = 0
 
@@ -479,45 +480,45 @@ final class PresentationCoordinatorTests: XCTestCase {
         }
 
         // Callback should have been called even though localValue is out of scope
-        XCTAssertEqual(callbackCount, 1)
+        #expect(callbackCount == 1)
     }
 
     // MARK: - Sendable Conformance Tests
 
-    func testCoordinatorSendable() {
+    @Test func coordinatorSendable() {
         // PresentationCoordinator should be Sendable
-        XCTAssert(PresentationCoordinator.self is any Sendable.Type)
+        #expect(PresentationCoordinator.self is any Sendable.Type)
     }
 
-    func testPresentationEntrySendable() {
+    @Test func presentationEntrySendable() {
         // PresentationEntry should be Sendable
-        XCTAssert(PresentationEntry.self is any Sendable.Type)
+        #expect(PresentationEntry.self is any Sendable.Type)
     }
 
-    func testPresentationTypeSendable() {
+    @Test func presentationTypeSendable() {
         // PresentationType should be Sendable
-        XCTAssert(PresentationType.self is any Sendable.Type)
+        #expect(PresentationType.self is any Sendable.Type)
     }
 
     // MARK: - Edge Cases
 
-    func testEmptyStack() {
+    @Test func emptyStack() {
         let coordinator = PresentationCoordinator()
 
-        XCTAssertNil(coordinator.topPresentation())
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertTrue(coordinator.presentations.isEmpty)
+        #expect(coordinator.topPresentation() == nil)
+        #expect(coordinator.count == 0)
+        #expect(coordinator.presentations.isEmpty)
     }
 
-    func testDismissFromEmptyStack() {
+    @Test func dismissFromEmptyStack() {
         let coordinator = PresentationCoordinator()
 
         let dismissed = coordinator.dismiss(UUID())
 
-        XCTAssertFalse(dismissed)
+        #expect(!dismissed)
     }
 
-    func testPresentAfterDismissAll() {
+    @Test func presentAfterDismissAll() {
         let coordinator = PresentationCoordinator()
 
         // Present some items
@@ -527,13 +528,13 @@ final class PresentationCoordinatorTests: XCTestCase {
         // Dismiss all
         coordinator.dismissAll()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Present new item - should work fine
         let id = coordinator.present(type: .popover(anchor: .default, edge: .top), content: AnyView(Text("New")))
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.id, id)
-        XCTAssertEqual(coordinator.topPresentation()?.zIndex, 1000) // Back to base z-index
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.id == id)
+        #expect(coordinator.topPresentation()?.zIndex == 1000) // Back to base z-index
     }
 }

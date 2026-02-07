@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Simplified verification tests for @Observable and @Bindable
 /// These tests verify the basic functionality works correctly
 @MainActor
-final class ObservableBindableVerificationTests: XCTestCase {
+@Suite struct ObservableBindableVerificationTests {
 
     // MARK: - Simple Test Model
 
@@ -28,15 +28,15 @@ final class ObservableBindableVerificationTests: XCTestCase {
 
     // MARK: - Observable Tests
 
-    func testObservableBasicFunctionality() {
+    @Test func observableBasicFunctionality() {
         let model = SimpleModel(value: 10)
-        XCTAssertEqual(model.value, 10)
+        #expect(model.value == 10)
 
         model.value = 20
-        XCTAssertEqual(model.value, 20)
+        #expect(model.value == 20)
     }
 
-    func testObservableNotifications() {
+    @Test func observableNotifications() {
         let model = SimpleModel()
         var notificationCount = 0
 
@@ -45,13 +45,13 @@ final class ObservableBindableVerificationTests: XCTestCase {
         }
 
         model.value = 1
-        XCTAssertEqual(notificationCount, 1)
+        #expect(notificationCount == 1)
 
         model.value = 2
-        XCTAssertEqual(notificationCount, 2)
+        #expect(notificationCount == 2)
     }
 
-    func testObservableUnsubscribe() {
+    @Test func observableUnsubscribe() {
         let model = SimpleModel()
         var notificationCount = 0
 
@@ -60,37 +60,37 @@ final class ObservableBindableVerificationTests: XCTestCase {
         }
 
         model.value = 1
-        XCTAssertEqual(notificationCount, 1)
+        #expect(notificationCount == 1)
 
         model.unsubscribe(id)
 
         model.value = 2
-        XCTAssertEqual(notificationCount, 1, "Should not notify after unsubscribe")
+        #expect(notificationCount == 1)
     }
 
     // MARK: - Bindable Tests
 
-    func testBindableBasicFunctionality() {
+    @Test func bindableBasicFunctionality() {
         let model = SimpleModel(value: 42)
         let bindable = Bindable(wrappedValue: model)
 
-        XCTAssertIdentical(bindable.wrappedValue, model)
-        XCTAssertEqual(model.value, 42)
+        #expect(bindable.wrappedValue === model)
+        #expect(model.value == 42)
     }
 
-    func testBindableCreatesBindings() {
+    @Test func bindableCreatesBindings() {
         let model = SimpleModel(value: 10)
         let bindable = Bindable(wrappedValue: model)
 
         let binding = bindable.value
-        XCTAssertEqual(binding.wrappedValue, 10)
+        #expect(binding.wrappedValue == 10)
 
         binding.wrappedValue = 20
-        XCTAssertEqual(model.value, 20)
-        XCTAssertEqual(binding.wrappedValue, 20)
+        #expect(model.value == 20)
+        #expect(binding.wrappedValue == 20)
     }
 
-    func testBindableTriggersNotifications() {
+    @Test func bindableTriggersNotifications() {
         let model = SimpleModel()
         let bindable = Bindable(wrappedValue: model)
         var notificationCount = 0
@@ -102,21 +102,21 @@ final class ObservableBindableVerificationTests: XCTestCase {
         let binding = bindable.value
         binding.wrappedValue = 100
 
-        XCTAssertEqual(notificationCount, 1)
-        XCTAssertEqual(model.value, 100)
+        #expect(notificationCount == 1)
+        #expect(model.value == 100)
     }
 
-    func testBindableProjectedValue() {
+    @Test func bindableProjectedValue() {
         let model = SimpleModel()
         let bindable = Bindable(wrappedValue: model)
         let projected = bindable.projectedValue
 
-        XCTAssertIdentical(projected.wrappedValue, model)
+        #expect(projected.wrappedValue === model)
     }
 
     // MARK: - Integration Tests
 
-    func testObservableWithBindable() {
+    @Test func observableWithBindable() {
         let model = SimpleModel(value: 5)
         let bindable = Bindable(wrappedValue: model)
         var changeCount = 0
@@ -128,30 +128,30 @@ final class ObservableBindableVerificationTests: XCTestCase {
         // Modify through bindable binding
         let binding = bindable.value
         binding.wrappedValue = 10
-        XCTAssertEqual(changeCount, 1)
-        XCTAssertEqual(model.value, 10)
+        #expect(changeCount == 1)
+        #expect(model.value == 10)
 
         // Modify through model directly
         model.value = 15
-        XCTAssertEqual(changeCount, 2)
-        XCTAssertEqual(binding.wrappedValue, 15)
+        #expect(changeCount == 2)
+        #expect(binding.wrappedValue == 15)
     }
 
-    func testObservationIgnored() {
+    @Test func observationIgnored() {
         var ignored = ObservationIgnored(wrappedValue: "test")
-        XCTAssertEqual(ignored.wrappedValue, "test")
+        #expect(ignored.wrappedValue == "test")
 
         ignored.wrappedValue = "modified"
-        XCTAssertEqual(ignored.wrappedValue, "modified")
+        #expect(ignored.wrappedValue == "modified")
     }
 
-    func testBindableMethod() {
+    @Test func bindableMethod() {
         let model = SimpleModel(value: 99)
         let bindable = model.bindable()
 
-        XCTAssertIdentical(bindable.wrappedValue, model)
+        #expect(bindable.wrappedValue === model)
 
         let binding = bindable.value
-        XCTAssertEqual(binding.wrappedValue, 99)
+        #expect(binding.wrappedValue == 99)
     }
 }

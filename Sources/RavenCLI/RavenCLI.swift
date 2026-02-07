@@ -1,7 +1,9 @@
 import ArgumentParser
 import Foundation
 
-struct RavenCommand: ParsableCommand {
+@main
+@available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
+struct RavenCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "raven",
         abstract: "Raven - SwiftUI to DOM compiler",
@@ -14,10 +16,8 @@ struct RavenCommand: ParsableCommand {
         defaultSubcommand: nil
     )
 
-    func run() throws {
+    func run() async throws {
         print("Raven CLI - SwiftUI to DOM compiler")
         print("Use 'raven --help' to see available commands")
     }
 }
-
-RavenCommand.main()

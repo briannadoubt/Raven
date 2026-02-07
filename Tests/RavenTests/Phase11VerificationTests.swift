@@ -12,6 +12,7 @@ import Foundation
 /// - searchable() modifier for search functionality
 ///
 /// Focus: Integration testing across features, real-world scenarios, edge cases
+@MainActor
 @Suite("Phase 11 Integration Tests")
 struct Phase11VerificationTests {
 

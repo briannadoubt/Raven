@@ -11,8 +11,13 @@ public final class DOMBridge {
 
     // MARK: - Properties
 
+    #if arch(wasm32)
     /// Reference to the JavaScript document object
     private let document: JSObject
+    #else
+    /// Reference to the JavaScript document object (nil outside browser)
+    private let document: JSObject?
+    #endif
 
     /// Registry of event handlers mapped by UUID
     private var eventHandlers: [UUID: @Sendable @MainActor () -> Void] = [:]
@@ -39,10 +44,14 @@ public final class DOMBridge {
     // MARK: - Initialization
 
     private init() {
+        #if arch(wasm32)
         guard let doc = JSObject.global.document.object else {
             fatalError("DOM not available - ensure DOMBridge runs in browser context")
         }
         self.document = doc
+        #else
+        self.document = nil
+        #endif
     }
 
     // MARK: - Event Delegation Setup
@@ -94,16 +103,26 @@ public final class DOMBridge {
 
     /// Create a new DOM element with the specified tag name
     public func createElement(tag: String) -> JSObject? {
-        // Call method directly on document to preserve 'this' binding
+        #if arch(wasm32)
         let result = document.createElement!(tag)
         return result.isNull || result.isUndefined ? nil : result.object
+        #else
+        guard let document else { return nil }
+        let result = document.createElement!(tag)
+        return result.isNull || result.isUndefined ? nil : result.object
+        #endif
     }
 
     /// Create a text node with the specified content
     public func createTextNode(text: String) -> JSObject? {
-        // Call method directly on document to preserve 'this' binding
+        #if arch(wasm32)
         let result = document.createTextNode!(text)
         return result.isNull || result.isUndefined ? nil : result.object
+        #else
+        guard let document else { return nil }
+        let result = document.createTextNode!(text)
+        return result.isNull || result.isUndefined ? nil : result.object
+        #endif
     }
 
     /// Set an attribute on a DOM element.
@@ -380,22 +399,36 @@ public final class DOMBridge {
 
     /// Query the DOM for an element by ID
     public func getElementById(_ id: String) -> JSObject? {
-        // Call method directly on document to preserve 'this' binding
+        #if arch(wasm32)
         let result = document.getElementById!(id)
         return result.isNull || result.isUndefined ? nil : result.object
+        #else
+        guard let document else { return nil }
+        let result = document.getElementById!(id)
+        return result.isNull || result.isUndefined ? nil : result.object
+        #endif
     }
 
     /// Query the DOM for elements by selector
     public func querySelector(_ selector: String) -> JSObject? {
-        // Call method directly on document to preserve 'this' binding
+        #if arch(wasm32)
         let result = document.querySelector!(selector)
         return result.isNull || result.isUndefined ? nil : result.object
+        #else
+        guard let document else { return nil }
+        let result = document.querySelector!(selector)
+        return result.isNull || result.isUndefined ? nil : result.object
+        #endif
     }
 
     /// Query the DOM for all elements matching a selector
     public func querySelectorAll(_ selector: String) -> [JSObject] {
-        // Call method directly on document to preserve 'this' binding
+        #if arch(wasm32)
         let nodeList = document.querySelectorAll!(selector)
+        #else
+        guard let document else { return [] }
+        let nodeList = document.querySelectorAll!(selector)
+        #endif
         let length = nodeList.length.number ?? 0
 
         var elements: [JSObject] = []
@@ -412,14 +445,26 @@ public final class DOMBridge {
 
     /// Get the document body element
     public func getBody() -> JSObject? {
+        #if arch(wasm32)
         let body = document.body
         return body.isNull || body.isUndefined ? nil : body.object
+        #else
+        guard let document else { return nil }
+        let body = document.body
+        return body.isNull || body.isUndefined ? nil : body.object
+        #endif
     }
 
     /// Get the document head element
     public func getHead() -> JSObject? {
+        #if arch(wasm32)
         let head = document.head
         return head.isNull || head.isUndefined ? nil : head.object
+        #else
+        guard let document else { return nil }
+        let head = document.head
+        return head.isNull || head.isUndefined ? nil : head.object
+        #endif
     }
 }
 

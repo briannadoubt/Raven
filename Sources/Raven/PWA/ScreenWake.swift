@@ -251,7 +251,9 @@ public final class WakeLockManager: Sendable {
 
     private init() {
         self.screenWake = ScreenWake()
+        #if arch(wasm32)
         setupAutomaticManagement()
+        #endif
     }
 
     // MARK: - Public API

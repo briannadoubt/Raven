@@ -27,6 +27,7 @@ public final class OfflineBackgroundSync: @unchecked Sendable {
     // MARK: - Initialization
 
     private init() {
+        #if arch(wasm32)
         // Check if Background Sync is supported
         let navigator = JSObject.global.navigator
         self.isSupported = !navigator.serviceWorker.isUndefined
@@ -34,6 +35,9 @@ public final class OfflineBackgroundSync: @unchecked Sendable {
         if isSupported {
             setupServiceWorker()
         }
+        #else
+        self.isSupported = false
+        #endif
     }
 
     // MARK: - Sync Registration

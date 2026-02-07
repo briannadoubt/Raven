@@ -1,22 +1,23 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Additional test coverage for edge cases and untested code paths
 /// Targets VNode, View rendering, modifiers, and error handling
-@available(macOS 13.0, *)
-final class AdditionalCoverageTests: XCTestCase {
+@MainActor
+@Suite struct AdditionalCoverageTests {
 
     // MARK: - VNode Edge Cases
 
-    func testVNodeWithEmptyChildren() {
+    @Test func vNodeWithEmptyChildren() {
         let node = VNode.element("div", children: [])
 
-        XCTAssertEqual(node.children.count, 0, "VNode should support empty children array")
-        XCTAssertTrue(node.isElement(tag: "div"), "Should be a div element")
-        XCTAssertEqual(node.elementTag, "div", "Element tag should be accessible")
+        #expect(node.children.count == 0)
+        #expect(node.isElement(tag: "div"))
+        #expect(node.elementTag == "div")
     }
 
-    func testVNodeDeeplyNestedTree() {
+    @Test func vNodeDeeplyNestedTree() {
         // Create a deeply nested tree: div > ul > li > span > text
         let deeplyNested = VNode.element("div", children: [
             VNode.element("ul", children: [
@@ -28,17 +29,17 @@ final class AdditionalCoverageTests: XCTestCase {
             ])
         ])
 
-        XCTAssertEqual(deeplyNested.children.count, 1, "Root should have 1 child")
-        XCTAssertEqual(deeplyNested.children[0].children.count, 1, "ul should have 1 child")
-        XCTAssertEqual(deeplyNested.children[0].children[0].children.count, 1, "li should have 1 child")
-        XCTAssertEqual(deeplyNested.children[0].children[0].children[0].children.count, 1, "span should have 1 child")
+        #expect(deeplyNested.children.count == 1)
+        #expect(deeplyNested.children[0].children.count == 1)
+        #expect(deeplyNested.children[0].children[0].children.count == 1)
+        #expect(deeplyNested.children[0].children[0].children[0].children.count == 1)
 
         let textNode = deeplyNested.children[0].children[0].children[0].children[0]
-        XCTAssertTrue(textNode.isText, "Deepest node should be text")
-        XCTAssertEqual(textNode.textContent, "Deeply nested content", "Text content should be preserved")
+        #expect(textNode.isText)
+        #expect(textNode.textContent == "Deeply nested content")
     }
 
-    func testVNodeWithMultipleProperties() {
+    @Test func vNodeWithMultipleProperties() {
         let props: [String: VProperty] = [
             "class": .attribute(name: "class", value: "container"),
             "id": .attribute(name: "id", value: "main"),
@@ -49,68 +50,68 @@ final class AdditionalCoverageTests: XCTestCase {
 
         let node = VNode.element("div", props: props)
 
-        XCTAssertEqual(node.props.count, 5, "Should have all 5 properties")
-        XCTAssertTrue(node.props.keys.contains("class"), "Should have class attribute")
-        XCTAssertTrue(node.props.keys.contains("disabled"), "Should have disabled attribute")
+        #expect(node.props.count == 5)
+        #expect(node.props.keys.contains("class"))
+        #expect(node.props.keys.contains("disabled"))
     }
 
-    func testVNodeFragmentWithMultipleChildren() {
+    @Test func vNodeFragmentWithMultipleChildren() {
         let fragment = VNode.fragment(children: [
             VNode.text("First"),
             VNode.element("div", children: [VNode.text("Second")]),
             VNode.text("Third")
         ])
 
-        XCTAssertEqual(fragment.children.count, 3, "Fragment should have 3 children")
+        #expect(fragment.children.count == 3)
         if case .fragment = fragment.type {
-            XCTAssertTrue(true, "Should be a fragment node")
+            #expect(Bool(true))
         } else {
-            XCTFail("Expected fragment node type")
+            Issue.record("Expected fragment node type")
         }
     }
 
-    func testVNodeComponentWithKey() {
+    @Test func vNodeComponentWithKey() {
         let component = VNode.component(
             props: ["name": .attribute(name: "name", value: "MyComponent")],
             children: [VNode.text("Component content")],
             key: "unique-component-key"
         )
 
-        XCTAssertEqual(component.key, "unique-component-key", "Key should be preserved")
-        XCTAssertEqual(component.children.count, 1, "Component should have children")
+        #expect(component.key == "unique-component-key")
+        #expect(component.children.count == 1)
         if case .component = component.type {
-            XCTAssertTrue(true, "Should be a component node")
+            #expect(Bool(true))
         } else {
-            XCTFail("Expected component node type")
+            Issue.record("Expected component node type")
         }
     }
 
-    func testVNodeTextContentRetrieval() {
+    @Test func vNodeTextContentRetrieval() {
         let textNode = VNode.text("Hello, world!")
         let elementNode = VNode.element("div")
 
-        XCTAssertEqual(textNode.textContent, "Hello, world!", "Text content should be retrievable")
-        XCTAssertNil(elementNode.textContent, "Element node should not have text content")
+        #expect(textNode.textContent == "Hello, world!")
+        #expect(elementNode.textContent == nil)
 
-        XCTAssertTrue(textNode.isText, "Should identify as text node")
-        XCTAssertFalse(elementNode.isText, "Element should not identify as text node")
+        #expect(textNode.isText)
+        #expect(!elementNode.isText)
     }
 
-    func testVNodeElementTagRetrieval() {
+    @Test func vNodeElementTagRetrieval() {
         let element = VNode.element("button")
         let textNode = VNode.text("Text")
 
-        XCTAssertEqual(element.elementTag, "button", "Element tag should be retrievable")
-        XCTAssertNil(textNode.elementTag, "Text node should not have element tag")
+        #expect(element.elementTag == "button")
+        #expect(textNode.elementTag == nil)
 
-        XCTAssertTrue(element.isElement(tag: "button"), "Should identify as button element")
-        XCTAssertFalse(element.isElement(tag: "div"), "Should not identify as div element")
+        #expect(element.isElement(tag: "button"))
+        #expect(!element.isElement(tag: "div"))
     }
 
     // MARK: - View Rendering Edge Cases
 
     @MainActor
-    func testEmptyViewRendering() {
+    @Test func emptyViewRendering() {
         struct EmptyTestView: View {
             var body: some View {
                 EmptyView()
@@ -119,11 +120,11 @@ final class AdditionalCoverageTests: XCTestCase {
 
         let view = EmptyTestView()
         // Just test that the view compiles and can be created
-        XCTAssertNotNil(view, "EmptyView should be accessible")
+        #expect(view != nil)
     }
 
     @MainActor
-    func testDeeplyNestedViewBuilder() {
+    @Test func deeplyNestedViewBuilder() {
         struct NestedView: View {
             var body: some View {
                 VStack {
@@ -140,11 +141,11 @@ final class AdditionalCoverageTests: XCTestCase {
 
         let view = NestedView()
         // Test that the view compiles
-        XCTAssertNotNil(view, "Deeply nested ViewBuilder should compile")
+        #expect(view != nil)
     }
 
     @MainActor
-    func testConditionalViewRendering() {
+    @Test func conditionalViewRendering() {
         struct ConditionalView: View {
             let showContent: Bool
 
@@ -162,12 +163,12 @@ final class AdditionalCoverageTests: XCTestCase {
         let viewShown = ConditionalView(showContent: true)
         let viewHidden = ConditionalView(showContent: false)
 
-        XCTAssertNotNil(viewShown, "Conditional view should render with content")
-        XCTAssertNotNil(viewHidden, "Conditional view should render without content")
+        #expect(viewShown != nil)
+        #expect(viewHidden != nil)
     }
 
     @MainActor
-    func testOptionalViewRendering() {
+    @Test func optionalViewRendering() {
         struct OptionalContentView: View {
             let optionalText: String?
 
@@ -183,14 +184,14 @@ final class AdditionalCoverageTests: XCTestCase {
         let withText = OptionalContentView(optionalText: "Hello")
         let withoutText = OptionalContentView(optionalText: nil)
 
-        XCTAssertNotNil(withText, "Should handle optional content present")
-        XCTAssertNotNil(withoutText, "Should handle optional content absent")
+        #expect(withText != nil)
+        #expect(withoutText != nil)
     }
 
     // MARK: - Modifier Composition
 
     @MainActor
-    func testChainingMultipleModifiers() {
+    @Test func chainingMultipleModifiers() {
         struct ModifiedView: View {
             var body: some View {
                 Text("Modified")
@@ -202,11 +203,11 @@ final class AdditionalCoverageTests: XCTestCase {
         }
 
         let view = ModifiedView()
-        XCTAssertNotNil(view, "Should chain multiple modifiers")
+        #expect(view != nil)
     }
 
     @MainActor
-    func testNestedModifierApplication() {
+    @Test func nestedModifierApplication() {
         struct NestedModifiers: View {
             var body: some View {
                 VStack {
@@ -219,11 +220,11 @@ final class AdditionalCoverageTests: XCTestCase {
         }
 
         let view = NestedModifiers()
-        XCTAssertNotNil(view, "Should apply modifiers at multiple levels")
+        #expect(view != nil)
     }
 
     @MainActor
-    func testModifierOrderMatters() {
+    @Test func modifierOrderMatters() {
         struct OrderedModifiers: View {
             var body: some View {
                 VStack {
@@ -241,11 +242,11 @@ final class AdditionalCoverageTests: XCTestCase {
         }
 
         let view = OrderedModifiers()
-        XCTAssertNotNil(view, "Should preserve modifier order")
+        #expect(view != nil)
     }
 
     @MainActor
-    func testCustomModifierComposition() {
+    @Test func customModifierComposition() {
         struct CustomModifier: ViewModifier {
             func body(content: Content) -> some View {
                 content
@@ -263,18 +264,18 @@ final class AdditionalCoverageTests: XCTestCase {
         }
 
         let view = CustomModifiedView()
-        XCTAssertNotNil(view, "Should compose custom modifiers")
+        #expect(view != nil)
     }
 
     // MARK: - Error Handling Paths
 
-    func testNeverBodyFatalError() {
+    @Test func neverBodyFatalError() {
         // Test that Never.body causes a fatal error if called
         // We can't actually trigger this in a test, but we can verify the structure
-        XCTAssertTrue(true, "Never.body should fatal error if called")
+        #expect(Bool(true))
     }
 
-    func testPrimitiveViewBodyAccess() {
+    @Test func primitiveViewBodyAccess() {
         // Primitive views have Body = Never
         // Accessing body should fatal error, but we verify the type system prevents this
         struct PrimitiveView: View {
@@ -282,10 +283,10 @@ final class AdditionalCoverageTests: XCTestCase {
         }
 
         // The compiler prevents calling .body on primitive views
-        XCTAssertTrue(true, "Type system prevents primitive view body access")
+        #expect(Bool(true))
     }
 
-    func testInvalidNodeTypeMatching() {
+    @Test func invalidNodeTypeMatching() {
         // Test that incompatible node types are detected
         struct TypeMismatchTest {
             func areCompatible(type1: NodeType, type2: NodeType) -> Bool {
@@ -306,67 +307,64 @@ final class AdditionalCoverageTests: XCTestCase {
 
         let test = TypeMismatchTest()
 
-        XCTAssertFalse(test.areCompatible(type1: .element(tag: "div"), type2: .text("text")),
-                      "Element and text should not be compatible")
-        XCTAssertFalse(test.areCompatible(type1: .component, type2: .fragment),
-                      "Component and fragment should not be compatible")
-        XCTAssertTrue(test.areCompatible(type1: .element(tag: "div"), type2: .element(tag: "div")),
-                     "Same element types should be compatible")
+        #expect(!test.areCompatible(type1: .element(tag: "div"), type2: .text("text")))
+        #expect(!test.areCompatible(type1: .component, type2: .fragment))
+        #expect(test.areCompatible(type1: .element(tag: "div"), type2: .element(tag: "div")))
     }
 
     // MARK: - VProperty Edge Cases
 
-    func testVPropertyEquality() {
+    @Test func vPropertyEquality() {
         let prop1 = VProperty.attribute(name: "class", value: "container")
         let prop2 = VProperty.attribute(name: "class", value: "container")
         let prop3 = VProperty.attribute(name: "class", value: "different")
 
-        XCTAssertEqual(prop1, prop2, "Identical properties should be equal")
-        XCTAssertNotEqual(prop1, prop3, "Different properties should not be equal")
+        #expect(prop1 == prop2)
+        #expect(prop1 != prop3)
     }
 
-    func testVPropertyStyleVsAttribute() {
+    @Test func vPropertyStyleVsAttribute() {
         let style = VProperty.style(name: "color", value: "red")
         let attribute = VProperty.attribute(name: "color", value: "red")
 
-        XCTAssertNotEqual(style, attribute, "Style and attribute should be different types")
+        #expect(style != attribute)
     }
 
-    func testVPropertyBoolAttribute() {
+    @Test func vPropertyBoolAttribute() {
         let enabledTrue = VProperty.boolAttribute(name: "disabled", value: true)
         let enabledFalse = VProperty.boolAttribute(name: "disabled", value: false)
 
-        XCTAssertNotEqual(enabledTrue, enabledFalse, "Boolean attributes with different values should differ")
+        #expect(enabledTrue != enabledFalse)
     }
 
-    func testVPropertyEventHandler() {
+    @Test func vPropertyEventHandler() {
         let handler1 = VProperty.eventHandler(event: "click", handlerID: UUID())
         let handler2 = VProperty.eventHandler(event: "click", handlerID: UUID())
 
         // Different UUIDs should make them unequal
-        XCTAssertNotEqual(handler1, handler2, "Event handlers with different IDs should differ")
+        #expect(handler1 != handler2)
     }
 
     // MARK: - NodeID Tests
 
-    func testNodeIDUniqueness() {
+    @Test func nodeIDUniqueness() {
         let id1 = NodeID()
         let id2 = NodeID()
 
-        XCTAssertNotEqual(id1, id2, "Each NodeID should be unique")
-        XCTAssertNotEqual(id1.uuidString, id2.uuidString, "UUID strings should differ")
+        #expect(id1 != id2)
+        #expect(id1.uuidString != id2.uuidString)
     }
 
-    func testNodeIDDescription() {
+    @Test func nodeIDDescription() {
         let id = NodeID()
         let description = id.description
         let uuidString = id.uuidString
 
-        XCTAssertEqual(description, uuidString, "Description should match uuidString")
-        XCTAssertFalse(description.isEmpty, "Description should not be empty")
+        #expect(description == uuidString)
+        #expect(!description.isEmpty)
     }
 
-    func testNodeIDHashable() {
+    @Test func nodeIDHashable() {
         let id1 = NodeID()
         let id2 = NodeID()
 
@@ -374,65 +372,65 @@ final class AdditionalCoverageTests: XCTestCase {
         set.insert(id1)
         set.insert(id2)
 
-        XCTAssertEqual(set.count, 2, "Different NodeIDs should be stored in Set")
-        XCTAssertTrue(set.contains(id1), "Set should contain id1")
-        XCTAssertTrue(set.contains(id2), "Set should contain id2")
+        #expect(set.count == 2)
+        #expect(set.contains(id1))
+        #expect(set.contains(id2))
     }
 
     // MARK: - Move Operation Tests
 
-    func testMoveOperation() {
+    @Test func moveOperation() {
         let move1 = Move(from: 0, to: 2)
         let move2 = Move(from: 0, to: 2)
         let move3 = Move(from: 1, to: 3)
 
-        XCTAssertEqual(move1, move2, "Identical moves should be equal")
-        XCTAssertNotEqual(move1, move3, "Different moves should not be equal")
-        XCTAssertEqual(move1.from, 0, "Move from should be accessible")
-        XCTAssertEqual(move1.to, 2, "Move to should be accessible")
+        #expect(move1 == move2)
+        #expect(move1 != move3)
+        #expect(move1.from == 0)
+        #expect(move1.to == 2)
     }
 
     // MARK: - PropPatch Tests
 
-    func testPropPatchAdd() {
+    @Test func propPatchAdd() {
         let patch = PropPatch.add(key: "newProp", value: .attribute(name: "data-id", value: "123"))
 
         if case .add(let key, let value) = patch {
-            XCTAssertEqual(key, "newProp", "Key should be preserved")
+            #expect(key == "newProp")
             if case .attribute(let name, let val) = value {
-                XCTAssertEqual(name, "data-id", "Attribute name should be preserved")
-                XCTAssertEqual(val, "123", "Attribute value should be preserved")
+                #expect(name == "data-id")
+                #expect(val == "123")
             } else {
-                XCTFail("Expected attribute property")
+                Issue.record("Expected attribute property")
             }
         } else {
-            XCTFail("Expected add patch")
+            Issue.record("Expected add patch")
         }
     }
 
-    func testPropPatchRemove() {
+    @Test func propPatchRemove() {
         let patch = PropPatch.remove(key: "oldProp")
 
         if case .remove(let key) = patch {
-            XCTAssertEqual(key, "oldProp", "Key should be preserved")
+            #expect(key == "oldProp")
         } else {
-            XCTFail("Expected remove patch")
+            Issue.record("Expected remove patch")
         }
     }
 
-    func testPropPatchUpdate() {
+    @Test func propPatchUpdate() {
         let patch = PropPatch.update(key: "existingProp", value: .style(name: "color", value: "blue"))
 
         if case .update(let key, let value) = patch {
-            XCTAssertEqual(key, "existingProp", "Key should be preserved")
+            #expect(key == "existingProp")
             if case .style(let name, let val) = value {
-                XCTAssertEqual(name, "color", "Style name should be preserved")
-                XCTAssertEqual(val, "blue", "Style value should be preserved")
+                #expect(name == "color")
+                #expect(val == "blue")
             } else {
-                XCTFail("Expected style property")
+                Issue.record("Expected style property")
             }
         } else {
-            XCTFail("Expected update patch")
+            Issue.record("Expected update patch")
         }
     }
 }

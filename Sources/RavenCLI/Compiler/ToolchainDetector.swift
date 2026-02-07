@@ -4,9 +4,15 @@ import Foundation
 @available(macOS 13.0, *)
 struct ToolchainDetector: Sendable {
     enum Toolchain: Sendable {
+        case swiftSDK(name: String)
         case carton
         case swiftWasm
         case none
+
+        var isNone: Bool {
+            if case .none = self { return true }
+            return false
+        }
     }
 
     enum DetectionError: Error, CustomStringConvertible {
@@ -22,10 +28,13 @@ struct ToolchainDetector: Sendable {
 
                 Please install one of the following:
 
-                Option 1: carton (recommended)
+                Option 1: Swift SDK (recommended)
+                  swift sdk install https://github.com/nicklama/wasm-swift-sdk/releases/download/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_wasm.artifactbundle.tar.gz
+
+                Option 2: carton
                   brew install swiftwasm/tap/carton
 
-                Option 2: SwiftWasm toolchain
+                Option 3: SwiftWasm toolchain
                   Download from: https://github.com/swiftwasm/swift/releases
                   Install the toolchain and add it to your PATH
                 """
@@ -49,7 +58,12 @@ struct ToolchainDetector: Sendable {
 
     /// Detects the best available toolchain
     func detectToolchain() async throws -> Toolchain {
-        // Check for carton first (preferred)
+        // Check for Swift SDK first (preferred)
+        if let sdkName = await detectSwiftSDK() {
+            return .swiftSDK(name: sdkName)
+        }
+
+        // Check for carton
         if await isCartonAvailable() {
             return .carton
         }
@@ -60,6 +74,23 @@ struct ToolchainDetector: Sendable {
         }
 
         return .none
+    }
+
+    /// Detects available Swift SDK with WASM support
+    func detectSwiftSDK() async -> String? {
+        guard let output = await runCommand("swift", arguments: ["sdk", "list"]) else {
+            return nil
+        }
+
+        // Parse output line by line looking for wasm SDKs
+        for line in output.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.lowercased().contains("wasm") {
+                return trimmed
+            }
+        }
+
+        return nil
     }
 
     /// Checks if carton is installed and available
@@ -128,6 +159,9 @@ struct ToolchainDetector: Sendable {
     /// Validates that the required toolchain is available
     func validateToolchain(_ toolchain: Toolchain) throws {
         switch toolchain {
+        case .swiftSDK:
+            // Swift SDK validation is async, but we assume it's available if detected
+            break
         case .carton:
             // Carton validation is async, but we assume it's available if detected
             break

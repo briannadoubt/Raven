@@ -1,21 +1,21 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Basic tests for LazyVStack to verify it compiles and creates VNodes correctly.
 @MainActor
-final class LazyVStackBasicTests: XCTestCase {
+@Suite struct LazyVStackBasicTests {
 
-    func testLazyVStackCompiles() async throws {
+    @Test func lazyVStackCompiles() async throws {
         // Just verify it compiles and creates a VNode
         let lazyVStack = LazyVStack {
             Text("Hello")
         }
 
         let vnode = lazyVStack.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
     }
 
-    func testLazyVStackWithAllParameters() async throws {
+    @Test func lazyVStackWithAllParameters() async throws {
         // Verify all parameters work
         let lazyVStack = LazyVStack(
             alignment: .leading,
@@ -26,6 +26,6 @@ final class LazyVStackBasicTests: XCTestCase {
         }
 
         let vnode = lazyVStack.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
     }
 }

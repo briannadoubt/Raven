@@ -57,6 +57,7 @@ public final class ServiceWorkerManager: @unchecked Sendable {
     // MARK: - Initialization
 
     private init() {
+        #if arch(wasm32)
         // Check if service workers are supported
         let navigator = JSObject.global.navigator
         self.isSupported = !navigator.serviceWorker.isUndefined
@@ -65,6 +66,9 @@ public final class ServiceWorkerManager: @unchecked Sendable {
             setupEventListeners()
             checkExistingRegistration()
         }
+        #else
+        self.isSupported = false
+        #endif
     }
 
     // MARK: - Registration

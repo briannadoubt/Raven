@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 // MARK: - Phase 14 Verification Tests
@@ -8,11 +9,11 @@ import XCTest
 // implementation is complete and functional.
 
 @MainActor
-final class Phase14VerificationTests: XCTestCase {
+@Suite struct Phase14VerificationTests {
 
     // MARK: - Sheet API Verification
 
-    func testSheetWithIsPresentedBindingCompiles() async throws {
+    @Test func sheetWithIsPresentedBindingCompiles() async throws {
         @MainActor struct TestView: View {
             @State private var isPresented = false
 
@@ -25,10 +26,10 @@ final class Phase14VerificationTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testSheetWithIsPresentedAndOnDismissCompiles() async throws {
+    @Test func sheetWithIsPresentedAndOnDismissCompiles() async throws {
         @MainActor struct TestView: View {
             @State private var isPresented = false
             @State private var dismissCount = 0
@@ -44,10 +45,10 @@ final class Phase14VerificationTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testSheetWithItemBindingCompiles() async throws {
+    @Test func sheetWithItemBindingCompiles() async throws {
         struct Item: Identifiable, Sendable, Equatable {
             let id = UUID()
             let name: String
@@ -65,11 +66,11 @@ final class Phase14VerificationTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // Add a basic compilation test for presentations
-    func testPresentationSystemCompiles() async throws {
+    @Test func presentationSystemCompiles() async throws {
         @MainActor struct TestView: View {
             @State private var showSheet = false
             @State private var showAlert = false
@@ -89,6 +90,6 @@ final class Phase14VerificationTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 }

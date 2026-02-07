@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Phase 9 Verification: Integration Tests for Observable, ContentUnavailableView, and Modifiers
@@ -13,13 +13,12 @@ import XCTest
 ///
 /// These are INTEGRATION tests - they verify how features work together,
 /// not individual features (which have their own unit test files).
-@available(macOS 13.0, *)
 @MainActor
-final class Phase9VerificationTests: XCTestCase {
+@Suite struct Phase9VerificationTests {
 
     // MARK: - Observable + Bindable Integration Tests (5 tests)
 
-    func testObservableWithInteractionModifiers() {
+    @Test func observableWithInteractionModifiers() {
         // Test that Observable state changes work with .onTapGesture and .disabled
         final class TapCounter: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -59,16 +58,16 @@ final class Phase9VerificationTests: XCTestCase {
         // Test interaction: modify properties through bindable
         let bindable = Bindable(wrappedValue: counter)
         bindable.count.wrappedValue = 5
-        XCTAssertEqual(changeCount, 1, "Should notify on count change")
+        #expect(changeCount == 1)
 
         bindable.isDisabled.wrappedValue = true
-        XCTAssertEqual(changeCount, 2, "Should notify on isDisabled change")
+        #expect(changeCount == 2)
 
-        XCTAssertEqual(counter.count, 5)
-        XCTAssertTrue(counter.isDisabled)
+        #expect(counter.count == 5)
+        #expect(counter.isDisabled)
     }
 
-    func testObservableWithTextModifiers() {
+    @Test func observableWithTextModifiers() {
         // Test that Observable properties work with text modifiers
         final class TextConfig: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -107,22 +106,24 @@ final class Phase9VerificationTests: XCTestCase {
 
         // Modify through binding
         config.lineLimit = 3
-        XCTAssertEqual(changeCount, 1)
+        #expect(changeCount == 1)
 
         config.alignment = .trailing
-        XCTAssertEqual(changeCount, 2)
+        #expect(changeCount == 2)
 
-        XCTAssertEqual(config.lineLimit, 3)
-        XCTAssertEqual(config.alignment, .trailing)
+        #expect(config.lineLimit == 3)
+        #expect(config.alignment == .trailing)
     }
 
-    func testObservableWithLayoutModifiers() {
+    @Test func observableWithLayoutModifiers() {
         // Test Observable with layout-related properties
+        // Note: Using non-optional Double to work around Swift 6.2 compiler crash
+        // with Bindable + Optional<Double> reabstraction thunk (rdar://FB…)
         final class LayoutConfig: Observable {
             let _$observationRegistrar = ObservationRegistrar()
 
-            private var _aspectRatio: Double?
-            var aspectRatio: Double? {
+            private var _aspectRatio: Double
+            var aspectRatio: Double {
                 get { _aspectRatio }
                 set {
                     _$observationRegistrar.willSet()
@@ -139,7 +140,7 @@ final class Phase9VerificationTests: XCTestCase {
                 }
             }
 
-            init(aspectRatio: Double? = nil, isClipped: Bool = false) {
+            init(aspectRatio: Double = 0, isClipped: Bool = false) {
                 self._aspectRatio = aspectRatio
                 self._isClipped = isClipped
                 setupObservation()
@@ -149,18 +150,18 @@ final class Phase9VerificationTests: XCTestCase {
         let layout = LayoutConfig(aspectRatio: 16/9, isClipped: true)
         let bindable = Bindable(wrappedValue: layout)
 
-        XCTAssertEqual(bindable.aspectRatio.wrappedValue, 16/9)
-        XCTAssertTrue(bindable.isClipped.wrappedValue)
+        #expect(bindable.aspectRatio.wrappedValue == 16/9)
+        #expect(bindable.isClipped.wrappedValue)
 
         // Modify through binding
         bindable.aspectRatio.wrappedValue = 1.0
         bindable.isClipped.wrappedValue = false
 
-        XCTAssertEqual(layout.aspectRatio, 1.0)
-        XCTAssertFalse(layout.isClipped)
+        #expect(layout.aspectRatio == 1.0)
+        #expect(!layout.isClipped)
     }
 
-    func testObservableWithLifecycleModifiers() {
+    @Test func observableWithLifecycleModifiers() {
         // Test Observable state with .onAppear and .onChange
         final class LifecycleTracker: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -198,13 +199,13 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         tracker.hasAppeared = true
-        XCTAssertEqual(changeCount, 1)
+        #expect(changeCount == 1)
 
         tracker.value = 42
-        XCTAssertEqual(changeCount, 2)
+        #expect(changeCount == 2)
     }
 
-    func testMultipleBindablesToSameObservable() {
+    @Test func multipleBindablesToSameObservable() {
         // Test that multiple @Bindable instances to the same Observable work correctly
         final class SharedState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -232,19 +233,19 @@ final class Phase9VerificationTests: XCTestCase {
         bindable1.counter.wrappedValue = 20
 
         // Both bindings and the original should reflect the change
-        XCTAssertEqual(bindable2.counter.wrappedValue, 20)
-        XCTAssertEqual(state.counter, 20)
+        #expect(bindable2.counter.wrappedValue == 20)
+        #expect(state.counter == 20)
 
         // Modify through second binding
         bindable2.counter.wrappedValue = 30
 
-        XCTAssertEqual(bindable1.counter.wrappedValue, 30)
-        XCTAssertEqual(state.counter, 30)
+        #expect(bindable1.counter.wrappedValue == 30)
+        #expect(state.counter == 30)
     }
 
     // MARK: - ContentUnavailableView Integration Tests (5 tests)
 
-    func testContentUnavailableViewWithObservableState() {
+    @Test func contentUnavailableViewWithObservableState() {
         // Test ContentUnavailableView shown/hidden based on Observable state
         final class DataState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -284,14 +285,14 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let view = TestView(state: state)
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
 
         // Toggle state
         state.isEmpty = false
-        XCTAssertFalse(state.isEmpty)
+        #expect(!state.isEmpty)
     }
 
-    func testContentUnavailableViewWithInteractionModifiers() {
+    @Test func contentUnavailableViewWithInteractionModifiers() {
         // Test ContentUnavailableView with .disabled and .onAppear
         var appeared = false
         var actionTapped = false
@@ -311,10 +312,10 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         // Verify the view compiles and can be modified
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithLayoutModifiers() {
+    @Test func contentUnavailableViewWithLayoutModifiers() {
         // Test ContentUnavailableView with layout modifiers
         let view = ContentUnavailableView(
             "Empty List",
@@ -326,10 +327,10 @@ final class Phase9VerificationTests: XCTestCase {
         .aspectRatio(1, contentMode: .fit)
         .clipped()
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewInComplexLayout() {
+    @Test func contentUnavailableViewInComplexLayout() {
         // Test ContentUnavailableView in a complex view hierarchy
         @MainActor
         struct ComplexView: View {
@@ -361,11 +362,11 @@ final class Phase9VerificationTests: XCTestCase {
         let emptyView = ComplexView(isEmpty: true)
         let filledView = ComplexView(isEmpty: false)
 
-        XCTAssertNotNil(emptyView.body)
-        XCTAssertNotNil(filledView.body)
+        #expect(emptyView.body != nil)
+        #expect(filledView.body != nil)
     }
 
-    func testContentUnavailableViewWithTextModifiers() {
+    @Test func contentUnavailableViewWithTextModifiers() {
         // Test that text within ContentUnavailableView description is accepted
         let view = ContentUnavailableView(
             "Very Long Title That Might Need Truncation",
@@ -373,12 +374,12 @@ final class Phase9VerificationTests: XCTestCase {
             description: Text("This is a very long description that might need to be limited to a certain number of lines and aligned properly.")
         )
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     // MARK: - Interaction Modifier Combination Tests (5 tests)
 
-    func testDisabledWithOnTapGesture() {
+    @Test func disabledWithOnTapGesture() {
         // Test that .disabled prevents .onTapGesture from firing
         var tapped = false
 
@@ -398,15 +399,15 @@ final class Phase9VerificationTests: XCTestCase {
         let disabledNode = disabledView.toVNode()
 
         // Verify disabled has pointer-events: none
-        XCTAssertTrue(disabledNode.props.contains { key, value in
+        #expect(disabledNode.props.contains { key, value in
             if case .style(let name, let val) = value {
                 return name == "pointer-events" && val == "none"
             }
             return false
-        }, "Disabled view should have pointer-events: none")
+        })
     }
 
-    func testLifecycleModifiersCombination() {
+    @Test func lifecycleModifiersCombination() {
         // Test .onAppear and .onDisappear together with .onChange
         var appeared = false
         var disappeared = false
@@ -448,10 +449,10 @@ final class Phase9VerificationTests: XCTestCase {
             return false
         }
 
-        XCTAssertTrue(hasAppear || hasDisappear || hasChange, "Should have lifecycle handlers")
+        #expect(hasAppear || hasDisappear || hasChange)
     }
 
-    func testInteractionModifiersWithButton() {
+    @Test func interactionModifiersWithButton() {
         // Test interaction modifiers applied to a Button
         var tapped = false
         var appeared = false
@@ -467,10 +468,10 @@ final class Phase9VerificationTests: XCTestCase {
             print("Additional tap handler")
         }
 
-        XCTAssertNotNil(button)
+        #expect(button != nil)
     }
 
-    func testOnChangeWithMultipleProperties() {
+    @Test func onChangeWithMultipleProperties() {
         // Test .onChange tracking multiple different values
         let value1 = "test"
         let value2 = 42
@@ -486,10 +487,10 @@ final class Phase9VerificationTests: XCTestCase {
                 changes2 += 1
             }
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testInteractionModifiersWithLayoutModifiers() {
+    @Test func interactionModifiersWithLayoutModifiers() {
         // Test mixing interaction and layout modifiers
         let view = Text("Interactive Box")
             .padding(10)
@@ -505,12 +506,12 @@ final class Phase9VerificationTests: XCTestCase {
                 print("Appeared")
             }
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     // MARK: - Layout Modifier Combination Tests (5 tests)
 
-    func testClippedWithAspectRatio() {
+    @Test func clippedWithAspectRatio() {
         // Test .clipped and .aspectRatio working together
         let view = Text("Image placeholder")
             .frame(width: 200, height: 200)
@@ -527,19 +528,19 @@ final class Phase9VerificationTests: XCTestCase {
             return false
         }
 
-        XCTAssertTrue(hasOverflow, "Clipped modifier should set overflow: hidden")
+        #expect(hasOverflow)
     }
 
-    func testAspectRatioWithFixedSize() {
+    @Test func aspectRatioWithFixedSize() {
         // Test .aspectRatio and .fixedSize together
         let view = Text("Content")
             .aspectRatio(1, contentMode: .fit)
             .fixedSize(horizontal: true, vertical: false)
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testFixedSizeWithMultipleAxes() {
+    @Test func fixedSizeWithMultipleAxes() {
         // Test fixedSize on both axes with other layout modifiers
         let view = Text("Fixed content")
             .padding(10)
@@ -548,10 +549,10 @@ final class Phase9VerificationTests: XCTestCase {
             .clipped()
 
         let node = view.toVNode()
-        XCTAssertNotNil(node)
+        #expect(node != nil)
     }
 
-    func testLayoutModifiersWithTextModifiers() {
+    @Test func layoutModifiersWithTextModifiers() {
         // Test layout modifiers combined with text modifiers
         let view = Text("Long text that needs formatting")
             .lineLimit(2)
@@ -561,10 +562,10 @@ final class Phase9VerificationTests: XCTestCase {
             .aspectRatio(2, contentMode: .fit)
             .clipped()
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testComplexLayoutHierarchy() {
+    @Test func complexLayoutHierarchy() {
         // Test a complex layout with multiple nested modifiers
         let view = VStack {
             Text("Title")
@@ -582,12 +583,12 @@ final class Phase9VerificationTests: XCTestCase {
         }
         .padding()
 
-        XCTAssertNotNil(view.body)
+        #expect(view.toVNode() != nil)
     }
 
     // MARK: - Text Modifier Integration Tests (3 tests)
 
-    func testTextModifiersWithInteraction() {
+    @Test func textModifiersWithInteraction() {
         // Test text modifiers with interaction modifiers
         var tapped = false
 
@@ -599,10 +600,10 @@ final class Phase9VerificationTests: XCTestCase {
                 tapped = true
             }
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testTextModifiersInList() {
+    @Test func textModifiersInList() {
         // Test text modifiers on items in a list-like structure
         @MainActor
         struct ItemView: View {
@@ -630,10 +631,10 @@ final class Phase9VerificationTests: XCTestCase {
             description: "Very long description that should be limited to two lines and truncated with ellipsis"
         )
 
-        XCTAssertNotNil(item.body)
+        #expect(item.body != nil)
     }
 
-    func testTextModifiersWithContentUnavailableView() {
+    @Test func textModifiersWithContentUnavailableView() {
         // Test text description within ContentUnavailableView
         let view = ContentUnavailableView(
             "No Internet Connection",
@@ -644,12 +645,12 @@ final class Phase9VerificationTests: XCTestCase {
                 .disabled(false)
         }
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     // MARK: - Full UI Scenario Tests (5 tests)
 
-    func testCompleteFormWithObservableAndModifiers() {
+    @Test func completeFormWithObservableAndModifiers() {
         // Test a complete form using Observable, Bindable, and various modifiers
         final class FormData: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -704,13 +705,13 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let form = FormView(data: formData)
-        XCTAssertNotNil(form.body)
+        #expect(form.body != nil)
 
         formData.isValid = true
-        XCTAssertTrue(formData.isValid)
+        #expect(formData.isValid)
     }
 
-    func testEmptyStateWithObservableToggle() {
+    @Test func emptyStateWithObservableToggle() {
         // Test empty state pattern with Observable controlling visibility
         final class ListState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -766,14 +767,14 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let list = ListView(state: state)
-        XCTAssertNotNil(list.body)
-        XCTAssertTrue(state.isEmpty)
+        #expect(list.body != nil)
+        #expect(state.isEmpty)
 
         state.addItem("Test")
-        XCTAssertFalse(state.isEmpty)
+        #expect(!state.isEmpty)
     }
 
-    func testSearchUIWithAllPhase9Features() {
+    @Test func searchUIWithAllPhase9Features() {
         // Test a search UI using all Phase 9 features
         final class SearchState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -842,10 +843,10 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let searchView = SearchView(state: search)
-        XCTAssertNotNil(searchView.body)
+        #expect(searchView.body != nil)
     }
 
-    func testSettingsScreenWithAllModifiers() {
+    @Test func settingsScreenWithAllModifiers() {
         // Test a settings screen with all modifier types
         final class Settings: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -921,10 +922,10 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let view = SettingsView(settings: settings)
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testDynamicContentWithErrorState() {
+    @Test func dynamicContentWithErrorState() {
         // Test dynamic content loading with error state using ContentUnavailableView
         final class ContentState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -990,12 +991,12 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let view = ContentView(state: state)
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Edge Case Integration Tests (2 tests)
 
-    func testObservableWithOptionalBindings() {
+    @Test func observableWithOptionalBindings() {
         // Test Observable with optional properties and Bindable
         final class OptionalState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -1018,16 +1019,16 @@ final class Phase9VerificationTests: XCTestCase {
         let state = OptionalState()
         let bindable = Bindable(wrappedValue: state)
 
-        XCTAssertNil(bindable.value.wrappedValue)
+        #expect(bindable.value.wrappedValue == nil)
 
         bindable.value.wrappedValue = "test"
-        XCTAssertEqual(state.value, "test")
+        #expect(state.value == "test")
 
         bindable.value.wrappedValue = nil
-        XCTAssertNil(state.value)
+        #expect(state.value == nil)
     }
 
-    func testAllPhase9FeaturesInSingleView() {
+    @Test func allPhase9FeaturesInSingleView() {
         // Test that all Phase 9 features can coexist in a single view
         final class AppState: Observable {
             let _$observationRegistrar = ObservationRegistrar()
@@ -1110,17 +1111,17 @@ final class Phase9VerificationTests: XCTestCase {
         }
 
         let view = CompleteView(state: state)
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
 
         // Test state transitions
-        XCTAssertTrue(state.isEmpty)
+        #expect(state.isEmpty)
         state.isEmpty = false
-        XCTAssertFalse(state.isEmpty)
+        #expect(!state.isEmpty)
     }
 
     // MARK: - Verification Tests
 
-    func testAllPhase9TypesExist() {
+    @Test func allPhase9TypesExist() {
         // Verify all Phase 9 types are available and can be instantiated
 
         // Observable and Bindable
@@ -1155,6 +1156,6 @@ final class Phase9VerificationTests: XCTestCase {
         let _ = Text("Test").multilineTextAlignment(.center)
         let _ = Text("Test").truncationMode(.tail)
 
-        XCTAssertTrue(true, "All Phase 9 types exist and can be instantiated")
+        #expect(true)
     }
 }

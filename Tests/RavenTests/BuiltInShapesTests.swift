@@ -5,6 +5,7 @@ import Testing
 ///
 /// This test suite verifies the behavior of the five built-in shapes:
 /// Circle, Rectangle, RoundedRectangle, Capsule, and Ellipse.
+@MainActor
 @Suite("Built-in Shapes Tests")
 struct BuiltInShapesTests {
 

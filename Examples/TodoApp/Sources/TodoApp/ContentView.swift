@@ -2,14 +2,10 @@ import Foundation
 import Raven
 import JavaScriptKit
 
-// Import Raven's ObservableObject explicitly to avoid ambiguity with Foundation
-typealias ObservableObject = Raven.ObservableObject
-typealias Published = Raven.Published
-
 // MARK: - Unique ID Generation
 
 /// Counter-based UUID generator for WASM
-/// Foundation's UUID() relies on WASI random_get which is broken in our polyfill
+/// Foundation's UUID() relies on WASI `random_get` which is broken in our polyfill
 /// This generates unique UUIDs using a monotonic counter instead
 @MainActor
 private var _todoIDCounter: UInt64 = 0
@@ -130,7 +126,7 @@ final class ShowcaseStore: ObservableObject {
 
 /// Tabbed component showcase demonstrating Raven framework capabilities
 @MainActor
-struct TodoApp: View {
+struct ContentView: View {
     @StateObject var store = ShowcaseStore()
 
     @State private var newTodoText = ""
@@ -181,7 +177,7 @@ struct ShowcaseHeader: View {
                 .font(.title)
                 .foregroundColor(.white)
 
-            Text("Cross-compiled SwiftUI running in the browser")
+            Text("Cross-compiled SwiftUI running in the browser yaaaay")
                 .font(.caption)
                 .foregroundColor(Color.tertiaryLabel)
         }

@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 // MARK: - Track E: Accessibility Tests
@@ -8,51 +9,51 @@ import XCTest
 // are fully accessible to users with assistive technologies.
 
 @MainActor
-final class AccessibilityTests: XCTestCase {
+@Suite struct AccessibilityTests {
 
     // MARK: - FocusState Boolean Binding Tests
 
-    func testFocusStateInitializationWithBool() {
+    @Test func focusStateInitializationWithBool() {
         let focusState = FocusState<Bool>()
-        XCTAssertFalse(focusState.wrappedValue, "FocusState<Bool> should initialize to false")
+        #expect(!focusState.wrappedValue)
     }
 
-    func testFocusStateWrappedValue() {
+    @Test func focusStateWrappedValue() {
         var focusState = FocusState(wrappedValue: false)
-        XCTAssertFalse(focusState.wrappedValue)
+        #expect(!focusState.wrappedValue)
 
         focusState.wrappedValue = true
-        XCTAssertTrue(focusState.wrappedValue)
+        #expect(focusState.wrappedValue)
 
         focusState.wrappedValue = false
-        XCTAssertFalse(focusState.wrappedValue)
+        #expect(!focusState.wrappedValue)
     }
 
-    func testFocusStateProjectedValue() {
+    @Test func focusStateProjectedValue() {
         var focusState = FocusState<Bool>()
         let binding = focusState.projectedValue
 
-        XCTAssertFalse(binding.wrappedValue)
+        #expect(!binding.wrappedValue)
 
         binding.wrappedValue = true
-        XCTAssertTrue(focusState.wrappedValue)
-        XCTAssertTrue(binding.wrappedValue)
+        #expect(focusState.wrappedValue)
+        #expect(binding.wrappedValue)
     }
 
-    func testFocusStateBooleanBindingModification() {
+    @Test func focusStateBooleanBindingModification() {
         var focusState = FocusState<Bool>()
-        XCTAssertFalse(focusState.wrappedValue)
+        #expect(!focusState.wrappedValue)
 
         // Modify through wrapped value
         focusState.wrappedValue = true
-        XCTAssertTrue(focusState.wrappedValue)
+        #expect(focusState.wrappedValue)
 
         // Modify through projected value
         focusState.projectedValue.wrappedValue = false
-        XCTAssertFalse(focusState.wrappedValue)
+        #expect(!focusState.wrappedValue)
     }
 
-    func testFocusStateBooleanWithView() {
+    @Test func focusStateBooleanWithView() {
         @MainActor struct TestView: View {
             @FocusState var isFocused: Bool = false
 
@@ -63,12 +64,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - FocusState Hashable/Enum Tests
 
-    func testFocusStateWithOptionalEnum() {
+    @Test func focusStateWithOptionalEnum() {
         enum Field: Hashable {
             case username
             case password
@@ -76,30 +77,30 @@ final class AccessibilityTests: XCTestCase {
         }
 
         var focusState = FocusState<Field?>()
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
 
         focusState.wrappedValue = .username
-        XCTAssertEqual(focusState.wrappedValue, .username)
+        #expect(focusState.wrappedValue == .username)
 
         focusState.wrappedValue = .password
-        XCTAssertEqual(focusState.wrappedValue, .password)
+        #expect(focusState.wrappedValue == .password)
 
         focusState.wrappedValue = nil
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
     }
 
-    func testFocusStateWithHashableType() {
+    @Test func focusStateWithHashableType() {
         var focusState = FocusState<String?>()
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
 
         focusState.wrappedValue = "field1"
-        XCTAssertEqual(focusState.wrappedValue, "field1")
+        #expect(focusState.wrappedValue == "field1")
 
         focusState.wrappedValue = "field2"
-        XCTAssertEqual(focusState.wrappedValue, "field2")
+        #expect(focusState.wrappedValue == "field2")
     }
 
-    func testFocusStateEnumCycling() {
+    @Test func focusStateEnumCycling() {
         enum Field: Hashable, CaseIterable {
             case first
             case second
@@ -110,19 +111,19 @@ final class AccessibilityTests: XCTestCase {
 
         // Cycle through fields
         focusState.wrappedValue = .first
-        XCTAssertEqual(focusState.wrappedValue, .first)
+        #expect(focusState.wrappedValue == .first)
 
         focusState.wrappedValue = .second
-        XCTAssertEqual(focusState.wrappedValue, .second)
+        #expect(focusState.wrappedValue == .second)
 
         focusState.wrappedValue = .third
-        XCTAssertEqual(focusState.wrappedValue, .third)
+        #expect(focusState.wrappedValue == .third)
 
         focusState.wrappedValue = nil
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
     }
 
-    func testFocusStateWithMultipleFields() {
+    @Test func focusStateWithMultipleFields() {
         enum Field: Hashable {
             case name
             case email
@@ -151,12 +152,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Programmatic Focus Tests
 
-    func testProgrammaticFocusChange() {
+    @Test func programmaticFocusChange() {
         @MainActor struct TestView: View {
             @FocusState var isFocused: Bool = false
 
@@ -170,10 +171,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testProgrammaticFocusWithEnum() {
+    @Test func programmaticFocusWithEnum() {
         enum Field: Hashable {
             case first
             case second
@@ -197,10 +198,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusTransitionBetweenFields() {
+    @Test func focusTransitionBetweenFields() {
         enum Field: Hashable {
             case username
             case password
@@ -226,12 +227,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Tab Order Management Tests
 
-    func testTabIndexModifier() {
+    @Test func tabIndexModifier() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -248,10 +249,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testCustomTabOrder() {
+    @Test func customTabOrder() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -268,10 +269,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusableModifier() {
+    @Test func focusableModifier() {
         @MainActor struct TestView: View {
             @State private var hasFocus = false
 
@@ -284,10 +285,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusableWithCallback() {
+    @Test func focusableWithCallback() {
         @MainActor struct TestView: View {
             @State private var focusCount = 0
 
@@ -302,25 +303,25 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Focus Scope Tests
 
-    func testFocusScopeCreation() {
+    @Test func focusScopeCreation() {
         let scope = FocusScope(trapFocus: false, priority: 0)
-        XCTAssertNotNil(scope.id)
-        XCTAssertFalse(scope.trapFocus)
-        XCTAssertEqual(scope.priority, 0)
+        #expect(scope.id != nil)
+        #expect(!scope.trapFocus)
+        #expect(scope.priority == 0)
     }
 
-    func testFocusScopeWithTrapping() {
+    @Test func focusScopeWithTrapping() {
         let scope = FocusScope(trapFocus: true, priority: 1)
-        XCTAssertTrue(scope.trapFocus)
-        XCTAssertEqual(scope.priority, 1)
+        #expect(scope.trapFocus)
+        #expect(scope.priority == 1)
     }
 
-    func testFocusScopeModifier() {
+    @Test func focusScopeModifier() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -331,10 +332,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusScopeWithPriority() {
+    @Test func focusScopeWithPriority() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -345,10 +346,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testNestedFocusScopes() {
+    @Test func nestedFocusScopes() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -365,10 +366,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusScopeInModal() {
+    @Test func focusScopeInModal() {
         @MainActor struct TestView: View {
             @State private var showModal = false
 
@@ -384,12 +385,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - ARIA Role Tests
 
-    func testAccessibilityRoleButton() {
+    @Test func accessibilityRoleButton() {
         @MainActor struct TestView: View {
             var body: some View {
                 Text("Click me")
@@ -398,11 +399,11 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityRole.button.ariaValue, "button")
+        #expect(view.body != nil)
+        #expect(AccessibilityRole.button.ariaValue == "button")
     }
 
-    func testAccessibilityRoleHeading() {
+    @Test func accessibilityRoleHeading() {
         @MainActor struct TestView: View {
             var body: some View {
                 Text("Title")
@@ -411,11 +412,11 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityRole.heading.ariaValue, "heading")
+        #expect(view.body != nil)
+        #expect(AccessibilityRole.heading.ariaValue == "heading")
     }
 
-    func testAccessibilityRoleNavigation() {
+    @Test func accessibilityRoleNavigation() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -427,11 +428,11 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityRole.navigation.ariaValue, "navigation")
+        #expect(view.body != nil)
+        #expect(AccessibilityRole.navigation.ariaValue == "navigation")
     }
 
-    func testAccessibilityRoleMain() {
+    @Test func accessibilityRoleMain() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -442,33 +443,33 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityRole.main.ariaValue, "main")
+        #expect(view.body != nil)
+        #expect(AccessibilityRole.main.ariaValue == "main")
     }
 
-    func testAccessibilityRoleValues() {
-        XCTAssertEqual(AccessibilityRole.button.ariaValue, "button")
-        XCTAssertEqual(AccessibilityRole.link.ariaValue, "link")
-        XCTAssertEqual(AccessibilityRole.checkbox.ariaValue, "checkbox")
-        XCTAssertEqual(AccessibilityRole.radioButton.ariaValue, "radio")
-        XCTAssertEqual(AccessibilityRole.textField.ariaValue, "textbox")
-        XCTAssertEqual(AccessibilityRole.searchField.ariaValue, "searchbox")
-        XCTAssertEqual(AccessibilityRole.heading.ariaValue, "heading")
-        XCTAssertEqual(AccessibilityRole.list.ariaValue, "list")
-        XCTAssertEqual(AccessibilityRole.listItem.ariaValue, "listitem")
-        XCTAssertEqual(AccessibilityRole.navigation.ariaValue, "navigation")
-        XCTAssertEqual(AccessibilityRole.main.ariaValue, "main")
-        XCTAssertEqual(AccessibilityRole.complementary.ariaValue, "complementary")
-        XCTAssertEqual(AccessibilityRole.banner.ariaValue, "banner")
-        XCTAssertEqual(AccessibilityRole.contentInfo.ariaValue, "contentinfo")
-        XCTAssertEqual(AccessibilityRole.dialog.ariaValue, "dialog")
-        XCTAssertEqual(AccessibilityRole.alert.ariaValue, "alert")
-        XCTAssertEqual(AccessibilityRole.status.ariaValue, "status")
+    @Test func accessibilityRoleValues() {
+        #expect(AccessibilityRole.button.ariaValue == "button")
+        #expect(AccessibilityRole.link.ariaValue == "link")
+        #expect(AccessibilityRole.checkbox.ariaValue == "checkbox")
+        #expect(AccessibilityRole.radioButton.ariaValue == "radio")
+        #expect(AccessibilityRole.textField.ariaValue == "textbox")
+        #expect(AccessibilityRole.searchField.ariaValue == "searchbox")
+        #expect(AccessibilityRole.heading.ariaValue == "heading")
+        #expect(AccessibilityRole.list.ariaValue == "list")
+        #expect(AccessibilityRole.listItem.ariaValue == "listitem")
+        #expect(AccessibilityRole.navigation.ariaValue == "navigation")
+        #expect(AccessibilityRole.main.ariaValue == "main")
+        #expect(AccessibilityRole.complementary.ariaValue == "complementary")
+        #expect(AccessibilityRole.banner.ariaValue == "banner")
+        #expect(AccessibilityRole.contentInfo.ariaValue == "contentinfo")
+        #expect(AccessibilityRole.dialog.ariaValue == "dialog")
+        #expect(AccessibilityRole.alert.ariaValue == "alert")
+        #expect(AccessibilityRole.status.ariaValue == "status")
     }
 
     // MARK: - ARIA Attribute Tests
 
-    func testAccessibilityLabel() {
+    @Test func accessibilityLabel() {
         @MainActor struct TestView: View {
             var body: some View {
                 Image(systemName: "star")
@@ -477,10 +478,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityHint() {
+    @Test func accessibilityHint() {
         @MainActor struct TestView: View {
             var body: some View {
                 Button("Delete") {}
@@ -489,10 +490,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityValue() {
+    @Test func accessibilityValue() {
         @MainActor struct TestView: View {
             @State private var volume: Double = 50
 
@@ -504,10 +505,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityHidden() {
+    @Test func accessibilityHidden() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -520,10 +521,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityLabelledBy() {
+    @Test func accessibilityLabelledBy() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -537,10 +538,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityDescribedBy() {
+    @Test func accessibilityDescribedBy() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -554,10 +555,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityControls() {
+    @Test func accessibilityControls() {
         @MainActor struct TestView: View {
             @State private var isExpanded = false
 
@@ -578,10 +579,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityExpanded() {
+    @Test func accessibilityExpanded() {
         @MainActor struct TestView: View {
             @State private var isExpanded = false
 
@@ -592,10 +593,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityPressed() {
+    @Test func accessibilityPressed() {
         @MainActor struct TestView: View {
             @State private var isBold = false
 
@@ -606,12 +607,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Live Region Tests
 
-    func testAccessibilityLiveRegionPolite() {
+    @Test func accessibilityLiveRegionPolite() {
         @MainActor struct TestView: View {
             @State private var status = "Ready"
 
@@ -622,11 +623,11 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityLiveRegion.polite.ariaValue, "polite")
+        #expect(view.body != nil)
+        #expect(AccessibilityLiveRegion.polite.ariaValue == "polite")
     }
 
-    func testAccessibilityLiveRegionAssertive() {
+    @Test func accessibilityLiveRegionAssertive() {
         @MainActor struct TestView: View {
             @State private var alert = "Error occurred"
 
@@ -637,19 +638,19 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
-        XCTAssertEqual(AccessibilityLiveRegion.assertive.ariaValue, "assertive")
+        #expect(view.body != nil)
+        #expect(AccessibilityLiveRegion.assertive.ariaValue == "assertive")
     }
 
-    func testAccessibilityLiveRegionValues() {
-        XCTAssertEqual(AccessibilityLiveRegion.off.ariaValue, "off")
-        XCTAssertEqual(AccessibilityLiveRegion.polite.ariaValue, "polite")
-        XCTAssertEqual(AccessibilityLiveRegion.assertive.ariaValue, "assertive")
+    @Test func accessibilityLiveRegionValues() {
+        #expect(AccessibilityLiveRegion.off.ariaValue == "off")
+        #expect(AccessibilityLiveRegion.polite.ariaValue == "polite")
+        #expect(AccessibilityLiveRegion.assertive.ariaValue == "assertive")
     }
 
     // MARK: - Accessibility Helper Tests
 
-    func testAccessibilityHeading() {
+    @Test func accessibilityHeading() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -666,10 +667,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityListItem() {
+    @Test func accessibilityListItem() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -682,10 +683,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityInvalid() {
+    @Test func accessibilityInvalid() {
         @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = true
@@ -705,10 +706,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityRequired() {
+    @Test func accessibilityRequired() {
         @MainActor struct TestView: View {
             var body: some View {
                 TextField("Name", text: .constant(""))
@@ -718,10 +719,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityReadonly() {
+    @Test func accessibilityReadonly() {
         @MainActor struct TestView: View {
             var body: some View {
                 TextField("User ID", text: .constant("12345"))
@@ -730,10 +731,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilitySelected() {
+    @Test func accessibilitySelected() {
         @MainActor struct TestView: View {
             @State private var selectedID: String? = "item1"
 
@@ -749,10 +750,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityLandmark() {
+    @Test func accessibilityLandmark() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -775,10 +776,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityAlert() {
+    @Test func accessibilityAlert() {
         @MainActor struct TestView: View {
             @State private var error: String?
 
@@ -793,10 +794,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityStatus() {
+    @Test func accessibilityStatus() {
         @MainActor struct TestView: View {
             @State private var status = "Saving..."
 
@@ -807,10 +808,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityToggleButton() {
+    @Test func accessibilityToggleButton() {
         @MainActor struct TestView: View {
             @State private var isBold = false
 
@@ -821,10 +822,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityDisclosureButton() {
+    @Test func accessibilityDisclosureButton() {
         @MainActor struct TestView: View {
             @State private var isExpanded = false
 
@@ -847,10 +848,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityProgress() {
+    @Test func accessibilityProgress() {
         @MainActor struct TestView: View {
             @State private var progress: Double = 0.5
 
@@ -865,10 +866,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityFormField() {
+    @Test func accessibilityFormField() {
         @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = true
@@ -897,22 +898,22 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Accessibility Traits Tests
 
-    func testAccessibilityTraits() {
+    @Test func accessibilityTraits() {
         let traits = AccessibilityTraits.isButton
-        XCTAssertEqual(traits.rawValue, 1 << 0)
+        #expect(traits.rawValue == 1 << 0)
 
         let combined = AccessibilityTraits([.isButton, .isHeader])
-        XCTAssertTrue(combined.contains(.isButton))
-        XCTAssertTrue(combined.contains(.isHeader))
-        XCTAssertFalse(combined.contains(.isLink))
+        #expect(combined.contains(.isButton))
+        #expect(combined.contains(.isHeader))
+        #expect(!combined.contains(.isLink))
     }
 
-    func testAccessibilityTraitsModifier() {
+    @Test func accessibilityTraitsModifier() {
         @MainActor struct TestView: View {
             var body: some View {
                 Button("Important") {}
@@ -921,12 +922,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - WCAG 2.1 Compliance Tests
 
-    func testWCAGLandmarkRoles() {
+    @Test func wCAGLandmarkRoles() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -954,10 +955,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testWCAGFormLabels() {
+    @Test func wCAGFormLabels() {
         @MainActor struct TestView: View {
             @State private var name = ""
             @State private var email = ""
@@ -976,10 +977,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testWCAGErrorIdentification() {
+    @Test func wCAGErrorIdentification() {
         @MainActor struct TestView: View {
             @State private var email = ""
             @State private var isValid = false
@@ -999,10 +1000,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testWCAGHeadingHierarchy() {
+    @Test func wCAGHeadingHierarchy() {
         @MainActor struct TestView: View {
             var body: some View {
                 VStack {
@@ -1022,10 +1023,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testWCAGStatusMessages() {
+    @Test func wCAGStatusMessages() {
         @MainActor struct TestView: View {
             @State private var saveStatus = "Saving..."
 
@@ -1040,12 +1041,12 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Complex Integration Tests
 
-    func testCompleteAccessibleForm() {
+    @Test func completeAccessibleForm() {
         enum Field: Hashable {
             case name
             case email
@@ -1094,10 +1095,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibleModalDialog() {
+    @Test func accessibleModalDialog() {
         @MainActor struct TestView: View {
             @State private var showDialog = false
             @FocusState var isFocused: Bool = false
@@ -1127,10 +1128,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibleListWithSelection() {
+    @Test func accessibleListWithSelection() {
         @MainActor struct TestView: View {
             @State private var selectedItems: Set<String> = []
 
@@ -1158,28 +1159,28 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
     // MARK: - Edge Case Tests
 
-    func testFocusStateWithNilValue() {
+    @Test func focusStateWithNilValue() {
         enum Field: Hashable {
             case field1
             case field2
         }
 
         var focusState = FocusState<Field?>()
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
 
         focusState.wrappedValue = .field1
-        XCTAssertNotNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue != nil)
 
         focusState.wrappedValue = nil
-        XCTAssertNil(focusState.wrappedValue)
+        #expect(focusState.wrappedValue == nil)
     }
 
-    func testEmptyAccessibilityLabel() {
+    @Test func emptyAccessibilityLabel() {
         @MainActor struct TestView: View {
             var body: some View {
                 Text("Content")
@@ -1188,10 +1189,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testMultipleAccessibilityModifiers() {
+    @Test func multipleAccessibilityModifiers() {
         @MainActor struct TestView: View {
             var body: some View {
                 Button("Action") {}
@@ -1203,10 +1204,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityWithConditionalContent() {
+    @Test func accessibilityWithConditionalContent() {
         @MainActor struct TestView: View {
             @State private var showError = false
 
@@ -1224,10 +1225,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusStateUpdateCallback() {
+    @Test func focusStateUpdateCallback() {
         var focusState = FocusState<Bool>()
         var callbackCount = 0
 
@@ -1237,10 +1238,10 @@ final class AccessibilityTests: XCTestCase {
 
         // Note: In a real implementation, changing focus would trigger callbacks
         // This test verifies the API exists and can be called
-        XCTAssertEqual(callbackCount, 0) // No automatic trigger on setup
+        #expect(callbackCount == 0) // No automatic trigger on setup
     }
 
-    func testAccessibilityIdentifier() {
+    @Test func accessibilityIdentifier() {
         @MainActor struct TestView: View {
             var body: some View {
                 Text("Test")
@@ -1249,10 +1250,10 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testAccessibilityAction() {
+    @Test func accessibilityAction() {
         @MainActor struct TestView: View {
             @State private var actionCount = 0
 
@@ -1265,28 +1266,28 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 
-    func testFocusScopeContext() {
+    @Test func focusScopeContext() {
         let context = FocusScopeContext(scopeID: UUID())
-        XCTAssertNotNil(context.scopeID)
-        XCTAssertNil(context.currentlyFocusedElement)
-        XCTAssertTrue(context.allElements.isEmpty)
+        #expect(context.scopeID != nil)
+        #expect(context.currentlyFocusedElement == nil)
+        #expect(context.allElements.isEmpty)
     }
 
-    func testFocusScopeContextElementManagement() {
+    @Test func focusScopeContextElementManagement() {
         let context = FocusScopeContext(scopeID: UUID())
         let elementID = UUID()
 
         context.addElement(elementID)
-        XCTAssertTrue(context.allElements.contains(elementID))
+        #expect(context.allElements.contains(elementID))
 
         context.removeElement(elementID)
-        XCTAssertFalse(context.allElements.contains(elementID))
+        #expect(!context.allElements.contains(elementID))
     }
 
-    func testComplexAccessibilityScenario() {
+    @Test func complexAccessibilityScenario() {
         enum FormField: Hashable {
             case search
             case filter
@@ -1331,6 +1332,6 @@ final class AccessibilityTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view.body)
+        #expect(view.body != nil)
     }
 }

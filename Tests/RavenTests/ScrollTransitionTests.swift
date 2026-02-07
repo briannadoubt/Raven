@@ -1,35 +1,36 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for scroll transition modifier (.scrollTransition)
-final class ScrollTransitionTests: XCTestCase {
+@MainActor
+@Suite struct ScrollTransitionTests {
 
     // MARK: - ScrollTransitionPhase Tests
 
     @MainActor
-    func testPhaseEquality() {
+    @Test func phaseEquality() {
         // Test that phases are properly equatable
-        XCTAssertEqual(ScrollTransitionPhase.topLeading, ScrollTransitionPhase.topLeading)
-        XCTAssertEqual(ScrollTransitionPhase.identity, ScrollTransitionPhase.identity)
-        XCTAssertEqual(ScrollTransitionPhase.bottomTrailing, ScrollTransitionPhase.bottomTrailing)
+        #expect(ScrollTransitionPhase.topLeading == ScrollTransitionPhase.topLeading)
+        #expect(ScrollTransitionPhase.identity == ScrollTransitionPhase.identity)
+        #expect(ScrollTransitionPhase.bottomTrailing == ScrollTransitionPhase.bottomTrailing)
 
-        XCTAssertNotEqual(ScrollTransitionPhase.topLeading, ScrollTransitionPhase.identity)
-        XCTAssertNotEqual(ScrollTransitionPhase.identity, ScrollTransitionPhase.bottomTrailing)
-        XCTAssertNotEqual(ScrollTransitionPhase.topLeading, ScrollTransitionPhase.bottomTrailing)
+        #expect(ScrollTransitionPhase.topLeading != ScrollTransitionPhase.identity)
+        #expect(ScrollTransitionPhase.identity != ScrollTransitionPhase.bottomTrailing)
+        #expect(ScrollTransitionPhase.topLeading != ScrollTransitionPhase.bottomTrailing)
     }
 
     @MainActor
-    func testPhaseIsIdentity() {
+    @Test func phaseIsIdentity() {
         // Test the isIdentity convenience property
-        XCTAssertFalse(ScrollTransitionPhase.topLeading.isIdentity)
-        XCTAssertTrue(ScrollTransitionPhase.identity.isIdentity)
-        XCTAssertFalse(ScrollTransitionPhase.bottomTrailing.isIdentity)
+        #expect(!ScrollTransitionPhase.topLeading.isIdentity)
+        #expect(ScrollTransitionPhase.identity.isIdentity)
+        #expect(!ScrollTransitionPhase.bottomTrailing.isIdentity)
     }
 
     // MARK: - Basic Transition Tests
 
     @MainActor
-    func testBasicScrollTransition() {
+    @Test func basicScrollTransition() {
         // Test basic scroll transition without axis
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -37,11 +38,11 @@ final class ScrollTransitionTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollTransitionView<Text>)
+        #expect(view is _ScrollTransitionView<Text>)
     }
 
     @MainActor
-    func testScrollTransitionWithAxis() {
+    @Test func scrollTransitionWithAxis() {
         // Test scroll transition with explicit axis
         let view = Text("Content")
             .scrollTransition(axis: .vertical) { content, phase in
@@ -49,11 +50,11 @@ final class ScrollTransitionTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollTransitionView<Text>)
+        #expect(view is _ScrollTransitionView<Text>)
     }
 
     @MainActor
-    func testScrollTransitionWithHorizontalAxis() {
+    @Test func scrollTransitionWithHorizontalAxis() {
         // Test scroll transition with horizontal axis
         let view = Text("Content")
             .scrollTransition(axis: .horizontal) { content, phase in
@@ -61,11 +62,11 @@ final class ScrollTransitionTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollTransitionView<Text>)
+        #expect(view is _ScrollTransitionView<Text>)
     }
 
     @MainActor
-    func testScrollTransitionWithNilAxis() {
+    @Test func scrollTransitionWithNilAxis() {
         // Test scroll transition with explicit nil axis (same as basic)
         let view = Text("Content")
             .scrollTransition(axis: nil) { content, phase in
@@ -73,13 +74,13 @@ final class ScrollTransitionTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollTransitionView<Text>)
+        #expect(view is _ScrollTransitionView<Text>)
     }
 
     // MARK: - VNode Generation Tests
 
     @MainActor
-    func testScrollTransitionVNode() {
+    @Test func scrollTransitionVNode() {
         // Test VNode generation for basic scroll transition
         let baseView = Text("Content")
         let transitionView = _ScrollTransitionView(
@@ -90,53 +91,53 @@ final class ScrollTransitionTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for scroll transition data attribute
             if case .attribute(let name, _) = vnode.props["data-scroll-transition"] {
-                XCTAssertEqual(name, "data-scroll-transition")
+                #expect(name == "data-scroll-transition")
             } else {
-                XCTFail("Expected data-scroll-transition attribute")
+                Issue.record("Expected data-scroll-transition attribute")
             }
 
             // Check for initial phase
             if case .attribute(let name, let value) = vnode.props["data-scroll-phase"] {
-                XCTAssertEqual(name, "data-scroll-phase")
-                XCTAssertEqual(value, "identity")
+                #expect(name == "data-scroll-phase")
+                #expect(value == "identity")
             } else {
-                XCTFail("Expected data-scroll-phase attribute")
+                Issue.record("Expected data-scroll-phase attribute")
             }
 
             // Check for CSS class
             if case .attribute(let name, let value) = vnode.props["class"] {
-                XCTAssertEqual(name, "class")
-                XCTAssertEqual(value, "raven-scroll-transition")
+                #expect(name == "class")
+                #expect(value == "raven-scroll-transition")
             } else {
-                XCTFail("Expected class attribute")
+                Issue.record("Expected class attribute")
             }
 
             // Check for transition style
             if case .style(let name, let value) = vnode.props["transition"] {
-                XCTAssertEqual(name, "transition")
-                XCTAssertEqual(value, "all 0.3s ease-in-out")
+                #expect(name == "transition")
+                #expect(value == "all 0.3s ease-in-out")
             } else {
-                XCTFail("Expected transition style")
+                Issue.record("Expected transition style")
             }
 
             // Check for will-change hint
             if case .style(let name, let value) = vnode.props["will-change"] {
-                XCTAssertEqual(name, "will-change")
-                XCTAssertEqual(value, "transform, opacity")
+                #expect(name == "will-change")
+                #expect(value == "transform, opacity")
             } else {
-                XCTFail("Expected will-change style")
+                Issue.record("Expected will-change style")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testScrollTransitionVNodeWithVerticalAxis() {
+    @Test func scrollTransitionVNodeWithVerticalAxis() {
         // Test VNode generation with vertical axis
         let baseView = Text("Content")
         let transitionView = _ScrollTransitionView(
@@ -147,22 +148,22 @@ final class ScrollTransitionTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for axis data attribute
             if case .attribute(let name, let value) = vnode.props["data-scroll-axis"] {
-                XCTAssertEqual(name, "data-scroll-axis")
-                XCTAssertEqual(value, "vertical")
+                #expect(name == "data-scroll-axis")
+                #expect(value == "vertical")
             } else {
-                XCTFail("Expected data-scroll-axis attribute")
+                Issue.record("Expected data-scroll-axis attribute")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testScrollTransitionVNodeWithHorizontalAxis() {
+    @Test func scrollTransitionVNodeWithHorizontalAxis() {
         // Test VNode generation with horizontal axis
         let baseView = Text("Content")
         let transitionView = _ScrollTransitionView(
@@ -173,22 +174,22 @@ final class ScrollTransitionTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for axis data attribute
             if case .attribute(let name, let value) = vnode.props["data-scroll-axis"] {
-                XCTAssertEqual(name, "data-scroll-axis")
-                XCTAssertEqual(value, "horizontal")
+                #expect(name == "data-scroll-axis")
+                #expect(value == "horizontal")
             } else {
-                XCTFail("Expected data-scroll-axis attribute")
+                Issue.record("Expected data-scroll-axis attribute")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testScrollTransitionVNodeWithoutAxis() {
+    @Test func scrollTransitionVNodeWithoutAxis() {
         // Test VNode generation without axis (should not have axis attribute)
         let baseView = Text("Content")
         let transitionView = _ScrollTransitionView(
@@ -199,19 +200,19 @@ final class ScrollTransitionTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Should NOT have axis data attribute
-            XCTAssertNil(vnode.props["data-scroll-axis"])
+            #expect(vnode.props["data-scroll-axis"] == nil)
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     // MARK: - Common Pattern Tests
 
     @MainActor
-    func testFadeTransitionPattern() {
+    @Test func fadeTransitionPattern() {
         // Test fade in/out pattern
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -223,7 +224,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testScaleTransitionPattern() {
+    @Test func scaleTransitionPattern() {
         // Test scale effect pattern
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -235,7 +236,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testCombinedTransitionPattern() {
+    @Test func combinedTransitionPattern() {
         // Test combined animations pattern
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -250,7 +251,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testBlurTransitionPattern() {
+    @Test func blurTransitionPattern() {
         // Test blur effect pattern
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -266,7 +267,7 @@ final class ScrollTransitionTests: XCTestCase {
     // MARK: - Integration Tests
 
     @MainActor
-    func testScrollTransitionWithOtherModifiers() {
+    @Test func scrollTransitionWithOtherModifiers() {
         // Test scroll transition combined with other modifiers
         let view = Text("Content")
             .padding(16)
@@ -280,7 +281,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testMultipleScrollTransitions() {
+    @Test func multipleScrollTransitions() {
         // Test multiple scroll transitions on the same view
         let view = Text("Content")
             .scrollTransition(axis: .horizontal) { content, phase in
@@ -295,7 +296,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testScrollTransitionInScrollView() {
+    @Test func scrollTransitionInScrollView() {
         // Test realistic usage in a scroll view context
         struct Item: Identifiable {
             let id: Int
@@ -323,7 +324,7 @@ final class ScrollTransitionTests: XCTestCase {
     // MARK: - Phase-Specific Tests
 
     @MainActor
-    func testTopLeadingPhaseTransition() {
+    @Test func topLeadingPhaseTransition() {
         // Test transition specific to topLeading phase
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -335,7 +336,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testBottomTrailingPhaseTransition() {
+    @Test func bottomTrailingPhaseTransition() {
         // Test transition specific to bottomTrailing phase
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -347,7 +348,7 @@ final class ScrollTransitionTests: XCTestCase {
     }
 
     @MainActor
-    func testAllPhasesTransition() {
+    @Test func allPhasesTransition() {
         // Test transition handling all three phases
         let view = Text("Content")
             .scrollTransition { content, phase in
@@ -368,20 +369,20 @@ final class ScrollTransitionTests: XCTestCase {
     // MARK: - Configuration Tests
 
     @MainActor
-    func testScrollTransitionConfiguration() {
+    @Test func scrollTransitionConfiguration() {
         // Test that configuration is created properly
         let config1 = ScrollTransitionConfiguration(axis: nil)
         let config2 = ScrollTransitionConfiguration(axis: .vertical)
         let config3 = ScrollTransitionConfiguration(axis: .horizontal)
 
         // Each configuration should have a unique ID
-        XCTAssertNotEqual(config1.id, config2.id)
-        XCTAssertNotEqual(config2.id, config3.id)
-        XCTAssertNotEqual(config1.id, config3.id)
+        #expect(config1.id != config2.id)
+        #expect(config2.id != config3.id)
+        #expect(config1.id != config3.id)
 
         // Test axis values
-        XCTAssertNil(config1.axis)
-        XCTAssertEqual(config2.axis, .vertical)
-        XCTAssertEqual(config3.axis, .horizontal)
+        #expect(config1.axis == nil)
+        #expect(config2.axis == .vertical)
+        #expect(config3.axis == .horizontal)
     }
 }
