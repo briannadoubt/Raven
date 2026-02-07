@@ -88,6 +88,12 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// Set of handler IDs from the *previous* render pass, used for stale cleanup.
     private var previousHandlerIDs: Set<UUID> = []
 
+    // MARK: - Persistent State Storage
+
+    /// Storage for persistent state objects keyed by view tree position.
+    /// Objects survive across re-renders, enabling stateful controllers.
+    private var persistentStateStorage: [String: AnyObject] = [:]
+
     // MARK: - Fiber Reconciler
 
     /// Current fiber root (the "current" tree in dual-tree terminology).
@@ -243,6 +249,17 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         // Update renderer's closure so existing JSClosure invokes the latest action
         renderer.updateEventHandler(id: id, handler: action)
         return id
+    }
+
+    /// Retrieve or create a persistent state object keyed by the current view tree position.
+    public func persistentState<T: AnyObject>(create: () -> T) -> T {
+        let key = pathStack.joined(separator: ".")
+        if let existing = persistentStateStorage[key] as? T {
+            return existing
+        }
+        let obj = create()
+        persistentStateStorage[key] = obj
+        return obj
     }
 
     /// Register an input handler that receives the raw DOM event and return a stable ID.

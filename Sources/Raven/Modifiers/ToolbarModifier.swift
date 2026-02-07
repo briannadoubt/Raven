@@ -102,7 +102,7 @@ public struct ToolbarItemGroup<Content: View>: Sendable {
 // MARK: - Toolbar View
 
 /// Internal view that wraps content and toolbar items.
-public struct _ToolbarView<Content: View>: View, PrimitiveView, Sendable {
+public struct _ToolbarView<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
     let content: Content
 
     public typealias Body = Never
@@ -134,6 +134,22 @@ public struct _ToolbarView<Content: View>: View, PrimitiveView, Sendable {
             props: containerProps,
             children: [toolbarNode]
         )
+    }
+
+    /// Explicit toolbar items passed via the type-erased builder.
+    internal var _explicitItems: [_AnyToolbarItem] = []
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Register explicit toolbar items with the NavigationStackController
+        if let controller = NavigationStackController._current {
+            for item in _explicitItems {
+                let renderedNode = context.renderChild(item.content)
+                controller.toolbarItems.append(ToolbarItemInfo(placement: item.placement, node: renderedNode))
+            }
+        }
+
+        // Render the wrapped content (the actual page content, not toolbar items)
+        return context.renderChild(content)
     }
 }
 
@@ -197,5 +213,117 @@ extension View {
         @ViewBuilder content: () -> Content
     ) -> _ToolbarView<Content> {
         _ToolbarView(content: content())
+    }
+}
+
+// MARK: - Type-Erased Toolbar Item
+
+/// A type-erased toolbar item for use with the toolbar modifier.
+public struct _AnyToolbarItem: Sendable {
+    /// The placement of this toolbar item.
+    public let placement: ToolbarItemPlacement
+
+    /// The content view for this toolbar item (type-erased).
+    public let content: AnyView
+
+    /// Creates a type-erased toolbar item from a `ToolbarItem`.
+    @MainActor
+    public init<C: View>(_ item: ToolbarItem<C>) {
+        self.placement = item.placement
+        self.content = AnyView(item.content)
+    }
+}
+
+// MARK: - Toolbar Content Builder
+
+/// Result builder for creating arrays of type-erased toolbar items.
+@resultBuilder
+public struct _ToolbarContentBuilder {
+    public static func buildBlock(_ components: _AnyToolbarItem...) -> [_AnyToolbarItem] {
+        components
+    }
+
+    public static func buildBlock(_ components: [_AnyToolbarItem]...) -> [_AnyToolbarItem] {
+        components.flatMap { $0 }
+    }
+
+    public static func buildOptional(_ component: [_AnyToolbarItem]?) -> [_AnyToolbarItem] {
+        component ?? []
+    }
+
+    public static func buildEither(first component: [_AnyToolbarItem]) -> [_AnyToolbarItem] {
+        component
+    }
+
+    public static func buildEither(second component: [_AnyToolbarItem]) -> [_AnyToolbarItem] {
+        component
+    }
+}
+
+// MARK: - Toolbar Background Modifier
+
+/// A modifier that sets the toolbar background color.
+@MainActor
+struct _ToolbarBackgroundModifier<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let cssColor: String
+
+    @MainActor func toVNode() -> VNode {
+        return VNode.text("")
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        NavigationStackController._current?.toolbarBackground = cssColor
+        return context.renderChild(content)
+    }
+}
+
+/// A modifier that sets the toolbar tint/color scheme.
+@MainActor
+struct _ToolbarColorSchemeModifier<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let colorScheme: ColorScheme?
+
+    @MainActor func toVNode() -> VNode {
+        return VNode.text("")
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        if let scheme = colorScheme {
+            let tint = scheme == .dark ? "#ffffff" : "#000000"
+            NavigationStackController._current?.toolbarTintColor = tint
+        }
+        return context.renderChild(content)
+    }
+}
+
+// MARK: - Toolbar Modifier Extensions
+
+extension View {
+    /// Adds toolbar items using the type-erased toolbar content builder.
+    ///
+    /// This overload accepts explicit `_AnyToolbarItem` instances that get
+    /// registered with the NavigationStackController during render.
+    @MainActor
+    public func toolbar(@_ToolbarContentBuilder items: () -> [_AnyToolbarItem]) -> some View {
+        var view = _ToolbarView(content: self)
+        view._explicitItems = items()
+        return view
+    }
+
+    /// Sets the background color of the toolbar/navigation bar.
+    @MainActor
+    public func toolbarBackground(_ color: Color) -> some View {
+        _ToolbarBackgroundModifier(content: self, cssColor: color.cssValue)
+    }
+
+    /// Sets the color scheme for the toolbar items.
+    @MainActor
+    public func toolbarColorScheme(_ colorScheme: ColorScheme?) -> some View {
+        _ToolbarColorSchemeModifier(content: self, colorScheme: colorScheme)
     }
 }

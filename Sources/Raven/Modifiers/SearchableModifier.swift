@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 // MARK: - Search Field Placement
 
@@ -99,7 +100,7 @@ public enum SearchFieldPlacement: Sendable, Hashable {
 ///     }
 /// }
 /// ```
-public struct _SearchableView<Content: View, Suggestions: View>: View, PrimitiveView, Sendable {
+public struct _SearchableView<Content: View, Suggestions: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
     let content: Content
     let text: Binding<String>
     let placement: SearchFieldPlacement
@@ -121,6 +122,128 @@ public struct _SearchableView<Content: View, Suggestions: View>: View, Primitive
         self.placement = placement
         self.prompt = prompt
         self.suggestions = suggestions
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // If inside a NavigationStack, register the search bar with the controller
+        // and let the NavigationStack handle placing it in the nav bar area.
+        if let controller = NavigationStackController._current {
+            // Build the search input node
+            let searchNode = buildSearchInputNode(with: context)
+            controller.searchBarInfo = SearchBarInfo(node: searchNode, placement: placement)
+
+            // Render just the content — the search bar will be placed by NavigationStack
+            return context.renderChild(content)
+        }
+
+        // Not inside a NavigationStack: fall back to rendering search bar above content
+        let searchNode = buildSearchInputNode(with: context)
+        let contentNode = context.renderChild(content)
+
+        let containerProps: [String: VProperty] = [
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "height": .style(name: "height", value: "100%"),
+        ]
+
+        let contentChildren: [VNode]
+        if case .fragment = contentNode.type {
+            contentChildren = contentNode.children
+        } else {
+            contentChildren = [contentNode]
+        }
+
+        let contentWrapper = VNode.element(
+            "div",
+            props: [
+                "flex": .style(name: "flex", value: "1"),
+                "overflow": .style(name: "overflow", value: "auto"),
+            ],
+            children: contentChildren
+        )
+
+        return VNode.element("div", props: containerProps, children: [searchNode, contentWrapper])
+    }
+
+    /// Builds the search input VNode for use in both coordinator and fallback rendering.
+    @MainActor private func buildSearchInputNode(with context: any _RenderContext) -> VNode {
+        let placeholderText = prompt?.textContent ?? "Search"
+
+        let inputHandlerId = context.registerInputHandler { jsValue in
+            if let target = jsValue.object?["target"].object,
+               let value = target["value"].string {
+                self.text.wrappedValue = value
+            }
+        }
+
+        let searchInputProps: [String: VProperty] = [
+            "type": .attribute(name: "type", value: "search"),
+            "placeholder": .attribute(name: "placeholder", value: placeholderText),
+            "value": .attribute(name: "value", value: text.wrappedValue),
+            "onInput": .eventHandler(event: "input", handlerID: inputHandlerId),
+            "aria-label": .attribute(name: "aria-label", value: placeholderText),
+            "padding": .style(name: "padding", value: "8px 12px"),
+            "padding-left": .style(name: "padding-left", value: "36px"),
+            "border": .style(name: "border", value: "1px solid #d1d5db"),
+            "border-radius": .style(name: "border-radius", value: "8px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "width": .style(name: "width", value: "100%"),
+            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+            "outline": .style(name: "outline", value: "none"),
+        ]
+
+        let searchInput = VNode.element("input", props: searchInputProps, children: [])
+
+        // Search icon
+        let searchIcon = VNode.element(
+            "div",
+            props: [
+                "position": .style(name: "position", value: "absolute"),
+                "left": .style(name: "left", value: "12px"),
+                "top": .style(name: "top", value: "50%"),
+                "transform": .style(name: "transform", value: "translateY(-50%)"),
+                "color": .style(name: "color", value: "#9ca3af"),
+                "pointer-events": .style(name: "pointer-events", value: "none"),
+            ],
+            children: [
+                VNode.element(
+                    "svg",
+                    props: [
+                        "width": .attribute(name: "width", value: "16"),
+                        "height": .attribute(name: "height", value: "16"),
+                        "viewBox": .attribute(name: "viewBox", value: "0 0 16 16"),
+                        "fill": .attribute(name: "fill", value: "none"),
+                        "stroke": .attribute(name: "stroke", value: "currentColor"),
+                        "stroke-width": .attribute(name: "stroke-width", value: "2"),
+                    ],
+                    children: [
+                        VNode.element("circle", props: [
+                            "cx": .attribute(name: "cx", value: "6.5"),
+                            "cy": .attribute(name: "cy", value: "6.5"),
+                            "r": .attribute(name: "r", value: "4"),
+                        ]),
+                        VNode.element("path", props: [
+                            "d": .attribute(name: "d", value: "M9.5 9.5l4 4"),
+                        ]),
+                    ]
+                )
+            ]
+        )
+
+        // Search container with icon + input
+        let searchContainer = VNode.element(
+            "div",
+            props: [
+                "role": .attribute(name: "role", value: "search"),
+                "position": .style(name: "position", value: "relative"),
+                "width": .style(name: "width", value: "100%"),
+                "padding": .style(name: "padding", value: "8px 16px"),
+                "box-sizing": .style(name: "box-sizing", value: "border-box"),
+            ],
+            children: [searchIcon, searchInput]
+        )
+
+        return searchContainer
     }
 
     @MainActor public func toVNode() -> VNode {

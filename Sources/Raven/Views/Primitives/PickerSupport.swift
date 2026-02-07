@@ -52,10 +52,14 @@ public struct TaggedView<SelectionValue: Hashable>: View, PrimitiveView, Sendabl
     /// The original content's TabConfigurable (captured before type erasure)
     nonisolated(unsafe) let _tabConfigurable: (any TabConfigurable)?
 
+    /// The original content's TabPathConfigurable (captured before type erasure)
+    nonisolated(unsafe) let _tabPathConfigurable: (any TabPathConfigurable)?
+
     @MainActor init<Content: View>(content: Content, tag: SelectionValue) {
         self.content = AnyView(content)
         self.tagValue = tag
         self._tabConfigurable = content as? any TabConfigurable
+        self._tabPathConfigurable = content as? any TabPathConfigurable
         // Extract text label before type erasure loses the concrete type
         if let text = content as? Text {
             self.textLabel = text.textContent
@@ -87,6 +91,14 @@ extension TaggedView: TabConfigurable {
             return config
         }
         return nil
+    }
+}
+
+// MARK: - TaggedView TabPathConfigurable
+
+extension TaggedView: TabPathConfigurable {
+    @MainActor func extractTabPath() -> String? {
+        _tabPathConfigurable?.extractTabPath()
     }
 }
 

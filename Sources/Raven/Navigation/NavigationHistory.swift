@@ -52,7 +52,10 @@ public final class NavigationHistory {
     private let history: JSObject?
     #endif
 
-    /// Closure to invoke when popstate event occurs
+    /// Closures to invoke when popstate event occurs
+    private var popStateHandlers: [UUID: @Sendable @MainActor (HistoryState) -> Void] = [:]
+
+    /// Deprecated single handler — kept for backward compatibility
     private var popStateHandler: (@Sendable @MainActor (HistoryState) -> Void)?
 
     /// JavaScript closure for popstate events
@@ -212,6 +215,9 @@ public final class NavigationHistory {
                 if let state = state {
                     self.currentState = state
                     self.popStateHandler?(state)
+                    for handler in self.popStateHandlers.values {
+                        handler(state)
+                    }
                 }
             }
 
@@ -233,6 +239,26 @@ public final class NavigationHistory {
     /// - Parameter handler: Closure to invoke with the new history state
     public func onPopState(_ handler: @escaping @Sendable @MainActor (HistoryState) -> Void) {
         self.popStateHandler = handler
+    }
+
+    /// Registers an additional popstate handler and returns an ID for removal.
+    ///
+    /// Unlike `onPopState(_:)`, this supports multiple concurrent handlers.
+    ///
+    /// - Parameter handler: Closure to invoke with the new history state
+    /// - Returns: A UUID that can be used to remove the handler later
+    @discardableResult
+    public func addPopStateHandler(_ handler: @escaping @Sendable @MainActor (HistoryState) -> Void) -> UUID {
+        let id = UUID()
+        popStateHandlers[id] = handler
+        return id
+    }
+
+    /// Removes a previously registered popstate handler.
+    ///
+    /// - Parameter id: The UUID returned from `addPopStateHandler(_:)`
+    public func removePopStateHandler(_ id: UUID) {
+        popStateHandlers.removeValue(forKey: id)
     }
 
     // MARK: - JavaScript Conversion

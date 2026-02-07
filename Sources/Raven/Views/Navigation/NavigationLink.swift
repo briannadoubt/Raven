@@ -35,6 +35,9 @@ public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveVie
     /// Whether this link is currently active
     private let isActive: Bool
 
+    /// Optional value for value-based navigation (used with `navigationDestination`).
+    private let _value: (any Hashable & Sendable)?
+
     // MARK: - Initializers
 
     /// Creates a navigation link with a custom label.
@@ -50,6 +53,7 @@ public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveVie
         self.destination = destination
         self.label = label()
         self.isActive = false
+        self._value = nil
     }
 
     /// Creates a navigation link with an active binding.
@@ -69,6 +73,7 @@ public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveVie
         self.destination = destination
         self.label = label()
         self.isActive = isActive.wrappedValue
+        self._value = nil
     }
 
     // MARK: - VNode Conversion
@@ -136,8 +141,23 @@ public struct NavigationLink<Label: View, Destination: View>: View, PrimitiveVie
 
 extension NavigationLink: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        // Register a click handler (no-op for now; actual push/pop navigation deferred)
-        let handlerID = context.registerClickHandler({ })
+        // Capture the controller reference at render time (not click time),
+        // because _current is only set during the NavigationStack render pass.
+        let controller = NavigationStackController._current
+        let value = self._value
+        let dest = self.destination
+
+        // Register click handler that pushes onto the navigation stack
+        let handlerID = context.registerClickHandler({
+            guard let controller = controller else { return }
+            if let value = value,
+               let resolved = controller.resolveDestination(for: value) {
+                let path = controller.resolvePathForValue(value)
+                controller.push(resolved, path: path)
+            } else {
+                controller.push(AnyView(dest), path: nil)
+            }
+        })
 
         // Render the label content
         let labelNode = context.renderChild(label)
@@ -195,6 +215,7 @@ extension NavigationLink where Label == Text {
         self.destination = destination
         self.label = Text(title)
         self.isActive = false
+        self._value = nil
     }
 
     /// Creates a navigation link with a localized text label.
@@ -210,6 +231,7 @@ extension NavigationLink where Label == Text {
         self.destination = destination
         self.label = Text(titleKey)
         self.isActive = false
+        self._value = nil
     }
 
     /// Creates a navigation link with a text label and active binding.
@@ -227,5 +249,50 @@ extension NavigationLink where Label == Text {
         self.destination = destination
         self.label = Text(title)
         self.isActive = isActive.wrappedValue
+        self._value = nil
+    }
+}
+
+// MARK: - Value-Based Navigation
+
+extension NavigationLink where Label == Text, Destination == EmptyView {
+    /// Creates a navigation link with a text label and a hashable value.
+    ///
+    /// The destination is resolved at navigation time by looking up a
+    /// `navigationDestination(for:)` registered on an ancestor `NavigationStack`.
+    ///
+    /// - Parameters:
+    ///   - title: The string to display as the link's label.
+    ///   - value: The value to present when the link is activated.
+    @MainActor
+    public init<V: Hashable & Sendable>(
+        _ title: String,
+        value: V
+    ) {
+        self.destination = EmptyView()
+        self.label = Text(title)
+        self.isActive = false
+        self._value = value
+    }
+}
+
+extension NavigationLink where Destination == EmptyView {
+    /// Creates a navigation link with a custom label and a hashable value.
+    ///
+    /// The destination is resolved at navigation time by looking up a
+    /// `navigationDestination(for:)` registered on an ancestor `NavigationStack`.
+    ///
+    /// - Parameters:
+    ///   - value: The value to present when the link is activated.
+    ///   - label: A view builder that creates the link's label.
+    @MainActor
+    public init<V: Hashable & Sendable>(
+        value: V,
+        @ViewBuilder label: () -> Label
+    ) {
+        self.destination = EmptyView()
+        self.label = label()
+        self.isActive = false
+        self._value = value
     }
 }

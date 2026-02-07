@@ -39,13 +39,28 @@ struct TodoItem: Identifiable, Sendable {
     }
 }
 
+// MARK: - Tab Enum
+
+/// Represents each tab in the root TabView.
+///
+/// Used as the selection value for the TabView binding. Each case maps to a
+/// `.tabPath()` route so the browser URL updates when switching tabs.
+enum Tab: Hashable, Sendable {
+    case todos
+    case controls
+    case display
+    case layout
+    case forms
+    case effects
+}
+
 // MARK: - Store
 
 /// Central store managing all showcase state including todos and form controls
 @MainActor
 final class ShowcaseStore: ObservableObject {
     // -- Tab state --
-    @Published var selectedTab: String = "todos"
+    @Published var selectedTab: Tab = .todos
 
     // -- Todo state --
     @Published var todos: [TodoItem] = []
@@ -68,7 +83,6 @@ final class ShowcaseStore: ObservableObject {
     @Published var disclosureExpanded: Bool = false
     @Published var colorPickerValue: Color = .blue
     @Published var datePickerValue: Date = Date()
-    @Published var demoTabSelection: Int = 0
 
     init() {
         setupPublished()
@@ -124,7 +138,16 @@ final class ShowcaseStore: ObservableObject {
 
 // MARK: - Root View
 
-/// Tabbed component showcase demonstrating Raven framework capabilities
+/// Tabbed component showcase demonstrating Raven's TabView → NavigationStack architecture.
+///
+/// Each tab owns a URL path segment via `.tabPath()`. NavigationStack inside each tab
+/// manages drill-down navigation (push/pop). Together they produce web-idiomatic URLs:
+///
+///     /todos                  ← Todos tab selected
+///     /todos/detail/abc123    ← Todo detail pushed inside Todos tab
+///     /controls               ← Controls tab selected
+///
+/// Browser back/forward crosses both tab boundaries and navigation stack depth.
 @MainActor
 struct ContentView: View {
     @StateObject var store = ShowcaseStore()
@@ -132,100 +155,75 @@ struct ContentView: View {
     @State private var newTodoText = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            ShowcaseHeader()
-
-            // Tab bar
-            TabBar(selectedTab: store.selectedTab) { tab in
-                store.selectedTab = tab
+        TabView(selection: Binding(
+            get: { store.selectedTab },
+            set: { store.selectedTab = $0 }
+        )) {
+            // -- Todos tab --
+            NavigationStack {
+                TodosTab(store: store, newTodoText: $newTodoText)
+                    .navigationTitle("Todos")
             }
+            .tabItem { Text("Todos") }
+            .tag(Tab.todos)
+            .tabPath("/todos")
 
-            // Tab content
-            if store.selectedTab == "todos" {
-                TodosTab(
-                    store: store,
-                    newTodoText: $newTodoText
-                )
-            }
-            if store.selectedTab == "controls" {
+            // -- Controls tab --
+            NavigationStack {
                 ControlsTab(store: store)
+                    .navigationTitle("Controls")
             }
-            if store.selectedTab == "display" {
+            .tabItem { Text("Controls") }
+            .tag(Tab.controls)
+            .tabPath("/controls")
+
+            // -- Display tab --
+            NavigationStack {
                 DisplayTab()
+                    .navigationTitle("Display")
             }
-            if store.selectedTab == "layout" {
-                LayoutTab(store: store)
+            .tabItem { Text("Display") }
+            .tag(Tab.display)
+            .tabPath("/display")
+
+            // -- Layout tab --
+            NavigationStack {
+                LayoutTab()
+                    .navigationTitle("Layout")
             }
-            if store.selectedTab == "forms" {
+            .tabItem { Text("Layout") }
+            .tag(Tab.layout)
+            .tabPath("/layout")
+
+            // -- Forms tab --
+            NavigationStack {
                 FormsTab(store: store)
+                    .navigationTitle("Forms")
             }
-            if store.selectedTab == "effects" {
+            .tabItem { Text("Forms") }
+            .tag(Tab.forms)
+            .tabPath("/forms")
+
+            // -- Effects tab --
+            NavigationStack {
                 EffectsTab()
+                    .navigationTitle("Effects")
             }
+            .tabItem { Text("Effects") }
+            .tag(Tab.effects)
+            .tabPath("/effects")
         }
-    }
-}
-
-// MARK: - Header
-
-@MainActor
-struct ShowcaseHeader: View {
-    var body: some View {
-        VStack(spacing: 4) {
-            Text("Raven Component Showcase")
-                .font(.title)
-                .foregroundColor(.white)
-
-            Text("Cross-compiled SwiftUI running in the browser yaaaay")
-                .font(.caption)
-                .foregroundColor(Color.tertiaryLabel)
-        }
-        .padding(20)
-        .background(Color(hex: "#1e293b"))
-    }
-}
-
-// MARK: - Tab Bar
-
-@MainActor
-struct TabBar: View {
-    let selectedTab: String
-    let onSelect: @MainActor (String) -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            TabButton(label: "Todos", tab: "todos", isSelected: selectedTab == "todos", onSelect: onSelect)
-            TabButton(label: "Controls", tab: "controls", isSelected: selectedTab == "controls", onSelect: onSelect)
-            TabButton(label: "Display", tab: "display", isSelected: selectedTab == "display", onSelect: onSelect)
-            TabButton(label: "Layout", tab: "layout", isSelected: selectedTab == "layout", onSelect: onSelect)
-            TabButton(label: "Forms", tab: "forms", isSelected: selectedTab == "forms", onSelect: onSelect)
-            TabButton(label: "Effects", tab: "effects", isSelected: selectedTab == "effects", onSelect: onSelect)
-        }
-        .background(Color.secondarySystemBackground)
-    }
-}
-
-@MainActor
-struct TabButton: View {
-    let label: String
-    let tab: String
-    let isSelected: Bool
-    let onSelect: @MainActor (String) -> Void
-
-    var body: some View {
-        Button(label) {
-            onSelect(tab)
-        }
-        .padding(12)
-        .background(isSelected ? Color.systemBackground : Color.clear)
-        .foregroundColor(isSelected ? Color.accent : Color.secondaryLabel)
-        .font(.body)
     }
 }
 
 // MARK: - Todos Tab
 
+/// Demonstrates NavigationStack drill-down inside a TabView tab.
+///
+/// Tapping a todo pushes a `TodoDetailView` onto the NavigationStack. Because
+/// the Todos tab has `.tabPath("/todos")`, the URL stays at `/todos` for the
+/// list and would extend to `/todos/detail/:id` for detail views when using
+/// path-based `navigationDestination`.
 @MainActor
 struct TodosTab: View {
     let store: ShowcaseStore
@@ -275,29 +273,23 @@ struct TodosTab: View {
                 }
             }
 
-            // Todo list
+            // Todo list — each item is a NavigationLink to its detail view
             if store.filteredTodos.isEmpty {
-                Text("No todos to display")
-                    .foregroundColor(Color.tertiaryLabel)
-                    .padding(20)
+                ContentUnavailableView(
+                    "No Todos",
+                    systemImage: "checklist",
+                    description: Text("Add a todo above to get started")
+                )
             } else {
                 List(store.filteredTodos) { todo in
-                    HStack(spacing: 12) {
-                        Button(todo.isCompleted ? "[x]" : "[ ]") {
-                            store.toggleTodo(todo.id)
+                    NavigationLink(destination: TodoDetailView(store: store, todoId: todo.id)) {
+                        HStack(spacing: 8) {
+                            Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(todo.isCompleted ? Color.green : Color.tertiaryLabel)
+
+                            Text(todo.text)
+                                .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
                         }
-                        .foregroundColor(todo.isCompleted ? Color.green : Color.tertiaryLabel)
-
-                        Text(todo.text)
-                            .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
-
-                        Spacer()
-
-                        Button("Delete") {
-                            store.deleteTodo(todo.id)
-                        }
-                        .foregroundColor(Color.red)
-                        .font(.caption)
                     }
                 }
             }
@@ -315,6 +307,64 @@ struct TodosTab: View {
             }
         }
         .padding(16)
+    }
+}
+
+// MARK: - Todo Detail View
+
+/// Detail view for a single todo, pushed by NavigationStack within the Todos tab.
+///
+/// Demonstrates NavigationStack drill-down: the back button pops this view,
+/// and pressing browser-back from the Todos list switches to the previous tab.
+@MainActor
+struct TodoDetailView: View {
+    let store: ShowcaseStore
+    let todoId: UUID
+
+    var body: some View {
+        if let todo = store.todos.first(where: { $0.id == todoId }) {
+            VStack(spacing: 16) {
+                Text(todo.text)
+                    .font(.title)
+
+                HStack(spacing: 8) {
+                    Text("Status:")
+                        .foregroundColor(Color.secondaryLabel)
+                    Text(todo.isCompleted ? "Completed" : "Active")
+                        .foregroundColor(todo.isCompleted ? Color.green : Color.accent)
+                        .font(.headline)
+                }
+
+                Divider()
+
+                Button(todo.isCompleted ? "Mark Active" : "Mark Completed") {
+                    store.toggleTodo(todoId)
+                }
+                .padding(12)
+                .background(Color.accent.opacity(0.1))
+                .foregroundColor(Color.accent)
+                .cornerRadius(8)
+
+                Button("Delete Todo") {
+                    store.deleteTodo(todoId)
+                }
+                .padding(12)
+                .background(Color.red.opacity(0.1))
+                .foregroundColor(Color.red)
+                .cornerRadius(8)
+
+                Spacer()
+            }
+            .padding(16)
+            .navigationTitle(todo.text)
+            .navigationBarTitleDisplayMode(.inline)
+        } else {
+            ContentUnavailableView(
+                "Todo Not Found",
+                systemImage: "questionmark.circle",
+                description: Text("This todo may have been deleted")
+            )
+        }
     }
 }
 
@@ -637,12 +687,10 @@ struct ShapesDemo: View {
 
 @MainActor
 struct LayoutTab: View {
-    let store: ShowcaseStore
-
     var body: some View {
         VStack(spacing: 16) {
             LayoutBasicDemos()
-            LayoutAdvancedDemos(store: store)
+            LayoutAdvancedDemos()
         }
         .padding(16)
     }
@@ -663,16 +711,12 @@ struct LayoutBasicDemos: View {
 
 @MainActor
 struct LayoutAdvancedDemos: View {
-    let store: ShowcaseStore
-
     var body: some View {
         VStack(spacing: 16) {
             GridDemo()
             LazyVGridDemo()
             LazyVStackDemo()
             GeometryReaderDemo()
-            TabViewDemo(store: store)
-            NavigationDemo()
         }
     }
 }
@@ -949,99 +993,6 @@ struct GeometryReaderDemo: View {
                     .foregroundColor(Color.secondaryLabel)
             }
             .frame(height: 40)
-        }
-    }
-}
-
-// MARK: - TabView Demo
-
-@MainActor
-struct TabViewDemo: View {
-    let store: ShowcaseStore
-
-    var body: some View {
-        SectionCard(title: "TabView") {
-            VStack(spacing: 8) {
-                TabView(selection: Binding(
-                    get: { store.demoTabSelection },
-                    set: { store.demoTabSelection = $0 }
-                )) {
-                    VStack(spacing: 8) {
-                        Text("Home Content")
-                            .font(.headline)
-                        Text("Welcome to the home tab")
-                            .font(.caption)
-                            .foregroundColor(Color.secondaryLabel)
-                    }
-                    .padding(16)
-                    .tabItem { Text("Home") }
-                    .tag(0)
-
-                    VStack(spacing: 8) {
-                        Text("Search Content")
-                            .font(.headline)
-                        Text("Find what you need")
-                            .font(.caption)
-                            .foregroundColor(Color.secondaryLabel)
-                    }
-                    .padding(16)
-                    .tabItem { Text("Search") }
-                    .tag(1)
-
-                    VStack(spacing: 8) {
-                        Text("Profile Content")
-                            .font(.headline)
-                        Text("Your account details")
-                            .font(.caption)
-                            .foregroundColor(Color.secondaryLabel)
-                    }
-                    .padding(16)
-                    .tabItem { Text("Profile") }
-                    .tag(2)
-                }
-
-                Text("Selected tab: \(store.demoTabSelection)")
-                    .font(.caption)
-                    .foregroundColor(Color.secondaryLabel)
-            }
-        }
-    }
-}
-
-// MARK: - Navigation Demo
-
-@MainActor
-struct NavigationDemo: View {
-    var body: some View {
-        SectionCard(title: "NavigationStack") {
-            NavigationStack {
-                VStack(spacing: 0) {
-                    NavigationLink(destination: Text("Detail View")) {
-                        HStack(spacing: 8) {
-                            Text("Settings")
-                                .foregroundColor(Color.label)
-                        }
-                    }
-
-                    Divider()
-
-                    NavigationLink(destination: Text("About View")) {
-                        HStack(spacing: 8) {
-                            Text("About")
-                                .foregroundColor(Color.label)
-                        }
-                    }
-
-                    Divider()
-
-                    NavigationLink(destination: Text("Help View")) {
-                        HStack(spacing: 8) {
-                            Text("Help")
-                                .foregroundColor(Color.label)
-                        }
-                    }
-                }
-            }
         }
     }
 }

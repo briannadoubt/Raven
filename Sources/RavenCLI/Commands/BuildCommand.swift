@@ -25,13 +25,13 @@ struct BuildCommand: ParsableCommand {
     @Flag(name: .long, help: "Use -Osize optimization for smallest binary size")
     var optimizeSize: Bool = false
 
-    @Flag(name: .long, help: "Strip debug symbols with wasm-strip (requires wabt)")
+    @Flag(name: .long, inversion: .prefixedNo, help: "Strip debug symbols with wasm-strip (requires wabt)")
     var stripDebug: Bool = true
 
     @Flag(name: .long, help: "Generate Brotli compressed bundle (.br)")
     var compress: Bool = false
 
-    @Flag(name: .long, help: "Show detailed bundle size report")
+    @Flag(name: .long, inversion: .prefixedNo, help: "Show detailed bundle size report")
     var reportSize: Bool = true
 
     func run() throws {

@@ -314,6 +314,7 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
             tagValue: nil,
             tabItem: defaultTabItem,
             badge: nil,
+            path: nil,
             content: AnyView(view)
         )
         tabs.append(tab)
@@ -503,8 +504,31 @@ extension TabViewContainer: _CoordinatorRenderable {
             return VNode.element("div", props: [:], children: [])
         }
 
-        // 3. Determine selected index
-        let selectedIndex: Int
+        // 2b. Set up route controller for path-based tabs
+        let hasAnyPaths = tabs.contains { $0.path != nil }
+        let routeController: TabViewRouteController? = hasAnyPaths
+            ? context.persistentState(create: { TabViewRouteController() })
+            : nil
+
+        if let rc = routeController {
+            rc.renderScheduler = context as? (any _StateChangeReceiver)
+            rc.tabPaths = tabs.enumerated().compactMap { index, tab in
+                guard let path = tab.path else { return nil }
+                return (index: index, path: path, tagValue: tab.tagValue.map { AnyHashable($0) })
+            }
+            rc.onSelectTab = { [selection] tabIndex in
+                guard let selection = selection else { return }
+                if let tagValue = tabs[tabIndex].tagValue {
+                    selection.wrappedValue = tagValue
+                } else if let intIndex = tabIndex as? SelectionValue {
+                    selection.wrappedValue = intIndex
+                }
+            }
+            rc.setupPopstateListenerIfNeeded()
+        }
+
+        // 3. Determine selected index (deep link may override)
+        var selectedIndex: Int
         if let sel = selection {
             let currentValue = sel.wrappedValue
             if let matchIndex = tabs.firstIndex(where: { tab in
@@ -521,11 +545,24 @@ extension TabViewContainer: _CoordinatorRenderable {
             selectedIndex = 0
         }
 
+        // 3b. Handle deep link on first render
+        if let rc = routeController, let deepLinkIndex = rc.handleDeepLink() {
+            selectedIndex = deepLinkIndex
+            // Update the selection binding to match the deep-linked tab
+            if let selection = selection {
+                if let tagValue = tabs[deepLinkIndex].tagValue {
+                    selection.wrappedValue = tagValue
+                } else if let intIndex = deepLinkIndex as? SelectionValue {
+                    selection.wrappedValue = intIndex
+                }
+            }
+        }
+
         // 4. Build tab bar buttons
         let tabButtons: [VNode] = tabs.enumerated().map { index, tab in
             let isSelected = index == selectedIndex
 
-            // Register click handler that updates the selection
+            // Register click handler that updates the selection and pushes history
             let handlerID = context.registerClickHandler { [selection] in
                 guard let selection = selection else { return }
                 // If the tab has a tag value, use it
@@ -533,6 +570,14 @@ extension TabViewContainer: _CoordinatorRenderable {
                     selection.wrappedValue = tagValue
                 } else if let intIndex = index as? SelectionValue {
                     selection.wrappedValue = intIndex
+                }
+
+                // Push browser history if this tab has a path
+                if let tabPath = tab.path {
+                    NavigationHistory.shared.pushState(
+                        path: tabPath,
+                        state: ["__ravenTab": "\(index)"]
+                    )
                 }
             }
 
@@ -655,10 +700,18 @@ extension TabViewContainer: _CoordinatorRenderable {
 
     /// Extracts a single tab from a child view, handling TaggedView, TabConfigurable, and plain views.
     @MainActor private func extractTab(from child: any View, index: Int) -> ExtractedTab<SelectionValue> {
+        // Extract path from the TabPathConfigurable chain at any level
+        let path = (child as? any TabPathConfigurable)?.extractTabPath()
+
+        // Unwrap through TabPathModifier to find the inner view for tag/config extraction.
+        // When the user writes .tag(0).tabPath("/home"), the outer view is
+        // TabPathModifier<TaggedView<Int>> — we need to look inside for the TaggedView.
+        let innerChild: any View = (child as? any _TabPathContentProvider)?.tabPathInnerContent ?? child
+
         // Case 1: TaggedView — extract tag value and check for inner TabConfigurable
         // Must check before TabConfigurable since TaggedView also conforms to TabConfigurable
         // but we need to preserve the tag value for selection binding
-        if let taggedView = child as? TaggedView<SelectionValue> {
+        if let taggedView = innerChild as? TaggedView<SelectionValue> {
             let tagValue = taggedView.tagValue
 
             // Check if the tagged content has tab configuration
@@ -668,6 +721,7 @@ extension TabViewContainer: _CoordinatorRenderable {
                     tagValue: tagValue,
                     tabItem: config.tabItem,
                     badge: config.badge,
+                    path: path,
                     content: config.content
                 )
             }
@@ -682,17 +736,19 @@ extension TabViewContainer: _CoordinatorRenderable {
                 tagValue: tagValue,
                 tabItem: defaultLabel,
                 badge: nil,
+                path: path,
                 content: taggedView.content
             )
         }
 
         // Case 2: TabConfigurable directly (e.g. TabItemModifier without .tag())
-        if let configurable = child as? any TabConfigurable,
+        if let configurable = innerChild as? any TabConfigurable,
            let config = configurable.extractTabConfiguration() {
             return ExtractedTab<SelectionValue>(
                 tagValue: nil,
                 tabItem: config.tabItem,
                 badge: config.badge,
+                path: path,
                 content: config.content
             )
         }
@@ -707,7 +763,8 @@ extension TabViewContainer: _CoordinatorRenderable {
             tagValue: nil,
             tabItem: defaultLabel,
             badge: nil,
-            content: AnyView(child)
+            path: path,
+            content: AnyView(innerChild)
         )
     }
 }
@@ -724,6 +781,9 @@ internal struct ExtractedTab<SelectionValue: Hashable> where SelectionValue: Sen
 
     /// The badge text (if any)
     let badge: String?
+
+    /// The URL path for tab-based routing (if any)
+    let path: String?
 
     /// The content view for this tab
     let content: AnyView
@@ -758,3 +818,83 @@ internal protocol TabForEachViewProtocol {
 // Note: The actual conformances for TupleView, ConditionalContent, OptionalContent,
 // and ForEachView would be added in separate extensions to avoid circular dependencies
 // and allow the rendering system to properly handle tab content.
+
+// MARK: - TabView Route Controller
+
+/// Internal controller that manages tab-based URL routing for TabView.
+///
+/// Handles:
+/// - Pushing tab paths to browser history when a tab with a path is selected
+/// - Resolving deep links on initial page load
+/// - Responding to popstate events to switch tabs on browser back/forward
+@MainActor
+internal final class TabViewRouteController {
+    /// Whether the popstate listener has been registered.
+    private var popstateListenerSetup = false
+
+    /// Whether the initial deep link has been handled.
+    private var deepLinkHandled = false
+
+    /// The ID of the registered popstate handler (for cleanup).
+    private var popstateHandlerID: UUID?
+
+    /// Current tab path mappings, refreshed each render.
+    var tabPaths: [(index: Int, path: String, tagValue: AnyHashable?)] = []
+
+    /// Weak reference to the render scheduler for triggering re-renders.
+    weak var renderScheduler: (any _StateChangeReceiver)?
+
+    /// Callback to update the selection binding when a tab is selected via routing.
+    var onSelectTab: (@MainActor (Int) -> Void)?
+
+    /// Set up the popstate listener if not already done.
+    func setupPopstateListenerIfNeeded() {
+        guard !popstateListenerSetup else { return }
+        popstateListenerSetup = true
+
+        popstateHandlerID = NavigationHistory.shared.addPopStateHandler { [weak self] state in
+            guard let self = self else { return }
+
+            let currentPath = state.path
+
+            // Check if this popstate event corresponds to a tab switch
+            // by looking for a tab whose path is a prefix of the current URL
+            if let tabData = state.data["__ravenTab"], let tabIndex = Int(tabData) {
+                // State explicitly encodes the tab index
+                self.onSelectTab?(tabIndex)
+                self.renderScheduler?.scheduleRender()
+            } else {
+                // Fall back to prefix matching
+                if let matched = self.findTabByPathPrefix(currentPath) {
+                    self.onSelectTab?(matched.index)
+                    self.renderScheduler?.scheduleRender()
+                }
+            }
+        }
+    }
+
+    /// Attempt to resolve a deep link on first render.
+    ///
+    /// - Returns: The tab index to select, or nil if no match
+    func handleDeepLink() -> Int? {
+        guard !deepLinkHandled else { return nil }
+        deepLinkHandled = true
+
+        let currentPath = NavigationHistory.shared.getCurrentPath()
+        guard currentPath != "/" && !currentPath.isEmpty else { return nil }
+
+        return findTabByPathPrefix(currentPath)?.index
+    }
+
+    /// Find the tab whose path is a prefix of the given URL path.
+    private func findTabByPathPrefix(_ urlPath: String) -> (index: Int, path: String, tagValue: AnyHashable?)? {
+        // Sort by path length descending so longer (more specific) paths match first
+        let sorted = tabPaths.sorted { $0.path.count > $1.path.count }
+        for entry in sorted {
+            if urlPath == entry.path || urlPath.hasPrefix(entry.path + "/") {
+                return entry
+            }
+        }
+        return nil
+    }
+}

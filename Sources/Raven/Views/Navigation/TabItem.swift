@@ -235,6 +235,20 @@ protocol TabConfigurable {
     func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)?
 }
 
+// MARK: - Tab Path Protocol
+
+/// Protocol for extracting a route path from views in a TabView.
+@MainActor
+protocol TabPathConfigurable {
+    func extractTabPath() -> String?
+}
+
+/// Protocol for unwrapping through TabPathModifier to access the inner content.
+@MainActor
+protocol _TabPathContentProvider {
+    var tabPathInnerContent: any View { get }
+}
+
 // MARK: - TabItemModifier Conformance
 
 extension TabItemModifier: TabConfigurable {
@@ -298,5 +312,91 @@ extension BadgeModifier: TabConfigurable {
             return config
         }
         return nil
+    }
+}
+
+extension BadgeModifier: TabPathConfigurable {
+    @MainActor func extractTabPath() -> String? {
+        (content as? any TabPathConfigurable)?.extractTabPath()
+    }
+}
+
+// MARK: - TabPath Modifier
+
+/// Internal view wrapper that stores a URL path for tab-based routing.
+struct TabPathModifier<Content: View>: View, PrimitiveView, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let path: String
+
+    @MainActor init(content: Content, path: String) {
+        self.content = content
+        self.path = path
+    }
+}
+
+extension TabPathModifier: TabPathConfigurable {
+    @MainActor func extractTabPath() -> String? {
+        path
+    }
+}
+
+extension TabPathModifier: TabConfigurable {
+    @MainActor func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)? {
+        (content as? any TabConfigurable)?.extractTabConfiguration()
+    }
+}
+
+extension TabPathModifier: _TabPathContentProvider {
+    @MainActor var tabPathInnerContent: any View { content }
+}
+
+extension TabPathModifier: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        context.renderChild(content)
+    }
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+// MARK: - TabItemModifier TabPathConfigurable
+
+extension TabItemModifier: TabPathConfigurable {
+    @MainActor func extractTabPath() -> String? {
+        (content as? any TabPathConfigurable)?.extractTabPath()
+    }
+}
+
+// MARK: - View Extension for tabPath
+
+extension View {
+    /// Associates a URL path with this tab for browser routing.
+    ///
+    /// When this tab is selected, the browser URL will update to the given path.
+    /// Tabs without `.tabPath()` do not change the URL when selected.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// TabView(selection: $tab) {
+    ///     HomeView()
+    ///         .tabItem { Label("Home", systemImage: "house") }
+    ///         .tag(Tab.home)
+    ///         .tabPath("/home")
+    ///
+    ///     SearchView()
+    ///         .tabItem { Label("Search", systemImage: "magnifyingglass") }
+    ///         .tag(Tab.search)
+    ///         .tabPath("/search")
+    /// }
+    /// ```
+    ///
+    /// - Parameter path: The URL path for this tab (e.g. "/home").
+    /// - Returns: A view with tab path configuration.
+    @MainActor public func tabPath(_ path: String) -> some View {
+        TabPathModifier(content: self, path: path)
     }
 }

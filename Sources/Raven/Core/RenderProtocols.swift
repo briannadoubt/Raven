@@ -34,6 +34,10 @@ import JavaScriptKit
     /// Register an input handler that receives the raw DOM event and return its unique ID.
     /// The ID is stable across renders based on position in the view tree.
     func registerInputHandler(_ handler: @escaping @Sendable @MainActor (JSValue) -> Void) -> UUID
+
+    /// Retrieve or create a persistent state object keyed by position in the view tree.
+    /// The object survives across re-renders, enabling stateful controllers (e.g. NavigationStackController).
+    func persistentState<T: AnyObject>(create: () -> T) -> T
 }
 
 // MARK: - Coordinator Renderable Protocol

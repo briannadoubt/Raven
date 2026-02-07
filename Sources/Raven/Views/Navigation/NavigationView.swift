@@ -203,6 +203,65 @@ extension EnvironmentValues {
     }
 }
 
+// MARK: - Navigation Title Modifier
+
+/// A modifier view that sets the navigation title on the current
+/// `NavigationStackController` during render and passes through its content.
+@MainActor
+struct _NavigationTitleModifier<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let title: String
+
+    @MainActor func toVNode() -> VNode {
+        return VNode.text("")
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        NavigationStackController._current?.setCurrentTitle(title)
+        return context.renderChild(content)
+    }
+}
+
+/// A modifier view that sets the navigation bar title display mode on the current
+/// `NavigationStackController` during render and passes through its content.
+@MainActor
+struct _NavigationBarTitleDisplayModeModifier<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let displayMode: NavigationBarTitleDisplayMode
+
+    @MainActor func toVNode() -> VNode {
+        return VNode.text("")
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        NavigationStackController._current?.setCurrentDisplayMode(displayMode)
+        return context.renderChild(content)
+    }
+}
+
+/// A modifier view that hides/shows the navigation bar on the current
+/// `NavigationStackController` during render and passes through its content.
+@MainActor
+struct _NavigationBarHiddenModifier<Content: View>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    typealias Body = Never
+
+    let content: Content
+    let hidden: Bool
+
+    @MainActor func toVNode() -> VNode {
+        return VNode.text("")
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        NavigationStackController._current?.setCurrentNavBarHidden(hidden)
+        return context.renderChild(content)
+    }
+}
+
 // MARK: - Navigation Bar Modifiers
 
 extension View {
@@ -223,9 +282,7 @@ extension View {
     /// - Returns: A view with a navigation title.
     @MainActor
     public func navigationTitle(_ title: String) -> some View {
-        // For Phase 4, this is a placeholder
-        // Future phases will implement proper navigation bar title handling
-        self
+        _NavigationTitleModifier(content: self, title: title)
     }
 
     /// Sets the navigation bar title display mode.
@@ -234,8 +291,7 @@ extension View {
     /// - Returns: A view with the specified navigation bar title display mode.
     @MainActor
     public func navigationBarTitleDisplayMode(_ displayMode: NavigationBarTitleDisplayMode) -> some View {
-        // For Phase 4, this is a placeholder
-        self
+        _NavigationBarTitleDisplayModeModifier(content: self, displayMode: displayMode)
     }
 
     /// Hides the navigation bar for this view.
@@ -244,8 +300,7 @@ extension View {
     /// - Returns: A view with the navigation bar visibility set.
     @MainActor
     public func navigationBarHidden(_ hidden: Bool) -> some View {
-        // For Phase 4, this is a placeholder
-        self
+        _NavigationBarHiddenModifier(content: self, hidden: hidden)
     }
 }
 
