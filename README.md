@@ -88,6 +88,19 @@ cd MyApp
 # Output will be in dist/
 ```
 
+## AI Agent Support
+
+This repository supports both Claude and Codex workflows.
+
+- Claude config and skills: `/Users/bri/dev/Raven/.claude/`
+- Codex config and skills: `/Users/bri/dev/Raven/.codex/`
+- Codex repo instructions: `/Users/bri/dev/Raven/AGENTS.md`
+
+Codex local skills included:
+
+- `raven-dev`: `/Users/bri/dev/Raven/.codex/skills/raven-dev/SKILL.md`
+- `swift-wasm`: `/Users/bri/dev/Raven/.codex/skills/swift-wasm/SKILL.md`
+
 ## What's New in v0.7.0 (Phase 13)
 
 Raven v0.7.0 introduces a comprehensive gesture recognition system with full SwiftUI compatibility:
