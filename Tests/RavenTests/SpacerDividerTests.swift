@@ -1,13 +1,13 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for Spacer and Divider layout views
 @MainActor
-final class SpacerDividerTests: XCTestCase {
+@Suite struct SpacerDividerTests {
 
     // MARK: - Spacer Tests
 
-    func testBasicSpacerRendering() async throws {
+    @Test func basicSpacerRendering() async throws {
         // Create a basic spacer
         let spacer = Spacer()
 
@@ -15,38 +15,38 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = spacer.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Spacer should create a div element")
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.elementTag == "div")
 
         // Verify flexbox properties
-        XCTAssertNotNil(vnode.props["flex-grow"], "Spacer should have flex-grow property")
-        XCTAssertNotNil(vnode.props["flex-shrink"], "Spacer should have flex-shrink property")
-        XCTAssertNotNil(vnode.props["flex-basis"], "Spacer should have flex-basis property")
+        #expect(vnode.props["flex-grow"] != nil)
+        #expect(vnode.props["flex-shrink"] != nil)
+        #expect(vnode.props["flex-basis"] != nil)
 
         // Verify correct flex values
         if case .style(name: "flex-grow", value: let value) = vnode.props["flex-grow"] {
-            XCTAssertEqual(value, "1", "flex-grow should be 1")
+            #expect(value == "1")
         } else {
-            XCTFail("flex-grow should be a style property with value '1'")
+            Issue.record("flex-grow should be a style property with value '1'")
         }
 
         if case .style(name: "flex-shrink", value: let value) = vnode.props["flex-shrink"] {
-            XCTAssertEqual(value, "1", "flex-shrink should be 1")
+            #expect(value == "1")
         } else {
-            XCTFail("flex-shrink should be a style property with value '1'")
+            Issue.record("flex-shrink should be a style property with value '1'")
         }
 
         if case .style(name: "flex-basis", value: let value) = vnode.props["flex-basis"] {
-            XCTAssertEqual(value, "0", "flex-basis should be 0")
+            #expect(value == "0")
         } else {
-            XCTFail("flex-basis should be a style property with value '0'")
+            Issue.record("flex-basis should be a style property with value '0'")
         }
 
         // Verify no children
-        XCTAssertTrue(vnode.children.isEmpty, "Spacer should have no children")
+        #expect(vnode.children.isEmpty)
     }
 
-    func testSpacerWithMinLength() async throws {
+    @Test func spacerWithMinLength() async throws {
         // Create a spacer with minimum length
         let spacer = Spacer(minLength: 20)
 
@@ -54,24 +54,24 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = spacer.toVNode()
 
         // Verify min-width and min-height are set
-        XCTAssertNotNil(vnode.props["min-width"], "Spacer with minLength should have min-width")
-        XCTAssertNotNil(vnode.props["min-height"], "Spacer with minLength should have min-height")
+        #expect(vnode.props["min-width"] != nil)
+        #expect(vnode.props["min-height"] != nil)
 
         // Verify correct min-length values
         if case .style(name: "min-width", value: let value) = vnode.props["min-width"] {
-            XCTAssertEqual(value, "20.0px", "min-width should be 20.0px")
+            #expect(value == "20.0px")
         } else {
-            XCTFail("min-width should be a style property with value '20.0px'")
+            Issue.record("min-width should be a style property with value '20.0px'")
         }
 
         if case .style(name: "min-height", value: let value) = vnode.props["min-height"] {
-            XCTAssertEqual(value, "20.0px", "min-height should be 20.0px")
+            #expect(value == "20.0px")
         } else {
-            XCTFail("min-height should be a style property with value '20.0px'")
+            Issue.record("min-height should be a style property with value '20.0px'")
         }
     }
 
-    func testSpacerWithoutMinLength() async throws {
+    @Test func spacerWithoutMinLength() async throws {
         // Create a spacer without minimum length
         let spacer = Spacer()
 
@@ -79,11 +79,11 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = spacer.toVNode()
 
         // Verify min-width and min-height are not set
-        XCTAssertNil(vnode.props["min-width"], "Spacer without minLength should not have min-width")
-        XCTAssertNil(vnode.props["min-height"], "Spacer without minLength should not have min-height")
+        #expect(vnode.props["min-width"] == nil)
+        #expect(vnode.props["min-height"] == nil)
     }
 
-    func testSpacerWithCustomMinLength() async throws {
+    @Test func spacerWithCustomMinLength() async throws {
         // Create spacers with different min lengths
         let spacer1 = Spacer(minLength: 10)
         let spacer2 = Spacer(minLength: 50.5)
@@ -93,18 +93,18 @@ final class SpacerDividerTests: XCTestCase {
 
         // Verify spacer1
         if case .style(name: "min-width", value: let value) = vnode1.props["min-width"] {
-            XCTAssertEqual(value, "10.0px")
+            #expect(value == "10.0px")
         }
 
         // Verify spacer2
         if case .style(name: "min-width", value: let value) = vnode2.props["min-width"] {
-            XCTAssertEqual(value, "50.5px")
+            #expect(value == "50.5px")
         }
     }
 
     // MARK: - Divider Tests
 
-    func testBasicDividerRendering() async throws {
+    @Test func basicDividerRendering() async throws {
         // Create a basic divider
         let divider = Divider()
 
@@ -112,39 +112,39 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = divider.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Divider should create a div element")
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.elementTag == "div")
 
         // Verify border styling
-        XCTAssertNotNil(vnode.props["border-top"], "Divider should have border-top property")
+        #expect(vnode.props["border-top"] != nil)
 
         if case .style(name: "border-top", value: let value) = vnode.props["border-top"] {
-            XCTAssertEqual(value, "1px solid #d1d5db", "border-top should be 1px solid with gray color")
+            #expect(value == "1px solid #d1d5db")
         } else {
-            XCTFail("border-top should be a style property")
+            Issue.record("border-top should be a style property")
         }
 
         // Verify dimensions
-        XCTAssertNotNil(vnode.props["height"], "Divider should have height property")
-        XCTAssertNotNil(vnode.props["width"], "Divider should have width property")
+        #expect(vnode.props["height"] != nil)
+        #expect(vnode.props["width"] != nil)
 
         if case .style(name: "height", value: let value) = vnode.props["height"] {
-            XCTAssertEqual(value, "0", "height should be 0")
+            #expect(value == "0")
         } else {
-            XCTFail("height should be a style property")
+            Issue.record("height should be a style property")
         }
 
         if case .style(name: "width", value: let value) = vnode.props["width"] {
-            XCTAssertEqual(value, "100%", "width should be 100%")
+            #expect(value == "100%")
         } else {
-            XCTFail("width should be a style property")
+            Issue.record("width should be a style property")
         }
 
         // Verify no children
-        XCTAssertTrue(vnode.children.isEmpty, "Divider should have no children")
+        #expect(vnode.children.isEmpty)
     }
 
-    func testDividerFlexShrink() async throws {
+    @Test func dividerFlexShrink() async throws {
         // Create a divider
         let divider = Divider()
 
@@ -152,16 +152,16 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = divider.toVNode()
 
         // Verify flex-shrink is set to prevent growing in flex layouts
-        XCTAssertNotNil(vnode.props["flex-shrink"], "Divider should have flex-shrink property")
+        #expect(vnode.props["flex-shrink"] != nil)
 
         if case .style(name: "flex-shrink", value: let value) = vnode.props["flex-shrink"] {
-            XCTAssertEqual(value, "0", "flex-shrink should be 0 to prevent shrinking")
+            #expect(value == "0")
         } else {
-            XCTFail("flex-shrink should be a style property with value '0'")
+            Issue.record("flex-shrink should be a style property with value '0'")
         }
     }
 
-    func testDividerMargins() async throws {
+    @Test func dividerMargins() async throws {
         // Create a divider
         let divider = Divider()
 
@@ -169,21 +169,21 @@ final class SpacerDividerTests: XCTestCase {
         let vnode = divider.toVNode()
 
         // Verify margins are set
-        XCTAssertNotNil(vnode.props["margin-top"], "Divider should have margin-top property")
-        XCTAssertNotNil(vnode.props["margin-bottom"], "Divider should have margin-bottom property")
+        #expect(vnode.props["margin-top"] != nil)
+        #expect(vnode.props["margin-bottom"] != nil)
 
         if case .style(name: "margin-top", value: let value) = vnode.props["margin-top"] {
-            XCTAssertEqual(value, "0", "margin-top should be 0")
+            #expect(value == "0")
         }
 
         if case .style(name: "margin-bottom", value: let value) = vnode.props["margin-bottom"] {
-            XCTAssertEqual(value, "0", "margin-bottom should be 0")
+            #expect(value == "0")
         }
     }
 
     // MARK: - Integration Tests
 
-    func testMultipleSpacersHaveUniqueIDs() async throws {
+    @Test func multipleSpacersHaveUniqueIDs() async throws {
         // Create multiple spacers
         let spacer1 = Spacer()
         let spacer2 = Spacer()
@@ -195,12 +195,12 @@ final class SpacerDividerTests: XCTestCase {
         let vnode3 = spacer3.toVNode()
 
         // Verify unique IDs
-        XCTAssertNotEqual(vnode1.id, vnode2.id, "Different spacers should have unique IDs")
-        XCTAssertNotEqual(vnode1.id, vnode3.id, "Different spacers should have unique IDs")
-        XCTAssertNotEqual(vnode2.id, vnode3.id, "Different spacers should have unique IDs")
+        #expect(vnode1.id != vnode2.id)
+        #expect(vnode1.id != vnode3.id)
+        #expect(vnode2.id != vnode3.id)
     }
 
-    func testMultipleDividersHaveUniqueIDs() async throws {
+    @Test func multipleDividersHaveUniqueIDs() async throws {
         // Create multiple dividers
         let divider1 = Divider()
         let divider2 = Divider()
@@ -210,26 +210,26 @@ final class SpacerDividerTests: XCTestCase {
         let vnode2 = divider2.toVNode()
 
         // Verify unique IDs
-        XCTAssertNotEqual(vnode1.id, vnode2.id, "Different dividers should have unique IDs")
+        #expect(vnode1.id != vnode2.id)
     }
 
-    func testSpacerAndDividerAreViews() async throws {
+    @Test func spacerAndDividerAreViews() async throws {
         // Verify that Spacer and Divider conform to View protocol
         func acceptsView<V: View>(_ view: V) -> Bool {
             return true
         }
 
-        XCTAssertTrue(acceptsView(Spacer()), "Spacer should conform to View")
-        XCTAssertTrue(acceptsView(Divider()), "Divider should conform to View")
+        #expect(acceptsView(Spacer()))
+        #expect(acceptsView(Divider()))
     }
 
-    func testSpacerAndDividerAreSendable() async throws {
+    @Test func spacerAndDividerAreSendable() async throws {
         // Verify that Spacer and Divider conform to Sendable
         func acceptsSendable<S: Sendable>(_ value: S) -> Bool {
             return true
         }
 
-        XCTAssertTrue(acceptsSendable(Spacer()), "Spacer should conform to Sendable")
-        XCTAssertTrue(acceptsSendable(Divider()), "Divider should conform to Sendable")
+        #expect(acceptsSendable(Spacer()))
+        #expect(acceptsSendable(Divider()))
     }
 }

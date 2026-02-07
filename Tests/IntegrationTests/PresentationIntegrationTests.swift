@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 // MARK: - Presentation Integration Tests
@@ -8,11 +8,11 @@ import XCTest
 // and memory management.
 
 @MainActor
-final class PresentationIntegrationTests: XCTestCase {
+@Suite struct PresentationIntegrationTests {
 
     // MARK: - Nested Presentations
 
-    func testNestedSheetOnSheet() async throws {
+    @Test func nestedSheetOnSheet() async throws {
         let coordinator = PresentationCoordinator()
 
         // Present first sheet
@@ -21,8 +21,8 @@ final class PresentationIntegrationTests: XCTestCase {
             content: AnyView(Text("First Sheet"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.id, firstId)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.id == firstId)
 
         // Present second sheet on top of first
         let secondId = coordinator.present(
@@ -30,24 +30,24 @@ final class PresentationIntegrationTests: XCTestCase {
             content: AnyView(Text("Second Sheet"))
         )
 
-        XCTAssertEqual(coordinator.count, 2)
-        XCTAssertEqual(coordinator.topPresentation()?.id, secondId)
+        #expect(coordinator.count == 2)
+        #expect(coordinator.topPresentation()?.id == secondId)
 
         // Verify z-index ordering
         let presentations = coordinator.presentations
-        XCTAssertTrue(presentations[0].zIndex < presentations[1].zIndex)
+        #expect(presentations[0].zIndex < presentations[1].zIndex)
 
         // Dismiss second sheet
         coordinator.dismiss(secondId)
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.id, firstId)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.id == firstId)
 
         // Dismiss first sheet
         coordinator.dismiss(firstId)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
-    func testAlertOnSheet() async throws {
+    @Test func alertOnSheet() async throws {
         let coordinator = PresentationCoordinator()
 
         // Present sheet
@@ -56,7 +56,7 @@ final class PresentationIntegrationTests: XCTestCase {
             content: AnyView(Text("Sheet"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Present alert on top of sheet
         let alertId = coordinator.present(
@@ -64,24 +64,24 @@ final class PresentationIntegrationTests: XCTestCase {
             content: AnyView(Text("Alert"))
         )
 
-        XCTAssertEqual(coordinator.count, 2)
+        #expect(coordinator.count == 2)
 
         // Alert should be on top
-        XCTAssertEqual(coordinator.topPresentation()?.id, alertId)
+        #expect(coordinator.topPresentation()?.id == alertId)
 
         // Verify alert has higher z-index than sheet
         let presentations = coordinator.presentations
         let sheet = presentations.first { $0.id == sheetId }!
         let alert = presentations.first { $0.id == alertId }!
-        XCTAssertTrue(alert.zIndex > sheet.zIndex)
+        #expect(alert.zIndex > sheet.zIndex)
 
         // Dismiss alert
         coordinator.dismiss(alertId)
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.id, sheetId)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.id == sheetId)
     }
 
-    func testOnDismissCallback() async throws {
+    @Test func onDismissCallback() async throws {
         let coordinator = PresentationCoordinator()
         var dismissed = false
 
@@ -93,11 +93,11 @@ final class PresentationIntegrationTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertFalse(dismissed)
+        #expect(coordinator.count == 1)
+        #expect(!dismissed)
 
         coordinator.dismiss(id)
-        XCTAssertTrue(dismissed)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(dismissed)
+        #expect(coordinator.count == 0)
     }
 }

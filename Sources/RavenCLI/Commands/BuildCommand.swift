@@ -52,7 +52,7 @@ struct BuildCommand: ParsableCommand {
         }
 
         // Determine number of steps
-        var stepCount = 7
+        var stepCount = 6
         if optimize { stepCount += 1 }
         if stripDebug { stepCount += 1 }
         if compress { stepCount += 1 }
@@ -92,24 +92,19 @@ struct BuildCommand: ParsableCommand {
         print("[\(currentStep)/\(totalSteps)] Generating index.html...")
         try generateHTML(outputPath: outputPath, projectPath: inputPath)
 
-        // Step 7: Copy runtime.js to dist/
-        currentStep += 1
-        print("[\(currentStep)/\(totalSteps)] Copying runtime.js...")
-        try copyRuntimeJS(to: outputPath)
-
-        // Step 8: Copy Public/ assets to dist/
+        // Step 7: Copy Public/ assets to dist/
         currentStep += 1
         print("[\(currentStep)/\(totalSteps)] Copying assets...")
         try bundleAssets(from: inputPath, to: outputPath)
 
-        // Step 9: Compress (if requested)
+        // Step 8: Compress (if requested)
         if compress {
             currentStep += 1
             print("[\(currentStep)/\(totalSteps)] Compressing bundle...")
             try compressBundle(at: wasmOutputPath)
         }
 
-        // Step 10: Generate bundle size report (if requested)
+        // Step 9: Generate bundle size report (if requested)
         if reportSize {
             currentStep += 1
             print("[\(currentStep)/\(totalSteps)] Analyzing bundle size...")
@@ -215,16 +210,26 @@ struct BuildCommand: ParsableCommand {
         // Extract project name from path or Package.swift
         let projectName = extractProjectName(from: projectPath)
 
+        // Find JavaScriptKit runtime source for inlining
+        let jsKitRuntime = WasmCompiler.findJavaScriptKitRuntime(in: projectPath)
+        if verbose {
+            if jsKitRuntime != nil {
+                print("  ✓ Found JavaScriptKit runtime for inlining")
+            } else {
+                print("  ⚠ JavaScriptKit runtime not found, HTML will use external runtime.js")
+            }
+        }
+
         let config = HTMLConfig(
             projectName: projectName,
             title: projectName,
             wasmFile: "app.wasm",
-            runtimeJSFile: "runtime.js",
             cssFiles: checkForStylesheet(in: projectPath) ? ["styles.css"] : [],
             metaTags: [
                 "description": "Built with Raven - SwiftUI to DOM",
                 "generator": "Raven 0.1.0"
-            ]
+            ],
+            javaScriptKitRuntimeSource: jsKitRuntime
         )
 
         let generator = HTMLGenerator()
@@ -233,44 +238,6 @@ struct BuildCommand: ParsableCommand {
 
         if verbose {
             print("  ✓ Generated index.html")
-        }
-    }
-
-    private func copyRuntimeJS(to outputPath: String) throws {
-        let fileManager = FileManager.default
-
-        // Find runtime.js in Resources
-        let possiblePaths = [
-            // Relative to current directory (development)
-            "Resources/runtime.js",
-            // Relative to package root
-            "../../../Resources/runtime.js",
-            // Installed location
-            "/usr/local/share/raven/runtime.js"
-        ]
-
-        var runtimeSource: String?
-        for path in possiblePaths {
-            let fullPath = (fileManager.currentDirectoryPath as NSString).appendingPathComponent(path)
-            if fileManager.fileExists(atPath: fullPath) {
-                runtimeSource = fullPath
-                break
-            }
-        }
-
-        guard let source = runtimeSource else {
-            throw BuildError.resourceNotFound("runtime.js not found. Please ensure Raven is properly installed.")
-        }
-
-        let destination = (outputPath as NSString).appendingPathComponent("runtime.js")
-        if fileManager.fileExists(atPath: destination) {
-            try fileManager.removeItem(atPath: destination)
-        }
-
-        try fileManager.copyItem(atPath: source, toPath: destination)
-
-        if verbose {
-            print("  ✓ Copied runtime.js")
         }
     }
 
@@ -496,18 +463,20 @@ struct BuildCommand: ParsableCommand {
         print("\n✓ Build complete!")
         print("\nOutput files:")
         print("  \(outputPath)/")
-        print("  ├── index.html")
-        print("  ├── app.wasm (\(formatBytes(wasmSize)))")
 
         // Check for compressed bundle
         let fileManager = FileManager.default
         let brotliPath = (outputPath as NSString).appendingPathComponent("app.wasm.br")
-        if fileManager.fileExists(atPath: brotliPath),
-           let brotliSize = try? fileManager.attributesOfItem(atPath: brotliPath)[.size] as? Int64 {
-            print("  ├── app.wasm.br (\(formatBytes(brotliSize)))")
-        }
+        let hasBrotli = fileManager.fileExists(atPath: brotliPath)
 
-        print("  └── runtime.js")
+        print("  ├── index.html")
+        if hasBrotli,
+           let brotliSize = try? fileManager.attributesOfItem(atPath: brotliPath)[.size] as? Int64 {
+            print("  ├── app.wasm (\(formatBytes(wasmSize)))")
+            print("  └── app.wasm.br (\(formatBytes(brotliSize)))")
+        } else {
+            print("  └── app.wasm (\(formatBytes(wasmSize)))")
+        }
 
         print("\nBuild configuration:")
         print("  Optimization: \(debug ? "debug" : (optimizeSize ? "size (-Osize)" : "release (-O)"))")

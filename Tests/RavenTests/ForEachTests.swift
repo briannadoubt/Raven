@@ -1,13 +1,13 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for the ForEach view
 @MainActor
-final class ForEachTests: XCTestCase {
+@Suite struct ForEachTests {
 
     // MARK: - Range-based ForEach
 
-    func testForEachWithRange() async throws {
+    @Test func forEachWithRange() async throws {
         // Create a ForEach with a range
         let forEach = ForEach(0..<3) { index in
             Text("Item \(index)")
@@ -17,7 +17,7 @@ final class ForEachTests: XCTestCase {
         let body = forEach.body
 
         // The body should be a ForEachView
-        XCTAssertTrue(body is ForEachView<Text>, "Body should be a ForEachView")
+        #expect(body is ForEachView<Text>)
     }
 
     // MARK: - Identifiable Collection
@@ -27,7 +27,7 @@ final class ForEachTests: XCTestCase {
         let name: String
     }
 
-    func testForEachWithIdentifiable() async throws {
+    @Test func forEachWithIdentifiable() async throws {
         let items = [
             Item(id: 1, name: "First"),
             Item(id: 2, name: "Second"),
@@ -42,7 +42,7 @@ final class ForEachTests: XCTestCase {
         let body = forEach.body
 
         // The body should be a ForEachView
-        XCTAssertTrue(body is ForEachView<Text>, "Body should be a ForEachView")
+        #expect(body is ForEachView<Text>)
     }
 
     // MARK: - Custom ID Key Path
@@ -52,7 +52,7 @@ final class ForEachTests: XCTestCase {
         let value: Int
     }
 
-    func testForEachWithCustomKeyPath() async throws {
+    @Test func forEachWithCustomKeyPath() async throws {
         let items = [
             CustomItem(name: "Alpha", value: 1),
             CustomItem(name: "Beta", value: 2),
@@ -67,12 +67,12 @@ final class ForEachTests: XCTestCase {
         let body = forEach.body
 
         // The body should be a ForEachView
-        XCTAssertTrue(body is ForEachView<Text>, "Body should be a ForEachView")
+        #expect(body is ForEachView<Text>)
     }
 
     // MARK: - Empty Collection
 
-    func testForEachWithEmptyCollection() async throws {
+    @Test func forEachWithEmptyCollection() async throws {
         let items: [Item] = []
 
         let forEach = ForEach(items) { item in
@@ -84,15 +84,15 @@ final class ForEachTests: XCTestCase {
 
         // The body should be a ForEachView with no views
         if let forEachView = body as? ForEachView<Text> {
-            XCTAssertTrue(forEachView.views.isEmpty, "ForEachView should have no views for empty collection")
+            #expect(forEachView.views.isEmpty)
         } else {
-            XCTFail("Body should be a ForEachView")
+            Issue.record("Body should be a ForEachView")
         }
     }
 
     // MARK: - Nested Views
 
-    func testForEachWithNestedViews() async throws {
+    @Test func forEachWithNestedViews() async throws {
         let items = [
             Item(id: 1, name: "First"),
             Item(id: 2, name: "Second")
@@ -109,12 +109,12 @@ final class ForEachTests: XCTestCase {
         let body = forEach.body
 
         // The body should be a ForEachView (exact generic type depends on ViewBuilder output)
-        XCTAssertNotNil(body, "Body should not be nil")
+        #expect(body != nil)
     }
 
     // MARK: - Large Collections
 
-    func testForEachWithLargeCollection() async throws {
+    @Test func forEachWithLargeCollection() async throws {
         let range = 0..<100
 
         let forEach = ForEach(range) { index in
@@ -126,15 +126,15 @@ final class ForEachTests: XCTestCase {
 
         // The body should be a ForEachView with 100 items
         if let forEachView = body as? ForEachView<Text> {
-            XCTAssertEqual(forEachView.views.count, 100, "ForEachView should have 100 views")
+            #expect(forEachView.views.count == 100)
         } else {
-            XCTFail("Body should be a ForEachView")
+            Issue.record("Body should be a ForEachView")
         }
     }
 
     // MARK: - Integration with ViewBuilder
 
-    func testForEachInVStack() async throws {
+    @Test func forEachInVStack() async throws {
         struct ContentView: View {
             let items = [
                 Item(id: 1, name: "First"),
@@ -156,6 +156,6 @@ final class ForEachTests: XCTestCase {
         let body = view.body
 
         // Verify the body structure exists
-        XCTAssertNotNil(body, "Body should not be nil")
+        #expect(body != nil)
     }
 }

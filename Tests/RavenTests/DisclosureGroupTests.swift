@@ -3,6 +3,7 @@ import Foundation
 @testable import Raven
 
 /// Tests for the DisclosureGroup primitive view
+@MainActor
 @Suite("DisclosureGroup Tests")
 struct DisclosureGroupTests {
 

@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for the searchable modifier
@@ -15,13 +15,12 @@ import XCTest
 /// The searchable modifier adds search functionality to views, typically used
 /// with lists to enable filtering. It renders as an HTML `<input type="search">`
 /// element with proper styling and event handlers.
-@available(macOS 13.0, *)
 @MainActor
-final class SearchableTests: XCTestCase {
+@Suite struct SearchableTests {
 
     // MARK: - Basic Functionality Tests (4 tests)
 
-    func testBasicSearchable() {
+    @Test func basicSearchable() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -30,24 +29,24 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         // Verify root container structure
-        XCTAssertEqual(node.elementTag, "div", "Searchable should create root container")
-        XCTAssert(node.children.count >= 1, "Should have at least search field")
+        #expect(node.elementTag == "div")
+        #expect(node.children.count >= 1)
 
         // Verify flex layout
         if case .style(name: "display", value: let display) = node.props["display"] {
-            XCTAssertEqual(display, "flex", "Root should use flex layout")
+            #expect(display == "flex")
         } else {
-            XCTFail("Root should have display flex")
+            Issue.record("Root should have display flex")
         }
 
         if case .style(name: "flex-direction", value: let direction) = node.props["flex-direction"] {
-            XCTAssertEqual(direction, "column", "Should stack vertically")
+            #expect(direction == "column")
         } else {
-            XCTFail("Root should have flex-direction column")
+            Issue.record("Root should have flex-direction column")
         }
     }
 
-    func testSearchableWithPrompt() {
+    @Test func searchableWithPrompt() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -57,7 +56,7 @@ final class SearchableTests: XCTestCase {
 
         // Find the search field container
         guard node.children.count >= 1 else {
-            XCTFail("Should have search field child")
+            Issue.record("Should have search field child")
             return
         }
 
@@ -65,14 +64,14 @@ final class SearchableTests: XCTestCase {
 
         // Verify role attribute
         if case .attribute(name: "role", value: let role) = searchField.props["role"] {
-            XCTAssertEqual(role, "search", "Search field should have search role")
+            #expect(role == "search")
         } else {
-            XCTFail("Search field should have role attribute")
+            Issue.record("Search field should have role attribute")
         }
 
         // Find the input element (nested in wrapper)
         guard searchField.children.count >= 1 else {
-            XCTFail("Search field should have children")
+            Issue.record("Search field should have children")
             return
         }
 
@@ -80,7 +79,7 @@ final class SearchableTests: XCTestCase {
 
         // The input should be the second child (after the icon)
         guard inputWrapper.children.count >= 2 else {
-            XCTFail("Input wrapper should have icon and input")
+            Issue.record("Input wrapper should have icon and input")
             return
         }
 
@@ -88,13 +87,13 @@ final class SearchableTests: XCTestCase {
 
         // Verify placeholder
         if case .attribute(name: "placeholder", value: let placeholder) = input.props["placeholder"] {
-            XCTAssertEqual(placeholder, "Search items", "Should use custom prompt")
+            #expect(placeholder == "Search items")
         } else {
-            XCTFail("Input should have placeholder")
+            Issue.record("Input should have placeholder")
         }
     }
 
-    func testSearchableWithDefaultPrompt() {
+    @Test func searchableWithDefaultPrompt() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -106,7 +105,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
@@ -114,13 +113,13 @@ final class SearchableTests: XCTestCase {
 
         // Verify default placeholder
         if case .attribute(name: "placeholder", value: let placeholder) = input.props["placeholder"] {
-            XCTAssertEqual(placeholder, "Search", "Should use default 'Search' prompt")
+            #expect(placeholder == "Search")
         } else {
-            XCTFail("Input should have default placeholder")
+            Issue.record("Input should have default placeholder")
         }
     }
 
-    func testSearchableBindingValue() {
+    @Test func searchableBindingValue() {
         let searchText = Binding.constant("initial text")
 
         let view = Text("Content")
@@ -132,7 +131,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
@@ -140,15 +139,15 @@ final class SearchableTests: XCTestCase {
 
         // Verify value attribute reflects binding
         if case .attribute(name: "value", value: let value) = input.props["value"] {
-            XCTAssertEqual(value, "initial text", "Input value should reflect binding")
+            #expect(value == "initial text")
         } else {
-            XCTFail("Input should have value attribute")
+            Issue.record("Input should have value attribute")
         }
     }
 
     // MARK: - Placement Tests (4 tests)
 
-    func testAutomaticPlacement() {
+    @Test func automaticPlacement() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -157,7 +156,7 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         guard node.children.count >= 1 else {
-            XCTFail("Should have search field")
+            Issue.record("Should have search field")
             return
         }
 
@@ -165,16 +164,16 @@ final class SearchableTests: XCTestCase {
 
         // Automatic placement should have background styling
         if case .style(name: "background", value: let bg) = searchField.props["background"] {
-            XCTAssertEqual(bg, "#f9fafb", "Automatic placement should have light background")
+            #expect(bg == "#f9fafb")
         } else {
-            XCTFail("Automatic placement should have background")
+            Issue.record("Automatic placement should have background")
         }
 
         // Should have border-bottom
-        XCTAssertNotNil(searchField.props["border-bottom"], "Should have bottom border")
+        #expect(searchField.props["border-bottom"] != nil)
     }
 
-    func testNavigationBarDrawerPlacement() {
+    @Test func navigationBarDrawerPlacement() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -183,7 +182,7 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         guard node.children.count >= 1 else {
-            XCTFail("Should have search field")
+            Issue.record("Should have search field")
             return
         }
 
@@ -191,13 +190,13 @@ final class SearchableTests: XCTestCase {
 
         // Navigation bar drawer should have similar styling to automatic
         if case .style(name: "padding", value: let padding) = searchField.props["padding"] {
-            XCTAssertEqual(padding, "12px", "Navigation bar drawer should have padding")
+            #expect(padding == "12px")
         } else {
-            XCTFail("Should have padding")
+            Issue.record("Should have padding")
         }
     }
 
-    func testToolbarPlacement() {
+    @Test func toolbarPlacement() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -206,7 +205,7 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         guard node.children.count >= 1 else {
-            XCTFail("Should have search field")
+            Issue.record("Should have search field")
             return
         }
 
@@ -214,20 +213,20 @@ final class SearchableTests: XCTestCase {
 
         // Toolbar placement should have different padding
         if case .style(name: "padding", value: let padding) = searchField.props["padding"] {
-            XCTAssertEqual(padding, "8px", "Toolbar placement should have reduced padding")
+            #expect(padding == "8px")
         } else {
-            XCTFail("Should have padding")
+            Issue.record("Should have padding")
         }
 
         // Should have align-items
         if case .style(name: "align-items", value: let align) = searchField.props["align-items"] {
-            XCTAssertEqual(align, "center", "Toolbar should center items")
+            #expect(align == "center")
         } else {
-            XCTFail("Should have align-items")
+            Issue.record("Should have align-items")
         }
     }
 
-    func testSidebarPlacement() {
+    @Test func sidebarPlacement() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -236,19 +235,19 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         guard node.children.count >= 1 else {
-            XCTFail("Should have search field")
+            Issue.record("Should have search field")
             return
         }
 
         let searchField = node.children[0]
 
         // Sidebar placement should have border
-        XCTAssertNotNil(searchField.props["border-bottom"], "Sidebar should have bottom border")
+        #expect(searchField.props["border-bottom"] != nil)
     }
 
     // MARK: - Input Element Tests (4 tests)
 
-    func testInputElementType() {
+    @Test func inputElementType() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -260,23 +259,23 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
         let input = node.children[0].children[0].children[1]
 
         // Verify input tag and type
-        XCTAssertEqual(input.elementTag, "input", "Should be an input element")
+        #expect(input.elementTag == "input")
 
         if case .attribute(name: "type", value: let type) = input.props["type"] {
-            XCTAssertEqual(type, "search", "Input type should be search")
+            #expect(type == "search")
         } else {
-            XCTFail("Input should have type attribute")
+            Issue.record("Input should have type attribute")
         }
     }
 
-    func testInputEventHandler() {
+    @Test func inputEventHandler() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -288,7 +287,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
@@ -296,13 +295,13 @@ final class SearchableTests: XCTestCase {
 
         // Verify event handler exists
         if case .eventHandler(event: let event, handlerID: _) = input.props["onInput"] {
-            XCTAssertEqual(event, "input", "Should have input event handler")
+            #expect(event == "input")
         } else {
-            XCTFail("Input should have onInput event handler")
+            Issue.record("Input should have onInput event handler")
         }
     }
 
-    func testInputStyling() {
+    @Test func inputStyling() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -314,7 +313,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
@@ -322,26 +321,26 @@ final class SearchableTests: XCTestCase {
 
         // Verify key styling properties
         if case .style(name: "border-radius", value: let radius) = input.props["border-radius"] {
-            XCTAssertEqual(radius, "8px", "Should have rounded corners")
+            #expect(radius == "8px")
         } else {
-            XCTFail("Input should have border-radius")
+            Issue.record("Input should have border-radius")
         }
 
         if case .style(name: "width", value: let width) = input.props["width"] {
-            XCTAssertEqual(width, "100%", "Should fill available width")
+            #expect(width == "100%")
         } else {
-            XCTFail("Input should have width")
+            Issue.record("Input should have width")
         }
 
         // Verify padding for icon space
         if case .style(name: "padding-left", value: let paddingLeft) = input.props["padding-left"] {
-            XCTAssertEqual(paddingLeft, "36px", "Should have space for search icon")
+            #expect(paddingLeft == "36px")
         } else {
-            XCTFail("Input should have padding-left for icon")
+            Issue.record("Input should have padding-left for icon")
         }
     }
 
-    func testInputAccessibility() {
+    @Test func inputAccessibility() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -353,7 +352,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input element")
+            Issue.record("Could not find input element")
             return
         }
 
@@ -361,15 +360,15 @@ final class SearchableTests: XCTestCase {
 
         // Verify aria-label
         if case .attribute(name: "aria-label", value: let label) = input.props["aria-label"] {
-            XCTAssertEqual(label, "Find items", "Should have aria-label matching prompt")
+            #expect(label == "Find items")
         } else {
-            XCTFail("Input should have aria-label")
+            Issue.record("Input should have aria-label")
         }
     }
 
     // MARK: - Search Icon Tests (2 tests)
 
-    func testSearchIconPresence() {
+    @Test func searchIconPresence() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -380,7 +379,7 @@ final class SearchableTests: XCTestCase {
         // Navigate to input wrapper
         guard node.children.count >= 1,
               node.children[0].children.count >= 1 else {
-            XCTFail("Could not find input wrapper")
+            Issue.record("Could not find input wrapper")
             return
         }
 
@@ -388,29 +387,29 @@ final class SearchableTests: XCTestCase {
 
         // Verify wrapper has relative positioning
         if case .style(name: "position", value: let position) = inputWrapper.props["position"] {
-            XCTAssertEqual(position, "relative", "Input wrapper should be relatively positioned")
+            #expect(position == "relative")
         } else {
-            XCTFail("Input wrapper should have position")
+            Issue.record("Input wrapper should have position")
         }
 
         // First child should be the icon
         guard inputWrapper.children.count >= 2 else {
-            XCTFail("Should have icon and input")
+            Issue.record("Should have icon and input")
             return
         }
 
         let icon = inputWrapper.children[0]
-        XCTAssertEqual(icon.elementTag, "div", "Icon should be in a div")
+        #expect(icon.elementTag == "div")
 
         // Verify icon has absolute positioning
         if case .style(name: "position", value: let iconPos) = icon.props["position"] {
-            XCTAssertEqual(iconPos, "absolute", "Icon should be absolutely positioned")
+            #expect(iconPos == "absolute")
         } else {
-            XCTFail("Icon should have absolute position")
+            Issue.record("Icon should have absolute position")
         }
     }
 
-    func testSearchIconSVG() {
+    @Test func searchIconSVG() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -422,7 +421,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 1 else {
-            XCTFail("Could not find icon")
+            Issue.record("Could not find icon")
             return
         }
 
@@ -430,27 +429,27 @@ final class SearchableTests: XCTestCase {
 
         // Verify SVG element exists
         guard iconContainer.children.count >= 1 else {
-            XCTFail("Icon should contain SVG")
+            Issue.record("Icon should contain SVG")
             return
         }
 
         let svg = iconContainer.children[0]
-        XCTAssertEqual(svg.elementTag, "svg", "Should contain SVG element")
+        #expect(svg.elementTag == "svg")
 
         // Verify SVG has viewBox
         if case .attribute(name: "viewBox", value: let viewBox) = svg.props["viewBox"] {
-            XCTAssertEqual(viewBox, "0 0 16 16", "SVG should have correct viewBox")
+            #expect(viewBox == "0 0 16 16")
         } else {
-            XCTFail("SVG should have viewBox")
+            Issue.record("SVG should have viewBox")
         }
 
         // Verify SVG has children (circle and path)
-        XCTAssert(svg.children.count >= 2, "SVG should have circle and path elements")
+        #expect(svg.children.count >= 2)
     }
 
     // MARK: - Suggestions Tests (2 tests)
 
-    func testSearchableWithoutSuggestions() {
+    @Test func searchableWithoutSuggestions() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -462,17 +461,17 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input")
+            Issue.record("Could not find input")
             return
         }
 
         let input = node.children[0].children[0].children[1]
 
         // Should not have a list attribute
-        XCTAssertNil(input.props["list"], "Should not have datalist reference without suggestions")
+        #expect(input.props["list"] == nil)
     }
 
-    func testSearchableWithSuggestions() {
+    @Test func searchableWithSuggestions() {
         let searchText = Binding.constant("")
 
         let view = Text("Content")
@@ -487,7 +486,7 @@ final class SearchableTests: XCTestCase {
         guard node.children.count >= 1,
               node.children[0].children.count >= 1,
               node.children[0].children[0].children.count >= 2 else {
-            XCTFail("Could not find input")
+            Issue.record("Could not find input")
             return
         }
 
@@ -495,30 +494,30 @@ final class SearchableTests: XCTestCase {
 
         // Should have a list attribute when suggestions present
         if case .attribute(name: "list", value: let listId) = input.props["list"] {
-            XCTAssert(listId.hasPrefix("suggestions-"), "Should reference suggestions datalist")
+            #expect(listId.hasPrefix("suggestions-"))
         } else {
-            XCTFail("Input should have list attribute when suggestions provided")
+            Issue.record("Input should have list attribute when suggestions provided")
         }
 
         // Verify datalist exists in search field children
         guard node.children[0].children.count >= 2 else {
-            XCTFail("Should have datalist in search field")
+            Issue.record("Should have datalist in search field")
             return
         }
 
         let datalist = node.children[0].children[1]
-        XCTAssertEqual(datalist.elementTag, "datalist", "Should have datalist element")
+        #expect(datalist.elementTag == "datalist")
 
         if case .attribute(name: "id", value: let id) = datalist.props["id"] {
-            XCTAssert(id.hasPrefix("suggestions-"), "Datalist should have suggestions ID")
+            #expect(id.hasPrefix("suggestions-"))
         } else {
-            XCTFail("Datalist should have id")
+            Issue.record("Datalist should have id")
         }
     }
 
     // MARK: - Integration Tests (1 test)
 
-    func testSearchableIntegration() {
+    @Test func searchableIntegration() {
         let searchText = Binding.constant("test")
 
         // Simulate a typical list with search
@@ -532,20 +531,20 @@ final class SearchableTests: XCTestCase {
         let node = view.toVNode()
 
         // Verify complete structure
-        XCTAssertEqual(node.elementTag, "div", "Root should be div")
-        XCTAssert(node.children.count >= 1, "Should have search field")
+        #expect(node.elementTag == "div")
+        #expect(node.children.count >= 1)
 
         let searchField = node.children[0]
 
         // Verify search field has correct role
         if case .attribute(name: "role", value: let role) = searchField.props["role"] {
-            XCTAssertEqual(role, "search", "Should have search role")
+            #expect(role == "search")
         }
 
         // Navigate to input and verify it's properly configured
         guard searchField.children.count >= 1,
               searchField.children[0].children.count >= 2 else {
-            XCTFail("Could not find input structure")
+            Issue.record("Could not find input structure")
             return
         }
 
@@ -553,10 +552,10 @@ final class SearchableTests: XCTestCase {
 
         // Verify input is properly bound
         if case .attribute(name: "value", value: let value) = input.props["value"] {
-            XCTAssertEqual(value, "test", "Input should reflect binding value")
+            #expect(value == "test")
         }
 
         // Verify event handler
-        XCTAssertNotNil(input.props["onInput"], "Should have input handler")
+        #expect(input.props["onInput"] != nil)
     }
 }

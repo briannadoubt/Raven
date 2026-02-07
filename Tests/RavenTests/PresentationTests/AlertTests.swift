@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the Alert struct and related types.
@@ -10,181 +10,181 @@ import XCTest
 /// - Two-button alerts
 /// - Button static methods
 @MainActor
-final class AlertTests: XCTestCase {
+@Suite struct AlertTests {
 
     // MARK: - Button Tests
 
-    func testButtonCreation() {
+    @Test func buttonCreation() {
         let button = Alert.Button(label: "OK")
 
-        XCTAssertEqual(button.label, "OK")
-        XCTAssertNil(button.role)
-        XCTAssertNil(button.action)
-        XCTAssertNotNil(button.id)
+        #expect(button.label == "OK")
+        #expect(button.role == nil)
+        #expect(button.action == nil)
+        #expect(button.id != nil)
     }
 
-    func testButtonWithRole() {
+    @Test func buttonWithRole() {
         let button = Alert.Button(label: "Delete", role: .destructive)
 
-        XCTAssertEqual(button.label, "Delete")
-        XCTAssertEqual(button.role, .destructive)
-        XCTAssertNil(button.action)
+        #expect(button.label == "Delete")
+        #expect(button.role == .destructive)
+        #expect(button.action == nil)
     }
 
-    func testButtonWithAction() {
+    @Test func buttonWithAction() {
         let button = Alert.Button(label: "Confirm") { }
 
-        XCTAssertEqual(button.label, "Confirm")
-        XCTAssertNil(button.role)
-        XCTAssertNotNil(button.action)
+        #expect(button.label == "Confirm")
+        #expect(button.role == nil)
+        #expect(button.action != nil)
     }
 
-    func testButtonWithRoleAndAction() {
+    @Test func buttonWithRoleAndAction() {
         let button = Alert.Button(label: "Cancel", role: .cancel) { }
 
-        XCTAssertEqual(button.label, "Cancel")
-        XCTAssertEqual(button.role, .cancel)
-        XCTAssertNotNil(button.action)
+        #expect(button.label == "Cancel")
+        #expect(button.role == .cancel)
+        #expect(button.action != nil)
     }
 
     // MARK: - Button Static Methods
 
-    func testDefaultButton() {
+    @Test func defaultButton() {
         let button = Alert.Button.default("OK") { }
 
-        XCTAssertEqual(button.label, "OK")
-        XCTAssertNil(button.role)
-        XCTAssertNotNil(button.action)
+        #expect(button.label == "OK")
+        #expect(button.role == nil)
+        #expect(button.action != nil)
     }
 
-    func testDefaultButtonWithoutAction() {
+    @Test func defaultButtonWithoutAction() {
         let button = Alert.Button.default("OK")
 
-        XCTAssertEqual(button.label, "OK")
-        XCTAssertNil(button.role)
-        XCTAssertNil(button.action)
+        #expect(button.label == "OK")
+        #expect(button.role == nil)
+        #expect(button.action == nil)
     }
 
-    func testCancelButton() {
+    @Test func cancelButton() {
         let button = Alert.Button.cancel { }
 
-        XCTAssertEqual(button.label, "Cancel")
-        XCTAssertEqual(button.role, .cancel)
-        XCTAssertNotNil(button.action)
+        #expect(button.label == "Cancel")
+        #expect(button.role == .cancel)
+        #expect(button.action != nil)
     }
 
-    func testCancelButtonWithCustomLabel() {
+    @Test func cancelButtonWithCustomLabel() {
         let button = Alert.Button.cancel("Dismiss")
 
-        XCTAssertEqual(button.label, "Dismiss")
-        XCTAssertEqual(button.role, .cancel)
+        #expect(button.label == "Dismiss")
+        #expect(button.role == .cancel)
     }
 
-    func testCancelButtonWithoutAction() {
+    @Test func cancelButtonWithoutAction() {
         let button = Alert.Button.cancel()
 
-        XCTAssertEqual(button.label, "Cancel")
-        XCTAssertEqual(button.role, .cancel)
-        XCTAssertNil(button.action)
+        #expect(button.label == "Cancel")
+        #expect(button.role == .cancel)
+        #expect(button.action == nil)
     }
 
-    func testDestructiveButton() {
+    @Test func destructiveButton() {
         let button = Alert.Button.destructive("Delete") { }
 
-        XCTAssertEqual(button.label, "Delete")
-        XCTAssertEqual(button.role, .destructive)
-        XCTAssertNotNil(button.action)
+        #expect(button.label == "Delete")
+        #expect(button.role == .destructive)
+        #expect(button.action != nil)
     }
 
-    func testDestructiveButtonWithoutAction() {
+    @Test func destructiveButtonWithoutAction() {
         let button = Alert.Button.destructive("Delete")
 
-        XCTAssertEqual(button.label, "Delete")
-        XCTAssertEqual(button.role, .destructive)
-        XCTAssertNil(button.action)
+        #expect(button.label == "Delete")
+        #expect(button.role == .destructive)
+        #expect(button.action == nil)
     }
 
     // MARK: - Button Role Tests
 
-    func testButtonRoleEquality() {
-        XCTAssertEqual(ButtonRole.cancel, .cancel)
-        XCTAssertEqual(ButtonRole.destructive, .destructive)
-        XCTAssertNotEqual(ButtonRole.cancel, .destructive)
+    @Test func buttonRoleEquality() {
+        #expect(ButtonRole.cancel == .cancel)
+        #expect(ButtonRole.destructive == .destructive)
+        #expect(ButtonRole.cancel != .destructive)
     }
 
-    func testButtonRoleHashable() {
+    @Test func buttonRoleHashable() {
         let roles: Set<ButtonRole> = [.cancel, .destructive]
-        XCTAssertEqual(roles.count, 2)
-        XCTAssertTrue(roles.contains(.cancel))
-        XCTAssertTrue(roles.contains(.destructive))
+        #expect(roles.count == 2)
+        #expect(roles.contains(.cancel))
+        #expect(roles.contains(.destructive))
     }
 
     // MARK: - Button Identifiable
 
-    func testButtonIdentifiable() {
+    @Test func buttonIdentifiable() {
         let button1 = Alert.Button(label: "OK")
         let button2 = Alert.Button(label: "OK")
 
         // Each button should have a unique ID
-        XCTAssertNotEqual(button1.id, button2.id)
+        #expect(button1.id != button2.id)
     }
 
     // MARK: - Alert Creation Tests
 
-    func testAlertWithDefaults() {
+    @Test func alertWithDefaults() {
         let alert = Alert(title: "Title")
 
-        XCTAssertEqual(alert.title, "Title")
-        XCTAssertNil(alert.message)
-        XCTAssertEqual(alert.buttons.count, 1)
-        XCTAssertEqual(alert.buttons.first?.label, "OK")
+        #expect(alert.title == "Title")
+        #expect(alert.message == nil)
+        #expect(alert.buttons.count == 1)
+        #expect(alert.buttons.first?.label == "OK")
     }
 
-    func testAlertWithMessage() {
+    @Test func alertWithMessage() {
         let alert = Alert(title: "Title", message: "Message")
 
-        XCTAssertEqual(alert.title, "Title")
-        XCTAssertEqual(alert.message, "Message")
-        XCTAssertEqual(alert.buttons.count, 1)
+        #expect(alert.title == "Title")
+        #expect(alert.message == "Message")
+        #expect(alert.buttons.count == 1)
     }
 
-    func testAlertWithCustomButtons() {
+    @Test func alertWithCustomButtons() {
         let buttons = [
             Alert.Button.default("Save"),
             Alert.Button.cancel()
         ]
         let alert = Alert(title: "Save Changes?", message: nil, buttons: buttons)
 
-        XCTAssertEqual(alert.title, "Save Changes?")
-        XCTAssertNil(alert.message)
-        XCTAssertEqual(alert.buttons.count, 2)
-        XCTAssertEqual(alert.buttons[0].label, "Save")
-        XCTAssertEqual(alert.buttons[1].label, "Cancel")
+        #expect(alert.title == "Save Changes?")
+        #expect(alert.message == nil)
+        #expect(alert.buttons.count == 2)
+        #expect(alert.buttons[0].label == "Save")
+        #expect(alert.buttons[1].label == "Cancel")
     }
 
     // MARK: - Single Button Alert Tests
 
-    func testSingleButtonAlert() {
+    @Test func singleButtonAlert() {
         let button = Alert.Button.default("OK")
         let alert = Alert(title: "Success", message: "Operation completed", button: button)
 
-        XCTAssertEqual(alert.title, "Success")
-        XCTAssertEqual(alert.message, "Operation completed")
-        XCTAssertEqual(alert.buttons.count, 1)
-        XCTAssertEqual(alert.buttons.first?.label, "OK")
+        #expect(alert.title == "Success")
+        #expect(alert.message == "Operation completed")
+        #expect(alert.buttons.count == 1)
+        #expect(alert.buttons.first?.label == "OK")
     }
 
-    func testSingleButtonAlertWithAction() {
+    @Test func singleButtonAlertWithAction() {
         let button = Alert.Button.default("OK") { }
         let alert = Alert(title: "Info", button: button)
 
-        XCTAssertEqual(alert.buttons.count, 1)
-        XCTAssertNotNil(alert.buttons.first?.action)
+        #expect(alert.buttons.count == 1)
+        #expect(alert.buttons.first?.action != nil)
     }
 
     // MARK: - Two Button Alert Tests
 
-    func testTwoButtonAlert() {
+    @Test func twoButtonAlert() {
         let primaryButton = Alert.Button.destructive("Delete")
         let secondaryButton = Alert.Button.cancel()
         let alert = Alert(
@@ -194,16 +194,16 @@ final class AlertTests: XCTestCase {
             secondaryButton: secondaryButton
         )
 
-        XCTAssertEqual(alert.title, "Delete Item")
-        XCTAssertEqual(alert.message, "This cannot be undone")
-        XCTAssertEqual(alert.buttons.count, 2)
-        XCTAssertEqual(alert.buttons[0].label, "Delete")
-        XCTAssertEqual(alert.buttons[0].role, .destructive)
-        XCTAssertEqual(alert.buttons[1].label, "Cancel")
-        XCTAssertEqual(alert.buttons[1].role, .cancel)
+        #expect(alert.title == "Delete Item")
+        #expect(alert.message == "This cannot be undone")
+        #expect(alert.buttons.count == 2)
+        #expect(alert.buttons[0].label == "Delete")
+        #expect(alert.buttons[0].role == .destructive)
+        #expect(alert.buttons[1].label == "Cancel")
+        #expect(alert.buttons[1].role == .cancel)
     }
 
-    func testTwoButtonAlertWithActions() {
+    @Test func twoButtonAlertWithActions() {
         let primaryButton = Alert.Button.default("Confirm") { }
         let secondaryButton = Alert.Button.cancel { }
         let alert = Alert(
@@ -212,12 +212,12 @@ final class AlertTests: XCTestCase {
             secondaryButton: secondaryButton
         )
 
-        XCTAssertEqual(alert.buttons.count, 2)
-        XCTAssertNotNil(alert.buttons[0].action)
-        XCTAssertNotNil(alert.buttons[1].action)
+        #expect(alert.buttons.count == 2)
+        #expect(alert.buttons[0].action != nil)
+        #expect(alert.buttons[1].action != nil)
     }
 
-    func testTwoButtonAlertWithMixedRoles() {
+    @Test func twoButtonAlertWithMixedRoles() {
         let primaryButton = Alert.Button.default("Save")
         let secondaryButton = Alert.Button.destructive("Discard")
         let alert = Alert(
@@ -226,30 +226,30 @@ final class AlertTests: XCTestCase {
             secondaryButton: secondaryButton
         )
 
-        XCTAssertEqual(alert.buttons[0].role, nil)
-        XCTAssertEqual(alert.buttons[1].role, .destructive)
+        #expect(alert.buttons[0].role == nil)
+        #expect(alert.buttons[1].role == .destructive)
     }
 
     // MARK: - Alert Sendable Tests
 
-    func testAlertSendable() {
+    @Test func alertSendable() {
         // Alert should conform to Sendable
-        XCTAssert(Alert.self is any Sendable.Type)
+        #expect(Alert.self is any Sendable.Type)
     }
 
-    func testAlertButtonSendable() {
+    @Test func alertButtonSendable() {
         // Alert.Button should conform to Sendable
-        XCTAssert(Alert.Button.self is any Sendable.Type)
+        #expect(Alert.Button.self is any Sendable.Type)
     }
 
-    func testButtonRoleSendable() {
+    @Test func buttonRoleSendable() {
         // ButtonRole should conform to Sendable
-        XCTAssert(ButtonRole.self is any Sendable.Type)
+        #expect(ButtonRole.self is any Sendable.Type)
     }
 
     // MARK: - Complex Alert Scenarios
 
-    func testMultipleButtonsWithDifferentRoles() {
+    @Test func multipleButtonsWithDifferentRoles() {
         let buttons = [
             Alert.Button.default("Option 1"),
             Alert.Button.default("Option 2"),
@@ -258,36 +258,36 @@ final class AlertTests: XCTestCase {
         ]
         let alert = Alert(title: "Choose", buttons: buttons)
 
-        XCTAssertEqual(alert.buttons.count, 4)
-        XCTAssertNil(alert.buttons[0].role)
-        XCTAssertNil(alert.buttons[1].role)
-        XCTAssertEqual(alert.buttons[2].role, .destructive)
-        XCTAssertEqual(alert.buttons[3].role, .cancel)
+        #expect(alert.buttons.count == 4)
+        #expect(alert.buttons[0].role == nil)
+        #expect(alert.buttons[1].role == nil)
+        #expect(alert.buttons[2].role == .destructive)
+        #expect(alert.buttons[3].role == .cancel)
     }
 
-    func testAlertWithLongMessage() {
+    @Test func alertWithLongMessage() {
         let longMessage = String(repeating: "This is a long message. ", count: 10)
         let alert = Alert(title: "Warning", message: longMessage)
 
-        XCTAssertEqual(alert.message, longMessage)
+        #expect(alert.message == longMessage)
     }
 
-    func testAlertWithEmptyTitle() {
+    @Test func alertWithEmptyTitle() {
         let alert = Alert(title: "")
 
-        XCTAssertEqual(alert.title, "")
-        XCTAssertEqual(alert.buttons.count, 1)
+        #expect(alert.title == "")
+        #expect(alert.buttons.count == 1)
     }
 
-    func testAlertWithEmptyMessage() {
+    @Test func alertWithEmptyMessage() {
         let alert = Alert(title: "Title", message: "")
 
-        XCTAssertEqual(alert.message, "")
+        #expect(alert.message == "")
     }
 
     // MARK: - Alert Renderer Extraction Tests
 
-    func testExtractAlertDataWithTitleOnly() {
+    @Test func extractAlertDataWithTitleOnly() {
         // Create an alert content view with just a title
         let content = AnyView(VStack {
             Text("Alert Title")
@@ -296,14 +296,14 @@ final class AlertTests: XCTestCase {
 
         let extracted = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(extracted)
-        XCTAssertEqual(extracted?.title, "Alert Title")
-        XCTAssertNil(extracted?.message)
-        XCTAssertEqual(extracted?.buttons.count, 1)
-        XCTAssertEqual(extracted?.buttons.first?.label, "OK")
+        #expect(extracted != nil)
+        #expect(extracted?.title == "Alert Title")
+        #expect(extracted?.message == nil)
+        #expect(extracted?.buttons.count == 1)
+        #expect(extracted?.buttons.first?.label == "OK")
     }
 
-    func testExtractAlertDataWithTitleAndMessage() {
+    @Test func extractAlertDataWithTitleAndMessage() {
         // Create an alert content view with title and message
         let content = AnyView(VStack {
             Text("Alert Title")
@@ -313,13 +313,13 @@ final class AlertTests: XCTestCase {
 
         let extracted = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(extracted)
-        XCTAssertEqual(extracted?.title, "Alert Title")
-        XCTAssertEqual(extracted?.message, "This is a message")
-        XCTAssertEqual(extracted?.buttons.count, 1)
+        #expect(extracted != nil)
+        #expect(extracted?.title == "Alert Title")
+        #expect(extracted?.message == "This is a message")
+        #expect(extracted?.buttons.count == 1)
     }
 
-    func testExtractAlertDataWithMultipleButtons() {
+    @Test func extractAlertDataWithMultipleButtons() {
         // Create an alert content view with multiple buttons
         let content = AnyView(VStack {
             Text("Confirm Action")
@@ -330,15 +330,15 @@ final class AlertTests: XCTestCase {
 
         let extracted = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(extracted)
-        XCTAssertEqual(extracted?.title, "Confirm Action")
-        XCTAssertEqual(extracted?.message, "Are you sure?")
-        XCTAssertEqual(extracted?.buttons.count, 2)
-        XCTAssertEqual(extracted?.buttons[0].label, "Delete")
-        XCTAssertEqual(extracted?.buttons[1].label, "Cancel")
+        #expect(extracted != nil)
+        #expect(extracted?.title == "Confirm Action")
+        #expect(extracted?.message == "Are you sure?")
+        #expect(extracted?.buttons.count == 2)
+        #expect(extracted?.buttons[0].label == "Delete")
+        #expect(extracted?.buttons[1].label == "Cancel")
     }
 
-    func testExtractAlertDataWithNoButtons() {
+    @Test func extractAlertDataWithNoButtons() {
         // Create an alert content view with no buttons
         let content = AnyView(VStack {
             Text("Alert Title")
@@ -347,19 +347,19 @@ final class AlertTests: XCTestCase {
 
         let extracted = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(extracted)
-        XCTAssertEqual(extracted?.title, "Alert Title")
-        XCTAssertEqual(extracted?.message, "This is a message")
-        XCTAssertEqual(extracted?.buttons.count, 0)
+        #expect(extracted != nil)
+        #expect(extracted?.title == "Alert Title")
+        #expect(extracted?.message == "This is a message")
+        #expect(extracted?.buttons.count == 0)
     }
 
-    func testExtractAlertDataWithEmptyContent() {
+    @Test func extractAlertDataWithEmptyContent() {
         // Create an empty content view
         let content = AnyView(VStack { })
 
         let extracted = AlertRenderer.extractAlertData(from: content)
 
         // Should return nil for empty content
-        XCTAssertNil(extracted)
+        #expect(extracted == nil)
     }
 }

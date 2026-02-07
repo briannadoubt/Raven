@@ -38,11 +38,19 @@ public final class NavigationHistory {
 
     // MARK: - Properties
 
-    /// Reference to the browser's history object
-    private let history: JSObject
-
+    #if arch(wasm32)
     /// Reference to the browser's window object
     private let window: JSObject
+
+    /// Reference to the browser's history object
+    private let history: JSObject
+    #else
+    /// Reference to the browser's window object (nil when not in a browser environment)
+    private let window: JSObject?
+
+    /// Reference to the browser's history object (nil when not in a browser environment)
+    private let history: JSObject?
+    #endif
 
     /// Closure to invoke when popstate event occurs
     private var popStateHandler: (@Sendable @MainActor (HistoryState) -> Void)?
@@ -55,10 +63,15 @@ public final class NavigationHistory {
 
     // MARK: - Initialization
 
-    private init() {
+    public init() {
+        #if arch(wasm32)
         self.window = JSObject.global.window.object!
         self.history = window.history.object!
         setupPopStateListener()
+        #else
+        self.window = nil
+        self.history = nil
+        #endif
     }
 
     // MARK: - History Operations
@@ -80,11 +93,12 @@ public final class NavigationHistory {
         let historyState = HistoryState(path: path, data: state)
         currentState = historyState
 
+        #if arch(wasm32)
         // Convert state to JavaScript object
         let jsState = createJSState(from: historyState)
-
         // Call history.pushState(state, title, url)
         _ = history.pushState!(jsState, title, path)
+        #endif
     }
 
     /// Replaces the current history state.
@@ -104,32 +118,39 @@ public final class NavigationHistory {
         let historyState = HistoryState(path: path, data: state)
         currentState = historyState
 
+        #if arch(wasm32)
         // Convert state to JavaScript object
         let jsState = createJSState(from: historyState)
-
         // Call history.replaceState(state, title, url)
         _ = history.replaceState!(jsState, title, path)
+        #endif
     }
 
     /// Navigates back in history.
     ///
     /// Equivalent to the browser's back button.
     public func back() {
+        #if arch(wasm32)
         _ = history.back!()
+        #endif
     }
 
     /// Navigates forward in history.
     ///
     /// Equivalent to the browser's forward button.
     public func forward() {
+        #if arch(wasm32)
         _ = history.forward!()
+        #endif
     }
 
     /// Navigates to a specific position in history.
     ///
     /// - Parameter delta: The number of steps to move (negative for backward, positive for forward)
     public func go(_ delta: Int) {
+        #if arch(wasm32)
         _ = history.go!(delta)
+        #endif
     }
 
     // MARK: - State Access
@@ -138,21 +159,28 @@ public final class NavigationHistory {
     ///
     /// - Returns: The current history state, or nil if none exists
     public func getCurrentState() -> HistoryState? {
+        #if arch(wasm32)
         // Try to read from browser's history.state
         let jsState = history.state
         if jsState.isNull || jsState.isUndefined {
             return currentState
         }
-
         return parseJSState(jsState)
+        #else
+        return currentState
+        #endif
     }
 
     /// Gets the current URL path.
     ///
     /// - Returns: The current URL path from window.location.pathname
     public func getCurrentPath() -> String {
+        #if arch(wasm32)
         let location = window.location.object!
         return location.pathname.string ?? "/"
+        #else
+        return currentState?.path ?? "/"
+        #endif
     }
 
     // MARK: - PopState Listener
@@ -162,6 +190,7 @@ public final class NavigationHistory {
     /// The popstate event fires when the user navigates using browser
     /// back/forward buttons or when `go()` is called.
     private func setupPopStateListener() {
+        #if arch(wasm32)
         let closure = JSClosure { [weak self] args -> JSValue in
             guard let self = self else { return .undefined }
 
@@ -193,6 +222,7 @@ public final class NavigationHistory {
 
         // Add event listener
         _ = window.addEventListener?("popstate", closure)
+        #endif
     }
 
     /// Sets the handler for popstate events.

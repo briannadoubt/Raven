@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the Router URL-based routing system.
@@ -15,41 +15,35 @@ import XCTest
 /// - 404 handling and fallback views
 /// - Edge cases and error conditions
 @MainActor
-final class RouterTests: XCTestCase {
+@Suite struct RouterTests {
 
-    var router: Router!
+    var router: Router
 
-    override func setUp() async throws {
-        // Create router with shared history
-        // Note: Tests will use the actual NavigationHistory.shared instance
-        // This means tests may interact with the browser's history API if running in a web context
+    init() {
+        // Create router without NavigationHistory (nil = no browser history integration)
         router = Router()
-    }
-
-    override func tearDown() async throws {
-        router = nil
     }
 
     // MARK: - Route Pattern Matching Tests
 
-    func testStaticRouteMatching() {
+    @Test func staticRouteMatching() {
         // Register a static route
         router.register(path: "/about") {
             Text("About")
         }
 
         // Verify route is registered
-        XCTAssertTrue(router.hasRoute(for: "/about"))
-        XCTAssertFalse(router.hasRoute(for: "/contact"))
+        #expect(router.hasRoute(for: "/about"))
+        #expect(!router.hasRoute(for: "/contact"))
 
         // Navigate to the route
         router.navigate(to: "/about")
 
-        XCTAssertEqual(router.currentPath, "/about")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/about")
+        #expect(router.currentView != nil)
     }
 
-    func testDynamicRouteMatchingWithSingleParameter() {
+    @Test func dynamicRouteMatchingWithSingleParameter() {
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
         }
@@ -57,34 +51,34 @@ final class RouterTests: XCTestCase {
         // Navigate with parameter
         router.navigate(to: "/products/123")
 
-        XCTAssertEqual(router.currentPath, "/products/123")
-        XCTAssertEqual(router.currentParameters.string("id"), "123")
+        #expect(router.currentPath == "/products/123")
+        #expect(router.currentParameters.string("id") == "123")
     }
 
-    func testDynamicRouteMatchingWithMultipleParameters() {
+    @Test func dynamicRouteMatchingWithMultipleParameters() {
         router.register(path: "/users/:userId/posts/:postId") { params in
             Text("User \(params.string("userId") ?? "") Post \(params.string("postId") ?? "")")
         }
 
         router.navigate(to: "/users/42/posts/99")
 
-        XCTAssertEqual(router.currentPath, "/users/42/posts/99")
-        XCTAssertEqual(router.currentParameters.string("userId"), "42")
-        XCTAssertEqual(router.currentParameters.string("postId"), "99")
+        #expect(router.currentPath == "/users/42/posts/99")
+        #expect(router.currentParameters.string("userId") == "42")
+        #expect(router.currentParameters.string("postId") == "99")
     }
 
-    func testWildcardRouteMatching() {
+    @Test func wildcardRouteMatching() {
         router.register(path: "/files/*path") { params in
             Text("File: \(params.string("path") ?? "")")
         }
 
         router.navigate(to: "/files/documents/reports/2024/january.pdf")
 
-        XCTAssertEqual(router.currentPath, "/files/documents/reports/2024/january.pdf")
-        XCTAssertEqual(router.currentParameters.string("path"), "documents/reports/2024/january.pdf")
+        #expect(router.currentPath == "/files/documents/reports/2024/january.pdf")
+        #expect(router.currentParameters.string("path") == "documents/reports/2024/january.pdf")
     }
 
-    func testRouteMatchingPriority() {
+    @Test func routeMatchingPriority() {
         // More specific route should match first
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
@@ -98,32 +92,32 @@ final class RouterTests: XCTestCase {
         router.navigate(to: "/products/new")
 
         // This depends on registration order - first match wins
-        XCTAssertEqual(router.currentPath, "/products/new")
+        #expect(router.currentPath == "/products/new")
     }
 
-    func testRouteMatchingWithTrailingSlash() {
+    @Test func routeMatchingWithTrailingSlash() {
         router.register(path: "/about") {
             Text("About")
         }
 
         // Should handle both with and without trailing slash
         router.navigate(to: "/about")
-        XCTAssertEqual(router.currentPath, "/about")
+        #expect(router.currentPath == "/about")
     }
 
     // MARK: - Parameter Extraction Tests
 
-    func testStringParameterExtraction() {
+    @Test func stringParameterExtraction() {
         router.register(path: "/search/:query") { params in
             Text("Search: \(params.string("query") ?? "")")
         }
 
         router.navigate(to: "/search/swift-programming")
 
-        XCTAssertEqual(router.currentParameters.string("query"), "swift-programming")
+        #expect(router.currentParameters.string("query") == "swift-programming")
     }
 
-    func testIntParameterExtraction() {
+    @Test func intParameterExtraction() {
         router.register(path: "/products/:id") { params in
             let id = params.int("id") ?? 0
             Text("Product \(id)")
@@ -131,11 +125,11 @@ final class RouterTests: XCTestCase {
 
         router.navigate(to: "/products/12345")
 
-        XCTAssertEqual(router.currentParameters.int("id"), 12345)
-        XCTAssertEqual(router.currentParameters.string("id"), "12345")
+        #expect(router.currentParameters.int("id") == 12345)
+        #expect(router.currentParameters.string("id") == "12345")
     }
 
-    func testBoolParameterExtraction() {
+    @Test func boolParameterExtraction() {
         router.register(path: "/settings/:enabled") { params in
             let enabled = params.bool("enabled") ?? false
             Text("Enabled: \(enabled)")
@@ -143,19 +137,19 @@ final class RouterTests: XCTestCase {
 
         // Test various boolean formats
         router.navigate(to: "/settings/true")
-        XCTAssertEqual(router.currentParameters.bool("enabled"), true)
+        #expect(router.currentParameters.bool("enabled") == true)
 
         router.navigate(to: "/settings/false")
-        XCTAssertEqual(router.currentParameters.bool("enabled"), false)
+        #expect(router.currentParameters.bool("enabled") == false)
 
         router.navigate(to: "/settings/1")
-        XCTAssertEqual(router.currentParameters.bool("enabled"), true)
+        #expect(router.currentParameters.bool("enabled") == true)
 
         router.navigate(to: "/settings/0")
-        XCTAssertEqual(router.currentParameters.bool("enabled"), false)
+        #expect(router.currentParameters.bool("enabled") == false)
     }
 
-    func testDoubleParameterExtraction() {
+    @Test func doubleParameterExtraction() {
         router.register(path: "/price/:amount") { params in
             let amount = params.double("amount") ?? 0.0
             Text("Price: \(amount)")
@@ -163,66 +157,66 @@ final class RouterTests: XCTestCase {
 
         router.navigate(to: "/price/99.99")
 
-        XCTAssertEqual(router.currentParameters.double("amount"), 99.99)
+        #expect(router.currentParameters.double("amount") == 99.99)
     }
 
-    func testInvalidParameterConversion() {
+    @Test func invalidParameterConversion() {
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
         }
 
         router.navigate(to: "/products/not-a-number")
 
-        XCTAssertNil(router.currentParameters.int("id"))
-        XCTAssertNotNil(router.currentParameters.string("id"))
+        #expect(router.currentParameters.int("id") == nil)
+        #expect(router.currentParameters.string("id") != nil)
     }
 
     // MARK: - Query String Parsing Tests
 
-    func testQueryStringParsing() {
+    @Test func queryStringParsing() {
         router.register(path: "/search") { params in
             Text("Search: \(params.string("q") ?? "")")
         }
 
         router.navigate(to: "/search?q=swift&lang=en")
 
-        XCTAssertEqual(router.currentPath, "/search?q=swift&lang=en")
+        #expect(router.currentPath == "/search?q=swift&lang=en")
         // Note: Query parameter extraction depends on RouteParameters.from(url:) being called
     }
 
-    func testQueryStringWithMultipleValues() {
+    @Test func queryStringWithMultipleValues() {
         router.register(path: "/filter") { params in
             Text("Filter")
         }
 
         router.navigate(to: "/filter?category=electronics&category=books")
 
-        XCTAssertEqual(router.currentPath, "/filter?category=electronics&category=books")
+        #expect(router.currentPath == "/filter?category=electronics&category=books")
     }
 
-    func testQueryStringWithSpecialCharacters() {
+    @Test func queryStringWithSpecialCharacters() {
         router.register(path: "/search") { params in
             Text("Search")
         }
 
         router.navigate(to: "/search?q=hello%20world&filter=a%26b")
 
-        XCTAssertEqual(router.currentPath, "/search?q=hello%20world&filter=a%26b")
+        #expect(router.currentPath == "/search?q=hello%20world&filter=a%26b")
     }
 
-    func testEmptyQueryString() {
+    @Test func emptyQueryString() {
         router.register(path: "/products") {
             Text("Products")
         }
 
         router.navigate(to: "/products?")
 
-        XCTAssertEqual(router.currentPath, "/products?")
+        #expect(router.currentPath == "/products?")
     }
 
     // MARK: - Navigation Tests
 
-    func testNavigatePush() {
+    @Test func navigatePush() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -231,15 +225,15 @@ final class RouterTests: XCTestCase {
         }
 
         router.navigate(to: "/home", mode: .push)
-        XCTAssertEqual(router.currentPath, "/home")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/home")
+        #expect(router.currentView != nil)
 
         router.navigate(to: "/about", mode: .push)
-        XCTAssertEqual(router.currentPath, "/about")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/about")
+        #expect(router.currentView != nil)
     }
 
-    func testNavigateReplace() {
+    @Test func navigateReplace() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -248,16 +242,16 @@ final class RouterTests: XCTestCase {
         }
 
         router.navigate(to: "/home", mode: .replace)
-        XCTAssertEqual(router.currentPath, "/home")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/home")
+        #expect(router.currentView != nil)
 
         let previousPath = router.currentPath
         router.navigate(to: "/about", mode: .replace)
-        XCTAssertEqual(router.currentPath, "/about")
-        XCTAssertNotEqual(router.currentPath, previousPath)
+        #expect(router.currentPath == "/about")
+        #expect(router.currentPath != previousPath)
     }
 
-    func testNavigateBack() {
+    @Test func navigateBack() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -267,17 +261,17 @@ final class RouterTests: XCTestCase {
 
         router.navigate(to: "/home")
         router.navigate(to: "/about")
-        XCTAssertEqual(router.currentPath, "/about")
+        #expect(router.currentPath == "/about")
 
         // Call back() - in a real browser this would navigate back
         router.back()
 
         // In test environment without real browser history, path may not change
         // Test verifies the method doesn't crash
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentView != nil)
     }
 
-    func testNavigateForward() {
+    @Test func navigateForward() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -289,10 +283,10 @@ final class RouterTests: XCTestCase {
         router.forward()
 
         // Test verifies the method doesn't crash
-        XCTAssertNotNil(router)
+        #expect(router != nil)
     }
 
-    func testNavigateGo() {
+    @Test func navigateGo() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -301,30 +295,30 @@ final class RouterTests: XCTestCase {
 
         // Call go() with negative delta (back)
         router.go(-2)
-        XCTAssertNotNil(router)
+        #expect(router != nil)
 
         // Call go() with positive delta (forward)
         router.go(1)
-        XCTAssertNotNil(router)
+        #expect(router != nil)
     }
 
-    func testNavigationState() {
+    @Test func navigationState() {
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
         }
 
-        XCTAssertFalse(router.isNavigating)
+        #expect(!router.isNavigating)
 
         router.navigate(to: "/products/123")
 
         // Navigation should complete synchronously
-        XCTAssertFalse(router.isNavigating)
-        XCTAssertEqual(router.currentPath, "/products/123")
+        #expect(!router.isNavigating)
+        #expect(router.currentPath == "/products/123")
     }
 
     // MARK: - Deep Link Handling Tests
 
-    func testDeepLinkHandling() {
+    @Test func deepLinkHandling() {
         let deepLinkHandler = DeepLinkHandler()
         let customRouter = Router(deepLinkHandler: deepLinkHandler)
 
@@ -340,10 +334,10 @@ final class RouterTests: XCTestCase {
         let result = customRouter.handleInitialURL()
 
         // Should handle initial URL based on current location
-        XCTAssertNotNil(customRouter.currentView)
+        #expect(customRouter.currentView != nil)
     }
 
-    func testDeepLinkValidation() {
+    @Test func deepLinkValidation() {
         let deepLinkHandler = DeepLinkHandler()
 
         deepLinkHandler.register(pattern: "/products/:id") { params in
@@ -352,13 +346,13 @@ final class RouterTests: XCTestCase {
         }
 
         let validResult = deepLinkHandler.process(url: "/products/123")
-        XCTAssertTrue(validResult.isSuccess)
+        #expect(validResult.isSuccess)
 
         let invalidResult = deepLinkHandler.process(url: "/products/abc")
-        XCTAssertTrue(invalidResult.isFailure)
+        #expect(invalidResult.isFailure)
     }
 
-    func testDeepLinkRedirect() {
+    @Test func deepLinkRedirect() {
         let deepLinkHandler = DeepLinkHandler()
         let customRouter = Router(deepLinkHandler: deepLinkHandler)
 
@@ -368,12 +362,12 @@ final class RouterTests: XCTestCase {
 
         // Simulate redirect scenario
         let redirectResult = deepLinkHandler.createRedirect(to: "/home")
-        XCTAssertTrue(redirectResult.isRedirect)
+        #expect(redirectResult.isRedirect)
     }
 
     // MARK: - History State Preservation Tests
 
-    func testHistoryStatePreservation() {
+    @Test func historyStatePreservation() {
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
         }
@@ -381,12 +375,12 @@ final class RouterTests: XCTestCase {
         router.navigate(to: "/products/123")
 
         // Verify router maintains state correctly
-        XCTAssertEqual(router.currentPath, "/products/123")
-        XCTAssertEqual(router.currentParameters.string("id"), "123")
-        XCTAssertEqual(router.currentParameters.int("id"), 123)
+        #expect(router.currentPath == "/products/123")
+        #expect(router.currentParameters.string("id") == "123")
+        #expect(router.currentParameters.int("id") == 123)
     }
 
-    func testHistoryStateOnReplace() {
+    @Test func historyStateOnReplace() {
         router.register(path: "/products/:id") { params in
             Text("Product \(params.string("id") ?? "")")
         }
@@ -394,12 +388,12 @@ final class RouterTests: XCTestCase {
         router.navigate(to: "/products/123", mode: .replace)
 
         // Verify state is correct after replace
-        XCTAssertEqual(router.currentPath, "/products/123")
-        XCTAssertEqual(router.currentParameters.string("id"), "123")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/products/123")
+        #expect(router.currentParameters.string("id") == "123")
+        #expect(router.currentView != nil)
     }
 
-    func testPopStateHandling() {
+    @Test func popStateHandling() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -408,19 +402,19 @@ final class RouterTests: XCTestCase {
         }
 
         router.navigate(to: "/home")
-        XCTAssertEqual(router.currentPath, "/home")
+        #expect(router.currentPath == "/home")
 
         router.navigate(to: "/about")
-        XCTAssertEqual(router.currentPath, "/about")
+        #expect(router.currentPath == "/about")
 
         // Note: Actual popstate events require browser history API
         // Test verifies router state management
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentView != nil)
     }
 
     // MARK: - Multiple Router Tests
 
-    func testMultipleRouterInstances() {
+    @Test func multipleRouterInstances() {
         let router1 = Router()
         let router2 = Router()
 
@@ -435,13 +429,13 @@ final class RouterTests: XCTestCase {
         router1.navigate(to: "/home")
         router2.navigate(to: "/home")
 
-        XCTAssertEqual(router1.currentPath, "/home")
-        XCTAssertEqual(router2.currentPath, "/home")
-        XCTAssertNotNil(router1.currentView)
-        XCTAssertNotNil(router2.currentView)
+        #expect(router1.currentPath == "/home")
+        #expect(router2.currentPath == "/home")
+        #expect(router1.currentView != nil)
+        #expect(router2.currentView != nil)
     }
 
-    func testRouterIndependence() {
+    @Test func routerIndependence() {
         let router1 = Router()
         let router2 = Router()
 
@@ -457,14 +451,14 @@ final class RouterTests: XCTestCase {
         router2.navigate(to: "/page2")
 
         // Verify routers maintain independent state
-        XCTAssertEqual(router1.currentPath, "/page1")
-        XCTAssertEqual(router2.currentPath, "/page2")
-        XCTAssertNotEqual(router1.currentPath, router2.currentPath)
+        #expect(router1.currentPath == "/page1")
+        #expect(router2.currentPath == "/page2")
+        #expect(router1.currentPath != router2.currentPath)
     }
 
     // MARK: - Route Guard Tests
 
-    func testNavigationInterceptor() {
+    @Test func navigationInterceptor() {
         var interceptedPath: String?
         var shouldAllow = true
 
@@ -480,18 +474,18 @@ final class RouterTests: XCTestCase {
         // Allow navigation
         shouldAllow = true
         router.navigate(to: "/protected")
-        XCTAssertEqual(interceptedPath, "/protected")
-        XCTAssertEqual(router.currentPath, "/protected")
+        #expect(interceptedPath == "/protected")
+        #expect(router.currentPath == "/protected")
 
         // Block navigation
         shouldAllow = false
         router.navigate(to: "/protected")
-        XCTAssertEqual(interceptedPath, "/protected")
+        #expect(interceptedPath == "/protected")
         // Path shouldn't change since navigation was blocked
-        XCTAssertEqual(router.currentPath, "/protected")
+        #expect(router.currentPath == "/protected")
     }
 
-    func testNavigationInterceptorRemoval() {
+    @Test func navigationInterceptorRemoval() {
         router.setNavigationInterceptor { _ in false }
 
         router.register(path: "/home") {
@@ -499,14 +493,14 @@ final class RouterTests: XCTestCase {
         }
 
         router.navigate(to: "/home")
-        XCTAssertNotEqual(router.currentPath, "/home")
+        #expect(router.currentPath != "/home")
 
         router.removeNavigationInterceptor()
         router.navigate(to: "/home")
-        XCTAssertEqual(router.currentPath, "/home")
+        #expect(router.currentPath == "/home")
     }
 
-    func testRouteGuardForAuthentication() {
+    @Test func routeGuardForAuthentication() {
         var isAuthenticated = false
 
         router.setNavigationInterceptor { path in
@@ -527,91 +521,91 @@ final class RouterTests: XCTestCase {
         // Try to access protected route while unauthenticated
         isAuthenticated = false
         router.navigate(to: "/admin/dashboard")
-        XCTAssertNotEqual(router.currentPath, "/admin/dashboard")
+        #expect(router.currentPath != "/admin/dashboard")
 
         // Access public route
         router.navigate(to: "/login")
-        XCTAssertEqual(router.currentPath, "/login")
+        #expect(router.currentPath == "/login")
 
         // Access protected route while authenticated
         isAuthenticated = true
         router.navigate(to: "/admin/dashboard")
-        XCTAssertEqual(router.currentPath, "/admin/dashboard")
+        #expect(router.currentPath == "/admin/dashboard")
     }
 
     // MARK: - 404 Handling Tests
 
-    func testDefaultNotFoundView() {
+    @Test func defaultNotFoundView() {
         // Navigate to unregistered route
         router.navigate(to: "/nonexistent")
 
-        XCTAssertEqual(router.currentPath, "/nonexistent")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/nonexistent")
+        #expect(router.currentView != nil)
     }
 
-    func testCustomNotFoundView() {
+    @Test func customNotFoundView() {
         router.setNotFoundView(
             Text("Custom 404: Page Not Found")
         )
 
         router.navigate(to: "/missing")
 
-        XCTAssertEqual(router.currentPath, "/missing")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/missing")
+        #expect(router.currentView != nil)
     }
 
-    func test404WithHistoryUpdate() {
+    @Test func notFoundWithHistoryUpdate() {
         router.navigate(to: "/does-not-exist")
 
-        XCTAssertEqual(router.currentPath, "/does-not-exist")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/does-not-exist")
+        #expect(router.currentView != nil)
     }
 
     // MARK: - Edge Case Tests
 
-    func testEmptyPath() {
+    @Test func emptyPath() {
         router.register(path: "/") {
             Text("Root")
         }
 
         router.navigate(to: "/")
 
-        XCTAssertEqual(router.currentPath, "/")
-        XCTAssertNotNil(router.currentView)
+        #expect(router.currentPath == "/")
+        #expect(router.currentView != nil)
     }
 
-    func testPathWithoutLeadingSlash() {
+    @Test func pathWithoutLeadingSlash() {
         router.register(path: "/about") {
             Text("About")
         }
 
         // Route matching should handle paths without leading slash
-        XCTAssertTrue(router.hasRoute(for: "/about"))
+        #expect(router.hasRoute(for: "/about"))
     }
 
-    func testPathWithSpecialCharacters() {
+    @Test func pathWithSpecialCharacters() {
         router.register(path: "/user/:name") { params in
             Text("User: \(params.string("name") ?? "")")
         }
 
         router.navigate(to: "/user/john-doe")
 
-        XCTAssertEqual(router.currentParameters.string("name"), "john-doe")
+        #expect(router.currentParameters.string("name") == "john-doe")
     }
 
-    func testPathWithNumbers() {
+    @Test func pathWithNumbers() {
         router.register(path: "/version/:major/:minor/:patch") { params in
             Text("Version")
         }
 
         router.navigate(to: "/version/1/2/3")
 
-        XCTAssertEqual(router.currentParameters.int("major"), 1)
-        XCTAssertEqual(router.currentParameters.int("minor"), 2)
-        XCTAssertEqual(router.currentParameters.int("patch"), 3)
+        #expect(router.currentParameters.int("major") == 1)
+        #expect(router.currentParameters.int("minor") == 2)
+        #expect(router.currentParameters.int("patch") == 3)
     }
 
-    func testVeryLongPath() {
+    @Test func veryLongPath() {
         let longPath = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y/z"
         router.register(path: longPath) {
             Text("Long Path")
@@ -619,22 +613,22 @@ final class RouterTests: XCTestCase {
 
         router.navigate(to: longPath)
 
-        XCTAssertEqual(router.currentPath, longPath)
+        #expect(router.currentPath == longPath)
     }
 
-    func testRouteUnregistration() {
+    @Test func routeUnregistration() {
         router.register(path: "/temporary") {
             Text("Temporary")
         }
 
-        XCTAssertTrue(router.hasRoute(for: "/temporary"))
+        #expect(router.hasRoute(for: "/temporary"))
 
         router.unregister(path: "/temporary")
 
-        XCTAssertFalse(router.hasRoute(for: "/temporary"))
+        #expect(!router.hasRoute(for: "/temporary"))
     }
 
-    func testGetRegisteredRoutes() {
+    @Test func getRegisteredRoutes() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -647,26 +641,26 @@ final class RouterTests: XCTestCase {
 
         let routes = router.getRegisteredRoutes()
 
-        XCTAssertEqual(routes.count, 3)
-        XCTAssertTrue(routes.contains("/home"))
-        XCTAssertTrue(routes.contains("/about"))
-        XCTAssertTrue(routes.contains("/contact"))
+        #expect(routes.count == 3)
+        #expect(routes.contains("/home"))
+        #expect(routes.contains("/about"))
+        #expect(routes.contains("/contact"))
     }
 
-    func testCanGoBack() {
+    @Test func canGoBack() {
         router.register(path: "/home") {
             Text("Home")
         }
 
-        XCTAssertFalse(router.canGoBack())
+        #expect(!router.canGoBack())
 
         router.navigate(to: "/home")
 
         // Simplified implementation returns false for root path
-        XCTAssertFalse(router.canGoBack())
+        #expect(!router.canGoBack())
     }
 
-    func testCanGoForward() {
+    @Test func canGoForward() {
         router.register(path: "/home") {
             Text("Home")
         }
@@ -674,12 +668,12 @@ final class RouterTests: XCTestCase {
         router.navigate(to: "/home")
 
         // Simplified implementation returns false
-        XCTAssertFalse(router.canGoForward())
+        #expect(!router.canGoForward())
     }
 
     // MARK: - Additional Edge Cases
 
-    func testNavigationWithNilParameters() {
+    @Test func navigationWithNilParameters() {
         router.register(path: "/search/:query") { params in
             Text("Query: \(params.string("query") ?? "none")")
         }
@@ -687,10 +681,10 @@ final class RouterTests: XCTestCase {
         router.navigate(to: "/search/")
 
         // Empty parameter segment
-        XCTAssertEqual(router.currentPath, "/search/")
+        #expect(router.currentPath == "/search/")
     }
 
-    func testConcurrentNavigation() {
+    @Test func concurrentNavigation() {
         router.register(path: "/page1") {
             Text("Page 1")
         }
@@ -699,17 +693,16 @@ final class RouterTests: XCTestCase {
         }
 
         router.navigate(to: "/page1")
-        XCTAssertFalse(router.isNavigating)
+        #expect(!router.isNavigating)
 
         router.navigate(to: "/page2")
-        XCTAssertFalse(router.isNavigating)
-        XCTAssertEqual(router.currentPath, "/page2")
+        #expect(!router.isNavigating)
+        #expect(router.currentPath == "/page2")
     }
 }
 
 // MARK: - Test Notes
 
-// Note: These tests work with the actual NavigationHistory.shared instance since
-// NavigationHistory is a final class with private init and cannot be mocked.
-// Tests focus on verifying Router's state management and behavior rather than
-// verifying specific history API calls.
+// Note: Router is created without NavigationHistory in tests, so browser history
+// operations are no-ops. Tests focus on verifying Router's state management
+// and route matching behavior.

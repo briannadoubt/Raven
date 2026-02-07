@@ -368,7 +368,9 @@ internal final class KeyboardShortcutManager {
     private var keydownClosure: JSClosure?
 
     private init() {
+        #if arch(wasm32)
         setupGlobalKeyHandler()
+        #endif
     }
 
     /// Register a key press handler.

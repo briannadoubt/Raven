@@ -1,103 +1,103 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for Image and Toggle primitive views
 @MainActor
-final class ImageToggleTests: XCTestCase {
+@Suite struct ImageToggleTests {
 
     // MARK: - Image Tests
 
-    func testImageNamedInitializer() throws {
+    @Test func imageNamedInitializer() throws {
         let image = Image("test-photo")
         let node = image.toVNode()
 
-        XCTAssertEqual(node.elementTag, "img", "Image should render as img element")
-        XCTAssertTrue(node.children.isEmpty, "Image should have no children")
+        #expect(node.elementTag == "img")
+        #expect(node.children.isEmpty)
 
         // Verify src attribute
         if case .attribute(name: "src", value: let src) = node.props["src"] {
-            XCTAssertTrue(src.contains("test-photo"), "Should contain image name")
+            #expect(src.contains("test-photo"))
         } else {
-            XCTFail("Image should have src attribute")
+            Issue.record("Image should have src attribute")
         }
 
         // Verify alt attribute exists
-        XCTAssertNotNil(node.props["alt"], "Image should have alt attribute")
+        #expect(node.props["alt"] != nil)
     }
 
-    func testImageSystemNameInitializer() throws {
+    @Test func imageSystemNameInitializer() throws {
         let image = Image(systemName: "star.fill")
         let node = image.toVNode()
 
-        XCTAssertEqual(node.elementTag, "img", "System image should render as img element")
+        #expect(node.elementTag == "img")
 
         // Verify src attribute for system icon
         if case .attribute(name: "src", value: let src) = node.props["src"] {
-            XCTAssertTrue(src.contains("data:image/svg+xml"), "System icon should use SVG data URL")
-            XCTAssertTrue(src.contains("star.fill"), "Should contain system name")
+            #expect(src.contains("data:image/svg+xml"))
+            #expect(src.contains("star.fill"))
         } else {
-            XCTFail("System image should have src attribute")
+            Issue.record("System image should have src attribute")
         }
     }
 
-    func testImageDecorativeInitializer() throws {
+    @Test func imageDecorativeInitializer() throws {
         let image = Image(decorative: "background")
         let node = image.toVNode()
 
         // Verify decorative image has empty alt and presentation role
         if case .attribute(name: "alt", value: let alt) = node.props["alt"] {
-            XCTAssertEqual(alt, "", "Decorative image should have empty alt text")
+            #expect(alt == "")
         } else {
-            XCTFail("Decorative image should have alt attribute")
+            Issue.record("Decorative image should have alt attribute")
         }
 
         if case .attribute(name: "role", value: let role) = node.props["role"] {
-            XCTAssertEqual(role, "presentation", "Decorative image should have presentation role")
+            #expect(role == "presentation")
         } else {
-            XCTFail("Decorative image should have role attribute")
+            Issue.record("Decorative image should have role attribute")
         }
     }
 
-    func testImageWithCustomAltText() throws {
+    @Test func imageWithCustomAltText() throws {
         let image = Image("chart", alt: "Sales chart showing upward trend")
         let node = image.toVNode()
 
         // Verify custom alt text
         if case .attribute(name: "alt", value: let alt) = node.props["alt"] {
-            XCTAssertEqual(alt, "Sales chart showing upward trend", "Should use custom alt text")
+            #expect(alt == "Sales chart showing upward trend")
         } else {
-            XCTFail("Image should have alt attribute")
+            Issue.record("Image should have alt attribute")
         }
     }
 
-    func testImageLazyLoading() throws {
+    @Test func imageLazyLoading() throws {
         let image = Image("photo")
         let node = image.toVNode()
 
         // Verify lazy loading attribute
         if case .attribute(name: "loading", value: let loading) = node.props["loading"] {
-            XCTAssertEqual(loading, "lazy", "Image should have lazy loading")
+            #expect(loading == "lazy")
         } else {
-            XCTFail("Image should have loading attribute")
+            Issue.record("Image should have loading attribute")
         }
     }
 
-    func testImageAccessibilityModifier() throws {
+    @Test func imageAccessibilityModifier() throws {
         let image = Image("icon")
             .accessibilityLabel("Custom label")
         let node = image.toVNode()
 
         // Verify accessibility label
         if case .attribute(name: "alt", value: let alt) = node.props["alt"] {
-            XCTAssertEqual(alt, "Custom label", "Should use accessibility label")
+            #expect(alt == "Custom label")
         } else {
-            XCTFail("Image should have alt attribute")
+            Issue.record("Image should have alt attribute")
         }
     }
 
     // MARK: - Toggle Tests
 
-    func testToggleWithTextLabel() throws {
+    @Test func toggleWithTextLabel() throws {
         var isOn = false
         let binding = Binding<Bool>(
             get: { isOn },
@@ -107,45 +107,45 @@ final class ImageToggleTests: XCTestCase {
         let toggle = Toggle("Test Toggle", isOn: binding)
         let node = toggle.toVNode()
 
-        XCTAssertEqual(node.elementTag, "label", "Toggle should render as label element")
-        XCTAssertFalse(node.children.isEmpty, "Toggle should have children")
+        #expect(node.elementTag == "label")
+        #expect(!node.children.isEmpty)
 
         // Find the input element
         let inputNode = node.children.first { child in
             child.elementTag == "input"
         }
 
-        XCTAssertNotNil(inputNode, "Toggle should contain input element")
+        #expect(inputNode != nil)
 
         // Verify input properties
         if let input = inputNode {
             // Verify type
             if case .attribute(name: "type", value: let type) = input.props["type"] {
-                XCTAssertEqual(type, "checkbox", "Input should be checkbox type")
+                #expect(type == "checkbox")
             } else {
-                XCTFail("Input should have type attribute")
+                Issue.record("Input should have type attribute")
             }
 
             // Verify checked state
             if case .boolAttribute(name: "checked", value: let checked) = input.props["checked"] {
-                XCTAssertFalse(checked, "Initial state should be false")
+                #expect(!checked)
             } else {
-                XCTFail("Input should have checked attribute")
+                Issue.record("Input should have checked attribute")
             }
 
             // Verify role
             if case .attribute(name: "role", value: let role) = input.props["role"] {
-                XCTAssertEqual(role, "switch", "Input should have switch role")
+                #expect(role == "switch")
             } else {
-                XCTFail("Input should have role attribute")
+                Issue.record("Input should have role attribute")
             }
 
             // Verify onChange event handler
-            XCTAssertNotNil(input.props["onChange"], "Input should have onChange handler")
+            #expect(input.props["onChange"] != nil)
         }
     }
 
-    func testToggleCheckedState() throws {
+    @Test func toggleCheckedState() throws {
         var isOn = true
         let binding = Binding<Bool>(
             get: { isOn },
@@ -163,16 +163,16 @@ final class ImageToggleTests: XCTestCase {
         if let input = inputNode {
             // Verify checked state is true
             if case .boolAttribute(name: "checked", value: let checked) = input.props["checked"] {
-                XCTAssertTrue(checked, "State should be true")
+                #expect(checked)
             } else {
-                XCTFail("Input should have checked attribute")
+                Issue.record("Input should have checked attribute")
             }
         } else {
-            XCTFail("Toggle should contain input element")
+            Issue.record("Toggle should contain input element")
         }
     }
 
-    func testToggleChangeHandler() throws {
+    @Test func toggleChangeHandler() throws {
         var isOn = false
         let binding = Binding<Bool>(
             get: { isOn },
@@ -182,14 +182,14 @@ final class ImageToggleTests: XCTestCase {
         let toggle = Toggle("Test", isOn: binding)
 
         // Execute change handler
-        XCTAssertFalse(isOn, "Initial state should be false")
+        #expect(!isOn)
         toggle.changeHandler()
-        XCTAssertTrue(isOn, "State should toggle to true")
+        #expect(isOn)
         toggle.changeHandler()
-        XCTAssertFalse(isOn, "State should toggle back to false")
+        #expect(!isOn)
     }
 
-    func testToggleWithCustomLabel() throws {
+    @Test func toggleWithCustomLabel() throws {
         var isOn = false
         let binding = Binding<Bool>(
             get: { isOn },
@@ -204,17 +204,17 @@ final class ImageToggleTests: XCTestCase {
         }
         let node = toggle.toVNode()
 
-        XCTAssertEqual(node.elementTag, "label", "Toggle should render as label element")
-        XCTAssertFalse(node.children.isEmpty, "Toggle should have children")
+        #expect(node.elementTag == "label")
+        #expect(!node.children.isEmpty)
 
         // Verify input element exists
         let hasInput = node.children.contains { child in
             child.elementTag == "input"
         }
-        XCTAssertTrue(hasInput, "Toggle should contain input element")
+        #expect(hasInput)
     }
 
-    func testToggleAriaAttributes() throws {
+    @Test func toggleAriaAttributes() throws {
         var isOn = true
         let binding = Binding<Bool>(
             get: { isOn },
@@ -232,16 +232,16 @@ final class ImageToggleTests: XCTestCase {
         if let input = inputNode {
             // Verify aria-checked attribute
             if case .attribute(name: "aria-checked", value: let ariaChecked) = input.props["aria-checked"] {
-                XCTAssertEqual(ariaChecked, "true", "aria-checked should match state")
+                #expect(ariaChecked == "true")
             } else {
-                XCTFail("Input should have aria-checked attribute")
+                Issue.record("Input should have aria-checked attribute")
             }
         } else {
-            XCTFail("Toggle should contain input element")
+            Issue.record("Toggle should contain input element")
         }
     }
 
-    func testToggleWithLocalizedStringKey() throws {
+    @Test func toggleWithLocalizedStringKey() throws {
         var isOn = false
         let binding = Binding<Bool>(
             get: { isOn },
@@ -251,10 +251,10 @@ final class ImageToggleTests: XCTestCase {
         let toggle = Toggle(LocalizedStringKey("toggle_key"), isOn: binding)
         let node = toggle.toVNode()
 
-        XCTAssertEqual(node.elementTag, "label", "Toggle should render as label element")
+        #expect(node.elementTag == "label")
     }
 
-    func testToggleIDModifier() throws {
+    @Test func toggleIDModifier() throws {
         var isOn = false
         let binding = Binding<Bool>(
             get: { isOn },
@@ -273,18 +273,18 @@ final class ImageToggleTests: XCTestCase {
         if let input = inputNode {
             // Verify custom ID
             if case .attribute(name: "id", value: let id) = input.props["id"] {
-                XCTAssertEqual(id, "custom-toggle-id", "Should use custom ID")
+                #expect(id == "custom-toggle-id")
             } else {
-                XCTFail("Input should have id attribute")
+                Issue.record("Input should have id attribute")
             }
         } else {
-            XCTFail("Toggle should contain input element")
+            Issue.record("Toggle should contain input element")
         }
     }
 
     // MARK: - Integration Tests
 
-    func testImageAndToggleTogether() throws {
+    @Test func imageAndToggleTogether() throws {
         var showImage = true
         let binding = Binding<Bool>(
             get: { showImage },
@@ -298,12 +298,12 @@ final class ImageToggleTests: XCTestCase {
         let toggleNode = toggle.toVNode()
         let imageNode = image.toVNode()
 
-        XCTAssertEqual(toggleNode.elementTag, "label", "Toggle should be label")
-        XCTAssertEqual(imageNode.elementTag, "img", "Image should be img")
-        XCTAssertTrue(showImage, "Initial state should be true")
+        #expect(toggleNode.elementTag == "label")
+        #expect(imageNode.elementTag == "img")
+        #expect(showImage)
 
         // Test interaction
         toggle.changeHandler()
-        XCTAssertFalse(showImage, "State should toggle")
+        #expect(!showImage)
     }
 }

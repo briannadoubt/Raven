@@ -9,6 +9,7 @@ import Testing
 /// - Asymmetric transitions
 /// - CSS animation generation
 /// - Edge and UnitPoint types
+@MainActor
 @Suite("Transition Tests")
 struct TransitionTests {
 

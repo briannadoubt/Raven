@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for AlertRenderer content extraction functionality.
@@ -6,11 +6,11 @@ import XCTest
 /// These tests verify that the extractAlertData method can properly
 /// parse view hierarchies and extract structured alert data.
 @MainActor
-final class AlertRendererExtractionTests: XCTestCase {
+@Suite struct AlertRendererExtractionTests {
 
     // MARK: - Basic Extraction Tests
 
-    func testExtractTitleOnly() {
+    @Test func extractTitleOnly() {
         // Create a simple alert content with just a title and button
         let content = AnyView(VStack {
             Text("Alert Title")
@@ -19,14 +19,14 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result, "Extraction should succeed for valid alert content")
-        XCTAssertEqual(result?.title, "Alert Title")
-        XCTAssertNil(result?.message)
-        XCTAssertEqual(result?.buttons.count, 1)
-        XCTAssertEqual(result?.buttons.first?.label, "OK")
+        #expect(result != nil)
+        #expect(result?.title == "Alert Title")
+        #expect(result?.message == nil)
+        #expect(result?.buttons.count == 1)
+        #expect(result?.buttons.first?.label == "OK")
     }
 
-    func testExtractTitleAndMessage() {
+    @Test func extractTitleAndMessage() {
         // Create alert content with title and message
         let content = AnyView(VStack {
             Text("Alert Title")
@@ -36,13 +36,13 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Alert Title")
-        XCTAssertEqual(result?.message, "This is a descriptive message")
-        XCTAssertEqual(result?.buttons.count, 1)
+        #expect(result != nil)
+        #expect(result?.title == "Alert Title")
+        #expect(result?.message == "This is a descriptive message")
+        #expect(result?.buttons.count == 1)
     }
 
-    func testExtractMultipleButtons() {
+    @Test func extractMultipleButtons() {
         // Create alert content with multiple buttons
         let content = AnyView(VStack {
             Text("Confirm Action")
@@ -53,15 +53,15 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Confirm Action")
-        XCTAssertEqual(result?.message, "Are you sure you want to proceed?")
-        XCTAssertEqual(result?.buttons.count, 2)
-        XCTAssertEqual(result?.buttons[0].label, "Delete")
-        XCTAssertEqual(result?.buttons[1].label, "Cancel")
+        #expect(result != nil)
+        #expect(result?.title == "Confirm Action")
+        #expect(result?.message == "Are you sure you want to proceed?")
+        #expect(result?.buttons.count == 2)
+        #expect(result?.buttons[0].label == "Delete")
+        #expect(result?.buttons[1].label == "Cancel")
     }
 
-    func testExtractThreeButtons() {
+    @Test func extractThreeButtons() {
         // Create alert content with three buttons
         let content = AnyView(VStack {
             Text("Choose Option")
@@ -72,15 +72,15 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Choose Option")
-        XCTAssertNil(result?.message)
-        XCTAssertEqual(result?.buttons.count, 3)
+        #expect(result != nil)
+        #expect(result?.title == "Choose Option")
+        #expect(result?.message == nil)
+        #expect(result?.buttons.count == 3)
     }
 
     // MARK: - Edge Cases
 
-    func testExtractWithNoButtons() {
+    @Test func extractWithNoButtons() {
         // Alert content with no buttons (unusual but should handle gracefully)
         let content = AnyView(VStack {
             Text("Information")
@@ -89,22 +89,22 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Information")
-        XCTAssertEqual(result?.message, "Just displaying info")
-        XCTAssertEqual(result?.buttons.count, 0)
+        #expect(result != nil)
+        #expect(result?.title == "Information")
+        #expect(result?.message == "Just displaying info")
+        #expect(result?.buttons.count == 0)
     }
 
-    func testExtractEmptyContent() {
+    @Test func extractEmptyContent() {
         // Empty content should return nil
         let content = AnyView(VStack { })
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNil(result, "Empty content should return nil")
+        #expect(result == nil)
     }
 
-    func testExtractWithWhitespaceText() {
+    @Test func extractWithWhitespaceText() {
         // Text with only whitespace should be ignored
         let content = AnyView(VStack {
             Text("Title")
@@ -114,15 +114,15 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Title")
+        #expect(result != nil)
+        #expect(result?.title == "Title")
         // Whitespace-only text should be ignored, so no message
-        XCTAssertNil(result?.message)
+        #expect(result?.message == nil)
     }
 
     // MARK: - Complex Structure Tests
 
-    func testExtractWithNestedViews() {
+    @Test func extractWithNestedViews() {
         // Alert content with nested structure (VStack in VStack)
         let content = AnyView(VStack {
             VStack {
@@ -134,15 +134,15 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
+        #expect(result != nil)
         // Should still extract the title from nested structure
-        XCTAssertEqual(result?.title, "Nested Title")
-        XCTAssertEqual(result?.message, "Message")
+        #expect(result?.title == "Nested Title")
+        #expect(result?.message == "Message")
     }
 
     // MARK: - Real-World Patterns
 
-    func testExtractSimpleAlert() {
+    @Test func extractSimpleAlert() {
         // Pattern: .alert("Title", isPresented: $show) { Button("OK") { } }
         let content = AnyView(VStack {
             Text("Success")
@@ -151,13 +151,13 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Success")
-        XCTAssertNil(result?.message)
-        XCTAssertEqual(result?.buttons.count, 1)
+        #expect(result != nil)
+        #expect(result?.title == "Success")
+        #expect(result?.message == nil)
+        #expect(result?.buttons.count == 1)
     }
 
-    func testExtractAlertWithMessage() {
+    @Test func extractAlertWithMessage() {
         // Pattern: .alert("Title", ...) { ... } message: { Text("...") }
         let content = AnyView(VStack {
             Text("Save Changes?")
@@ -168,13 +168,13 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Save Changes?")
-        XCTAssertEqual(result?.message, "Your document will be saved to the cloud.")
-        XCTAssertEqual(result?.buttons.count, 2)
+        #expect(result != nil)
+        #expect(result?.title == "Save Changes?")
+        #expect(result?.message == "Your document will be saved to the cloud.")
+        #expect(result?.buttons.count == 2)
     }
 
-    func testExtractDestructiveAlert() {
+    @Test func extractDestructiveAlert() {
         // Pattern: Destructive action confirmation
         let content = AnyView(VStack {
             Text("Delete Item")
@@ -185,11 +185,11 @@ final class AlertRendererExtractionTests: XCTestCase {
 
         let result = AlertRenderer.extractAlertData(from: content)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.title, "Delete Item")
-        XCTAssertEqual(result?.message, "This action cannot be undone.")
-        XCTAssertEqual(result?.buttons.count, 2)
-        XCTAssertEqual(result?.buttons[0].label, "Delete")
-        XCTAssertEqual(result?.buttons[1].label, "Cancel")
+        #expect(result != nil)
+        #expect(result?.title == "Delete Item")
+        #expect(result?.message == "This action cannot be undone.")
+        #expect(result?.buttons.count == 2)
+        #expect(result?.buttons[0].label == "Delete")
+        #expect(result?.buttons[1].label == "Cancel")
     }
 }

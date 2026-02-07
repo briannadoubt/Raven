@@ -1,32 +1,28 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for the Canvas Symbol system
 @MainActor
-final class SymbolTests: XCTestCase {
-
-    override func setUp() async throws {
-        // Registry is a singleton and auto-initializes with built-in symbols
-    }
+@Suite struct SymbolTests {
 
     // MARK: - Symbol Creation Tests
 
-    func testSymbolCreation() {
+    @Test func symbolCreation() {
         let symbol = Symbol(
             name: "test.icon",
             category: "test",
             pathData: "M 0 0 L 1 1"
         )
 
-        XCTAssertEqual(symbol.name, "test.icon")
-        XCTAssertEqual(symbol.category, "test")
-        XCTAssertEqual(symbol.pathData, "M 0 0 L 1 1")
-        XCTAssertNil(symbol.foregroundColor)
-        XCTAssertNil(symbol.weight)
-        XCTAssertEqual(symbol.renderingMode, .monochrome)
+        #expect(symbol.name == "test.icon")
+        #expect(symbol.category == "test")
+        #expect(symbol.pathData == "M 0 0 L 1 1")
+        #expect(symbol.foregroundColor == nil)
+        #expect(symbol.weight == nil)
+        #expect(symbol.renderingMode == .monochrome)
     }
 
-    func testSymbolCreationFromPath() {
+    @Test func symbolCreationFromPath() {
         var path = Path()
         path.move(to: CGPoint(x: 0, y: 0))
         path.addLine(to: CGPoint(x: 1, y: 1))
@@ -37,11 +33,11 @@ final class SymbolTests: XCTestCase {
             path: path
         )
 
-        XCTAssertEqual(symbol.name, "test.path")
-        XCTAssertFalse(symbol.pathData.isEmpty)
+        #expect(symbol.name == "test.path")
+        #expect(!symbol.pathData.isEmpty)
     }
 
-    func testSymbolWithCustomViewBox() {
+    @Test func symbolWithCustomViewBox() {
         let symbol = Symbol(
             name: "test.custom",
             category: "test",
@@ -49,43 +45,43 @@ final class SymbolTests: XCTestCase {
             viewBox: CGRect(x: 0, y: 0, width: 100, height: 100)
         )
 
-        XCTAssertEqual(symbol.viewBox.width, 100)
-        XCTAssertEqual(symbol.viewBox.height, 100)
+        #expect(symbol.viewBox.width == 100)
+        #expect(symbol.viewBox.height == 100)
     }
 
     // MARK: - Symbol Modifier Tests
 
-    func testSymbolForegroundColor() {
+    @Test func symbolForegroundColor() {
         let symbol = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let colored = symbol.foregroundColor(.red)
 
-        XCTAssertNotNil(colored.foregroundColor)
-        XCTAssertEqual(symbol.name, colored.name) // Name should be preserved
+        #expect(colored.foregroundColor != nil)
+        #expect(symbol.name == colored.name) // Name should be preserved
     }
 
-    func testSymbolWeight() {
+    @Test func symbolWeight() {
         let symbol = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let weighted = symbol.weight(.bold)
 
-        XCTAssertEqual(weighted.weight, .bold)
-        XCTAssertEqual(weighted.weight?.strokeWidthMultiplier, 1.5)
+        #expect(weighted.weight == .bold)
+        #expect(weighted.weight?.strokeWidthMultiplier == 1.5)
     }
 
-    func testSymbolRenderingMode() {
+    @Test func symbolRenderingMode() {
         let symbol = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let hierarchical = symbol.symbolRenderingMode(.hierarchical)
 
-        XCTAssertEqual(hierarchical.renderingMode, .hierarchical)
+        #expect(hierarchical.renderingMode == .hierarchical)
     }
 
-    func testSymbolAccessibilityLabel() {
+    @Test func symbolAccessibilityLabel() {
         let symbol = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let labeled = symbol.accessibilityLabel("Test Icon")
 
-        XCTAssertEqual(labeled.accessibilityLabel, "Test Icon")
+        #expect(labeled.accessibilityLabel == "Test Icon")
     }
 
-    func testSymbolWeightValues() {
+    @Test func symbolWeightValues() {
         let weights: [Symbol.Weight] = [
             .ultraLight, .thin, .light, .regular,
             .medium, .semibold, .bold, .heavy, .black
@@ -96,51 +92,50 @@ final class SymbolTests: XCTestCase {
         ]
 
         for (weight, expected) in zip(weights, expectedMultipliers) {
-            XCTAssertEqual(weight.strokeWidthMultiplier, expected,
-                          "Weight \(weight) should have multiplier \(expected)")
+            #expect(weight.strokeWidthMultiplier == expected)
         }
     }
 
     // MARK: - Registry Tests
 
-    func testRegistryContainsBuiltInSymbols() {
+    @Test func registryContainsBuiltInSymbols() {
         let registry = SymbolRegistry.shared
 
         // Test that registry has symbols
-        XCTAssertGreaterThan(registry.count, 0, "Registry should contain built-in symbols")
+        #expect(registry.count > 0)
 
         // Test specific symbols exist
-        XCTAssertNotNil(registry.lookup(name: "circle"))
-        XCTAssertNotNil(registry.lookup(name: "heart"))
-        XCTAssertNotNil(registry.lookup(name: "star"))
+        #expect(registry.lookup(name: "circle") != nil)
+        #expect(registry.lookup(name: "heart") != nil)
+        #expect(registry.lookup(name: "star") != nil)
     }
 
-    func testRegistryLookup() {
+    @Test func registryLookup() {
         let registry = SymbolRegistry.shared
 
         // Test direct lookup
         let circle = registry.lookup(name: "circle")
-        XCTAssertNotNil(circle)
-        XCTAssertEqual(circle?.name, "circle")
+        #expect(circle != nil)
+        #expect(circle?.name == "circle")
 
         // Test missing symbol
         let missing = registry.lookup(name: "nonexistent.symbol")
-        XCTAssertNil(missing)
+        #expect(missing == nil)
     }
 
-    func testRegistryAliasLookup() {
+    @Test func registryAliasLookup() {
         let registry = SymbolRegistry.shared
 
         // Test SF Symbol alias
         let heart = registry.lookupWithAlias(name: "heart.fill")
-        XCTAssertNotNil(heart)
+        #expect(heart != nil)
 
         // Test that direct name also works
         let circle = registry.lookupWithAlias(name: "circle")
-        XCTAssertNotNil(circle)
+        #expect(circle != nil)
     }
 
-    func testCustomSymbolRegistration() {
+    @Test func customSymbolRegistration() {
         let registry = SymbolRegistry.shared
 
         let customSymbol = Symbol(
@@ -152,67 +147,67 @@ final class SymbolTests: XCTestCase {
         registry.register(customSymbol)
 
         let retrieved = registry.lookup(name: "custom.test.symbol")
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.name, "custom.test.symbol")
+        #expect(retrieved != nil)
+        #expect(retrieved?.name == "custom.test.symbol")
 
         // Clean up
         registry.unregister(name: "custom.test.symbol")
     }
 
-    func testSymbolUnregistration() {
+    @Test func symbolUnregistration() {
         let registry = SymbolRegistry.shared
 
         let symbol = Symbol(name: "temp.symbol", category: "test", pathData: "M 0 0")
         registry.register(symbol)
 
-        XCTAssertTrue(registry.contains(name: "temp.symbol"))
+        #expect(registry.contains(name: "temp.symbol"))
 
         let unregistered = registry.unregister(name: "temp.symbol")
-        XCTAssertNotNil(unregistered)
-        XCTAssertFalse(registry.contains(name: "temp.symbol"))
+        #expect(unregistered != nil)
+        #expect(!registry.contains(name: "temp.symbol"))
     }
 
-    func testRegistryCategoryFiltering() {
+    @Test func registryCategoryFiltering() {
         let registry = SymbolRegistry.shared
 
         let shapesSymbols = registry.symbols(in: Symbol.Category.shapes)
-        XCTAssertGreaterThan(shapesSymbols.count, 0, "Should have shape symbols")
+        #expect(shapesSymbols.count > 0)
 
         let arrowsSymbols = registry.symbols(in: Symbol.Category.arrows)
-        XCTAssertGreaterThan(arrowsSymbols.count, 0, "Should have arrow symbols")
+        #expect(arrowsSymbols.count > 0)
     }
 
-    func testRegistryAllCategories() {
+    @Test func registryAllCategories() {
         let registry = SymbolRegistry.shared
         let categories = registry.allCategories()
 
-        XCTAssertTrue(categories.contains(Symbol.Category.shapes))
-        XCTAssertTrue(categories.contains(Symbol.Category.arrows))
-        XCTAssertTrue(categories.contains(Symbol.Category.communication))
+        #expect(categories.contains(Symbol.Category.shapes))
+        #expect(categories.contains(Symbol.Category.arrows))
+        #expect(categories.contains(Symbol.Category.communication))
     }
 
-    func testRegistrySearch() {
+    @Test func registrySearch() {
         let registry = SymbolRegistry.shared
 
         let circleResults = registry.search(query: "circle")
-        XCTAssertGreaterThan(circleResults.count, 0, "Should find symbols with 'circle'")
+        #expect(circleResults.count > 0)
 
         let allResults = circleResults.filter { $0.name.contains("circle") }
-        XCTAssertEqual(circleResults.count, allResults.count, "All results should contain 'circle'")
+        #expect(circleResults.count == allResults.count)
     }
 
-    func testRegistryPrefixSearch() {
+    @Test func registryPrefixSearch() {
         let registry = SymbolRegistry.shared
 
         let arrowSymbols = registry.symbols(withPrefix: "arrow.")
-        XCTAssertGreaterThan(arrowSymbols.count, 0, "Should find arrow symbols")
+        #expect(arrowSymbols.count > 0)
 
         for symbol in arrowSymbols {
-            XCTAssertTrue(symbol.name.hasPrefix("arrow."), "Symbol should start with 'arrow.'")
+            #expect(symbol.name.hasPrefix("arrow."))
         }
     }
 
-    func testRegistryBatchRegistration() {
+    @Test func registryBatchRegistration() {
         let registry = SymbolRegistry.shared
 
         let symbols = [
@@ -223,9 +218,9 @@ final class SymbolTests: XCTestCase {
 
         registry.register(symbols)
 
-        XCTAssertTrue(registry.contains(name: "batch.1"))
-        XCTAssertTrue(registry.contains(name: "batch.2"))
-        XCTAssertTrue(registry.contains(name: "batch.3"))
+        #expect(registry.contains(name: "batch.1"))
+        #expect(registry.contains(name: "batch.2"))
+        #expect(registry.contains(name: "batch.3"))
 
         // Clean up
         registry.unregister(name: "batch.1")
@@ -233,7 +228,7 @@ final class SymbolTests: XCTestCase {
         registry.unregister(name: "batch.3")
     }
 
-    func testRegistryAliasRegistration() {
+    @Test func registryAliasRegistration() {
         let registry = SymbolRegistry.shared
 
         let symbol = Symbol(name: "test.original", category: "test", pathData: "M 0 0")
@@ -241,8 +236,8 @@ final class SymbolTests: XCTestCase {
         registry.registerAlias("test.alias", target: "test.original")
 
         let viaAlias = registry.lookupWithAlias(name: "test.alias")
-        XCTAssertNotNil(viaAlias)
-        XCTAssertEqual(viaAlias?.name, "test.original")
+        #expect(viaAlias != nil)
+        #expect(viaAlias?.name == "test.original")
 
         // Clean up
         registry.unregister(name: "test.original")
@@ -250,7 +245,7 @@ final class SymbolTests: XCTestCase {
 
     // MARK: - Built-in Symbol Tests
 
-    func testBuiltInShapeSymbols() {
+    @Test func builtInShapeSymbols() {
         let registry = SymbolRegistry.shared
 
         let shapeNames = [
@@ -264,12 +259,12 @@ final class SymbolTests: XCTestCase {
 
         for name in shapeNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.shapes)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.shapes)
         }
     }
 
-    func testBuiltInArrowSymbols() {
+    @Test func builtInArrowSymbols() {
         let registry = SymbolRegistry.shared
 
         let arrowNames = [
@@ -280,12 +275,12 @@ final class SymbolTests: XCTestCase {
 
         for name in arrowNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.arrows)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.arrows)
         }
     }
 
-    func testBuiltInCommunicationSymbols() {
+    @Test func builtInCommunicationSymbols() {
         let registry = SymbolRegistry.shared
 
         let commNames = [
@@ -297,12 +292,12 @@ final class SymbolTests: XCTestCase {
 
         for name in commNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.communication)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.communication)
         }
     }
 
-    func testBuiltInMediaSymbols() {
+    @Test func builtInMediaSymbols() {
         let registry = SymbolRegistry.shared
 
         let mediaNames = [
@@ -316,12 +311,12 @@ final class SymbolTests: XCTestCase {
 
         for name in mediaNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.media)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.media)
         }
     }
 
-    func testBuiltInActionSymbols() {
+    @Test func builtInActionSymbols() {
         let registry = SymbolRegistry.shared
 
         let actionNames = [
@@ -332,12 +327,12 @@ final class SymbolTests: XCTestCase {
 
         for name in actionNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.actions)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.actions)
         }
     }
 
-    func testBuiltInStatusSymbols() {
+    @Test func builtInStatusSymbols() {
         let registry = SymbolRegistry.shared
 
         let statusNames = [
@@ -349,12 +344,12 @@ final class SymbolTests: XCTestCase {
 
         for name in statusNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.status)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.status)
         }
     }
 
-    func testBuiltInNavigationSymbols() {
+    @Test func builtInNavigationSymbols() {
         let registry = SymbolRegistry.shared
 
         let navNames = [
@@ -368,14 +363,14 @@ final class SymbolTests: XCTestCase {
 
         for name in navNames {
             let symbol = registry.lookup(name: name)
-            XCTAssertNotNil(symbol, "Symbol '\(name)' should exist")
-            XCTAssertEqual(symbol?.category, Symbol.Category.navigation)
+            #expect(symbol != nil)
+            #expect(symbol?.category == Symbol.Category.navigation)
         }
     }
 
     // MARK: - SF Symbol Compatibility Tests
 
-    func testSFSymbolCompatibility() {
+    @Test func sfSymbolCompatibility() {
         let registry = SymbolRegistry.shared
 
         // Test that common SF Symbol names are aliased
@@ -387,38 +382,37 @@ final class SymbolTests: XCTestCase {
 
         for name in sfSymbolNames {
             let symbol = Symbol.systemName(name)
-            XCTAssertNotNil(symbol, "SF Symbol '\(name)' should be available")
+            #expect(symbol != nil)
         }
     }
 
-    func testStaticBuiltInLookup() {
+    @Test func staticBuiltInLookup() {
         let circle = Symbol.builtIn("circle")
-        XCTAssertNotNil(circle)
-        XCTAssertEqual(circle?.name, "circle")
+        #expect(circle != nil)
+        #expect(circle?.name == "circle")
 
         let missing = Symbol.builtIn("nonexistent")
-        XCTAssertNil(missing)
+        #expect(missing == nil)
     }
 
-    func testStaticSystemNameLookup() {
+    @Test func staticSystemNameLookup() {
         let heart = Symbol.systemName("heart.fill")
-        XCTAssertNotNil(heart)
+        #expect(heart != nil)
 
         let arrow = Symbol.systemName("arrow.right")
-        XCTAssertNotNil(arrow)
+        #expect(arrow != nil)
     }
 
     // MARK: - Symbol Count Tests
 
-    func testMinimumSymbolCount() {
+    @Test func minimumSymbolCount() {
         let registry = SymbolRegistry.shared
 
         // Should have at least 50 built-in symbols as per requirements
-        XCTAssertGreaterThanOrEqual(registry.count, 50,
-                                   "Registry should contain at least 50 built-in symbols")
+        #expect(registry.count >= 50)
     }
 
-    func testCategoryDistribution() {
+    @Test func categoryDistribution() {
         let registry = SymbolRegistry.shared
 
         // Each major category should have multiple symbols
@@ -433,36 +427,36 @@ final class SymbolTests: XCTestCase {
 
         for category in categories {
             let count = registry.symbols(in: category).count
-            XCTAssertGreaterThan(count, 0, "Category '\(category)' should have symbols")
+            #expect(count > 0)
         }
     }
 
     // MARK: - Symbol Identifiable Tests
 
-    func testSymbolIdentifiable() {
+    @Test func symbolIdentifiable() {
         let symbol = Symbol(name: "test.id", category: "test", pathData: "M 0 0")
-        XCTAssertEqual(symbol.id, symbol.name)
+        #expect(symbol.id == symbol.name)
     }
 
     // MARK: - Symbol Hashable Tests
 
-    func testSymbolHashable() {
+    @Test func symbolHashable() {
         let symbol1 = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let symbol2 = Symbol(name: "test", category: "test", pathData: "M 0 0")
         let symbol3 = Symbol(name: "other", category: "test", pathData: "M 0 0")
 
-        XCTAssertEqual(symbol1, symbol2)
-        XCTAssertNotEqual(symbol1, symbol3)
+        #expect(symbol1 == symbol2)
+        #expect(symbol1 != symbol3)
     }
 
     // MARK: - Convenience Extension Tests
 
-    func testSymbolRegisterExtension() {
+    @Test func symbolRegisterExtension() {
         let symbol = Symbol(name: "extension.test", category: "test", pathData: "M 0 0")
         symbol.register()
 
         let retrieved = SymbolRegistry.shared.lookup(name: "extension.test")
-        XCTAssertNotNil(retrieved)
+        #expect(retrieved != nil)
 
         // Clean up
         symbol.unregister()

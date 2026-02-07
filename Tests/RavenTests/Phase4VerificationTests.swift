@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 import RavenRuntime
 
@@ -14,11 +15,11 @@ import RavenRuntime
 /// 7. Color and Font enhancements (gradients, CSS variables, custom fonts) work
 /// 8. Complete multi-screen app integration works end-to-end
 @MainActor
-final class Phase4VerificationTests: XCTestCase {
+@Suite struct Phase4VerificationTests {
 
     // MARK: - Test 1: GeometryReader Tests
 
-    func testGeometryProxySize() async throws {
+    @Test func geometryProxySize() async throws {
         let size = Raven.CGSize(width: 320, height: 480)
         let geometry = GeometryProxy(
             size: size,
@@ -26,11 +27,11 @@ final class Phase4VerificationTests: XCTestCase {
             globalFrame: Raven.CGRect(x: 10, y: 20, width: 320, height: 480)
         )
 
-        XCTAssertEqual(geometry.size.width, 320, "GeometryProxy should provide width")
-        XCTAssertEqual(geometry.size.height, 480, "GeometryProxy should provide height")
+        #expect(geometry.size.width == 320)
+        #expect(geometry.size.height == 480)
     }
 
-    func testGeometryProxyLocalFrame() async throws {
+    @Test func geometryProxyLocalFrame() async throws {
         let geometry = GeometryProxy(
             size: Raven.CGSize(width: 100, height: 200),
             localFrame: Raven.CGRect(x: 0, y: 0, width: 100, height: 200),
@@ -38,13 +39,13 @@ final class Phase4VerificationTests: XCTestCase {
         )
 
         let localFrame = geometry.frame(in: .local)
-        XCTAssertEqual(localFrame.minX, 0, "Local frame should start at 0,0")
-        XCTAssertEqual(localFrame.minY, 0)
-        XCTAssertEqual(localFrame.width, 100)
-        XCTAssertEqual(localFrame.height, 200)
+        #expect(localFrame.minX == 0)
+        #expect(localFrame.minY == 0)
+        #expect(localFrame.width == 100)
+        #expect(localFrame.height == 200)
     }
 
-    func testGeometryProxyGlobalFrame() async throws {
+    @Test func geometryProxyGlobalFrame() async throws {
         let geometry = GeometryProxy(
             size: Raven.CGSize(width: 100, height: 200),
             localFrame: Raven.CGRect(x: 0, y: 0, width: 100, height: 200),
@@ -52,22 +53,22 @@ final class Phase4VerificationTests: XCTestCase {
         )
 
         let globalFrame = geometry.frame(in: .global)
-        XCTAssertEqual(globalFrame.minX, 50, "Global frame should have viewport coordinates")
-        XCTAssertEqual(globalFrame.minY, 75)
-        XCTAssertEqual(globalFrame.width, 100)
-        XCTAssertEqual(globalFrame.height, 200)
+        #expect(globalFrame.minX == 50)
+        #expect(globalFrame.minY == 75)
+        #expect(globalFrame.width == 100)
+        #expect(globalFrame.height == 200)
     }
 
-    func testGeometryReaderVNodeStructure() async throws {
+    @Test func geometryReaderVNodeStructure() async throws {
         let reader = GeometryReader { geometry in
             Text("Width: \(geometry.size.width)")
         }
 
         let body = reader.body
-        XCTAssertNotNil(body, "GeometryReader should have a body")
+        #expect(body != nil)
     }
 
-    func testGeometryReaderContainerAttributes() async throws {
+    @Test func geometryReaderContainerAttributes() async throws {
         let container = _GeometryReaderContainer { geometry in
             Text("Content")
         }
@@ -75,24 +76,23 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = container.toVNode()
 
         // Should be a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Container should be a div")
+        #expect(vnode.isElement(tag: "div"))
 
         // Should fill available space
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "block"))
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "100%"))
-        XCTAssertEqual(vnode.props["height"], .style(name: "height", value: "100%"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "block"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "100%"))
+        #expect(vnode.props["height"] == .style(name: "height", value: "100%"))
 
         // Should have marker attribute
-        XCTAssertEqual(
-            vnode.props["data-geometry-reader"],
-            .attribute(name: "data-geometry-reader", value: "true"),
-            "Container should be marked for geometry measurement"
+        #expect(
+            vnode.props["data-geometry-reader"] ==
+            .attribute(name: "data-geometry-reader", value: "true")
         )
     }
 
     // MARK: - Test 2: Grid Layout Tests
 
-    func testLazyVGridWithFixedColumns() async throws {
+    @Test func lazyVGridWithFixedColumns() async throws {
         let grid = LazyVGrid(
             columns: [
                 GridItem(.fixed(100)),
@@ -106,20 +106,20 @@ final class Phase4VerificationTests: XCTestCase {
 
         let vnode = grid.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Grid should be a div")
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
-        XCTAssertEqual(vnode.props["grid-auto-flow"], .style(name: "grid-auto-flow", value: "row"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
+        #expect(vnode.props["grid-auto-flow"] == .style(name: "grid-auto-flow", value: "row"))
 
         // Verify fixed column template
         if case .style(let name, let value) = vnode.props["grid-template-columns"] {
-            XCTAssertEqual(name, "grid-template-columns")
-            XCTAssertEqual(value, "100.0px 150.0px 100.0px", "Fixed columns should have px values")
+            #expect(name == "grid-template-columns")
+            #expect(value == "100.0px 150.0px 100.0px")
         } else {
-            XCTFail("Should have grid-template-columns property")
+            Issue.record("Should have grid-template-columns property")
         }
     }
 
-    func testLazyVGridWithFlexibleColumns() async throws {
+    @Test func lazyVGridWithFlexibleColumns() async throws {
         let grid = LazyVGrid(
             columns: [
                 GridItem(.flexible(minimum: 50, maximum: 200)),
@@ -134,17 +134,17 @@ final class Phase4VerificationTests: XCTestCase {
 
         // Verify flexible column template with minmax
         if case .style(_, let value) = vnode.props["grid-template-columns"] {
-            XCTAssertTrue(value.contains("minmax"), "Flexible columns should use minmax")
-            XCTAssertTrue(value.contains("1fr"), "Flexible columns should use fr units")
+            #expect(value.contains("minmax"))
+            #expect(value.contains("1fr"))
         } else {
-            XCTFail("Should have grid-template-columns property")
+            Issue.record("Should have grid-template-columns property")
         }
 
         // Verify spacing
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "16.0px"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "16.0px"))
     }
 
-    func testLazyVGridWithAdaptiveColumns() async throws {
+    @Test func lazyVGridWithAdaptiveColumns() async throws {
         let grid = LazyVGrid(
             columns: [
                 GridItem(.adaptive(minimum: 80))
@@ -157,14 +157,14 @@ final class Phase4VerificationTests: XCTestCase {
 
         // Verify adaptive column template uses repeat(auto-fit, ...)
         if case .style(_, let value) = vnode.props["grid-template-columns"] {
-            XCTAssertTrue(value.contains("repeat(auto-fit"), "Adaptive should use repeat(auto-fit)")
-            XCTAssertTrue(value.contains("minmax"), "Adaptive should use minmax")
+            #expect(value.contains("repeat(auto-fit"))
+            #expect(value.contains("minmax"))
         } else {
-            XCTFail("Should have grid-template-columns property")
+            Issue.record("Should have grid-template-columns property")
         }
     }
 
-    func testLazyHGridWithRows() async throws {
+    @Test func lazyHGridWithRows() async throws {
         let grid = LazyHGrid(
             rows: [
                 GridItem(.fixed(50)),
@@ -177,39 +177,39 @@ final class Phase4VerificationTests: XCTestCase {
 
         let vnode = grid.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Grid should be a div")
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
-        XCTAssertEqual(vnode.props["grid-auto-flow"], .style(name: "grid-auto-flow", value: "column"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
+        #expect(vnode.props["grid-auto-flow"] == .style(name: "grid-auto-flow", value: "column"))
 
         // Verify row template
-        XCTAssertNotNil(vnode.props["grid-template-rows"], "HGrid should have grid-template-rows")
+        #expect(vnode.props["grid-template-rows"] != nil)
 
         // Verify spacing
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "12.0px"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "12.0px"))
     }
 
-    func testGridItemSizeConversions() async throws {
+    @Test func gridItemSizeConversions() async throws {
         // Test fixed size
         let fixedItem = GridItem(.fixed(100))
-        XCTAssertEqual(fixedItem.toCSSTemplate(), "100.0px")
-        XCTAssertFalse(fixedItem.isAdaptive)
+        #expect(fixedItem.toCSSTemplate() == "100.0px")
+        #expect(!fixedItem.isAdaptive)
 
         // Test flexible size
         let flexibleItem = GridItem(.flexible(minimum: 50, maximum: 200))
-        XCTAssertEqual(flexibleItem.toCSSTemplate(), "minmax(50.0px, 200.0px)")
-        XCTAssertFalse(flexibleItem.isAdaptive)
+        #expect(flexibleItem.toCSSTemplate() == "minmax(50.0px, 200.0px)")
+        #expect(!flexibleItem.isAdaptive)
 
         // Test flexible with infinity max
         let flexibleInfItem = GridItem(.flexible(minimum: 10))
-        XCTAssertEqual(flexibleInfItem.toCSSTemplate(), "minmax(10.0px, 1fr)")
+        #expect(flexibleInfItem.toCSSTemplate() == "minmax(10.0px, 1fr)")
 
         // Test adaptive size
         let adaptiveItem = GridItem(.adaptive(minimum: 80))
-        XCTAssertTrue(adaptiveItem.isAdaptive)
-        XCTAssertEqual(adaptiveItem.toCSSTemplate(), "minmax(80.0px, 1fr)")
+        #expect(adaptiveItem.isAdaptive)
+        #expect(adaptiveItem.toCSSTemplate() == "minmax(80.0px, 1fr)")
     }
 
-    func testGridAlignment() async throws {
+    @Test func gridAlignment() async throws {
         let grid = LazyVGrid(
             columns: [GridItem(.flexible())],
             alignment: .leading
@@ -220,21 +220,21 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = grid.toVNode()
 
         // Verify alignment is applied
-        XCTAssertNotNil(vnode.props["place-items"], "Grid should have place-items for alignment")
+        #expect(vnode.props["place-items"] != nil)
     }
 
     // MARK: - Test 3: Navigation Tests
 
-    func testNavigationViewStructure() async throws {
+    @Test func navigationViewStructure() async throws {
         let navView = NavigationView {
             Text("Home")
         }
 
         let body = navView.body
-        XCTAssertNotNil(body, "NavigationView should have a body")
+        #expect(body != nil)
     }
 
-    func testNavigationViewBodyStructure() async throws {
+    @Test func navigationViewBodyStructure() async throws {
         // Test that NavigationView creates a body
         let navView = NavigationView {
             VStack {
@@ -244,34 +244,34 @@ final class Phase4VerificationTests: XCTestCase {
         }
 
         let body = navView.body
-        XCTAssertNotNil(body, "NavigationView should have a body")
+        #expect(body != nil)
 
         // The body is a NavigationContainer which we can't test directly since it's private
         // But we can verify the view compiles and has a body
     }
 
-    func testNavigationLinkStructure() async throws {
+    @Test func navigationLinkStructure() async throws {
         let link = NavigationLink("Go to Detail", destination: Text("Detail View"))
 
         let vnode = link.toVNode()
 
         // Should be a button element (for Phase 4)
-        XCTAssertTrue(vnode.isElement(tag: "button"), "NavigationLink should be a button")
+        #expect(vnode.isElement(tag: "button"))
 
         // Should have link role
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "link"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "link"))
 
         // Should have click handler
-        XCTAssertNotNil(vnode.props["onClick"], "NavigationLink should have click handler")
+        #expect(vnode.props["onClick"] != nil)
 
         // Should have appropriate class
-        XCTAssertEqual(
-            vnode.props["class"],
+        #expect(
+            vnode.props["class"] ==
             .attribute(name: "class", value: "raven-navigation-link")
         )
     }
 
-    func testNavigationLinkCustomLabel() async throws {
+    @Test func navigationLinkCustomLabel() async throws {
         let link = NavigationLink(destination: Text("Destination")) {
             HStack {
                 Text("Custom")
@@ -280,65 +280,65 @@ final class Phase4VerificationTests: XCTestCase {
         }
 
         let vnode = link.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "button"))
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "link"))
+        #expect(vnode.isElement(tag: "button"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "link"))
     }
 
-    func testNavigationModifiers() async throws {
+    @Test func navigationModifiers() async throws {
         // Test navigationTitle modifier compiles
         let view = Text("Content")
             .navigationTitle("My Title")
 
-        XCTAssertNotNil(view, "navigationTitle modifier should work")
+        #expect(view != nil)
 
         // Test navigationBarTitleDisplayMode modifier compiles
         let view2 = Text("Content")
             .navigationBarTitleDisplayMode(.inline)
 
-        XCTAssertNotNil(view2, "navigationBarTitleDisplayMode modifier should work")
+        #expect(view2 != nil)
 
         // Test navigationBarHidden modifier compiles
         let view3 = Text("Content")
             .navigationBarHidden(true)
 
-        XCTAssertNotNil(view3, "navigationBarHidden modifier should work")
+        #expect(view3 != nil)
     }
 
     // MARK: - Test 4: Layout Helper Tests
 
-    func testSpacerVNode() async throws {
+    @Test func spacerVNode() async throws {
         let spacer = Spacer()
         let vnode = spacer.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Spacer should be a div")
-        XCTAssertEqual(vnode.props["flex-grow"], .style(name: "flex-grow", value: "1"))
-        XCTAssertEqual(vnode.props["flex-shrink"], .style(name: "flex-shrink", value: "1"))
-        XCTAssertEqual(vnode.props["flex-basis"], .style(name: "flex-basis", value: "0"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["flex-grow"] == .style(name: "flex-grow", value: "1"))
+        #expect(vnode.props["flex-shrink"] == .style(name: "flex-shrink", value: "1"))
+        #expect(vnode.props["flex-basis"] == .style(name: "flex-basis", value: "0"))
     }
 
-    func testSpacerWithMinLength() async throws {
+    @Test func spacerWithMinLength() async throws {
         let spacer = Spacer(minLength: 20)
         let vnode = spacer.toVNode()
 
-        XCTAssertEqual(vnode.props["min-width"], .style(name: "min-width", value: "20.0px"))
+        #expect(vnode.props["min-width"] == .style(name: "min-width", value: "20.0px"))
     }
 
-    func testDividerVNode() async throws {
+    @Test func dividerVNode() async throws {
         let divider = Divider()
         let vnode = divider.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Divider should be a div element")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify styling
-        XCTAssertNotNil(vnode.props["border-top"], "Divider should have top border")
-        XCTAssertEqual(vnode.props["height"], .style(name: "height", value: "0"))
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "100%"))
-        XCTAssertEqual(vnode.props["flex-shrink"], .style(name: "flex-shrink", value: "0"))
+        #expect(vnode.props["border-top"] != nil)
+        #expect(vnode.props["height"] == .style(name: "height", value: "0"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "100%"))
+        #expect(vnode.props["flex-shrink"] == .style(name: "flex-shrink", value: "0"))
     }
 
     // MARK: - Test 5: Form/Section Tests
 
-    func testFormBasicStructure() async throws {
+    @Test func formBasicStructure() async throws {
         let form = Form {
             Text("Form content")
         }
@@ -346,16 +346,16 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = form.toVNode()
 
         // Should be a form element
-        XCTAssertTrue(vnode.isElement(tag: "form"), "Should be a form element")
+        #expect(vnode.isElement(tag: "form"))
 
         // Should have role attribute
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "form"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "form"))
 
         // Should have submit event handler
-        XCTAssertNotNil(vnode.props["onSubmit"], "Form should have submit handler")
+        #expect(vnode.props["onSubmit"] != nil)
     }
 
-    func testFormStyling() async throws {
+    @Test func formStyling() async throws {
         let form = Form {
             Text("Content")
         }
@@ -363,13 +363,13 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = form.toVNode()
 
         // Verify flexbox layout
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "16px"))
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "100%"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "16px"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "100%"))
     }
 
-    func testSectionBasicStructure() async throws {
+    @Test func sectionBasicStructure() async throws {
         let section = Section {
             Text("Section content")
         }
@@ -377,30 +377,30 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = section.toVNode()
 
         // Should be a fieldset element
-        XCTAssertTrue(vnode.isElement(tag: "fieldset"), "Should be a fieldset element")
+        #expect(vnode.isElement(tag: "fieldset"))
     }
 
-    func testSectionWithHeader() async throws {
+    @Test func sectionWithHeader() async throws {
         let section = Section(header: "Settings") {
             Text("Content")
         }
 
         let vnode = section.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "fieldset"))
-        XCTAssertNotNil(section.header, "Section should have a header")
+        #expect(vnode.isElement(tag: "fieldset"))
+        #expect(section.header != nil)
     }
 
-    func testSectionWithCustomHeader() async throws {
+    @Test func sectionWithCustomHeader() async throws {
         let section = Section(header: { Text("Custom Header") }) {
             Text("Content")
         }
 
         let vnode = section.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "fieldset"))
-        XCTAssertNotNil(section.header, "Section should have custom header")
+        #expect(vnode.isElement(tag: "fieldset"))
+        #expect(section.header != nil)
     }
 
-    func testSectionWithFooter() async throws {
+    @Test func sectionWithFooter() async throws {
         let section = Section(
             header: "Header",
             footer: { Text("Footer") }
@@ -409,12 +409,12 @@ final class Phase4VerificationTests: XCTestCase {
         }
 
         let vnode = section.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "fieldset"))
-        XCTAssertNotNil(section.header)
-        XCTAssertNotNil(section.footer)
+        #expect(vnode.isElement(tag: "fieldset"))
+        #expect(section.header != nil)
+        #expect(section.footer != nil)
     }
 
-    func testSectionStyling() async throws {
+    @Test func sectionStyling() async throws {
         let section = Section {
             Text("Content")
         }
@@ -422,26 +422,26 @@ final class Phase4VerificationTests: XCTestCase {
         let vnode = section.toVNode()
 
         // Verify styling
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "12px"))
-        XCTAssertNotNil(vnode.props["border"], "Section should have border")
-        XCTAssertNotNil(vnode.props["border-radius"], "Section should have border-radius")
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "12px"))
+        #expect(vnode.props["border"] != nil)
+        #expect(vnode.props["border-radius"] != nil)
     }
 
     // MARK: - Test 6: Advanced Modifier Tests
 
-    func testFontModifier() async throws {
+    @Test func fontModifier() async throws {
         let view = _FontView(content: Text("Hello"), font: .headline)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertNotNil(vnode.props["font-family"], "Should have font-family")
-        XCTAssertNotNil(vnode.props["font-size"], "Should have font-size")
-        XCTAssertNotNil(vnode.props["font-weight"], "Should have font-weight")
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["font-family"] != nil)
+        #expect(vnode.props["font-size"] != nil)
+        #expect(vnode.props["font-weight"] != nil)
     }
 
-    func testBackgroundModifier() async throws {
+    @Test func backgroundModifier() async throws {
         let view = _BackgroundView(
             content: Text("Content"),
             background: Color.blue,
@@ -449,20 +449,20 @@ final class Phase4VerificationTests: XCTestCase {
         )
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
-        XCTAssertNotNil(vnode.props["place-items"], "Should have place-items for alignment")
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
+        #expect(vnode.props["place-items"] != nil)
     }
 
-    func testBackgroundColorModifier() async throws {
+    @Test func backgroundColorModifier() async throws {
         let view = _BackgroundColorView(content: Text("Content"), color: .red)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertNotNil(vnode.props["background-color"], "Should have background-color")
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["background-color"] != nil)
     }
 
-    func testOverlayModifier() async throws {
+    @Test func overlayModifier() async throws {
         let view = _OverlayView(
             content: Text("Content"),
             overlay: Text("Overlay"),
@@ -470,11 +470,11 @@ final class Phase4VerificationTests: XCTestCase {
         )
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
     }
 
-    func testShadowModifier() async throws {
+    @Test func shadowModifier() async throws {
         let view = _ShadowView(
             content: Text("Content"),
             color: .gray,
@@ -484,140 +484,140 @@ final class Phase4VerificationTests: XCTestCase {
         )
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
 
         if case .style(let name, let value) = vnode.props["box-shadow"] {
-            XCTAssertEqual(name, "box-shadow")
-            XCTAssertTrue(value.contains("2.0px"), "Shadow should contain x offset")
-            XCTAssertTrue(value.contains("5.0px"), "Shadow should contain blur radius")
+            #expect(name == "box-shadow")
+            #expect(value.contains("2.0px"))
+            #expect(value.contains("5.0px"))
         } else {
-            XCTFail("Should have box-shadow property")
+            Issue.record("Should have box-shadow property")
         }
     }
 
-    func testCornerRadiusModifier() async throws {
+    @Test func cornerRadiusModifier() async throws {
         let view = _CornerRadiusView(content: Text("Content"), radius: 10)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["border-radius"], .style(name: "border-radius", value: "10.0px"))
-        XCTAssertEqual(vnode.props["overflow"], .style(name: "overflow", value: "hidden"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["border-radius"] == .style(name: "border-radius", value: "10.0px"))
+        #expect(vnode.props["overflow"] == .style(name: "overflow", value: "hidden"))
     }
 
-    func testOpacityModifier() async throws {
+    @Test func opacityModifier() async throws {
         let view = _OpacityView(content: Text("Content"), opacity: 0.5)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["opacity"], .style(name: "opacity", value: "0.5"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["opacity"] == .style(name: "opacity", value: "0.5"))
     }
 
-    func testOffsetModifier() async throws {
+    @Test func offsetModifier() async throws {
         let view = _OffsetView(content: Text("Content"), x: 10, y: 20)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
 
         if case .style(let name, let value) = vnode.props["transform"] {
-            XCTAssertEqual(name, "transform")
-            XCTAssertEqual(value, "translate(10.0px, 20.0px)")
+            #expect(name == "transform")
+            #expect(value == "translate(10.0px, 20.0px)")
         } else {
-            XCTFail("Should have transform property")
+            Issue.record("Should have transform property")
         }
     }
 
-    func testRotationEffectModifier() async throws {
+    @Test func rotationEffectModifier() async throws {
         let view = _RotationEffectView(content: Text("Content"), angle: Angle(degrees: 45))
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
 
         if case .style(let name, let value) = vnode.props["transform"] {
-            XCTAssertEqual(name, "transform")
-            XCTAssertEqual(value, "rotate(45.0deg)")
+            #expect(name == "transform")
+            #expect(value == "rotate(45.0deg)")
         } else {
-            XCTFail("Should have transform property")
+            Issue.record("Should have transform property")
         }
     }
 
-    func testScaleEffectModifier() async throws {
+    @Test func scaleEffectModifier() async throws {
         let view = _ScaleEffectView(content: Text("Content"), scale: 1.5)
         let vnode = view.toVNode()
 
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
 
         if case .style(let name, let value) = vnode.props["transform"] {
-            XCTAssertEqual(name, "transform")
-            XCTAssertEqual(value, "scale(1.5)")
+            #expect(name == "transform")
+            #expect(value == "scale(1.5)")
         } else {
-            XCTFail("Should have transform property")
+            Issue.record("Should have transform property")
         }
     }
 
     // MARK: - Test 7: Color/Font Enhancement Tests
 
-    func testLinearGradient() async throws {
+    @Test func linearGradient() async throws {
         let gradient = LinearGradient(
             colors: [.red, .blue],
             angle: Angle(degrees: 90)
         )
 
         let cssValue = gradient.cssValue
-        XCTAssertTrue(cssValue.contains("linear-gradient"), "Should generate linear-gradient")
-        XCTAssertTrue(cssValue.contains("90.0deg"), "Should include angle")
+        #expect(cssValue.contains("linear-gradient"))
+        #expect(cssValue.contains("90.0deg"))
     }
 
-    func testRadialGradient() async throws {
+    @Test func radialGradient() async throws {
         let gradient = RadialGradient(colors: [.white, .blue])
 
         let cssValue = gradient.cssValue
-        XCTAssertTrue(cssValue.contains("radial-gradient"), "Should generate radial-gradient")
-        XCTAssertTrue(cssValue.contains("circle"), "Should specify circle shape")
+        #expect(cssValue.contains("radial-gradient"))
+        #expect(cssValue.contains("circle"))
     }
 
-    func testColorCustomCSSVariable() async throws {
+    @Test func colorCustomCSSVariable() async throws {
         let color = Color.custom("theme-primary")
 
         // Custom colors should reference CSS variables
         let cssValue = color.cssValue
-        XCTAssertTrue(cssValue.contains("var(--theme-primary)"), "Should generate CSS variable reference")
+        #expect(cssValue.contains("var(--theme-primary)"))
     }
 
-    func testColorOpacity() async throws {
+    @Test func colorOpacity() async throws {
         let color = Color.red.opacity(0.5)
 
         let cssValue = color.cssValue
         // Opacity should be reflected in the CSS value
-        XCTAssertNotEqual(cssValue, Color.red.cssValue, "Opacity should modify CSS value")
+        #expect(cssValue != Color.red.cssValue)
     }
 
-    func testFontSystemWithWeight() async throws {
+    @Test func fontSystemWithWeight() async throws {
         let font = Font.system(size: 18, weight: .bold)
 
         let (_, size, weight) = font.cssProperties()
 
-        XCTAssertTrue(size.contains("18"), "Should include size")
-        XCTAssertEqual(weight, "700", "Bold should be weight 700")
+        #expect(size.contains("18"))
+        #expect(weight == "700")
     }
 
-    func testFontSystemWithDesign() async throws {
+    @Test func fontSystemWithDesign() async throws {
         let font = Font.system(size: 16, design: .monospaced)
 
         let (family, _, _) = font.cssProperties()
 
-        XCTAssertTrue(family.contains("monospace"), "Monospaced design should use monospace fonts")
+        #expect(family.contains("monospace"))
     }
 
-    func testFontCustom() async throws {
+    @Test func fontCustom() async throws {
         let font = Font.custom("Helvetica", size: 20)
 
         let (family, size, _) = font.cssProperties()
 
-        XCTAssertTrue(family.contains("Helvetica"), "Should use custom font family")
-        XCTAssertTrue(size.contains("20"), "Should include size")
+        #expect(family.contains("Helvetica"))
+        #expect(size.contains("20"))
     }
 
-    func testFontTextStyles() async throws {
+    @Test func fontTextStyles() async throws {
         // Test that text style fonts exist and can be used
         let fonts: [Font] = [
             .largeTitle, .title, .title2, .title3,
@@ -627,25 +627,25 @@ final class Phase4VerificationTests: XCTestCase {
 
         for font in fonts {
             let (family, size, weight) = font.cssProperties()
-            XCTAssertFalse(family.isEmpty, "Font should have family")
-            XCTAssertFalse(size.isEmpty, "Font should have size")
-            XCTAssertFalse(weight.isEmpty, "Font should have weight")
+            #expect(!family.isEmpty)
+            #expect(!size.isEmpty)
+            #expect(!weight.isEmpty)
         }
     }
 
-    func testAngleConversions() async throws {
+    @Test func angleConversions() async throws {
         let degreesAngle = Angle(degrees: 180)
-        XCTAssertEqual(degreesAngle.degrees, 180, accuracy: 0.01)
-        XCTAssertEqual(degreesAngle.radians, .pi, accuracy: 0.01)
+        #expect(abs(degreesAngle.degrees - 180) < 0.01)
+        #expect(abs(degreesAngle.radians - .pi) < 0.01)
 
         let radiansAngle = Angle(radians: .pi / 2)
-        XCTAssertEqual(radiansAngle.degrees, 90, accuracy: 0.01)
-        XCTAssertEqual(radiansAngle.radians, .pi / 2, accuracy: 0.01)
+        #expect(abs(radiansAngle.degrees - 90) < 0.01)
+        #expect(abs(radiansAngle.radians - .pi / 2) < 0.01)
     }
 
     // MARK: - Test 8: Complete Multi-Screen App Integration
 
-    func testMultiScreenAppModels() async throws {
+    @Test func multiScreenAppModels() async throws {
         // Define models for a multi-screen photo gallery app
         struct Photo: Identifiable, Sendable {
             let id: UUID
@@ -667,8 +667,8 @@ final class Phase4VerificationTests: XCTestCase {
             imageName: "sunset.jpg"
         )
 
-        XCTAssertNotNil(photo.id)
-        XCTAssertEqual(photo.title, "Sunset")
+        #expect(photo.id != nil)
+        #expect(photo.title == "Sunset")
 
         let category = PhotoCategory(
             id: UUID(),
@@ -676,11 +676,11 @@ final class Phase4VerificationTests: XCTestCase {
             photos: [photo]
         )
 
-        XCTAssertEqual(category.photos.count, 1)
-        XCTAssertEqual(category.photos[0].title, "Sunset")
+        #expect(category.photos.count == 1)
+        #expect(category.photos[0].title == "Sunset")
     }
 
-    func testMultiScreenAppStore() async throws {
+    @Test func multiScreenAppStore() async throws {
         struct Photo: Identifiable, Sendable {
             let id: UUID
             let title: String
@@ -712,19 +712,19 @@ final class Phase4VerificationTests: XCTestCase {
             changeCount += 1
         }
 
-        XCTAssertEqual(store.photos.count, 0)
-        XCTAssertNil(store.selectedPhoto)
+        #expect(store.photos.count == 0)
+        #expect(store.selectedPhoto == nil)
 
         store.addPhoto(title: "Photo 1", imageName: "photo1.jpg")
-        XCTAssertEqual(store.photos.count, 1)
-        XCTAssertEqual(changeCount, 1, "Adding photo should trigger change")
+        #expect(store.photos.count == 1)
+        #expect(changeCount == 1)
 
         store.selectPhoto(store.photos[0])
-        XCTAssertNotNil(store.selectedPhoto)
-        XCTAssertEqual(changeCount, 2, "Selecting photo should trigger change")
+        #expect(store.selectedPhoto != nil)
+        #expect(changeCount == 2)
     }
 
-    func testMultiScreenAppHomeView() async throws {
+    @Test func multiScreenAppHomeView() async throws {
         struct Photo: Identifiable, Sendable {
             let id: UUID
             let title: String
@@ -763,10 +763,10 @@ final class Phase4VerificationTests: XCTestCase {
         }
 
         let home = HomeView()
-        XCTAssertNotNil(home.body, "Home view should have a body")
+        #expect(home.body != nil)
     }
 
-    func testMultiScreenAppWithForms() async throws {
+    @Test func multiScreenAppWithForms() async throws {
         struct Settings: Sendable {
             var notificationsEnabled: Bool
             var theme: String
@@ -808,14 +808,14 @@ final class Phase4VerificationTests: XCTestCase {
         }
 
         let settings = SettingsView()
-        XCTAssertNotNil(settings.body, "Settings view should have a body")
+        #expect(settings.body != nil)
 
         let settingsStore = settings.$store
-        XCTAssertTrue(settingsStore.settings.notificationsEnabled)
-        XCTAssertEqual(settingsStore.settings.theme, "light")
+        #expect(settingsStore.settings.notificationsEnabled)
+        #expect(settingsStore.settings.theme == "light")
     }
 
-    func testCompleteMultiScreenIntegration() async throws {
+    @Test func completeMultiScreenIntegration() async throws {
         // Complete multi-screen app with navigation, grids, forms, and advanced styling
         struct Photo: Identifiable, Sendable {
             let id: UUID
@@ -938,22 +938,22 @@ final class Phase4VerificationTests: XCTestCase {
         let app = MainApp()
         let state = app.$appState
 
-        XCTAssertEqual(state.photos.count, 3, "App should have 3 photos")
-        XCTAssertEqual(state.selectedCategory, "All")
+        #expect(state.photos.count == 3)
+        #expect(state.selectedCategory == "All")
 
         // Verify the body compiles
         let body = app.body
-        XCTAssertNotNil(body, "Complete app should have a body")
+        #expect(body != nil)
 
         // Test navigation flow
         let gridView = PhotoGridView(appState: state)
-        XCTAssertNotNil(gridView.body, "Grid view should render")
+        #expect(gridView.body != nil)
 
         let detailView = PhotoDetailView(photo: state.photos[0])
-        XCTAssertNotNil(detailView.body, "Detail view should render")
+        #expect(detailView.body != nil)
     }
 
-    func testCompleteAppWithAllPhase4Features() async throws {
+    @Test func completeAppWithAllPhase4Features() async throws {
         // Ultimate integration test using ALL Phase 4 features
         struct Item: Identifiable, Sendable {
             let id: UUID
@@ -1058,14 +1058,14 @@ final class Phase4VerificationTests: XCTestCase {
         let app = CompleteApp()
         let store = app.$store
 
-        XCTAssertEqual(store.items.count, 2)
-        XCTAssertEqual(store.searchText, "")
+        #expect(store.items.count == 2)
+        #expect(store.searchText == "")
 
         let body = app.body
-        XCTAssertNotNil(body, "Complete app with all features should compile and render")
+        #expect(body != nil)
 
         // Verify we can create the detail view
         let detailView = DetailScreen(item: store.items[0])
-        XCTAssertNotNil(detailView.body, "Detail view should render")
+        #expect(detailView.body != nil)
     }
 }

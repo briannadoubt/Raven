@@ -1,37 +1,33 @@
-import XCTest
+import Testing
 @testable import RavenCLI
+import Foundation
 
-@available(macOS 13.0, *)
-final class WasmOptimizerTests: XCTestCase {
-    var tempDir: URL!
-    var wasmFile: URL!
+@Suite struct WasmOptimizerTests {
+    let tempDir: URL
+    let wasmFile: URL
 
-    override func setUp() async throws {
-        try await super.setUp()
+    init() throws {
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         wasmFile = tempDir.appendingPathComponent("test.wasm")
 
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
     }
 
-    override func tearDown() async throws {
-        try? FileManager.default.removeItem(at: tempDir)
-        try await super.tearDown()
-    }
-
-    func testOptimizeNonExistentFile() async throws {
+    @Test func optimizeNonExistentFile() async throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         let optimizer = WasmOptimizer(verbose: false)
 
         do {
             _ = try await optimizer.optimize(wasmPath: wasmFile.path)
-            XCTFail("Should throw error for non-existent file")
+            Issue.record("Should throw error for non-existent file")
         } catch {
             // Expected to throw
-            XCTAssertTrue(error is WasmOptimizer.OptimizerError)
+            #expect(error is WasmOptimizer.OptimizerError)
         }
     }
 
-    func testOptimizeWithoutWasmOpt() async throws {
+    @Test func optimizeWithoutWasmOpt() async throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         // Create a dummy WASM file
         let dummyContent = Data(repeating: 0, count: 1024)
         try dummyContent.write(to: wasmFile)
@@ -42,29 +38,31 @@ final class WasmOptimizerTests: XCTestCase {
         // If wasm-opt is not available, should return unoptimized result
         if result.wasOptimized {
             // wasm-opt is available - verify optimization
-            XCTAssertNotNil(result.toolUsed)
-            XCTAssertEqual(result.originalSize, 1024)
+            #expect(result.toolUsed != nil)
+            #expect(result.originalSize == 1024)
         } else {
             // wasm-opt not available - verify skipped
-            XCTAssertNil(result.toolUsed)
-            XCTAssertEqual(result.originalSize, result.optimizedSize)
-            XCTAssertEqual(result.reductionPercentage, 0.0)
+            #expect(result.toolUsed == nil)
+            #expect(result.originalSize == result.optimizedSize)
+            #expect(result.reductionPercentage == 0.0)
         }
     }
 
-    func testOptimizationLevels() async throws {
+    @Test func optimizationLevels() async throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         let levels: [WasmOptimizer.OptimizationLevel] = [.o0, .o1, .o2, .o3, .oz]
 
         for level in levels {
-            XCTAssertNotNil(level.rawValue)
-            XCTAssertFalse(level.description.isEmpty)
+            #expect(level.rawValue != nil)
+            #expect(!level.description.isEmpty)
         }
 
-        XCTAssertEqual(WasmOptimizer.OptimizationLevel.o3.rawValue, "-O3")
-        XCTAssertEqual(WasmOptimizer.OptimizationLevel.oz.rawValue, "-Oz")
+        #expect(WasmOptimizer.OptimizationLevel.o3.rawValue == "-O3")
+        #expect(WasmOptimizer.OptimizationLevel.oz.rawValue == "-Oz")
     }
 
-    func testResultStructure() async throws {
+    @Test func resultStructure() async throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
         let result = WasmOptimizer.OptimizationResult(
             originalSize: 1000,
             optimizedSize: 800,
@@ -72,10 +70,10 @@ final class WasmOptimizerTests: XCTestCase {
             toolUsed: "wasm-opt -O3"
         )
 
-        XCTAssertTrue(result.wasOptimized)
-        XCTAssertEqual(result.savedBytes, 200)
-        XCTAssertEqual(result.originalSize, 1000)
-        XCTAssertEqual(result.optimizedSize, 800)
+        #expect(result.wasOptimized)
+        #expect(result.savedBytes == 200)
+        #expect(result.originalSize == 1000)
+        #expect(result.optimizedSize == 800)
 
         let noOptResult = WasmOptimizer.OptimizationResult(
             originalSize: 1000,
@@ -84,7 +82,7 @@ final class WasmOptimizerTests: XCTestCase {
             toolUsed: nil
         )
 
-        XCTAssertFalse(noOptResult.wasOptimized)
-        XCTAssertEqual(noOptResult.savedBytes, 0)
+        #expect(!noOptResult.wasOptimized)
+        #expect(noOptResult.savedBytes == 0)
     }
 }

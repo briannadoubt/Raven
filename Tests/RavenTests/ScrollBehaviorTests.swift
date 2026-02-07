@@ -1,75 +1,76 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for scroll behavior modifiers (.scrollBounceBehavior, .scrollClipDisabled)
-final class ScrollBehaviorTests: XCTestCase {
+@MainActor
+@Suite struct ScrollBehaviorTests {
 
     // MARK: - BounceBehavior Tests
 
     @MainActor
-    func testBounceBehaviorAutomatic() {
+    @Test func bounceBehaviorAutomatic() {
         // Test automatic bounce behavior
         let view = Text("Content")
             .scrollBounceBehavior(.automatic)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     @MainActor
-    func testBounceBehaviorAlways() {
+    @Test func bounceBehaviorAlways() {
         // Test always bounce behavior
         let view = Text("Content")
             .scrollBounceBehavior(.always)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     @MainActor
-    func testBounceBehaviorBasedOnSize() {
+    @Test func bounceBehaviorBasedOnSize() {
         // Test basedOnSize bounce behavior
         let view = Text("Content")
             .scrollBounceBehavior(.basedOnSize)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     @MainActor
-    func testBounceBehaviorWithVerticalAxis() {
+    @Test func bounceBehaviorWithVerticalAxis() {
         // Test bounce behavior with explicit vertical axis
         let view = Text("Content")
             .scrollBounceBehavior(.always, axes: [.vertical])
 
         // Verify compilation and type
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     @MainActor
-    func testBounceBehaviorWithHorizontalAxis() {
+    @Test func bounceBehaviorWithHorizontalAxis() {
         // Test bounce behavior with horizontal axis
         let view = Text("Content")
             .scrollBounceBehavior(.basedOnSize, axes: [.horizontal])
 
         // Verify compilation and type
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     @MainActor
-    func testBounceBehaviorWithBothAxes() {
+    @Test func bounceBehaviorWithBothAxes() {
         // Test bounce behavior with both axes
         let view = Text("Content")
             .scrollBounceBehavior(.always, axes: [.horizontal, .vertical])
 
         // Verify compilation and type
-        XCTAssertTrue(view is _ScrollBounceBehaviorView<Text>)
+        #expect(view is _ScrollBounceBehaviorView<Text>)
     }
 
     // MARK: - VNode Generation Tests
 
     @MainActor
-    func testBounceBehaviorAutomaticVNode() {
+    @Test func bounceBehaviorAutomaticVNode() {
         // Test VNode generation for automatic behavior (default is vertical axis only)
         let view = Text("Content")
             .scrollBounceBehavior(.automatic)
@@ -77,30 +78,30 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Default is vertical axis only, so check for -y
             if case .style(let name, let value) = vnode.props["overscroll-behavior-y"] {
-                XCTAssertEqual(name, "overscroll-behavior-y")
-                XCTAssertEqual(value, "auto")
+                #expect(name == "overscroll-behavior-y")
+                #expect(value == "auto")
             } else {
-                XCTFail("Expected overscroll-behavior-y style property")
+                Issue.record("Expected overscroll-behavior-y style property")
             }
 
             // X should be set to none
             if case .style(let name, let value) = vnode.props["overscroll-behavior-x"] {
-                XCTAssertEqual(name, "overscroll-behavior-x")
-                XCTAssertEqual(value, "none")
+                #expect(name == "overscroll-behavior-x")
+                #expect(value == "none")
             } else {
-                XCTFail("Expected overscroll-behavior-x style property")
+                Issue.record("Expected overscroll-behavior-x style property")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testBounceBehaviorBasedOnSizeVNode() {
+    @Test func bounceBehaviorBasedOnSizeVNode() {
         // Test VNode generation for basedOnSize behavior (default is vertical axis only)
         let view = Text("Content")
             .scrollBounceBehavior(.basedOnSize)
@@ -108,30 +109,30 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Default is vertical axis only, so check for -y with 'contain' value
             if case .style(let name, let value) = vnode.props["overscroll-behavior-y"] {
-                XCTAssertEqual(name, "overscroll-behavior-y")
-                XCTAssertEqual(value, "contain")
+                #expect(name == "overscroll-behavior-y")
+                #expect(value == "contain")
             } else {
-                XCTFail("Expected overscroll-behavior-y style property")
+                Issue.record("Expected overscroll-behavior-y style property")
             }
 
             // X should be set to none
             if case .style(let name, let value) = vnode.props["overscroll-behavior-x"] {
-                XCTAssertEqual(name, "overscroll-behavior-x")
-                XCTAssertEqual(value, "none")
+                #expect(name == "overscroll-behavior-x")
+                #expect(value == "none")
             } else {
-                XCTFail("Expected overscroll-behavior-x style property")
+                Issue.record("Expected overscroll-behavior-x style property")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testBounceBehaviorHorizontalAxisVNode() {
+    @Test func bounceBehaviorHorizontalAxisVNode() {
         // Test VNode generation for horizontal axis only
         let view = Text("Content")
             .scrollBounceBehavior(.always, axes: [.horizontal])
@@ -139,30 +140,30 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for overscroll-behavior-x
             if case .style(let name, let value) = vnode.props["overscroll-behavior-x"] {
-                XCTAssertEqual(name, "overscroll-behavior-x")
-                XCTAssertEqual(value, "auto")
+                #expect(name == "overscroll-behavior-x")
+                #expect(value == "auto")
             } else {
-                XCTFail("Expected overscroll-behavior-x style property")
+                Issue.record("Expected overscroll-behavior-x style property")
             }
 
             // Check that vertical is set to 'none'
             if case .style(let name, let value) = vnode.props["overscroll-behavior-y"] {
-                XCTAssertEqual(name, "overscroll-behavior-y")
-                XCTAssertEqual(value, "none")
+                #expect(name == "overscroll-behavior-y")
+                #expect(value == "none")
             } else {
-                XCTFail("Expected overscroll-behavior-y to be 'none'")
+                Issue.record("Expected overscroll-behavior-y to be 'none'")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testBounceBehaviorVerticalAxisVNode() {
+    @Test func bounceBehaviorVerticalAxisVNode() {
         // Test VNode generation for vertical axis only
         let view = Text("Content")
             .scrollBounceBehavior(.automatic, axes: [.vertical])
@@ -170,30 +171,30 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for overscroll-behavior-y
             if case .style(let name, let value) = vnode.props["overscroll-behavior-y"] {
-                XCTAssertEqual(name, "overscroll-behavior-y")
-                XCTAssertEqual(value, "auto")
+                #expect(name == "overscroll-behavior-y")
+                #expect(value == "auto")
             } else {
-                XCTFail("Expected overscroll-behavior-y style property")
+                Issue.record("Expected overscroll-behavior-y style property")
             }
 
             // Check that horizontal is set to 'none'
             if case .style(let name, let value) = vnode.props["overscroll-behavior-x"] {
-                XCTAssertEqual(name, "overscroll-behavior-x")
-                XCTAssertEqual(value, "none")
+                #expect(name == "overscroll-behavior-x")
+                #expect(value == "none")
             } else {
-                XCTFail("Expected overscroll-behavior-x to be 'none'")
+                Issue.record("Expected overscroll-behavior-x to be 'none'")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testBounceBehaviorBothAxesVNode() {
+    @Test func bounceBehaviorBothAxesVNode() {
         // Test VNode generation for both axes
         let view = Text("Content")
             .scrollBounceBehavior(.always, axes: [.horizontal, .vertical])
@@ -201,44 +202,44 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for shorthand overscroll-behavior (not per-axis)
             if case .style(let name, let value) = vnode.props["overscroll-behavior"] {
-                XCTAssertEqual(name, "overscroll-behavior")
-                XCTAssertEqual(value, "auto")
+                #expect(name == "overscroll-behavior")
+                #expect(value == "auto")
             } else {
-                XCTFail("Expected overscroll-behavior style property")
+                Issue.record("Expected overscroll-behavior style property")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     // MARK: - ScrollClipDisabled Tests
 
     @MainActor
-    func testScrollClipDisabled() {
+    @Test func scrollClipDisabled() {
         // Test scroll clip disabled modifier
         let view = Text("Content")
             .scrollClipDisabled()
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollClipDisabledView<Text>)
+        #expect(view is _ScrollClipDisabledView<Text>)
     }
 
     @MainActor
-    func testScrollClipDisabledWithFalse() {
+    @Test func scrollClipDisabledWithFalse() {
         // Test scroll clip disabled with explicit false
         let view = Text("Content")
             .scrollClipDisabled(false)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _ScrollClipDisabledView<Text>)
+        #expect(view is _ScrollClipDisabledView<Text>)
     }
 
     @MainActor
-    func testScrollClipDisabledVNode() {
+    @Test func scrollClipDisabledVNode() {
         // Test VNode generation for clip disabled
         let view = Text("Content")
             .scrollClipDisabled()
@@ -246,30 +247,30 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for overflow: visible
             if case .style(let name, let value) = vnode.props["overflow"] {
-                XCTAssertEqual(name, "overflow")
-                XCTAssertEqual(value, "visible")
+                #expect(name == "overflow")
+                #expect(value == "visible")
             } else {
-                XCTFail("Expected overflow style property")
+                Issue.record("Expected overflow style property")
             }
 
             // Check for clip-path: none
             if case .style(let name, let value) = vnode.props["clip-path"] {
-                XCTAssertEqual(name, "clip-path")
-                XCTAssertEqual(value, "none")
+                #expect(name == "clip-path")
+                #expect(value == "none")
             } else {
-                XCTFail("Expected clip-path style property")
+                Issue.record("Expected clip-path style property")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     @MainActor
-    func testScrollClipEnabledVNode() {
+    @Test func scrollClipEnabledVNode() {
         // Test VNode generation for clip enabled (disabled = false)
         let view = Text("Content")
             .scrollClipDisabled(false)
@@ -277,24 +278,24 @@ final class ScrollBehaviorTests: XCTestCase {
 
         // Verify it's an element
         if case .element(let tag) = vnode.type {
-            XCTAssertEqual(tag, "div")
+            #expect(tag == "div")
 
             // Check for overflow: hidden
             if case .style(let name, let value) = vnode.props["overflow"] {
-                XCTAssertEqual(name, "overflow")
-                XCTAssertEqual(value, "hidden")
+                #expect(name == "overflow")
+                #expect(value == "hidden")
             } else {
-                XCTFail("Expected overflow style property")
+                Issue.record("Expected overflow style property")
             }
         } else {
-            XCTFail("Expected element VNode")
+            Issue.record("Expected element VNode")
         }
     }
 
     // MARK: - Integration Tests
 
     @MainActor
-    func testBounceBehaviorWithOtherModifiers() {
+    @Test func bounceBehaviorWithOtherModifiers() {
         // Test bounce behavior combined with other modifiers
         let view = Text("Content")
             .padding(16)
@@ -306,7 +307,7 @@ final class ScrollBehaviorTests: XCTestCase {
     }
 
     @MainActor
-    func testScrollClipDisabledWithOtherModifiers() {
+    @Test func scrollClipDisabledWithOtherModifiers() {
         // Test scroll clip disabled combined with other modifiers
         let view = Text("Content")
             .padding(16)
@@ -318,7 +319,7 @@ final class ScrollBehaviorTests: XCTestCase {
     }
 
     @MainActor
-    func testCombinedScrollModifiers() {
+    @Test func combinedScrollModifiers() {
         // Test both scroll modifiers together
         let view = Text("Content")
             .scrollBounceBehavior(.always, axes: [.vertical])
@@ -331,26 +332,26 @@ final class ScrollBehaviorTests: XCTestCase {
     // MARK: - Axis Tests
 
     @MainActor
-    func testAxisSetHorizontal() {
+    @Test func axisSetHorizontal() {
         // Test Axis.Set with horizontal
         let axes: Axis.Set = [.horizontal]
-        XCTAssertTrue(axes.contains(.horizontal))
-        XCTAssertFalse(axes.contains(.vertical))
+        #expect(axes.contains(.horizontal))
+        #expect(!axes.contains(.vertical))
     }
 
     @MainActor
-    func testAxisSetVertical() {
+    @Test func axisSetVertical() {
         // Test Axis.Set with vertical
         let axes: Axis.Set = [.vertical]
-        XCTAssertFalse(axes.contains(.horizontal))
-        XCTAssertTrue(axes.contains(.vertical))
+        #expect(!axes.contains(.horizontal))
+        #expect(axes.contains(.vertical))
     }
 
     @MainActor
-    func testAxisSetBoth() {
+    @Test func axisSetBoth() {
         // Test Axis.Set with both axes
         let axes: Axis.Set = [.horizontal, .vertical]
-        XCTAssertTrue(axes.contains(.horizontal))
-        XCTAssertTrue(axes.contains(.vertical))
+        #expect(axes.contains(.horizontal))
+        #expect(axes.contains(.vertical))
     }
 }

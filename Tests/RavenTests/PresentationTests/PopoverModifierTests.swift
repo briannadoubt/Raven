@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for PopoverModifier and PopoverItemModifier.
@@ -12,7 +13,7 @@ import XCTest
 /// - Environment propagation
 /// - Sendable conformance
 @MainActor
-final class PopoverModifierTests: XCTestCase {
+@Suite struct PopoverModifierTests {
 
     // MARK: - Test Types
 
@@ -23,7 +24,7 @@ final class PopoverModifierTests: XCTestCase {
 
     // MARK: - isPresented Binding Tests
 
-    func testPopoverPresentationWithBinding() {
+    @Test func popoverPresentationWithBinding() {
         let coordinator = PresentationCoordinator()
         var isPresented = false
 
@@ -40,29 +41,29 @@ final class PopoverModifierTests: XCTestCase {
         )
 
         // Initially not presented
-        XCTAssertNil(modifier.register(with: coordinator))
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(modifier.register(with: coordinator) == nil)
+        #expect(coordinator.count == 0)
 
         // Present the popover
         isPresented = true
         let id = modifier.register(with: coordinator)
 
-        XCTAssertNotNil(id)
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(id != nil)
+        #expect(coordinator.count == 1)
 
         let entry = coordinator.presentations.first
-        XCTAssertEqual(entry?.id, id)
+        #expect(entry?.id == id)
 
         switch entry?.type {
         case .popover(let anchor, let edge):
-            XCTAssertEqual(anchor, .rect(.bounds))
-            XCTAssertEqual(edge, .top)
+            #expect(anchor == .rect(.bounds))
+            #expect(edge == .top)
         default:
-            XCTFail("Expected popover presentation type")
+            Issue.record("Expected popover presentation type")
         }
     }
 
-    func testPopoverDismissal() {
+    @Test func popoverDismissal() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
         var dismissCalled = false
@@ -80,16 +81,16 @@ final class PopoverModifierTests: XCTestCase {
 
         // Present
         let id = modifier.register(with: coordinator)!
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Dismiss via coordinator
         coordinator.dismiss(id)
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertTrue(dismissCalled)
-        XCTAssertFalse(isPresented)
+        #expect(coordinator.count == 0)
+        #expect(dismissCalled)
+        #expect(!isPresented)
     }
 
-    func testPopoverOnDismissCallback() {
+    @Test func popoverOnDismissCallback() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
         var onDismissCalled = false
@@ -114,14 +115,14 @@ final class PopoverModifierTests: XCTestCase {
         // Trigger dismiss
         coordinator.dismiss(id)
 
-        XCTAssertTrue(onDismissCalled)
-        XCTAssertEqual(dismissCallCount, 1)
-        XCTAssertFalse(isPresented)
+        #expect(onDismissCalled)
+        #expect(dismissCallCount == 1)
+        #expect(!isPresented)
     }
 
     // MARK: - Item Binding Tests
 
-    func testPopoverPresentationWithItem() {
+    @Test func popoverPresentationWithItem() {
         let coordinator = PresentationCoordinator()
         var item: TestItem? = nil
 
@@ -137,18 +138,18 @@ final class PopoverModifierTests: XCTestCase {
         )
 
         // Initially not presented
-        XCTAssertNil(modifier.register(with: coordinator))
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(modifier.register(with: coordinator) == nil)
+        #expect(coordinator.count == 0)
 
         // Present with item
         item = TestItem(id: 1, name: "First")
         let id = modifier.register(with: coordinator)
 
-        XCTAssertNotNil(id)
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(id != nil)
+        #expect(coordinator.count == 1)
     }
 
-    func testPopoverItemDismissal() {
+    @Test func popoverItemDismissal() {
         let coordinator = PresentationCoordinator()
         var item: TestItem? = TestItem(id: 1, name: "Test")
         var dismissCalled = false
@@ -166,16 +167,16 @@ final class PopoverModifierTests: XCTestCase {
 
         // Present
         let id = modifier.register(with: coordinator)!
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Dismiss
         coordinator.dismiss(id)
-        XCTAssertEqual(coordinator.count, 0)
-        XCTAssertTrue(dismissCalled)
-        XCTAssertNil(item)
+        #expect(coordinator.count == 0)
+        #expect(dismissCalled)
+        #expect(item == nil)
     }
 
-    func testPopoverItemChange() {
+    @Test func popoverItemChange() {
         let coordinator = PresentationCoordinator()
         var item: TestItem? = TestItem(id: 1, name: "First")
 
@@ -192,16 +193,16 @@ final class PopoverModifierTests: XCTestCase {
 
         // Present first item
         let id1 = modifier.register(with: coordinator)!
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Change to different item
         item = TestItem(id: 2, name: "Second")
 
         // Should need update since item ID changed
-        XCTAssertTrue(modifier.shouldUpdate(currentId: id1, coordinator: coordinator))
+        #expect(modifier.shouldUpdate(currentId: id1, coordinator: coordinator))
     }
 
-    func testPopoverItemSameId() {
+    @Test func popoverItemSameId() {
         let coordinator = PresentationCoordinator()
         var item: TestItem? = TestItem(id: 1, name: "First")
 
@@ -222,12 +223,12 @@ final class PopoverModifierTests: XCTestCase {
         item = TestItem(id: 1, name: "Modified")
 
         // Should not need update since ID is the same
-        XCTAssertFalse(modifier.shouldUpdate(currentId: id, coordinator: coordinator))
+        #expect(!modifier.shouldUpdate(currentId: id, coordinator: coordinator))
     }
 
     // MARK: - Anchor Positioning Tests
 
-    func testPopoverWithBoundsAnchor() {
+    @Test func popoverWithBoundsAnchor() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
 
@@ -247,13 +248,13 @@ final class PopoverModifierTests: XCTestCase {
 
         switch entry?.type {
         case .popover(let anchor, _):
-            XCTAssertEqual(anchor, .rect(.bounds))
+            #expect(anchor == .rect(.bounds))
         default:
-            XCTFail("Expected popover with bounds anchor")
+            Issue.record("Expected popover with bounds anchor")
         }
     }
 
-    func testPopoverWithCustomRectAnchor() {
+    @Test func popoverWithCustomRectAnchor() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
         let customRect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
@@ -276,19 +277,19 @@ final class PopoverModifierTests: XCTestCase {
         case .popover(let anchor, _):
             switch anchor {
             case .rect(.rect(let rect)):
-                XCTAssertEqual(rect.origin.x, 10)
-                XCTAssertEqual(rect.origin.y, 20)
-                XCTAssertEqual(rect.size.width, 100)
-                XCTAssertEqual(rect.size.height, 50)
+                #expect(rect.origin.x == 10)
+                #expect(rect.origin.y == 20)
+                #expect(rect.size.width == 100)
+                #expect(rect.size.height == 50)
             default:
-                XCTFail("Expected rect anchor with custom CGRect")
+                Issue.record("Expected rect anchor with custom CGRect")
             }
         default:
-            XCTFail("Expected popover presentation")
+            Issue.record("Expected popover presentation")
         }
     }
 
-    func testPopoverWithPointAnchor() {
+    @Test func popoverWithPointAnchor() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
 
@@ -310,17 +311,17 @@ final class PopoverModifierTests: XCTestCase {
         case .popover(let anchor, _):
             switch anchor {
             case .point(let point):
-                XCTAssertEqual(point.x, 0.5)
-                XCTAssertEqual(point.y, 0.5)
+                #expect(point.x == 0.5)
+                #expect(point.y == 0.5)
             default:
-                XCTFail("Expected point anchor")
+                Issue.record("Expected point anchor")
             }
         default:
-            XCTFail("Expected popover presentation")
+            Issue.record("Expected popover presentation")
         }
     }
 
-    func testPopoverWithDifferentUnitPoints() {
+    @Test func popoverWithDifferentUnitPoints() {
         let coordinator = PresentationCoordinator()
         let testCases: [(UnitPoint, String)] = [
             (.topLeading, "topLeading"),
@@ -351,12 +352,12 @@ final class PopoverModifierTests: XCTestCase {
             case .popover(let anchor, _):
                 switch anchor {
                 case .point(let point):
-                    XCTAssertEqual(point, unitPoint, "Failed for \(name)")
+                    #expect(point == unitPoint)
                 default:
-                    XCTFail("Expected point anchor for \(name)")
+                    Issue.record("Expected point anchor for \(name)")
                 }
             default:
-                XCTFail("Expected popover presentation for \(name)")
+                Issue.record("Expected popover presentation for \(name)")
             }
 
             // Clean up for next test
@@ -366,7 +367,7 @@ final class PopoverModifierTests: XCTestCase {
 
     // MARK: - Arrow Edge Tests
 
-    func testPopoverWithTopEdge() {
+    @Test func popoverWithTopEdge() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
 
@@ -386,13 +387,13 @@ final class PopoverModifierTests: XCTestCase {
 
         switch entry?.type {
         case .popover(_, let edge):
-            XCTAssertEqual(edge, .top)
+            #expect(edge == .top)
         default:
-            XCTFail("Expected popover with top edge")
+            Issue.record("Expected popover with top edge")
         }
     }
 
-    func testPopoverWithDifferentEdges() {
+    @Test func popoverWithDifferentEdges() {
         let coordinator = PresentationCoordinator()
         let edges: [Edge] = [.top, .bottom, .leading, .trailing]
 
@@ -415,9 +416,9 @@ final class PopoverModifierTests: XCTestCase {
 
             switch entry?.type {
             case .popover(_, let presentedEdge):
-                XCTAssertEqual(presentedEdge, edge, "Failed for edge \(edge)")
+                #expect(presentedEdge == edge)
             default:
-                XCTFail("Expected popover with \(edge) edge")
+                Issue.record("Expected popover with \(edge) edge")
             }
 
             // Clean up for next test
@@ -427,7 +428,7 @@ final class PopoverModifierTests: XCTestCase {
 
     // MARK: - shouldUpdate Tests
 
-    func testShouldUpdateWhenPresentingFromNil() {
+    @Test func shouldUpdateWhenPresentingFromNil() {
         var isPresented = false
 
         let modifier = PopoverModifier(
@@ -444,14 +445,14 @@ final class PopoverModifierTests: XCTestCase {
         let coordinator = PresentationCoordinator()
 
         // Not presented, no ID
-        XCTAssertFalse(modifier.shouldUpdate(currentId: nil, coordinator: coordinator))
+        #expect(!modifier.shouldUpdate(currentId: nil, coordinator: coordinator))
 
         // Want to present, no ID
         isPresented = true
-        XCTAssertTrue(modifier.shouldUpdate(currentId: nil, coordinator: coordinator))
+        #expect(modifier.shouldUpdate(currentId: nil, coordinator: coordinator))
     }
 
-    func testShouldUpdateWhenDismissing() {
+    @Test func shouldUpdateWhenDismissing() {
         var isPresented = true
 
         let modifier = PopoverModifier(
@@ -469,14 +470,14 @@ final class PopoverModifierTests: XCTestCase {
         let id = UUID()
 
         // Presented with ID
-        XCTAssertFalse(modifier.shouldUpdate(currentId: id, coordinator: coordinator))
+        #expect(!modifier.shouldUpdate(currentId: id, coordinator: coordinator))
 
         // Want to dismiss, have ID
         isPresented = false
-        XCTAssertTrue(modifier.shouldUpdate(currentId: id, coordinator: coordinator))
+        #expect(modifier.shouldUpdate(currentId: id, coordinator: coordinator))
     }
 
-    func testItemShouldUpdateWhenChanging() {
+    @Test func itemShouldUpdateWhenChanging() {
         var item: TestItem? = TestItem(id: 1, name: "First")
 
         let modifier = PopoverItemModifier(
@@ -495,12 +496,12 @@ final class PopoverModifierTests: XCTestCase {
 
         // Change to different item
         item = TestItem(id: 2, name: "Second")
-        XCTAssertTrue(modifier.shouldUpdate(currentId: UUID(), coordinator: coordinator))
+        #expect(modifier.shouldUpdate(currentId: UUID(), coordinator: coordinator))
     }
 
     // MARK: - Multiple Popovers Tests
 
-    func testMultiplePopoversWithDifferentAnchors() {
+    @Test func multiplePopoversWithDifferentAnchors() {
         let coordinator = PresentationCoordinator()
         var show1 = true
         var show2 = true
@@ -524,11 +525,11 @@ final class PopoverModifierTests: XCTestCase {
         let id1 = modifier1.register(with: coordinator)!
         let id2 = modifier2.register(with: coordinator)!
 
-        XCTAssertEqual(coordinator.count, 2)
-        XCTAssertNotEqual(id1, id2)
+        #expect(coordinator.count == 2)
+        #expect(id1 != id2)
     }
 
-    func testMultiplePopoversWithDifferentEdges() {
+    @Test func multiplePopoversWithDifferentEdges() {
         let coordinator = PresentationCoordinator()
         var show1 = true
         var show2 = true
@@ -557,16 +558,16 @@ final class PopoverModifierTests: XCTestCase {
 
         switch (entry1.type, entry2.type) {
         case (.popover(_, let edge1), .popover(_, let edge2)):
-            XCTAssertEqual(edge1, .top)
-            XCTAssertEqual(edge2, .trailing)
+            #expect(edge1 == .top)
+            #expect(edge2 == .trailing)
         default:
-            XCTFail("Expected both to be popovers")
+            Issue.record("Expected both to be popovers")
         }
     }
 
     // MARK: - Z-Index Tests
 
-    func testPopoverZIndex() {
+    @Test func popoverZIndex() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
 
@@ -584,10 +585,10 @@ final class PopoverModifierTests: XCTestCase {
         let id = modifier.register(with: coordinator)!
         let entry = coordinator.presentations.first
 
-        XCTAssertEqual(entry?.zIndex, 1000) // Base z-index
+        #expect(entry?.zIndex == 1000) // Base z-index
     }
 
-    func testMultiplePopoversZIndexIncrement() {
+    @Test func multiplePopoversZIndexIncrement() {
         let coordinator = PresentationCoordinator()
         var show1 = true
         var show2 = true
@@ -611,13 +612,13 @@ final class PopoverModifierTests: XCTestCase {
         let _ = modifier1.register(with: coordinator)!
         let _ = modifier2.register(with: coordinator)!
 
-        XCTAssertEqual(coordinator.presentations[0].zIndex, 1000)
-        XCTAssertEqual(coordinator.presentations[1].zIndex, 1010) // Incremented by 10
+        #expect(coordinator.presentations[0].zIndex == 1000)
+        #expect(coordinator.presentations[1].zIndex == 1010) // Incremented by 10
     }
 
     // MARK: - Content Tests
 
-    func testPopoverContentIsStored() {
+    @Test func popoverContentIsStored() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
         let expectedText = "Popover Content"
@@ -636,6 +637,6 @@ final class PopoverModifierTests: XCTestCase {
         let id = modifier.register(with: coordinator)!
         let entry = coordinator.presentations.first
 
-        XCTAssertNotNil(entry?.content)
+        #expect(entry?.content != nil)
     }
 }

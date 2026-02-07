@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for LazyVStack layout component.
@@ -9,11 +9,11 @@ import XCTest
 /// 3. Spacing is applied correctly
 /// 4. Pinned views configuration is set properly
 @MainActor
-final class LazyVStackTests: XCTestCase {
+@Suite struct LazyVStackTests {
 
     // MARK: - Basic Structure Tests
 
-    func testLazyVStackConvertsToVNode() async throws {
+    @Test func lazyVStackConvertsToVNode() async throws {
         let lazyVStack = LazyVStack {
             Text("First")
             Text("Second")
@@ -22,52 +22,52 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "LazyVStack should create a div element")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify CSS properties
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
-        XCTAssertEqual(vnode.props["align-items"], .style(name: "align-items", value: "center"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "center"))
 
         // Verify the class attribute for identification
-        XCTAssertEqual(vnode.props["class"], .attribute(name: "class", value: "raven-lazy-vstack"))
+        #expect(vnode.props["class"] == .attribute(name: "class", value: "raven-lazy-vstack"))
     }
 
     // MARK: - Alignment Tests
 
-    func testLazyVStackWithLeadingAlignment() async throws {
+    @Test func lazyVStackWithLeadingAlignment() async throws {
         let lazyVStack = LazyVStack(alignment: .leading) {
             Text("Leading")
         }
 
         let vnode = lazyVStack.toVNode()
-        XCTAssertEqual(vnode.props["align-items"],
+        #expect(vnode.props["align-items"] ==
                        .style(name: "align-items", value: "flex-start"))
     }
 
-    func testLazyVStackWithTrailingAlignment() async throws {
+    @Test func lazyVStackWithTrailingAlignment() async throws {
         let lazyVStack = LazyVStack(alignment: .trailing) {
             Text("Trailing")
         }
 
         let vnode = lazyVStack.toVNode()
-        XCTAssertEqual(vnode.props["align-items"],
+        #expect(vnode.props["align-items"] ==
                        .style(name: "align-items", value: "flex-end"))
     }
 
-    func testLazyVStackWithCenterAlignment() async throws {
+    @Test func lazyVStackWithCenterAlignment() async throws {
         let lazyVStack = LazyVStack(alignment: .center) {
             Text("Center")
         }
 
         let vnode = lazyVStack.toVNode()
-        XCTAssertEqual(vnode.props["align-items"],
+        #expect(vnode.props["align-items"] ==
                        .style(name: "align-items", value: "center"))
     }
 
     // MARK: - Spacing Tests
 
-    func testLazyVStackWithSpacing() async throws {
+    @Test func lazyVStackWithSpacing() async throws {
         let lazyVStack = LazyVStack(spacing: 16) {
             Text("First")
             Text("Second")
@@ -76,10 +76,10 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify spacing is set as gap
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "16.0px"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "16.0px"))
     }
 
-    func testLazyVStackWithoutSpacing() async throws {
+    @Test func lazyVStackWithoutSpacing() async throws {
         let lazyVStack = LazyVStack {
             Text("First")
             Text("Second")
@@ -88,12 +88,12 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify no gap is set
-        XCTAssertNil(vnode.props["gap"])
+        #expect(vnode.props["gap"] == nil)
     }
 
     // MARK: - Pinned Views Tests
 
-    func testLazyVStackWithPinnedHeaders() async throws {
+    @Test func lazyVStackWithPinnedHeaders() async throws {
         let lazyVStack = LazyVStack(pinnedViews: .sectionHeaders) {
             Text("Content")
         }
@@ -101,11 +101,11 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify pinned views data attribute
-        XCTAssertEqual(vnode.props["data-pinned-views"],
+        #expect(vnode.props["data-pinned-views"] ==
                        .attribute(name: "data-pinned-views", value: "headers"))
     }
 
-    func testLazyVStackWithPinnedFooters() async throws {
+    @Test func lazyVStackWithPinnedFooters() async throws {
         let lazyVStack = LazyVStack(pinnedViews: .sectionFooters) {
             Text("Content")
         }
@@ -113,11 +113,11 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify pinned views data attribute
-        XCTAssertEqual(vnode.props["data-pinned-views"],
+        #expect(vnode.props["data-pinned-views"] ==
                        .attribute(name: "data-pinned-views", value: "footers"))
     }
 
-    func testLazyVStackWithPinnedHeadersAndFooters() async throws {
+    @Test func lazyVStackWithPinnedHeadersAndFooters() async throws {
         let lazyVStack = LazyVStack(pinnedViews: [.sectionHeaders, .sectionFooters]) {
             Text("Content")
         }
@@ -126,14 +126,14 @@ final class LazyVStackTests: XCTestCase {
 
         // Verify pinned views data attribute contains both
         if case let .attribute(_, value) = vnode.props["data-pinned-views"] {
-            XCTAssertTrue(value.contains("headers"), "Should contain headers")
-            XCTAssertTrue(value.contains("footers"), "Should contain footers")
+            #expect(value.contains("headers"))
+            #expect(value.contains("footers"))
         } else {
-            XCTFail("Expected data-pinned-views attribute")
+            Issue.record("Expected data-pinned-views attribute")
         }
     }
 
-    func testLazyVStackWithoutPinnedViews() async throws {
+    @Test func lazyVStackWithoutPinnedViews() async throws {
         let lazyVStack = LazyVStack {
             Text("Content")
         }
@@ -141,12 +141,12 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify no pinned views attribute is set
-        XCTAssertNil(vnode.props["data-pinned-views"])
+        #expect(vnode.props["data-pinned-views"] == nil)
     }
 
     // MARK: - Complex Layout Tests
 
-    func testLazyVStackWithComplexContent() async throws {
+    @Test func lazyVStackWithComplexContent() async throws {
         let lazyVStack = LazyVStack(alignment: .leading, spacing: 20) {
             Text("Title")
             Text("Subtitle")
@@ -156,17 +156,17 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify all properties are set correctly
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
-        XCTAssertEqual(vnode.props["align-items"], .style(name: "align-items", value: "flex-start"))
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "20.0px"))
-        XCTAssertEqual(vnode.props["class"], .attribute(name: "class", value: "raven-lazy-vstack"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "flex-start"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "20.0px"))
+        #expect(vnode.props["class"] == .attribute(name: "class", value: "raven-lazy-vstack"))
     }
 
     // MARK: - Integration with ForEach
 
-    func testLazyVStackWithForEach() async throws {
+    @Test func lazyVStackWithForEach() async throws {
         let items = ["Item 1", "Item 2", "Item 3"]
 
         let lazyVStack = LazyVStack(spacing: 12) {
@@ -178,7 +178,7 @@ final class LazyVStackTests: XCTestCase {
         let vnode = lazyVStack.toVNode()
 
         // Verify basic structure
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "12.0px"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "12.0px"))
     }
 }

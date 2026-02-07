@@ -1,13 +1,13 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the App protocol and Scene infrastructure.
 @MainActor
-final class AppTests: XCTestCase {
+@Suite struct AppTests {
 
     // MARK: - Basic App Tests
 
-    @MainActor func testBasicAppCreation() {
+    @MainActor @Test func basicAppCreation() {
         @MainActor struct TestApp: App {
             var body: some Scene {
                 WindowGroup {
@@ -17,10 +17,10 @@ final class AppTests: XCTestCase {
         }
 
         let app = TestApp()
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 
-    @MainActor func testAppWithMultipleScenes() {
+    @MainActor @Test func appWithMultipleScenes() {
         @MainActor struct TestApp: App {
             var body: some Scene {
                 WindowGroup {
@@ -34,89 +34,89 @@ final class AppTests: XCTestCase {
         }
 
         let app = TestApp()
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 
-    @MainActor func testRavenAppConvenience() {
+    @MainActor @Test func ravenAppConvenience() {
         let app = RavenApp {
             Text("Simple App")
         }
 
         // Should create WindowGroup scene
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 
-    @MainActor func testRavenAppWithExistingView() {
+    @MainActor @Test func ravenAppWithExistingView() {
         let view = Text("Hello, World!")
         let app = RavenApp(rootView: view)
 
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 
     // MARK: - WindowGroup Tests
 
-    @MainActor func testWindowGroupWithDefaultID() {
+    @MainActor @Test func windowGroupWithDefaultID() {
         let scene = WindowGroup {
             Text("Content")
         }
 
-        XCTAssertEqual(scene.id, "main")
-        XCTAssertNil(scene.title)
+        #expect(scene.id == "main")
+        #expect(scene.title == nil)
     }
 
-    @MainActor func testWindowGroupWithCustomID() {
+    @MainActor @Test func windowGroupWithCustomID() {
         let scene = WindowGroup(id: "custom") {
             Text("Content")
         }
 
-        XCTAssertEqual(scene.id, "custom")
-        XCTAssertNil(scene.title)
+        #expect(scene.id == "custom")
+        #expect(scene.title == nil)
     }
 
-    @MainActor func testWindowGroupWithTitle() {
+    @MainActor @Test func windowGroupWithTitle() {
         let scene = WindowGroup("My App") {
             Text("Content")
         }
 
-        XCTAssertEqual(scene.id, "main")
-        XCTAssertEqual(scene.title, "My App")
+        #expect(scene.id == "main")
+        #expect(scene.title == "My App")
     }
 
-    @MainActor func testWindowGroupWithLocalizedTitle() {
+    @MainActor @Test func windowGroupWithLocalizedTitle() {
         let scene = WindowGroup("app.title") {
             Text("Content")
         }
 
-        XCTAssertEqual(scene.id, "main")
-        XCTAssertEqual(scene.title, "app.title")
+        #expect(scene.id == "main")
+        #expect(scene.title == "app.title")
     }
 
-    @MainActor func testWindowGroupContentExecution() {
+    @MainActor @Test func windowGroupContentExecution() {
         let scene = WindowGroup {
             Text("Content")
         }
 
         // Access content and verify it returns a view
         let content = scene.content()
-        XCTAssertNotNil(content)
+        #expect(content != nil)
     }
 
     // MARK: - Scene Tests
 
-    @MainActor func testSettingsScene() {
+    @MainActor @Test func settingsScene() {
         let scene = Settings {
             Text("Settings")
         }
 
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testEmptyScene() {
+    @MainActor @Test func emptyScene() {
         let scene = EmptyScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testDocumentGroupPlaceholder() {
+    @MainActor @Test func documentGroupPlaceholder() {
         // DocumentGroup is a placeholder, just verify it can be instantiated
         let _: DocumentGroup<String, Text> = DocumentGroup()
         // If we get here without crashing, the type exists
@@ -124,38 +124,38 @@ final class AppTests: XCTestCase {
 
     // MARK: - ScenePhase Tests
 
-    @MainActor func testScenePhaseDefaultValue() {
+    @MainActor @Test func scenePhaseDefaultValue() {
         let env = EnvironmentValues()
-        XCTAssertEqual(env.scenePhase, .active)
+        #expect(env.scenePhase == .active)
     }
 
-    @MainActor func testScenePhaseUpdate() {
+    @MainActor @Test func scenePhaseUpdate() {
         var env = EnvironmentValues()
         env.scenePhase = .background
-        XCTAssertEqual(env.scenePhase, .background)
+        #expect(env.scenePhase == .background)
 
         env.scenePhase = .inactive
-        XCTAssertEqual(env.scenePhase, .inactive)
+        #expect(env.scenePhase == .inactive)
 
         env.scenePhase = .active
-        XCTAssertEqual(env.scenePhase, .active)
+        #expect(env.scenePhase == .active)
     }
 
-    @MainActor func testScenePhaseCases() {
+    @MainActor @Test func scenePhaseCases() {
         // Verify all cases exist
         let _: ScenePhase = .active
         let _: ScenePhase = .inactive
         let _: ScenePhase = .background
 
         // Verify equatable
-        XCTAssertEqual(ScenePhase.active, ScenePhase.active)
-        XCTAssertNotEqual(ScenePhase.active, ScenePhase.inactive)
-        XCTAssertNotEqual(ScenePhase.active, ScenePhase.background)
+        #expect(ScenePhase.active == ScenePhase.active)
+        #expect(ScenePhase.active != ScenePhase.inactive)
+        #expect(ScenePhase.active != ScenePhase.background)
     }
 
     // MARK: - SceneBuilder Tests
 
-    @MainActor func testSceneBuilderSingleScene() {
+    @MainActor @Test func sceneBuilderSingleScene() {
         @MainActor @SceneBuilder
         func makeScene() -> some Scene {
             WindowGroup {
@@ -164,10 +164,10 @@ final class AppTests: XCTestCase {
         }
 
         let scene = makeScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testSceneBuilderTwoScenes() {
+    @MainActor @Test func sceneBuilderTwoScenes() {
         @MainActor @SceneBuilder
         func makeScene() -> some Scene {
             WindowGroup {
@@ -180,10 +180,10 @@ final class AppTests: XCTestCase {
         }
 
         let scene = makeScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testSceneBuilderThreeScenes() {
+    @MainActor @Test func sceneBuilderThreeScenes() {
         @MainActor @SceneBuilder
         func makeScene() -> some Scene {
             WindowGroup(id: "main") {
@@ -200,10 +200,10 @@ final class AppTests: XCTestCase {
         }
 
         let scene = makeScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testSceneBuilderOptionalScene() {
+    @MainActor @Test func sceneBuilderOptionalScene() {
         let showSettings = true
 
         @MainActor @SceneBuilder
@@ -220,10 +220,10 @@ final class AppTests: XCTestCase {
         }
 
         let scene = makeScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testSceneBuilderConditionalScene() {
+    @MainActor @Test func sceneBuilderConditionalScene() {
         let isDevelopment = false
 
         @MainActor @SceneBuilder
@@ -242,24 +242,24 @@ final class AppTests: XCTestCase {
         }
 
         let scene = makeScene()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
     // MARK: - LocalizedStringKey Tests
 
-    @MainActor func testLocalizedStringKeyFromString() {
+    @MainActor @Test func localizedStringKeyFromString() {
         let key = LocalizedStringKey("hello.world")
-        XCTAssertEqual(key.stringValue, "hello.world")
+        #expect(key.stringValue == "hello.world")
     }
 
-    @MainActor func testLocalizedStringKeyFromLiteral() {
+    @MainActor @Test func localizedStringKeyFromLiteral() {
         let key: LocalizedStringKey = "hello.world"
-        XCTAssertEqual(key.stringValue, "hello.world")
+        #expect(key.stringValue == "hello.world")
     }
 
     // MARK: - App Modifier Tests
 
-    @MainActor func testOnChangeModifier() {
+    @MainActor @Test func onChangeModifier() {
         @MainActor struct TestApp: App {
             let counter = 0
 
@@ -273,10 +273,10 @@ final class AppTests: XCTestCase {
         // Test that onChange modifier can be applied at the App level
         let app = TestApp()
         let modifiedApp = app.onChange(of: 0) { _ in }
-        XCTAssertNotNil(modifiedApp.body)
+        #expect(modifiedApp.body != nil)
     }
 
-    @MainActor func testOnOpenURLModifier() {
+    @MainActor @Test func onOpenURLModifier() {
         @MainActor struct TestApp: App {
             var body: some Scene {
                 WindowGroup {
@@ -288,12 +288,12 @@ final class AppTests: XCTestCase {
         // Test that onOpenURL modifier can be applied at the App level
         let app = TestApp()
         let modifiedApp = app.onOpenURL { _ in }
-        XCTAssertNotNil(modifiedApp.body)
+        #expect(modifiedApp.body != nil)
     }
 
     // MARK: - Integration Tests
 
-    @MainActor func testCompleteAppStructure() {
+    @MainActor @Test func completeAppStructure() {
         @MainActor struct CompleteApp: App {
             let userLoggedIn = false
 
@@ -315,14 +315,14 @@ final class AppTests: XCTestCase {
         }
 
         let app = CompleteApp()
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
 
         // Test that onChange can be applied at the App level
         let modifiedApp = app.onChange(of: false) { _ in }
-        XCTAssertNotNil(modifiedApp.body)
+        #expect(modifiedApp.body != nil)
     }
 
-    @MainActor func testRavenAppWithComplexView() {
+    @MainActor @Test func ravenAppWithComplexView() {
         let app = RavenApp {
             VStack {
                 Text("Title")
@@ -338,10 +338,10 @@ final class AppTests: XCTestCase {
             }
         }
 
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 
-    @MainActor func testAppBodyIsScene() {
+    @MainActor @Test func appBodyIsScene() {
         @MainActor struct TestApp: App {
             var body: some Scene {
                 WindowGroup {
@@ -354,24 +354,24 @@ final class AppTests: XCTestCase {
         let body = app.body
 
         // Verify body conforms to Scene
-        XCTAssert(type(of: body) is any Scene.Type)
+        #expect(type(of: body) is any Scene.Type)
     }
 
     // MARK: - Type System Tests
 
-    @MainActor func testSceneTypeErasure() {
+    @MainActor @Test func sceneTypeErasure() {
         // Test that different scene types can be created
         let windowGroup = WindowGroup { Text("Main") }
         let settings = Settings { Text("Settings") }
         let emptyScene = EmptyScene()
 
         // Verify all are non-nil
-        XCTAssertNotNil(windowGroup)
-        XCTAssertNotNil(settings)
-        XCTAssertNotNil(emptyScene)
+        #expect(windowGroup != nil)
+        #expect(settings != nil)
+        #expect(emptyScene != nil)
     }
 
-    @MainActor func testAppProtocolRequirements() {
+    @MainActor @Test func appProtocolRequirements() {
         @MainActor struct MinimalApp: App {
             var body: some Scene {
                 WindowGroup {
@@ -386,15 +386,15 @@ final class AppTests: XCTestCase {
 
     // MARK: - Edge Cases
 
-    @MainActor func testEmptyWindowGroup() {
+    @MainActor @Test func emptyWindowGroup() {
         let scene = WindowGroup {
             EmptyView()
         }
 
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testNestedSceneBuilder() {
+    @MainActor @Test func nestedSceneBuilder() {
         @MainActor @SceneBuilder
         func innerScenes() -> some Scene {
             Settings {
@@ -412,10 +412,10 @@ final class AppTests: XCTestCase {
         }
 
         let scene = outerScenes()
-        XCTAssertNotNil(scene)
+        #expect(scene != nil)
     }
 
-    @MainActor func testMultipleWindowGroups() {
+    @MainActor @Test func multipleWindowGroups() {
         @MainActor struct MultiWindowApp: App {
             var body: some Scene {
                 WindowGroup(id: "main") {
@@ -433,6 +433,6 @@ final class AppTests: XCTestCase {
         }
 
         let app = MultiWindowApp()
-        XCTAssertNotNil(app.body)
+        #expect(app.body != nil)
     }
 }

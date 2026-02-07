@@ -49,7 +49,7 @@ actor WasmCompiler {
         // Detect available toolchain
         let toolchain = try await toolchainDetector.detectToolchain()
 
-        guard toolchain != .none else {
+        guard !toolchain.isNone else {
             throw CompilationError.toolchainNotFound
         }
 
@@ -67,6 +67,8 @@ actor WasmCompiler {
             wasmPath = try await compileWithCarton(isIncremental: isIncremental)
         case .swiftWasm:
             wasmPath = try await compileWithSwiftc(isIncremental: isIncremental)
+        case .swiftSDK(let name):
+            wasmPath = try await compileWithSwiftSDK(sdkName: name, isIncremental: isIncremental)
         case .none:
             throw CompilationError.toolchainNotFound
         }
@@ -199,6 +201,107 @@ actor WasmCompiler {
         }
 
         return outputPath
+    }
+
+    /// Compiles using swift build with Swift SDK
+    private func compileWithSwiftSDK(sdkName: String, isIncremental: Bool = false) async throws -> URL {
+        if config.verbose {
+            print("Compiling with Swift SDK: \(sdkName)...")
+            if isIncremental {
+                print("  Using incremental build")
+            }
+        }
+
+        var arguments = ["swift", "build", "--swift-sdk", sdkName]
+
+        // JavaScriptKit requires the WASI reactor ABI execution model
+        arguments.append(contentsOf: ["-Xswiftc", "-Xclang-linker", "-Xswiftc", "-mexec-model=reactor"])
+
+        // Export the main entry point so JS can call it after _initialize()
+        arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=main"])
+        arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=__main_argc_argv"])
+
+        // Add release configuration if needed
+        if config.optimizationLevel != .debug {
+            arguments.append(contentsOf: ["-c", "release"])
+        }
+
+        // Add verbose flag
+        if config.verbose {
+            arguments.append("--verbose")
+        }
+
+        // Add additional flags
+        arguments.append(contentsOf: config.additionalFlags)
+
+        let (exitCode, output, error) = try await runProcess(
+            executable: "/usr/bin/env",
+            arguments: arguments,
+            workingDirectory: config.sourceDirectory
+        )
+
+        guard exitCode == 0 else {
+            let errorMessage = error.isEmpty ? output : error
+            let enhancedMessage = enhanceCompilerOutput(errorMessage)
+            throw CompilationError.processError(exitCode, enhancedMessage)
+        }
+
+        if config.verbose && !output.isEmpty {
+            print(output)
+        }
+
+        // Find the built wasm file
+        return try findBuiltWasm()
+    }
+
+    /// Finds the built .wasm file in the build directory
+    private func findBuiltWasm() throws -> URL {
+        // If we have an explicit target name, use the computed path directly
+        if config.executableTargetName != nil {
+            let path = config.swiftSDKWasmPath
+            if FileManager.default.fileExists(atPath: path.path) {
+                return path
+            }
+        }
+
+        // Otherwise scan for .wasm files in the build output
+        let debugDir = config.buildDirectory.appendingPathComponent(
+            config.optimizationLevel == .debug ? "debug" : "release"
+        )
+
+        if let contents = try? FileManager.default.contentsOfDirectory(
+            at: debugDir,
+            includingPropertiesForKeys: nil
+        ) {
+            // Find .wasm files, excluding intermediates
+            let wasmFiles = contents.filter { $0.pathExtension == "wasm" }
+            if let first = wasmFiles.first {
+                return first
+            }
+        }
+
+        // Try the explicit path as last resort
+        let fallback = config.swiftSDKWasmPath
+        throw CompilationError.wasmFileNotFound(fallback.path)
+    }
+
+    /// Detects the executable target name from Package.swift
+    static func detectExecutableTarget(in projectDir: URL) -> String? {
+        let packagePath = projectDir.appendingPathComponent("Package.swift")
+        guard let content = try? String(contentsOf: packagePath, encoding: .utf8) else {
+            return nil
+        }
+
+        // Look for .executableTarget(name: "TargetName"
+        // Pattern matches both .executableTarget(name: "X" and .executableTarget(\n    name: "X"
+        let pattern = #"\.executableTarget\s*\(\s*name\s*:\s*"([^"]+)""#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]),
+              let match = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)),
+              let range = Range(match.range(at: 1), in: content) else {
+            return nil
+        }
+
+        return String(content[range])
     }
 
     /// Finds all Swift source files in a directory
@@ -338,6 +441,35 @@ actor WasmCompiler {
             severity: severity,
             message: message
         )
+    }
+}
+
+// MARK: - JavaScriptKit Runtime Discovery
+
+extension WasmCompiler {
+    /// Finds the JavaScriptKit runtime JavaScript source for inlining into HTML.
+    ///
+    /// Searches for the runtime in the build checkouts directory.
+    /// - Parameter projectPath: The root path of the Swift package project.
+    /// - Returns: The JavaScript source code as a string, or nil if not found.
+    static func findJavaScriptKitRuntime(in projectPath: String) -> String? {
+        let searchPaths = [
+            (projectPath as NSString).appendingPathComponent(
+                ".build/checkouts/JavaScriptKit/Sources/JavaScriptKit/Runtime/index.js"
+            ),
+            (projectPath as NSString).appendingPathComponent(
+                ".build/checkouts/JavaScriptKit/Runtime/index.js"
+            ),
+        ]
+
+        for path in searchPaths {
+            if FileManager.default.fileExists(atPath: path),
+               let contents = try? String(contentsOfFile: path, encoding: .utf8) {
+                return contents
+            }
+        }
+
+        return nil
     }
 }
 

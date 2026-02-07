@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for PopoverAttachmentAnchor and its nested types.
@@ -9,149 +9,149 @@ import XCTest
 /// - Sendable conformance
 /// - CustomStringConvertible output
 @MainActor
-final class PopoverAttachmentAnchorTests: XCTestCase {
+@Suite struct PopoverAttachmentAnchorTests {
 
     // MARK: - Anchor Type Tests
 
-    func testRectBoundsAnchor() {
+    @Test func rectBoundsAnchor() {
         let anchor = PopoverAttachmentAnchor.rect(.bounds)
 
         switch anchor {
         case .rect(.bounds):
-            XCTAssertTrue(true, "Anchor is rect with bounds")
+            #expect(true)
         default:
-            XCTFail("Expected rect(.bounds) anchor")
+            Issue.record("Expected rect(.bounds) anchor")
         }
     }
 
-    func testRectCustomAnchor() {
+    @Test func rectCustomAnchor() {
         let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
 
         switch anchor {
         case .rect(.rect(let extractedRect)):
-            XCTAssertEqual(extractedRect.origin.x, 10)
-            XCTAssertEqual(extractedRect.origin.y, 20)
-            XCTAssertEqual(extractedRect.size.width, 100)
-            XCTAssertEqual(extractedRect.size.height, 50)
+            #expect(extractedRect.origin.x == 10)
+            #expect(extractedRect.origin.y == 20)
+            #expect(extractedRect.size.width == 100)
+            #expect(extractedRect.size.height == 50)
         default:
-            XCTFail("Expected rect(.rect) anchor")
+            Issue.record("Expected rect(.rect) anchor")
         }
     }
 
-    func testPointAnchor() {
+    @Test func pointAnchor() {
         let anchor = PopoverAttachmentAnchor.point(.center)
 
         switch anchor {
         case .point(let unitPoint):
-            XCTAssertEqual(unitPoint.x, 0.5)
-            XCTAssertEqual(unitPoint.y, 0.5)
+            #expect(unitPoint.x == 0.5)
+            #expect(unitPoint.y == 0.5)
         default:
-            XCTFail("Expected point anchor")
+            Issue.record("Expected point anchor")
         }
     }
 
-    func testPointAnchorCorners() {
+    @Test func pointAnchorCorners() {
         let topLeading = PopoverAttachmentAnchor.point(.topLeading)
         let bottomTrailing = PopoverAttachmentAnchor.point(.bottomTrailing)
 
         switch topLeading {
         case .point(let point):
-            XCTAssertEqual(point.x, 0)
-            XCTAssertEqual(point.y, 0)
+            #expect(point.x == 0)
+            #expect(point.y == 0)
         default:
-            XCTFail("Expected topLeading point")
+            Issue.record("Expected topLeading point")
         }
 
         switch bottomTrailing {
         case .point(let point):
-            XCTAssertEqual(point.x, 1)
-            XCTAssertEqual(point.y, 1)
+            #expect(point.x == 1)
+            #expect(point.y == 1)
         default:
-            XCTFail("Expected bottomTrailing point")
+            Issue.record("Expected bottomTrailing point")
         }
     }
 
     // MARK: - Default Value Tests
 
-    func testDefaultAnchor() {
+    @Test func defaultAnchor() {
         let anchor = PopoverAttachmentAnchor.default
 
         switch anchor {
         case .rect(.bounds):
-            XCTAssertTrue(true, "Default is rect(.bounds)")
+            #expect(true)
         default:
-            XCTFail("Expected default to be rect(.bounds)")
+            Issue.record("Expected default to be rect(.bounds)")
         }
     }
 
     // MARK: - Equality Tests
 
-    func testRectBoundsEquality() {
+    @Test func rectBoundsEquality() {
         let anchor1 = PopoverAttachmentAnchor.rect(.bounds)
         let anchor2 = PopoverAttachmentAnchor.rect(.bounds)
 
-        XCTAssertEqual(anchor1, anchor2)
+        #expect(anchor1 == anchor2)
     }
 
-    func testRectCustomEquality() {
+    @Test func rectCustomEquality() {
         let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor1 = PopoverAttachmentAnchor.rect(.rect(rect))
         let anchor2 = PopoverAttachmentAnchor.rect(.rect(rect))
 
-        XCTAssertEqual(anchor1, anchor2)
+        #expect(anchor1 == anchor2)
     }
 
-    func testRectCustomInequality() {
+    @Test func rectCustomInequality() {
         let rect1 = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
         let rect2 = Raven.CGRect(x: 15, y: 25, width: 100, height: 50)
         let anchor1 = PopoverAttachmentAnchor.rect(.rect(rect1))
         let anchor2 = PopoverAttachmentAnchor.rect(.rect(rect2))
 
-        XCTAssertNotEqual(anchor1, anchor2)
+        #expect(anchor1 != anchor2)
     }
 
-    func testPointEquality() {
+    @Test func pointEquality() {
         let anchor1 = PopoverAttachmentAnchor.point(.center)
         let anchor2 = PopoverAttachmentAnchor.point(.center)
 
-        XCTAssertEqual(anchor1, anchor2)
+        #expect(anchor1 == anchor2)
     }
 
-    func testPointInequality() {
+    @Test func pointInequality() {
         let anchor1 = PopoverAttachmentAnchor.point(.center)
         let anchor2 = PopoverAttachmentAnchor.point(.topLeading)
 
-        XCTAssertNotEqual(anchor1, anchor2)
+        #expect(anchor1 != anchor2)
     }
 
-    func testDifferentTypeInequality() {
+    @Test func differentTypeInequality() {
         let rectAnchor = PopoverAttachmentAnchor.rect(.bounds)
         let pointAnchor = PopoverAttachmentAnchor.point(.center)
 
-        XCTAssertNotEqual(rectAnchor, pointAnchor)
+        #expect(rectAnchor != pointAnchor)
     }
 
     // MARK: - Hashing Tests
 
-    func testHashingConsistency() {
+    @Test func hashingConsistency() {
         let anchor1 = PopoverAttachmentAnchor.rect(.bounds)
         let anchor2 = PopoverAttachmentAnchor.rect(.bounds)
 
-        XCTAssertEqual(anchor1.hashValue, anchor2.hashValue)
+        #expect(anchor1.hashValue == anchor2.hashValue)
     }
 
-    func testHashingDifference() {
+    @Test func hashingDifference() {
         let rectAnchor = PopoverAttachmentAnchor.rect(.bounds)
         let pointAnchor = PopoverAttachmentAnchor.point(.center)
 
         // Hash values should typically be different (not guaranteed, but likely)
         // We just verify they can be hashed without issues
         let set: Set<PopoverAttachmentAnchor> = [rectAnchor, pointAnchor]
-        XCTAssertEqual(set.count, 2)
+        #expect(set.count == 2)
     }
 
-    func testHashingInSet() {
+    @Test func hashingInSet() {
         let anchor1 = PopoverAttachmentAnchor.rect(.bounds)
         let anchor2 = PopoverAttachmentAnchor.rect(.bounds)
         let anchor3 = PopoverAttachmentAnchor.point(.center)
@@ -159,99 +159,99 @@ final class PopoverAttachmentAnchorTests: XCTestCase {
         let set: Set<PopoverAttachmentAnchor> = [anchor1, anchor2, anchor3]
 
         // anchor1 and anchor2 are equal, so set should contain 2 elements
-        XCTAssertEqual(set.count, 2)
-        XCTAssertTrue(set.contains(anchor1))
-        XCTAssertTrue(set.contains(anchor3))
+        #expect(set.count == 2)
+        #expect(set.contains(anchor1))
+        #expect(set.contains(anchor3))
     }
 
     // MARK: - Nested Anchor Type Tests
 
-    func testNestedAnchorBounds() {
+    @Test func nestedAnchorBounds() {
         let anchor = PopoverAttachmentAnchor.Anchor.bounds
 
         switch anchor {
         case .bounds:
-            XCTAssertTrue(true, "Anchor is bounds")
+            #expect(true)
         case .rect:
-            XCTFail("Expected bounds, got rect")
+            Issue.record("Expected bounds, got rect")
         }
     }
 
-    func testNestedAnchorRect() {
+    @Test func nestedAnchorRect() {
         let rect = Raven.CGRect(x: 5, y: 10, width: 50, height: 25)
         let anchor = PopoverAttachmentAnchor.Anchor.rect(rect)
 
         switch anchor {
         case .bounds:
-            XCTFail("Expected rect, got bounds")
+            Issue.record("Expected rect, got bounds")
         case .rect(let extractedRect):
-            XCTAssertEqual(extractedRect, rect)
+            #expect(extractedRect == rect)
         }
     }
 
-    func testNestedAnchorEquality() {
+    @Test func nestedAnchorEquality() {
         let anchor1 = PopoverAttachmentAnchor.Anchor.bounds
         let anchor2 = PopoverAttachmentAnchor.Anchor.bounds
 
-        XCTAssertEqual(anchor1, anchor2)
+        #expect(anchor1 == anchor2)
     }
 
-    func testNestedAnchorInequality() {
+    @Test func nestedAnchorInequality() {
         let anchor1 = PopoverAttachmentAnchor.Anchor.bounds
         let anchor2 = PopoverAttachmentAnchor.Anchor.rect(.zero)
 
-        XCTAssertNotEqual(anchor1, anchor2)
+        #expect(anchor1 != anchor2)
     }
 
     // MARK: - CustomStringConvertible Tests
 
-    func testRectBoundsDescription() {
+    @Test func rectBoundsDescription() {
         let anchor = PopoverAttachmentAnchor.rect(.bounds)
         let description = anchor.description
 
-        XCTAssertTrue(description.contains("PopoverAttachmentAnchor.rect"))
-        XCTAssertTrue(description.contains(".bounds"))
+        #expect(description.contains("PopoverAttachmentAnchor.rect"))
+        #expect(description.contains(".bounds"))
     }
 
-    func testRectCustomDescription() {
+    @Test func rectCustomDescription() {
         let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
         let description = anchor.description
 
-        XCTAssertTrue(description.contains("PopoverAttachmentAnchor.rect"))
-        XCTAssertTrue(description.contains(".rect"))
+        #expect(description.contains("PopoverAttachmentAnchor.rect"))
+        #expect(description.contains(".rect"))
     }
 
-    func testPointDescription() {
+    @Test func pointDescription() {
         let anchor = PopoverAttachmentAnchor.point(.center)
         let description = anchor.description
 
-        XCTAssertTrue(description.contains("PopoverAttachmentAnchor.point"))
-        XCTAssertTrue(description.contains("0.5"))
+        #expect(description.contains("PopoverAttachmentAnchor.point"))
+        #expect(description.contains("0.5"))
     }
 
-    func testNestedAnchorBoundsDescription() {
+    @Test func nestedAnchorBoundsDescription() {
         let anchor = PopoverAttachmentAnchor.Anchor.bounds
         let description = anchor.description
 
-        XCTAssertEqual(description, ".bounds")
+        #expect(description == ".bounds")
     }
 
-    func testNestedAnchorRectDescription() {
+    @Test func nestedAnchorRectDescription() {
         let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.Anchor.rect(rect)
         let description = anchor.description
 
-        XCTAssertTrue(description.contains(".rect"))
-        XCTAssertTrue(description.contains("10"))
-        XCTAssertTrue(description.contains("20"))
-        XCTAssertTrue(description.contains("100"))
-        XCTAssertTrue(description.contains("50"))
+        #expect(description.contains(".rect"))
+        #expect(description.contains("10"))
+        #expect(description.contains("20"))
+        #expect(description.contains("100"))
+        #expect(description.contains("50"))
     }
 
     // MARK: - Sendable Conformance Tests
 
-    func testSendableConformance() {
+    @Test func sendableConformance() {
         // This test verifies that PopoverAttachmentAnchor can be used in concurrent contexts
         // If it compiles, the Sendable conformance is working correctly
 
@@ -271,7 +271,7 @@ final class PopoverAttachmentAnchorTests: XCTestCase {
         _ = anchor
     }
 
-    func testNestedAnchorSendable() {
+    @Test func nestedAnchorSendable() {
         // Verify nested Anchor type is also Sendable
         Task {
             let anchor = PopoverAttachmentAnchor.Anchor.bounds
@@ -285,21 +285,21 @@ final class PopoverAttachmentAnchorTests: XCTestCase {
 
     // MARK: - CGRect Integration Tests
 
-    func testCGRectZero() {
+    @Test func cgRectZero() {
         let anchor = PopoverAttachmentAnchor.rect(.rect(.zero))
 
         switch anchor {
         case .rect(.rect(let rect)):
-            XCTAssertEqual(rect.origin.x, 0)
-            XCTAssertEqual(rect.origin.y, 0)
-            XCTAssertEqual(rect.size.width, 0)
-            XCTAssertEqual(rect.size.height, 0)
+            #expect(rect.origin.x == 0)
+            #expect(rect.origin.y == 0)
+            #expect(rect.size.width == 0)
+            #expect(rect.size.height == 0)
         default:
-            XCTFail("Expected rect with CGRect.zero")
+            Issue.record("Expected rect with CGRect.zero")
         }
     }
 
-    func testCGRectCustomValues() {
+    @Test func cgRectCustomValues() {
         let customRect = Raven.CGRect(
             origin: Raven.CGPoint(x: 100, y: 200),
             size: Raven.CGSize(width: 300, height: 400)
@@ -308,41 +308,41 @@ final class PopoverAttachmentAnchorTests: XCTestCase {
 
         switch anchor {
         case .rect(.rect(let rect)):
-            XCTAssertEqual(rect.origin.x, 100)
-            XCTAssertEqual(rect.origin.y, 200)
-            XCTAssertEqual(rect.width, 300)
-            XCTAssertEqual(rect.height, 400)
+            #expect(rect.origin.x == 100)
+            #expect(rect.origin.y == 200)
+            #expect(rect.width == 300)
+            #expect(rect.height == 400)
         default:
-            XCTFail("Expected rect with custom CGRect")
+            Issue.record("Expected rect with custom CGRect")
         }
     }
 
     // MARK: - Edge Case Tests
 
-    func testNegativeCoordinates() {
+    @Test func negativeCoordinates() {
         let rect = Raven.CGRect(x: -10, y: -20, width: 50, height: 60)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
 
         switch anchor {
         case .rect(.rect(let extractedRect)):
-            XCTAssertEqual(extractedRect.origin.x, -10)
-            XCTAssertEqual(extractedRect.origin.y, -20)
+            #expect(extractedRect.origin.x == -10)
+            #expect(extractedRect.origin.y == -20)
         default:
-            XCTFail("Expected rect with negative coordinates")
+            Issue.record("Expected rect with negative coordinates")
         }
     }
 
-    func testUnitPointOutsideBounds() {
+    @Test func unitPointOutsideBounds() {
         // UnitPoint can have values outside 0-1 range
         let customPoint = UnitPoint(x: -0.5, y: 1.5)
         let anchor = PopoverAttachmentAnchor.point(customPoint)
 
         switch anchor {
         case .point(let point):
-            XCTAssertEqual(point.x, -0.5)
-            XCTAssertEqual(point.y, 1.5)
+            #expect(point.x == -0.5)
+            #expect(point.y == 1.5)
         default:
-            XCTFail("Expected point with custom coordinates")
+            Issue.record("Expected point with custom coordinates")
         }
     }
 }

@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive Phase 2 verification tests that validate interactive apps work.
@@ -10,11 +10,11 @@ import XCTest
 /// 4. View modifiers (.padding(), .frame(), .foregroundColor()) work correctly
 /// 5. Complete Counter app integration with state and interactions
 @MainActor
-final class Phase2VerificationTests: XCTestCase {
+@Suite struct Phase2VerificationTests {
 
     // MARK: - Test 1: Counter App Structure
 
-    func testCounterAppStructure() async throws {
+    @Test func counterAppStructure() async throws {
         // Define a Counter view that uses @State
         @MainActor
         struct CounterView: View {
@@ -37,11 +37,10 @@ final class Phase2VerificationTests: XCTestCase {
         let body = counter.body
 
         // The body should be a VStack
-        XCTAssertTrue(String(describing: type(of: body)).contains("VStack"),
-                      "Counter body should be a VStack with Text and Button")
+        #expect(String(describing: type(of: body)).contains("VStack"))
     }
 
-    func testCounterStateInitialization() async throws {
+    @Test func counterStateInitialization() async throws {
         @MainActor
         struct CounterView: View {
             @State var count = 0
@@ -57,10 +56,10 @@ final class Phase2VerificationTests: XCTestCase {
         let body = counter.body
 
         // The body should contain a Text view
-        XCTAssertTrue(type(of: body) is Text.Type)
+        #expect(type(of: body) is Text.Type)
     }
 
-    func testCounterViewWithMultipleStates() async throws {
+    @Test func counterViewWithMultipleStates() async throws {
         @MainActor
         struct MultiStateView: View {
             @State var count = 0
@@ -81,12 +80,12 @@ final class Phase2VerificationTests: XCTestCase {
         let body = view.body
 
         // Verify the view structure is created
-        XCTAssertTrue(String(describing: type(of: body)).contains("VStack"))
+        #expect(String(describing: type(of: body)).contains("VStack"))
     }
 
     // MARK: - Test 2: Button Click Simulation
 
-    func testButtonClickSimulation() async throws {
+    @Test func buttonClickSimulation() async throws {
         // Create a button with action
         var clicked = false
         let button = Button("Click Me") {
@@ -100,31 +99,31 @@ final class Phase2VerificationTests: XCTestCase {
         action()
 
         // Verify state changes are triggered
-        XCTAssertTrue(clicked, "Button action should have been called")
+        #expect(clicked)
     }
 
-    func testButtonClickWithStateUpdate() async throws {
+    @Test func buttonClickWithStateUpdate() async throws {
         var counter = 0
         let button = Button("Increment") {
             counter += 1
         }
 
         // Initial value
-        XCTAssertEqual(counter, 0)
+        #expect(counter == 0)
 
         // Simulate clicking
         button.actionClosure()
-        XCTAssertEqual(counter, 1)
+        #expect(counter == 1)
 
         // Simulate multiple clicks
         button.actionClosure()
-        XCTAssertEqual(counter, 2)
+        #expect(counter == 2)
 
         button.actionClosure()
-        XCTAssertEqual(counter, 3)
+        #expect(counter == 3)
     }
 
-    func testButtonActionExtraction() async throws {
+    @Test func buttonActionExtraction() async throws {
         var actionLog: [String] = []
 
         let button1 = Button("Action 1") {
@@ -140,12 +139,12 @@ final class Phase2VerificationTests: XCTestCase {
         button2.actionClosure()
         button1.actionClosure()
 
-        XCTAssertEqual(actionLog, ["action1", "action2", "action1"])
+        #expect(actionLog == ["action1", "action2", "action1"])
     }
 
     // MARK: - Test 3: Layout View Tests
 
-    func testVStackConvertsToVNode() async throws {
+    @Test func vStackConvertsToVNode() async throws {
         let vstack = VStack {
             Text("First")
             Text("Second")
@@ -154,21 +153,21 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = vstack.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "VStack should create a div element")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify CSS properties
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
-        XCTAssertEqual(vnode.props["align-items"], .style(name: "align-items", value: "center"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "center"))
     }
 
-    func testVStackWithAlignment() async throws {
+    @Test func vStackWithAlignment() async throws {
         let vstackLeading = VStack(alignment: .leading) {
             Text("Leading")
         }
 
         let vnodeLeading = vstackLeading.toVNode()
-        XCTAssertEqual(vnodeLeading.props["align-items"],
+        #expect(vnodeLeading.props["align-items"] ==
                        .style(name: "align-items", value: "flex-start"))
 
         let vstackTrailing = VStack(alignment: .trailing) {
@@ -176,7 +175,7 @@ final class Phase2VerificationTests: XCTestCase {
         }
 
         let vnodeTrailing = vstackTrailing.toVNode()
-        XCTAssertEqual(vnodeTrailing.props["align-items"],
+        #expect(vnodeTrailing.props["align-items"] ==
                        .style(name: "align-items", value: "flex-end"))
 
         let vstackCenter = VStack(alignment: .center) {
@@ -184,11 +183,11 @@ final class Phase2VerificationTests: XCTestCase {
         }
 
         let vnodeCenter = vstackCenter.toVNode()
-        XCTAssertEqual(vnodeCenter.props["align-items"],
+        #expect(vnodeCenter.props["align-items"] ==
                        .style(name: "align-items", value: "center"))
     }
 
-    func testVStackWithSpacing() async throws {
+    @Test func vStackWithSpacing() async throws {
         let vstack = VStack(spacing: 16) {
             Text("First")
             Text("Second")
@@ -197,10 +196,10 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = vstack.toVNode()
 
         // Verify spacing is set as gap
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "16.0px"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "16.0px"))
     }
 
-    func testHStackConvertsToVNode() async throws {
+    @Test func hStackConvertsToVNode() async throws {
         let hstack = HStack {
             Text("Left")
             Text("Right")
@@ -209,21 +208,21 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = hstack.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "HStack should create a div element")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify CSS properties
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "row"))
-        XCTAssertEqual(vnode.props["align-items"], .style(name: "align-items", value: "center"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "row"))
+        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "center"))
     }
 
-    func testHStackWithAlignment() async throws {
+    @Test func hStackWithAlignment() async throws {
         let hstackTop = HStack(alignment: .top) {
             Text("Top")
         }
 
         let vnodeTop = hstackTop.toVNode()
-        XCTAssertEqual(vnodeTop.props["align-items"],
+        #expect(vnodeTop.props["align-items"] ==
                        .style(name: "align-items", value: "flex-start"))
 
         let hstackBottom = HStack(alignment: .bottom) {
@@ -231,11 +230,11 @@ final class Phase2VerificationTests: XCTestCase {
         }
 
         let vnodeBottom = hstackBottom.toVNode()
-        XCTAssertEqual(vnodeBottom.props["align-items"],
+        #expect(vnodeBottom.props["align-items"] ==
                        .style(name: "align-items", value: "flex-end"))
     }
 
-    func testHStackWithSpacing() async throws {
+    @Test func hStackWithSpacing() async throws {
         let hstack = HStack(spacing: 8) {
             Text("A")
             Text("B")
@@ -245,10 +244,10 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = hstack.toVNode()
 
         // Verify spacing is set as gap
-        XCTAssertEqual(vnode.props["gap"], .style(name: "gap", value: "8.0px"))
+        #expect(vnode.props["gap"] == .style(name: "gap", value: "8.0px"))
     }
 
-    func testZStackConvertsToVNode() async throws {
+    @Test func zStackConvertsToVNode() async throws {
         let zstack = ZStack {
             Text("Background")
             Text("Foreground")
@@ -257,25 +256,25 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = zstack.toVNode()
 
         // Verify it creates a div element
-        XCTAssertTrue(vnode.isElement(tag: "div"), "ZStack should create a div element")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify CSS properties (ZStack uses CSS Grid)
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
-        XCTAssertEqual(vnode.props["grid-template-columns"],
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
+        #expect(vnode.props["grid-template-columns"] ==
                        .style(name: "grid-template-columns", value: "1fr"))
-        XCTAssertEqual(vnode.props["grid-template-rows"],
+        #expect(vnode.props["grid-template-rows"] ==
                        .style(name: "grid-template-rows", value: "1fr"))
-        XCTAssertEqual(vnode.props["place-items"],
+        #expect(vnode.props["place-items"] ==
                        .style(name: "place-items", value: "center center"))
     }
 
-    func testZStackWithAlignment() async throws {
+    @Test func zStackWithAlignment() async throws {
         let zstackTopLeading = ZStack(alignment: .topLeading) {
             Text("Content")
         }
 
         let vnodeTopLeading = zstackTopLeading.toVNode()
-        XCTAssertEqual(vnodeTopLeading.props["place-items"],
+        #expect(vnodeTopLeading.props["place-items"] ==
                        .style(name: "place-items", value: "flex-start flex-start"))
 
         let zstackBottomTrailing = ZStack(alignment: .bottomTrailing) {
@@ -283,109 +282,109 @@ final class Phase2VerificationTests: XCTestCase {
         }
 
         let vnodeBottomTrailing = zstackBottomTrailing.toVNode()
-        XCTAssertEqual(vnodeBottomTrailing.props["place-items"],
+        #expect(vnodeBottomTrailing.props["place-items"] ==
                        .style(name: "place-items", value: "flex-end flex-end"))
     }
 
     // MARK: - Test 4: Modifier Tests
 
-    func testPaddingModifier() async throws {
+    @Test func paddingModifier() async throws {
         let view = Text("Hello").padding()
 
         let vnode = view.toVNode()
 
         // Verify it creates a wrapper div
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Padding should wrap in a div")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify padding style is set (default is 8px)
-        XCTAssertEqual(vnode.props["padding"], .style(name: "padding", value: "8.0px"))
+        #expect(vnode.props["padding"] == .style(name: "padding", value: "8.0px"))
     }
 
-    func testPaddingModifierWithCustomValue() async throws {
+    @Test func paddingModifierWithCustomValue() async throws {
         let view = Text("Hello").padding(16)
 
         let vnode = view.toVNode()
 
         // Verify custom padding value
-        XCTAssertEqual(vnode.props["padding"], .style(name: "padding", value: "16.0px"))
+        #expect(vnode.props["padding"] == .style(name: "padding", value: "16.0px"))
     }
 
-    func testPaddingModifierWithEdgeInsets() async throws {
+    @Test func paddingModifierWithEdgeInsets() async throws {
         let view = Text("Hello").padding(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
 
         let vnode = view.toVNode()
 
         // Verify individual edge padding
-        XCTAssertEqual(vnode.props["padding-top"], .style(name: "padding-top", value: "10.0px"))
-        XCTAssertEqual(vnode.props["padding-left"], .style(name: "padding-left", value: "20.0px"))
-        XCTAssertEqual(vnode.props["padding-bottom"], .style(name: "padding-bottom", value: "10.0px"))
-        XCTAssertEqual(vnode.props["padding-right"], .style(name: "padding-right", value: "20.0px"))
+        #expect(vnode.props["padding-top"] == .style(name: "padding-top", value: "10.0px"))
+        #expect(vnode.props["padding-left"] == .style(name: "padding-left", value: "20.0px"))
+        #expect(vnode.props["padding-bottom"] == .style(name: "padding-bottom", value: "10.0px"))
+        #expect(vnode.props["padding-right"] == .style(name: "padding-right", value: "20.0px"))
     }
 
-    func testFrameModifier() async throws {
+    @Test func frameModifier() async throws {
         let view = Text("Hello").frame(width: 100, height: 50)
 
         let vnode = view.toVNode()
 
         // Verify it creates a wrapper div
-        XCTAssertTrue(vnode.isElement(tag: "div"), "Frame should wrap in a div")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify size styles
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "100.0px"))
-        XCTAssertEqual(vnode.props["height"], .style(name: "height", value: "50.0px"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "100.0px"))
+        #expect(vnode.props["height"] == .style(name: "height", value: "50.0px"))
     }
 
-    func testFrameModifierWidthOnly() async throws {
+    @Test func frameModifierWidthOnly() async throws {
         let view = Text("Hello").frame(width: 200)
 
         let vnode = view.toVNode()
 
         // Verify only width is set
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "200.0px"))
-        XCTAssertNil(vnode.props["height"])
+        #expect(vnode.props["width"] == .style(name: "width", value: "200.0px"))
+        #expect(vnode.props["height"] == nil)
     }
 
-    func testFrameModifierHeightOnly() async throws {
+    @Test func frameModifierHeightOnly() async throws {
         let view = Text("Hello").frame(height: 75)
 
         let vnode = view.toVNode()
 
         // Verify only height is set
-        XCTAssertNil(vnode.props["width"])
-        XCTAssertEqual(vnode.props["height"], .style(name: "height", value: "75.0px"))
+        #expect(vnode.props["width"] == nil)
+        #expect(vnode.props["height"] == .style(name: "height", value: "75.0px"))
     }
 
-    func testForegroundColorModifier() async throws {
+    @Test func foregroundColorModifier() async throws {
         let view = Text("Hello").foregroundColor(.blue)
 
         let vnode = view.toVNode()
 
         // Verify it creates a wrapper div
-        XCTAssertTrue(vnode.isElement(tag: "div"), "ForegroundColor should wrap in a div")
+        #expect(vnode.isElement(tag: "div"))
 
         // Verify color style
-        XCTAssertEqual(vnode.props["color"], .style(name: "color", value: "blue"))
+        #expect(vnode.props["color"] == .style(name: "color", value: "blue"))
     }
 
-    func testForegroundColorModifierWithCustomColor() async throws {
+    @Test func foregroundColorModifierWithCustomColor() async throws {
         let view = Text("Hello").foregroundColor(.red)
 
         let vnode = view.toVNode()
 
-        XCTAssertEqual(vnode.props["color"], .style(name: "color", value: "red"))
+        #expect(vnode.props["color"] == .style(name: "color", value: "red"))
     }
 
-    func testForegroundColorModifierWithRGBColor() async throws {
+    @Test func foregroundColorModifierWithRGBColor() async throws {
         let customColor = Color(red: 1.0, green: 0.5, blue: 0.0)
         let view = Text("Hello").foregroundColor(customColor)
 
         let vnode = view.toVNode()
 
         // Verify RGB color is converted to CSS
-        XCTAssertEqual(vnode.props["color"], .style(name: "color", value: "rgb(255, 127, 0)"))
+        #expect(vnode.props["color"] == .style(name: "color", value: "rgb(255, 127, 0)"))
     }
 
-    func testModifierChaining() async throws {
+    @Test func modifierChaining() async throws {
         let view = Text("Hello")
             .padding(10)
             .frame(width: 150, height: 50)
@@ -394,13 +393,13 @@ final class Phase2VerificationTests: XCTestCase {
         // Verify the view structure is created
         // The outermost modifier should be foregroundColor
         let outerVNode = view.toVNode()
-        XCTAssertTrue(outerVNode.isElement(tag: "div"))
-        XCTAssertEqual(outerVNode.props["color"], .style(name: "color", value: "blue"))
+        #expect(outerVNode.isElement(tag: "div"))
+        #expect(outerVNode.props["color"] == .style(name: "color", value: "blue"))
     }
 
     // MARK: - Test 5: Integration Test - Complete Counter App
 
-    func testCompleteCounterAppIntegration() async throws {
+    @Test func completeCounterAppIntegration() async throws {
         // Define a complete Counter view
         @MainActor
         struct CounterApp: View {
@@ -425,11 +424,10 @@ final class Phase2VerificationTests: XCTestCase {
         let body = app.body
 
         // The body should be a VStack
-        XCTAssertTrue(String(describing: type(of: body)).contains("VStack"),
-                      "App body should be a VStack")
+        #expect(String(describing: type(of: body)).contains("VStack"))
     }
 
-    func testCounterButtonInteraction() async throws {
+    @Test func counterButtonInteraction() async throws {
         // Test that button actions can be extracted and executed
         var counter = 0
 
@@ -439,18 +437,18 @@ final class Phase2VerificationTests: XCTestCase {
 
         // Create VNode to verify structure
         let vnode = button.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "button"))
-        XCTAssertNotNil(vnode.props["onClick"])
+        #expect(vnode.isElement(tag: "button"))
+        #expect(vnode.props["onClick"] != nil)
 
         // Simulate interaction
-        XCTAssertEqual(counter, 0)
+        #expect(counter == 0)
         button.actionClosure()
-        XCTAssertEqual(counter, 1)
+        #expect(counter == 1)
         button.actionClosure()
-        XCTAssertEqual(counter, 2)
+        #expect(counter == 2)
     }
 
-    func testCounterWithStateCallback() async throws {
+    @Test func counterWithStateCallback() async throws {
         let state = State(wrappedValue: 0)
         var updateCount = 0
 
@@ -465,24 +463,24 @@ final class Phase2VerificationTests: XCTestCase {
         }
 
         // Initial state
-        XCTAssertEqual(state.wrappedValue, 0)
-        XCTAssertEqual(updateCount, 0)
+        #expect(state.wrappedValue == 0)
+        #expect(updateCount == 0)
 
         // Simulate button clicks
         incrementAction()
-        XCTAssertEqual(state.wrappedValue, 1)
-        XCTAssertEqual(updateCount, 1)
+        #expect(state.wrappedValue == 1)
+        #expect(updateCount == 1)
 
         incrementAction()
-        XCTAssertEqual(state.wrappedValue, 2)
-        XCTAssertEqual(updateCount, 2)
+        #expect(state.wrappedValue == 2)
+        #expect(updateCount == 2)
 
         incrementAction()
-        XCTAssertEqual(state.wrappedValue, 3)
-        XCTAssertEqual(updateCount, 3)
+        #expect(state.wrappedValue == 3)
+        #expect(updateCount == 3)
     }
 
-    func testCompleteLayoutPipeline() async throws {
+    @Test func completeLayoutPipeline() async throws {
         // Test a complete view hierarchy with layouts and modifiers
         let view = VStack(spacing: 16) {
             Text("Title")
@@ -505,11 +503,11 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Outermost should be frame modifier (div)
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "300.0px"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "300.0px"))
     }
 
-    func testMultipleButtonsWithDifferentActions() async throws {
+    @Test func multipleButtonsWithDifferentActions() async throws {
         var action1Called = false
         var action2Called = false
         var action3Called = false
@@ -524,32 +522,32 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode3 = button3.toVNode()
 
         // Verify all are button elements
-        XCTAssertTrue(vnode1.isElement(tag: "button"))
-        XCTAssertTrue(vnode2.isElement(tag: "button"))
-        XCTAssertTrue(vnode3.isElement(tag: "button"))
+        #expect(vnode1.isElement(tag: "button"))
+        #expect(vnode2.isElement(tag: "button"))
+        #expect(vnode3.isElement(tag: "button"))
 
         // Execute actions
-        XCTAssertFalse(action1Called)
-        XCTAssertFalse(action2Called)
-        XCTAssertFalse(action3Called)
+        #expect(!action1Called)
+        #expect(!action2Called)
+        #expect(!action3Called)
 
         button1.actionClosure()
-        XCTAssertTrue(action1Called)
-        XCTAssertFalse(action2Called)
-        XCTAssertFalse(action3Called)
+        #expect(action1Called)
+        #expect(!action2Called)
+        #expect(!action3Called)
 
         button2.actionClosure()
-        XCTAssertTrue(action1Called)
-        XCTAssertTrue(action2Called)
-        XCTAssertFalse(action3Called)
+        #expect(action1Called)
+        #expect(action2Called)
+        #expect(!action3Called)
 
         button3.actionClosure()
-        XCTAssertTrue(action1Called)
-        XCTAssertTrue(action2Called)
-        XCTAssertTrue(action3Called)
+        #expect(action1Called)
+        #expect(action2Called)
+        #expect(action3Called)
     }
 
-    func testZStackWithOverlayedContent() async throws {
+    @Test func zStackWithOverlayedContent() async throws {
         let view = ZStack {
             Color.blue
                 .frame(width: 100, height: 100)
@@ -560,25 +558,25 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify ZStack creates a grid container
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "grid"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
     }
 
-    func testColorView() async throws {
+    @Test func colorView() async throws {
         let color = Color.red
         let vnode = color.toVNode()
 
         // Color renders as a div with background color
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["background-color"],
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["background-color"] ==
                        .style(name: "background-color", value: "red"))
-        XCTAssertEqual(vnode.props["width"],
+        #expect(vnode.props["width"] ==
                        .style(name: "width", value: "100%"))
-        XCTAssertEqual(vnode.props["height"],
+        #expect(vnode.props["height"] ==
                        .style(name: "height", value: "100%"))
     }
 
-    func testNestedLayoutViews() async throws {
+    @Test func nestedLayoutViews() async throws {
         let view = VStack {
             HStack {
                 Text("A")
@@ -593,49 +591,49 @@ final class Phase2VerificationTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify outer VStack
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["flex-direction"],
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["flex-direction"] ==
                        .style(name: "flex-direction", value: "column"))
     }
 
-    func testEdgeInsetsUniformValue() {
+    @Test func edgeInsetsUniformValue() {
         let insets = EdgeInsets(8)
 
-        XCTAssertEqual(insets.top, 8)
-        XCTAssertEqual(insets.leading, 8)
-        XCTAssertEqual(insets.bottom, 8)
-        XCTAssertEqual(insets.trailing, 8)
+        #expect(insets.top == 8)
+        #expect(insets.leading == 8)
+        #expect(insets.bottom == 8)
+        #expect(insets.trailing == 8)
     }
 
-    func testEdgeInsetsIndividualValues() {
+    @Test func edgeInsetsIndividualValues() {
         let insets = EdgeInsets(top: 10, leading: 20, bottom: 30, trailing: 40)
 
-        XCTAssertEqual(insets.top, 10)
-        XCTAssertEqual(insets.leading, 20)
-        XCTAssertEqual(insets.bottom, 30)
-        XCTAssertEqual(insets.trailing, 40)
+        #expect(insets.top == 10)
+        #expect(insets.leading == 20)
+        #expect(insets.bottom == 30)
+        #expect(insets.trailing == 40)
     }
 
-    func testAlignmentValues() {
+    @Test func alignmentValues() {
         // Test all alignment values
-        XCTAssertEqual(Alignment.center.horizontal, .center)
-        XCTAssertEqual(Alignment.center.vertical, .center)
+        #expect(Alignment.center.horizontal == .center)
+        #expect(Alignment.center.vertical == .center)
 
-        XCTAssertEqual(Alignment.topLeading.horizontal, .leading)
-        XCTAssertEqual(Alignment.topLeading.vertical, .top)
+        #expect(Alignment.topLeading.horizontal == .leading)
+        #expect(Alignment.topLeading.vertical == .top)
 
-        XCTAssertEqual(Alignment.bottomTrailing.horizontal, .trailing)
-        XCTAssertEqual(Alignment.bottomTrailing.vertical, .bottom)
+        #expect(Alignment.bottomTrailing.horizontal == .trailing)
+        #expect(Alignment.bottomTrailing.vertical == .bottom)
     }
 
-    func testAlignmentCSSValues() {
+    @Test func alignmentCSSValues() {
         // Test CSS value conversion
-        XCTAssertEqual(HorizontalAlignment.leading.cssValue, "flex-start")
-        XCTAssertEqual(HorizontalAlignment.center.cssValue, "center")
-        XCTAssertEqual(HorizontalAlignment.trailing.cssValue, "flex-end")
+        #expect(HorizontalAlignment.leading.cssValue == "flex-start")
+        #expect(HorizontalAlignment.center.cssValue == "center")
+        #expect(HorizontalAlignment.trailing.cssValue == "flex-end")
 
-        XCTAssertEqual(VerticalAlignment.top.cssValue, "flex-start")
-        XCTAssertEqual(VerticalAlignment.center.cssValue, "center")
-        XCTAssertEqual(VerticalAlignment.bottom.cssValue, "flex-end")
+        #expect(VerticalAlignment.top.cssValue == "flex-start")
+        #expect(VerticalAlignment.center.cssValue == "center")
+        #expect(VerticalAlignment.bottom.cssValue == "flex-end")
     }
 }

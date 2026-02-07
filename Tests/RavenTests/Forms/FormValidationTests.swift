@@ -1,63 +1,52 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for Form Validation System
 /// Tests all ValidationRule types, FormState management, async validation,
 /// error display, ARIA attributes, field touch tracking, and edge cases.
 @MainActor
-final class FormValidationTests: XCTestCase {
-
-    // MARK: - Test Setup
-
-    var formState: FormState!
-
-    override func setUp() async throws {
-        formState = FormState()
-    }
-
-    override func tearDown() async throws {
-        formState = nil
-    }
+@Suite struct FormValidationTests {
 
     // MARK: - ValidationRule: Required Tests
 
-    func testRequiredRuleWithEmptyString() {
+    @Test func requiredRuleWithEmptyString() {
         let rule = ValidationRule.required(field: "name")
         let result = rule.validate("")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.field, "name")
-        XCTAssertEqual(result.error?.type, .required)
-        XCTAssertEqual(result.error?.message, "This field is required")
+        #expect(result.isInvalid)
+        #expect(result.error?.field == "name")
+        #expect(result.error?.type == .required)
+        #expect(result.error?.message == "This field is required")
     }
 
-    func testRequiredRuleWithWhitespace() {
+    @Test func requiredRuleWithWhitespace() {
         let rule = ValidationRule.required(field: "name")
         let result = rule.validate("   \n\t  ")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .required)
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .required)
     }
 
-    func testRequiredRuleWithValidValue() {
+    @Test func requiredRuleWithValidValue() {
         let rule = ValidationRule.required(field: "name")
         let result = rule.validate("John Doe")
 
-        XCTAssertTrue(result.isValid)
-        XCTAssertNil(result.error)
+        #expect(result.isValid)
+        #expect(result.error == nil)
     }
 
-    func testRequiredRuleWithCustomMessage() {
+    @Test func requiredRuleWithCustomMessage() {
         let rule = ValidationRule.required(field: "email", message: "Email is required")
         let result = rule.validate("")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.message, "Email is required")
+        #expect(result.isInvalid)
+        #expect(result.error?.message == "Email is required")
     }
 
     // MARK: - ValidationRule: Email Tests
 
-    func testEmailRuleWithValidEmail() {
+    @Test func emailRuleWithValidEmail() {
         let rule = ValidationRule.email(field: "email")
         let validEmails = [
             "user@example.com",
@@ -68,11 +57,11 @@ final class FormValidationTests: XCTestCase {
 
         for email in validEmails {
             let result = rule.validate(email)
-            XCTAssertTrue(result.isValid, "Should accept valid email: \(email)")
+            #expect(result.isValid)
         }
     }
 
-    func testEmailRuleWithInvalidEmail() {
+    @Test func emailRuleWithInvalidEmail() {
         let rule = ValidationRule.email(field: "email")
         let invalidEmails = [
             "notanemail",
@@ -85,99 +74,99 @@ final class FormValidationTests: XCTestCase {
 
         for email in invalidEmails {
             let result = rule.validate(email)
-            XCTAssertTrue(result.isInvalid, "Should reject invalid email: \(email)")
-            XCTAssertEqual(result.error?.type, .invalidFormat)
+            #expect(result.isInvalid)
+            #expect(result.error?.type == .invalidFormat)
         }
     }
 
-    func testEmailRuleWithEmptyString() {
+    @Test func emailRuleWithEmptyString() {
         let rule = ValidationRule.email(field: "email")
         let result = rule.validate("")
 
         // Email rule allows empty (use required separately)
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testEmailRuleWithCustomMessage() {
+    @Test func emailRuleWithCustomMessage() {
         let rule = ValidationRule.email(field: "email", message: "Invalid email format")
         let result = rule.validate("notanemail")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.message, "Invalid email format")
+        #expect(result.isInvalid)
+        #expect(result.error?.message == "Invalid email format")
     }
 
     // MARK: - ValidationRule: MinLength Tests
 
-    func testMinLengthRuleValid() {
+    @Test func minLengthRuleValid() {
         let rule = ValidationRule.minLength(field: "password", length: 8)
         let result = rule.validate("password123")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testMinLengthRuleInvalid() {
+    @Test func minLengthRuleInvalid() {
         let rule = ValidationRule.minLength(field: "password", length: 8)
         let result = rule.validate("short")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .tooShort)
-        XCTAssertEqual(result.error?.message, "Must be at least 8 characters")
-        XCTAssertEqual(result.error?.context["minLength"], "8")
-        XCTAssertEqual(result.error?.context["actualLength"], "5")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .tooShort)
+        #expect(result.error?.message == "Must be at least 8 characters")
+        #expect(result.error?.context["minLength"] == "8")
+        #expect(result.error?.context["actualLength"] == "5")
     }
 
-    func testMinLengthRuleExactLength() {
+    @Test func minLengthRuleExactLength() {
         let rule = ValidationRule.minLength(field: "password", length: 8)
         let result = rule.validate("12345678")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testMinLengthRuleWithEmptyString() {
+    @Test func minLengthRuleWithEmptyString() {
         let rule = ValidationRule.minLength(field: "password", length: 8)
         let result = rule.validate("")
 
         // MinLength allows empty (use required separately)
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
     // MARK: - ValidationRule: MaxLength Tests
 
-    func testMaxLengthRuleValid() {
+    @Test func maxLengthRuleValid() {
         let rule = ValidationRule.maxLength(field: "bio", length: 100)
         let result = rule.validate("Short bio")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testMaxLengthRuleInvalid() {
+    @Test func maxLengthRuleInvalid() {
         let rule = ValidationRule.maxLength(field: "bio", length: 10)
         let result = rule.validate("This is a very long biography text")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .tooLong)
-        XCTAssertEqual(result.error?.message, "Must be at most 10 characters")
-        XCTAssertEqual(result.error?.context["maxLength"], "10")
-        XCTAssertEqual(result.error?.context["actualLength"], "35")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .tooLong)
+        #expect(result.error?.message == "Must be at most 10 characters")
+        #expect(result.error?.context["maxLength"] == "10")
+        #expect(result.error?.context["actualLength"] == "35")
     }
 
-    func testMaxLengthRuleExactLength() {
+    @Test func maxLengthRuleExactLength() {
         let rule = ValidationRule.maxLength(field: "code", length: 6)
         let result = rule.validate("123456")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testMaxLengthRuleWithEmptyString() {
+    @Test func maxLengthRuleWithEmptyString() {
         let rule = ValidationRule.maxLength(field: "bio", length: 100)
         let result = rule.validate("")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
     // MARK: - ValidationRule: Regex Tests
 
-    func testRegexRuleValid() {
+    @Test func regexRuleValid() {
         let rule = ValidationRule.regex(
             field: "zipcode",
             pattern: "^\\d{5}$",
@@ -185,10 +174,10 @@ final class FormValidationTests: XCTestCase {
         )
         let result = rule.validate("12345")
 
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testRegexRuleInvalid() {
+    @Test func regexRuleInvalid() {
         let rule = ValidationRule.regex(
             field: "zipcode",
             pattern: "^\\d{5}$",
@@ -196,24 +185,24 @@ final class FormValidationTests: XCTestCase {
         )
         let result = rule.validate("1234")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .patternMismatch)
-        XCTAssertEqual(result.error?.message, "Must be 5 digits")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .patternMismatch)
+        #expect(result.error?.message == "Must be 5 digits")
     }
 
-    func testRegexRuleComplexPattern() {
+    @Test func regexRuleComplexPattern() {
         let rule = ValidationRule.regex(
             field: "password",
             pattern: "^(?=.*[A-Z])(?=.*[0-9]).*$",
             message: "Must contain uppercase and number"
         )
 
-        XCTAssertTrue(rule.validate("Password123").isValid)
-        XCTAssertTrue(rule.validate("abc123").isInvalid)
-        XCTAssertTrue(rule.validate("ABCDEF").isInvalid)
+        #expect(rule.validate("Password123").isValid)
+        #expect(rule.validate("abc123").isInvalid)
+        #expect(rule.validate("ABCDEF").isInvalid)
     }
 
-    func testRegexRuleWithEmptyString() {
+    @Test func regexRuleWithEmptyString() {
         let rule = ValidationRule.regex(
             field: "code",
             pattern: "^\\d+$",
@@ -222,81 +211,81 @@ final class FormValidationTests: XCTestCase {
         let result = rule.validate("")
 
         // Regex allows empty (use required separately)
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
     // MARK: - ValidationRule: Range Tests
 
-    func testRangeRuleWithIntegerValid() {
+    @Test func rangeRuleWithIntegerValid() {
         let rule = ValidationRule.range(field: "age", min: 18, max: 100)
 
-        XCTAssertTrue(rule.validate("25").isValid)
-        XCTAssertTrue(rule.validate("18").isValid)
-        XCTAssertTrue(rule.validate("100").isValid)
+        #expect(rule.validate("25").isValid)
+        #expect(rule.validate("18").isValid)
+        #expect(rule.validate("100").isValid)
     }
 
-    func testRangeRuleWithIntegerBelowMin() {
+    @Test func rangeRuleWithIntegerBelowMin() {
         let rule = ValidationRule.range(field: "age", min: 18, max: 100)
         let result = rule.validate("15")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .belowMinimum)
-        XCTAssertEqual(result.error?.message, "Must be at least 18")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .belowMinimum)
+        #expect(result.error?.message == "Must be at least 18")
     }
 
-    func testRangeRuleWithIntegerAboveMax() {
+    @Test func rangeRuleWithIntegerAboveMax() {
         let rule = ValidationRule.range(field: "age", min: 18, max: 100)
         let result = rule.validate("150")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .aboveMaximum)
-        XCTAssertEqual(result.error?.message, "Must be at most 100")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .aboveMaximum)
+        #expect(result.error?.message == "Must be at most 100")
     }
 
-    func testRangeRuleWithDoubleValid() {
+    @Test func rangeRuleWithDoubleValid() {
         let rule = ValidationRule.range(field: "price", min: 0.0, max: 999.99)
 
-        XCTAssertTrue(rule.validate("49.99").isValid)
-        XCTAssertTrue(rule.validate("0.0").isValid)
-        XCTAssertTrue(rule.validate("999.99").isValid)
+        #expect(rule.validate("49.99").isValid)
+        #expect(rule.validate("0.0").isValid)
+        #expect(rule.validate("999.99").isValid)
     }
 
-    func testRangeRuleWithInvalidNumber() {
+    @Test func rangeRuleWithInvalidNumber() {
         let rule = ValidationRule.range(field: "age", min: 0, max: 100)
         let result = rule.validate("not a number")
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .invalidFormat)
-        XCTAssertEqual(result.error?.message, "Please enter a valid number")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .invalidFormat)
+        #expect(result.error?.message == "Please enter a valid number")
     }
 
-    func testRangeRuleOnlyMinimum() {
+    @Test func rangeRuleOnlyMinimum() {
         let rule = ValidationRule.range(field: "quantity", min: 1)
 
-        XCTAssertTrue(rule.validate("5").isValid)
-        XCTAssertTrue(rule.validate("1").isValid)
-        XCTAssertTrue(rule.validate("0").isInvalid)
+        #expect(rule.validate("5").isValid)
+        #expect(rule.validate("1").isValid)
+        #expect(rule.validate("0").isInvalid)
     }
 
-    func testRangeRuleOnlyMaximum() {
+    @Test func rangeRuleOnlyMaximum() {
         let rule = ValidationRule.range(field: "discount", max: 100)
 
-        XCTAssertTrue(rule.validate("50").isValid)
-        XCTAssertTrue(rule.validate("100").isValid)
-        XCTAssertTrue(rule.validate("101").isInvalid)
+        #expect(rule.validate("50").isValid)
+        #expect(rule.validate("100").isValid)
+        #expect(rule.validate("101").isInvalid)
     }
 
-    func testRangeRuleWithEmptyString() {
+    @Test func rangeRuleWithEmptyString() {
         let rule = ValidationRule.range(field: "age", min: 0, max: 100)
         let result = rule.validate("")
 
         // Range allows empty (use required separately)
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
     // MARK: - ValidationRule: Custom Tests
 
-    func testCustomRuleValid() {
+    @Test func customRuleValid() {
         let rule = ValidationRule.custom(
             field: "username",
             message: "Username must start with a letter"
@@ -306,10 +295,10 @@ final class FormValidationTests: XCTestCase {
         }
 
         let result = rule.validate("john123")
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testCustomRuleInvalid() {
+    @Test func customRuleInvalid() {
         let rule = ValidationRule.custom(
             field: "username",
             message: "Username must start with a letter"
@@ -319,14 +308,14 @@ final class FormValidationTests: XCTestCase {
         }
 
         let result = rule.validate("123john")
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .custom("validation"))
-        XCTAssertEqual(result.error?.message, "Username must start with a letter")
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .custom("validation"))
+        #expect(result.error?.message == "Username must start with a letter")
     }
 
     // MARK: - ValidationRule: Combine Tests
 
-    func testCombineRulesAllPass() {
+    @Test func combineRulesAllPass() {
         let combined = ValidationRule.combine([
             .required(field: "password"),
             .minLength(field: "password", length: 8),
@@ -334,10 +323,10 @@ final class FormValidationTests: XCTestCase {
         ])
 
         let result = combined.validate("Password123")
-        XCTAssertTrue(result.isValid)
+        #expect(result.isValid)
     }
 
-    func testCombineRulesFirstFails() {
+    @Test func combineRulesFirstFails() {
         let combined = ValidationRule.combine([
             .required(field: "password"),
             .minLength(field: "password", length: 8),
@@ -345,11 +334,11 @@ final class FormValidationTests: XCTestCase {
         ])
 
         let result = combined.validate("")
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .required)
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .required)
     }
 
-    func testCombineRulesMiddleFails() {
+    @Test func combineRulesMiddleFails() {
         let combined = ValidationRule.combine([
             .required(field: "password"),
             .minLength(field: "password", length: 8),
@@ -357,11 +346,11 @@ final class FormValidationTests: XCTestCase {
         ])
 
         let result = combined.validate("short")
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .tooShort)
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .tooShort)
     }
 
-    func testCombineRulesLastFails() {
+    @Test func combineRulesLastFails() {
         let combined = ValidationRule.combine([
             .required(field: "password"),
             .minLength(field: "password", length: 8),
@@ -369,21 +358,24 @@ final class FormValidationTests: XCTestCase {
         ])
 
         let result = combined.validate("lowercase123")
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .patternMismatch)
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .patternMismatch)
     }
 
     // MARK: - FormState: Basic Tests
 
-    func testFormStateInitialization() {
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasAnyErrors)
-        XCTAssertFalse(formState.isSubmitting)
-        XCTAssertFalse(formState.hasBeenSubmitted)
-        XCTAssertFalse(formState.showErrors)
+    @Test func formStateInitialization() {
+        let formState = FormState()
+
+        #expect(formState.isValid)
+        #expect(!formState.hasAnyErrors)
+        #expect(!formState.isSubmitting)
+        #expect(!formState.hasBeenSubmitted)
+        #expect(!formState.showErrors)
     }
 
-    func testFormStateSetErrors() {
+    @Test func formStateSetErrors() {
+        let formState = FormState()
         let error = ValidationError(
             field: "email",
             type: .invalidFormat,
@@ -392,14 +384,15 @@ final class FormValidationTests: XCTestCase {
 
         formState.setError(error, for: "email")
 
-        XCTAssertFalse(formState.isValid)
-        XCTAssertTrue(formState.hasAnyErrors)
-        XCTAssertTrue(formState.hasErrors(for: "email"))
-        XCTAssertEqual(formState.errors(for: "email").count, 1)
-        XCTAssertEqual(formState.firstError(for: "email"), "Invalid email")
+        #expect(!formState.isValid)
+        #expect(formState.hasAnyErrors)
+        #expect(formState.hasErrors(for: "email"))
+        #expect(formState.errors(for: "email").count == 1)
+        #expect(formState.firstError(for: "email") == "Invalid email")
     }
 
-    func testFormStateSetMultipleErrors() {
+    @Test func formStateSetMultipleErrors() {
+        let formState = FormState()
         let errors = [
             ValidationError(field: "password", type: .required, message: "Required"),
             ValidationError(field: "password", type: .tooShort, message: "Too short")
@@ -407,57 +400,62 @@ final class FormValidationTests: XCTestCase {
 
         formState.setErrors(errors, for: "password")
 
-        XCTAssertFalse(formState.isValid)
-        XCTAssertEqual(formState.errors(for: "password").count, 2)
-        XCTAssertEqual(formState.firstError(for: "password"), "Required")
+        #expect(!formState.isValid)
+        #expect(formState.errors(for: "password").count == 2)
+        #expect(formState.firstError(for: "password") == "Required")
     }
 
-    func testFormStateClearErrors() {
+    @Test func formStateClearErrors() {
+        let formState = FormState()
         let error = ValidationError(field: "email", type: .required, message: "Required")
         formState.setError(error, for: "email")
 
-        XCTAssertTrue(formState.hasErrors(for: "email"))
+        #expect(formState.hasErrors(for: "email"))
 
         formState.clearErrors(for: "email")
 
-        XCTAssertFalse(formState.hasErrors(for: "email"))
-        XCTAssertTrue(formState.isValid)
+        #expect(!formState.hasErrors(for: "email"))
+        #expect(formState.isValid)
     }
 
-    func testFormStateClearAllErrors() {
+    @Test func formStateClearAllErrors() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
         formState.setError(ValidationError(field: "password", type: .required, message: "Required"), for: "password")
 
-        XCTAssertFalse(formState.isValid)
+        #expect(!formState.isValid)
 
         formState.clearAllErrors()
 
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "email"))
-        XCTAssertFalse(formState.hasErrors(for: "password"))
+        #expect(formState.isValid)
+        #expect(!formState.hasErrors(for: "email"))
+        #expect(!formState.hasErrors(for: "password"))
     }
 
     // MARK: - FormState: Validation Tests
 
-    func testFormStateValidateSuccess() {
+    @Test func formStateValidateSuccess() {
+        let formState = FormState()
         let rule = ValidationRule.required(field: "name")
         let result = formState.validate("John", with: rule)
 
-        XCTAssertTrue(result.isValid)
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "name"))
+        #expect(result.isValid)
+        #expect(formState.isValid)
+        #expect(!formState.hasErrors(for: "name"))
     }
 
-    func testFormStateValidateFailure() {
+    @Test func formStateValidateFailure() {
+        let formState = FormState()
         let rule = ValidationRule.required(field: "name")
         let result = formState.validate("", with: rule)
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertFalse(formState.isValid)
-        XCTAssertTrue(formState.hasErrors(for: "name"))
+        #expect(result.isInvalid)
+        #expect(!formState.isValid)
+        #expect(formState.hasErrors(for: "name"))
     }
 
-    func testFormStateValidateMultipleRulesAllPass() {
+    @Test func formStateValidateMultipleRulesAllPass() {
+        let formState = FormState()
         let rules = [
             ValidationRule.required(field: "email"),
             ValidationRule.email(field: "email")
@@ -465,12 +463,13 @@ final class FormValidationTests: XCTestCase {
 
         let success = formState.validate("user@example.com", with: rules)
 
-        XCTAssertTrue(success)
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "email"))
+        #expect(success)
+        #expect(formState.isValid)
+        #expect(!formState.hasErrors(for: "email"))
     }
 
-    func testFormStateValidateMultipleRulesOneFails() {
+    @Test func formStateValidateMultipleRulesOneFails() {
+        let formState = FormState()
         let rules = [
             ValidationRule.required(field: "email"),
             ValidationRule.email(field: "email")
@@ -478,12 +477,13 @@ final class FormValidationTests: XCTestCase {
 
         let success = formState.validate("notanemail", with: rules)
 
-        XCTAssertFalse(success)
-        XCTAssertFalse(formState.isValid)
-        XCTAssertTrue(formState.hasErrors(for: "email"))
+        #expect(!success)
+        #expect(!formState.isValid)
+        #expect(formState.hasErrors(for: "email"))
     }
 
-    func testFormStateValidateMultipleRulesMultipleFail() {
+    @Test func formStateValidateMultipleRulesMultipleFail() {
+        let formState = FormState()
         let rules = [
             ValidationRule.required(field: "password"),
             ValidationRule.minLength(field: "password", length: 8),
@@ -492,76 +492,84 @@ final class FormValidationTests: XCTestCase {
 
         let success = formState.validate("abc", with: rules)
 
-        XCTAssertFalse(success)
-        XCTAssertTrue(formState.hasErrors(for: "password"))
+        #expect(!success)
+        #expect(formState.hasErrors(for: "password"))
         // Should collect all errors
-        XCTAssertGreaterThan(formState.errors(for: "password").count, 0)
+        #expect(formState.errors(for: "password").count > 0)
     }
 
     // MARK: - FormState: Field Touch Tracking Tests
 
-    func testFieldTouchTracking() {
-        XCTAssertFalse(formState.isTouched("email"))
+    @Test func fieldTouchTracking() {
+        let formState = FormState()
+        #expect(!formState.isTouched("email"))
 
         formState.touch("email")
 
-        XCTAssertTrue(formState.isTouched("email"))
+        #expect(formState.isTouched("email"))
     }
 
-    func testFieldUntouchTracking() {
+    @Test func fieldUntouchTracking() {
+        let formState = FormState()
         formState.touch("email")
-        XCTAssertTrue(formState.isTouched("email"))
+        #expect(formState.isTouched("email"))
 
         formState.untouch("email")
 
-        XCTAssertFalse(formState.isTouched("email"))
+        #expect(!formState.isTouched("email"))
     }
 
-    func testTouchAllFields() {
+    @Test func touchAllFields() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
         formState.setError(ValidationError(field: "password", type: .required, message: "Required"), for: "password")
 
         formState.touchAll()
 
-        XCTAssertTrue(formState.isTouched("email"))
-        XCTAssertTrue(formState.isTouched("password"))
+        #expect(formState.isTouched("email"))
+        #expect(formState.isTouched("password"))
     }
 
-    func testClearTouchedFields() {
+    @Test func clearTouchedFields() {
+        let formState = FormState()
         formState.touch("email")
         formState.touch("password")
 
         formState.clearTouched()
 
-        XCTAssertFalse(formState.isTouched("email"))
-        XCTAssertFalse(formState.isTouched("password"))
+        #expect(!formState.isTouched("email"))
+        #expect(!formState.isTouched("password"))
     }
 
-    func testShouldShowErrorsForUntouchedField() {
+    @Test func shouldShowErrorsForUntouchedField() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
 
-        XCTAssertFalse(formState.shouldShowErrors(for: "email"))
+        #expect(!formState.shouldShowErrors(for: "email"))
     }
 
-    func testShouldShowErrorsForTouchedField() {
+    @Test func shouldShowErrorsForTouchedField() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
         formState.touch("email")
 
-        XCTAssertTrue(formState.shouldShowErrors(for: "email"))
+        #expect(formState.shouldShowErrors(for: "email"))
     }
 
-    func testShouldShowErrorsAfterSubmission() {
+    @Test func shouldShowErrorsAfterSubmission() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
 
         // Simulate submission
         formState.showAllErrors()
 
-        XCTAssertTrue(formState.shouldShowErrors(for: "email"))
+        #expect(formState.shouldShowErrors(for: "email"))
     }
 
     // MARK: - FormState: Submission Tests
 
-    func testFormSubmissionWithValidForm() async {
+    @Test func formSubmissionWithValidForm() async {
+        let formState = FormState()
         var submitted = false
 
         formState.submit {
@@ -571,12 +579,13 @@ final class FormValidationTests: XCTestCase {
         // Wait briefly for async task
         try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
-        XCTAssertTrue(submitted)
-        XCTAssertTrue(formState.hasBeenSubmitted)
-        XCTAssertFalse(formState.isSubmitting) // Should be false after completion
+        #expect(submitted)
+        #expect(formState.hasBeenSubmitted)
+        #expect(!formState.isSubmitting) // Should be false after completion
     }
 
-    func testFormSubmissionWithInvalidForm() async {
+    @Test func formSubmissionWithInvalidForm() async {
+        let formState = FormState()
         var submitted = false
 
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
@@ -588,12 +597,13 @@ final class FormValidationTests: XCTestCase {
         // Wait briefly for async task
         try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
-        XCTAssertFalse(submitted)
-        XCTAssertTrue(formState.hasBeenSubmitted)
-        XCTAssertTrue(formState.showErrors)
+        #expect(!submitted)
+        #expect(formState.hasBeenSubmitted)
+        #expect(formState.showErrors)
     }
 
-    func testFormSubmissionMarksAllFieldsTouched() async {
+    @Test func formSubmissionMarksAllFieldsTouched() async {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
         formState.setError(ValidationError(field: "password", type: .required, message: "Required"), for: "password")
 
@@ -604,13 +614,14 @@ final class FormValidationTests: XCTestCase {
         // Wait briefly for async task
         try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
 
-        XCTAssertTrue(formState.isTouched("email"))
-        XCTAssertTrue(formState.isTouched("password"))
+        #expect(formState.isTouched("email"))
+        #expect(formState.isTouched("password"))
     }
 
     // MARK: - FormState: Reset Tests
 
-    func testFormReset() {
+    @Test func formReset() {
+        let formState = FormState()
         // Set up some state
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
         formState.touch("email")
@@ -618,17 +629,18 @@ final class FormValidationTests: XCTestCase {
 
         formState.reset()
 
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasAnyErrors)
-        XCTAssertFalse(formState.isTouched("email"))
-        XCTAssertFalse(formState.hasBeenSubmitted)
-        XCTAssertFalse(formState.showErrors)
-        XCTAssertFalse(formState.isSubmitting)
+        #expect(formState.isValid)
+        #expect(!formState.hasAnyErrors)
+        #expect(!formState.isTouched("email"))
+        #expect(!formState.hasBeenSubmitted)
+        #expect(!formState.showErrors)
+        #expect(!formState.isSubmitting)
     }
 
     // MARK: - Async Validation Tests
 
-    func testAsyncValidationSuccess() async {
+    @Test func asyncValidationSuccess() async {
+        let formState = FormState()
         let rule = AsyncValidationRule.custom(
             field: "username",
             message: "Username is taken"
@@ -643,11 +655,12 @@ final class FormValidationTests: XCTestCase {
         // Wait for validation to complete
         try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
 
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "username"))
+        #expect(formState.isValid)
+        #expect(!formState.hasErrors(for: "username"))
     }
 
-    func testAsyncValidationFailure() async {
+    @Test func asyncValidationFailure() async {
+        let formState = FormState()
         let rule = AsyncValidationRule.custom(
             field: "username",
             message: "Username is taken"
@@ -662,12 +675,13 @@ final class FormValidationTests: XCTestCase {
         // Wait for validation to complete
         try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
 
-        XCTAssertFalse(formState.isValid)
-        XCTAssertTrue(formState.hasErrors(for: "username"))
-        XCTAssertEqual(formState.firstError(for: "username"), "Username is taken")
+        #expect(!formState.isValid)
+        #expect(formState.hasErrors(for: "username"))
+        #expect(formState.firstError(for: "username") == "Username is taken")
     }
 
-    func testAsyncValidationDebouncing() async {
+    @Test func asyncValidationDebouncing() async {
+        let formState = FormState()
         nonisolated(unsafe) var callCount = 0
 
         let rule = AsyncValidationRule.custom(
@@ -689,36 +703,39 @@ final class FormValidationTests: XCTestCase {
 
         // Should have cancelled previous validations
         // Only the last one should complete
-        XCTAssertLessThan(callCount, 3)
+        #expect(callCount < 3)
     }
 
     // MARK: - Multiple Fields Tests
 
-    func testMultipleFieldValidation() {
+    @Test func multipleFieldValidation() {
+        let formState = FormState()
         let emailRule = ValidationRule.email(field: "email")
         let passwordRule = ValidationRule.minLength(field: "password", length: 8)
 
         formState.validate("user@example.com", with: emailRule)
         formState.validate("password123", with: passwordRule)
 
-        XCTAssertTrue(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "email"))
-        XCTAssertFalse(formState.hasErrors(for: "password"))
+        #expect(formState.isValid)
+        #expect(!formState.hasErrors(for: "email"))
+        #expect(!formState.hasErrors(for: "password"))
     }
 
-    func testMultipleFieldsWithMixedValidation() {
+    @Test func multipleFieldsWithMixedValidation() {
+        let formState = FormState()
         let emailRule = ValidationRule.email(field: "email")
         let passwordRule = ValidationRule.minLength(field: "password", length: 8)
 
         formState.validate("user@example.com", with: emailRule)
         formState.validate("short", with: passwordRule)
 
-        XCTAssertFalse(formState.isValid)
-        XCTAssertFalse(formState.hasErrors(for: "email"))
-        XCTAssertTrue(formState.hasErrors(for: "password"))
+        #expect(!formState.isValid)
+        #expect(!formState.hasErrors(for: "email"))
+        #expect(formState.hasErrors(for: "password"))
     }
 
-    func testBatchValidation() {
+    @Test func batchValidation() {
+        let formState = FormState()
         let validations: [String: () -> ValidationResult] = [
             "email": {
                 ValidationRule.email(field: "email").validate("user@example.com")
@@ -730,117 +747,120 @@ final class FormValidationTests: XCTestCase {
 
         let isValid = formState.validateAll(validations)
 
-        XCTAssertTrue(isValid)
-        XCTAssertTrue(formState.isValid)
+        #expect(isValid)
+        #expect(formState.isValid)
     }
 
     // MARK: - Edge Cases Tests
 
-    func testValidationWithUnicodeCharacters() {
+    @Test func validationWithUnicodeCharacters() {
         let rule = ValidationRule.minLength(field: "name", length: 3)
 
-        XCTAssertTrue(rule.validate("你好世界").isValid)
-        XCTAssertTrue(rule.validate("café").isValid)
-        XCTAssertTrue(rule.validate("🎉🎊🎈").isValid)
+        #expect(rule.validate("你好世界").isValid)
+        #expect(rule.validate("cafe\u{0301}").isValid)
+        #expect(rule.validate("\u{1F389}\u{1F38A}\u{1F388}").isValid)
     }
 
-    func testValidationWithVeryLongString() {
+    @Test func validationWithVeryLongString() {
         let longString = String(repeating: "a", count: 10000)
         let rule = ValidationRule.maxLength(field: "text", length: 5000)
 
         let result = rule.validate(longString)
 
-        XCTAssertTrue(result.isInvalid)
-        XCTAssertEqual(result.error?.type, .tooLong)
+        #expect(result.isInvalid)
+        #expect(result.error?.type == .tooLong)
     }
 
-    func testValidationWithSpecialCharacters() {
+    @Test func validationWithSpecialCharacters() {
         let rule = ValidationRule.email(field: "email")
 
-        XCTAssertTrue(rule.validate("user+tag@example.com").isValid)
-        XCTAssertTrue(rule.validate("user.name@example.com").isValid)
-        XCTAssertTrue(rule.validate("user_name@example.com").isValid)
+        #expect(rule.validate("user+tag@example.com").isValid)
+        #expect(rule.validate("user.name@example.com").isValid)
+        #expect(rule.validate("user_name@example.com").isValid)
     }
 
-    func testRangeValidationWithNegativeNumbers() {
+    @Test func rangeValidationWithNegativeNumbers() {
         let rule = ValidationRule.range(field: "temperature", min: -100, max: 100)
 
-        XCTAssertTrue(rule.validate("-50").isValid)
-        XCTAssertTrue(rule.validate("0").isValid)
-        XCTAssertTrue(rule.validate("50").isValid)
-        XCTAssertTrue(rule.validate("-101").isInvalid)
+        #expect(rule.validate("-50").isValid)
+        #expect(rule.validate("0").isValid)
+        #expect(rule.validate("50").isValid)
+        #expect(rule.validate("-101").isInvalid)
     }
 
-    func testRangeValidationWithDecimalNumbers() {
+    @Test func rangeValidationWithDecimalNumbers() {
         let rule = ValidationRule.range(field: "price", min: 0.01, max: 999.99)
 
-        XCTAssertTrue(rule.validate("0.01").isValid)
-        XCTAssertTrue(rule.validate("99.99").isValid)
-        XCTAssertTrue(rule.validate("999.99").isValid)
-        XCTAssertTrue(rule.validate("0.001").isInvalid)
-        XCTAssertTrue(rule.validate("1000.00").isInvalid)
+        #expect(rule.validate("0.01").isValid)
+        #expect(rule.validate("99.99").isValid)
+        #expect(rule.validate("999.99").isValid)
+        #expect(rule.validate("0.001").isInvalid)
+        #expect(rule.validate("1000.00").isInvalid)
     }
 
-    func testEmptyFieldValidationAcrossAllRules() {
+    @Test func emptyFieldValidationAcrossAllRules() {
         // All non-required rules should allow empty strings
-        XCTAssertTrue(ValidationRule.email(field: "email").validate("").isValid)
-        XCTAssertTrue(ValidationRule.minLength(field: "text", length: 5).validate("").isValid)
-        XCTAssertTrue(ValidationRule.maxLength(field: "text", length: 5).validate("").isValid)
-        XCTAssertTrue(ValidationRule.regex(field: "code", pattern: "\\d+", message: "").validate("").isValid)
-        XCTAssertTrue(ValidationRule.range(field: "age", min: 0, max: 100).validate("").isValid)
+        #expect(ValidationRule.email(field: "email").validate("").isValid)
+        #expect(ValidationRule.minLength(field: "text", length: 5).validate("").isValid)
+        #expect(ValidationRule.maxLength(field: "text", length: 5).validate("").isValid)
+        #expect(ValidationRule.regex(field: "code", pattern: "\\d+", message: "").validate("").isValid)
+        #expect(ValidationRule.range(field: "age", min: 0, max: 100).validate("").isValid)
     }
 
-    func testValidationErrorEquality() {
+    @Test func validationErrorEquality() {
         let error1 = ValidationError(field: "email", type: .required, message: "Required")
         let error2 = ValidationError(field: "email", type: .required, message: "Required")
 
         // Errors should not be equal due to unique UUID
-        XCTAssertNotEqual(error1.id, error2.id)
+        #expect(error1.id != error2.id)
 
         // But field and type should match
-        XCTAssertEqual(error1.field, error2.field)
-        XCTAssertEqual(error1.type, error2.type)
-        XCTAssertEqual(error1.message, error2.message)
+        #expect(error1.field == error2.field)
+        #expect(error1.type == error2.type)
+        #expect(error1.message == error2.message)
     }
 
-    func testValidationResultIsValid() {
+    @Test func validationResultIsValid() {
         let success = ValidationResult.success
         let failure = ValidationResult.failure(ValidationError(field: "test", type: .required, message: "Required"))
 
-        XCTAssertTrue(success.isValid)
-        XCTAssertFalse(success.isInvalid)
-        XCTAssertNil(success.error)
+        #expect(success.isValid)
+        #expect(!success.isInvalid)
+        #expect(success.error == nil)
 
-        XCTAssertFalse(failure.isValid)
-        XCTAssertTrue(failure.isInvalid)
-        XCTAssertNotNil(failure.error)
+        #expect(!failure.isValid)
+        #expect(failure.isInvalid)
+        #expect(failure.error != nil)
     }
 
-    func testFormStateShowAndHideErrors() {
+    @Test func formStateShowAndHideErrors() {
+        let formState = FormState()
         formState.setError(ValidationError(field: "email", type: .required, message: "Required"), for: "email")
 
-        XCTAssertFalse(formState.showErrors)
+        #expect(!formState.showErrors)
 
         formState.showAllErrors()
 
-        XCTAssertTrue(formState.showErrors)
-        XCTAssertTrue(formState.isTouched("email"))
+        #expect(formState.showErrors)
+        #expect(formState.isTouched("email"))
 
         formState.hideErrors()
 
-        XCTAssertFalse(formState.showErrors)
+        #expect(!formState.showErrors)
     }
 
-    func testFormStateValidatorConvenience() {
+    @Test func formStateValidatorConvenience() {
+        let formState = FormState()
         let rules = [ValidationRule.required(field: "name")]
         let validator = formState.validator(for: "name", rules: rules)
 
         validator("")
 
-        XCTAssertTrue(formState.hasErrors(for: "name"))
+        #expect(formState.hasErrors(for: "name"))
     }
 
-    func testFormStateAsyncValidatorConvenience() async {
+    @Test func formStateAsyncValidatorConvenience() async {
+        let formState = FormState()
         let rule = AsyncValidationRule.custom(field: "username", message: "Taken") { _ in true }
         let validator = formState.asyncValidator(for: "username", rule: rule)
 
@@ -849,12 +869,13 @@ final class FormValidationTests: XCTestCase {
         // Wait for validation
         try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
 
-        XCTAssertFalse(formState.hasErrors(for: "username"))
+        #expect(!formState.hasErrors(for: "username"))
     }
 
     // MARK: - ARIA Attributes Tests (Structural)
 
-    func testValidationModifierStructure() {
+    @Test func validationModifierStructure() {
+        let formState = FormState()
         let modifier = ValidationModifier(
             field: "email",
             rules: [.email(field: "email")],
@@ -863,12 +884,13 @@ final class FormValidationTests: XCTestCase {
             showInlineErrors: true
         )
 
-        XCTAssertEqual(modifier.field, "email")
-        XCTAssertTrue(modifier.validateOnChange)
-        XCTAssertTrue(modifier.showInlineErrors)
+        #expect(modifier.field == "email")
+        #expect(modifier.validateOnChange)
+        #expect(modifier.showInlineErrors)
     }
 
-    func testAsyncValidationModifierStructure() {
+    @Test func asyncValidationModifierStructure() {
+        let formState = FormState()
         let rule = AsyncValidationRule.custom(field: "username", message: "Taken") { _ in true }
         let modifier = AsyncValidationModifier(
             field: "username",
@@ -877,36 +899,38 @@ final class FormValidationTests: XCTestCase {
             debounce: 500
         )
 
-        XCTAssertEqual(modifier.field, "username")
-        XCTAssertEqual(modifier.debounce, 500)
+        #expect(modifier.field == "username")
+        #expect(modifier.debounce == 500)
     }
 
-    func testValidationARIAModifierStructure() {
+    @Test func validationARIAModifierStructure() {
+        let formState = FormState()
         let modifier = ValidationARIAModifier(
             field: "email",
             formState: formState
         )
 
-        XCTAssertEqual(modifier.field, "email")
+        #expect(modifier.field == "email")
     }
 
-    func testValidationMessageModifierStructure() {
+    @Test func validationMessageModifierStructure() {
+        let formState = FormState()
         let modifier = ValidationMessageModifier(
             field: "email",
             formState: formState,
             style: .default
         )
 
-        XCTAssertEqual(modifier.field, "email")
+        #expect(modifier.field == "email")
     }
 
-    func testValidationMessageStyleDefault() {
+    @Test func validationMessageStyleDefault() {
         let style = ValidationMessageStyle.default
-        XCTAssertEqual(style.color, .red)
+        #expect(style.color == .red)
     }
 
-    func testValidationMessageStyleCustom() {
+    @Test func validationMessageStyleCustom() {
         let style = ValidationMessageStyle.custom(color: .blue)
-        XCTAssertEqual(style.color, .blue)
+        #expect(style.color == .blue)
     }
 }

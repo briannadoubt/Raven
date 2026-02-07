@@ -181,12 +181,12 @@ public final class DeepLinkHandler {
     /// Call this method from your app's entry point to handle deep links
     /// that open the app.
     ///
+    /// - Parameter currentPath: The current URL path to process (defaults to `NavigationHistory.shared.getCurrentPath()`)
     /// - Returns: The result of processing the initial URL, or nil if none
-    public func processInitialURL() -> ProcessingResult? {
+    public func processInitialURL(currentPath: String? = nil) -> ProcessingResult? {
         guard shouldHandleInitialURL else { return nil }
 
-        // Get current URL from NavigationHistory
-        let currentPath = NavigationHistory.shared.getCurrentPath()
+        let currentPath = currentPath ?? NavigationHistory.shared.getCurrentPath()
         guard !currentPath.isEmpty && currentPath != "/" else {
             return nil
         }

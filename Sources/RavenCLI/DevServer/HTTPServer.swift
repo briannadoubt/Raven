@@ -17,6 +17,9 @@ actor HTTPServer {
     /// Hot reload server port
     private let hotReloadPort: Int
 
+    /// Pre-generated HTML content to serve for index.html requests
+    private let generatedHTML: String?
+
     /// Network listener
     #if canImport(Network)
     private var listener: NWListener?
@@ -47,11 +50,12 @@ actor HTTPServer {
     ///   - serveDirectory: Directory containing files to serve
     ///   - injectHotReload: Whether to inject hot reload script into HTML
     ///   - hotReloadPort: Port of the hot reload WebSocket server
-    init(port: Int, serveDirectory: String, injectHotReload: Bool = true, hotReloadPort: Int = 35729) {
+    init(port: Int, serveDirectory: String, injectHotReload: Bool = true, hotReloadPort: Int = 35729, generatedHTML: String? = nil) {
         self.port = port
         self.serveDirectory = serveDirectory
         self.injectHotReload = injectHotReload
         self.hotReloadPort = hotReloadPort
+        self.generatedHTML = generatedHTML
     }
 
     /// Start the HTTP server
@@ -121,26 +125,26 @@ actor HTTPServer {
 
     /// Process HTTP request
     private func processRequest(connection: NWConnection, data: Data?, isComplete: Bool, error: Error?) {
-        defer {
-            connection.cancel()
-        }
-
         guard error == nil, let data = data else {
+            connection.cancel()
             return
         }
 
         guard let requestString = String(data: data, encoding: .utf8) else {
+            connection.cancel()
             return
         }
 
         // Parse request line
         let lines = requestString.components(separatedBy: "\r\n")
         guard let requestLine = lines.first else {
+            connection.cancel()
             return
         }
 
         let components = requestLine.components(separatedBy: " ")
         guard components.count >= 2 else {
+            connection.cancel()
             return
         }
 
@@ -163,6 +167,36 @@ actor HTTPServer {
             path = "/index.html"
         }
 
+        // Serve generated HTML for index.html if available
+        if path == "/index.html", let html = generatedHTML {
+            let contentType = "text/html; charset=utf-8"
+            guard let bodyData = html.data(using: .utf8) else {
+                sendResponse(connection: connection, status: 500, statusText: "Internal Server Error", body: nil)
+                return
+            }
+
+            let headers = """
+            HTTP/1.1 200 OK\r
+            Content-Type: \(contentType)\r
+            Content-Length: \(bodyData.count)\r
+            Cache-Control: no-cache, no-store, must-revalidate\r
+            Connection: close\r
+            \r
+
+            """
+
+            guard let headerData = headers.data(using: .utf8) else { return }
+
+            var fullResponse = Data()
+            fullResponse.append(headerData)
+            fullResponse.append(bodyData)
+
+            connection.send(content: fullResponse, completion: .contentProcessed { _ in
+                connection.cancel()
+            })
+            return
+        }
+
         // Construct file path
         let filePath = (serveDirectory as NSString).appendingPathComponent(path)
 
@@ -172,15 +206,36 @@ actor HTTPServer {
             return
         }
 
-        // Check if file exists
+        // Check if file exists, with fallback for .wasm files from build output
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: filePath) else {
-            sendResponse(connection: connection, status: 404, statusText: "Not Found", body: nil)
-            return
+        var resolvedFilePath = filePath
+        if !fileManager.fileExists(atPath: resolvedFilePath) {
+            // Fallback: check build output directory for .wasm files
+            let pathExtension = (path as NSString).pathExtension
+            if pathExtension == "wasm" {
+                let fileName = (path as NSString).lastPathComponent
+                let projectRoot = (serveDirectory as NSString).deletingLastPathComponent
+                let candidatePaths = [
+                    (projectRoot as NSString).appendingPathComponent(".build/wasm32-unknown-wasip1/debug/\(fileName)"),
+                    (projectRoot as NSString).appendingPathComponent(".build/wasm32-unknown-wasip1/release/\(fileName)"),
+                    (projectRoot as NSString).appendingPathComponent(".build/debug/\(fileName)"),
+                    (projectRoot as NSString).appendingPathComponent(".build/release/\(fileName)"),
+                ]
+
+                if let found = candidatePaths.first(where: { fileManager.fileExists(atPath: $0) }) {
+                    resolvedFilePath = found
+                } else {
+                    sendResponse(connection: connection, status: 404, statusText: "Not Found", body: nil)
+                    return
+                }
+            } else {
+                sendResponse(connection: connection, status: 404, statusText: "Not Found", body: nil)
+                return
+            }
         }
 
         // Read file
-        guard let fileData = try? Data(contentsOf: URL(fileURLWithPath: filePath)) else {
+        guard let fileData = try? Data(contentsOf: URL(fileURLWithPath: resolvedFilePath)) else {
             sendResponse(connection: connection, status: 500, statusText: "Internal Server Error", body: nil)
             return
         }
@@ -203,7 +258,7 @@ actor HTTPServer {
                     eventSource.addEventListener('message', function(e) {
                         console.log('[Hot Reload]', e.data);
 
-                        if (e.data === 'reload') {
+                        if (e.data === 'reload' || e.data.startsWith('reload_metrics:')) {
                             console.log('[Hot Reload] Reloading page...');
                             window.location.reload();
                         } else if (e.data.startsWith('error:')) {
@@ -256,7 +311,9 @@ actor HTTPServer {
         fullResponse.append(headerData)
         fullResponse.append(responseData)
 
-        connection.send(content: fullResponse, completion: .contentProcessed { _ in })
+        connection.send(content: fullResponse, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
     }
 
     /// Send HTTP response
@@ -274,6 +331,7 @@ actor HTTPServer {
         """
 
         guard let headerData = headers.data(using: .utf8) else {
+            connection.cancel()
             return
         }
 
@@ -283,7 +341,9 @@ actor HTTPServer {
             fullResponse.append(bodyData)
         }
 
-        connection.send(content: fullResponse, completion: .contentProcessed { _ in })
+        connection.send(content: fullResponse, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
     }
     #endif
 }

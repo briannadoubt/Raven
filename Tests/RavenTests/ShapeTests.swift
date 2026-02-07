@@ -2,6 +2,7 @@ import Testing
 @testable import Raven
 
 /// Tests for the Shape protocol and related functionality
+@MainActor
 struct ShapeTests {
     // MARK: - ShapeStyle Protocol Tests
 

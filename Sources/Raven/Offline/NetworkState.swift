@@ -95,17 +95,23 @@ public final class NetworkState: @unchecked Sendable {
     // MARK: - Initialization
 
     private init() {
+        #if arch(wasm32)
         // Initialize with current navigator.onLine status
         self.isOnline = JSObject.global.navigator.onLine.boolean ?? true
+        #else
+        self.isOnline = true
+        #endif
         self.connectionType = .unknown
         self.effectiveType = .unknown
         self.saveData = false
 
+        #if arch(wasm32)
         // Update connection info from Network Information API
         updateConnectionInfo()
 
         // Set up event listeners
         setupEventListeners()
+        #endif
     }
 
     // MARK: - Public API

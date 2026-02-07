@@ -2,10 +2,6 @@ import Foundation
 import Raven
 import JavaScriptKit
 
-// Import Raven's ObservableObject explicitly to avoid ambiguity with Foundation
-typealias ObservableObject = Foundation.ObservableObject
-typealias Published = Raven.Published
-
 // MARK: - Unique ID Generation
 
 /// Counter-based UUID generator for WASM

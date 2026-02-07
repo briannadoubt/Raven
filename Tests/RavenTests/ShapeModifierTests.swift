@@ -2,6 +2,7 @@ import Testing
 @testable import Raven
 
 /// Tests for shape modifiers including StrokeStyle and trim functionality
+@MainActor
 struct ShapeModifierTests {
     // MARK: - Test Shape
 

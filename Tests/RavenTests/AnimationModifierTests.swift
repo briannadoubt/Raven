@@ -10,6 +10,7 @@ import Testing
 /// - VNode property generation
 /// - Animation timing and parameters
 /// - Animation nesting and stacking
+@MainActor
 @Suite("Animation Modifier Tests")
 struct AnimationModifierTests {
 

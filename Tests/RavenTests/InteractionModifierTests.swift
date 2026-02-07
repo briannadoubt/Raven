@@ -1,23 +1,24 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for interaction modifiers: .disabled, .onTapGesture, .onAppear, .onDisappear, .onChange
-final class InteractionModifierTests: XCTestCase {
+@MainActor
+@Suite struct InteractionModifierTests {
 
     // MARK: - Disabled Modifier Tests
 
     @MainActor
-    func testDisabledModifier() {
+    @Test func disabledModifier() {
         // Create a view with disabled modifier
         let view = Text("Button")
             .disabled(true)
 
         // Verify the type is correct
-        XCTAssertTrue(view is _DisabledView<Text>)
+        #expect(view is _DisabledView<Text>)
     }
 
     @MainActor
-    func testDisabledModifierVNode() {
+    @Test func disabledModifierVNode() {
         // Create a disabled view
         let view = Text("Content")
             .disabled(true)
@@ -26,24 +27,24 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's a div element (wrapper)
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify the props contain disabled styling
-        XCTAssertTrue(vnode.props.contains { key, value in
+        #expect(vnode.props.contains { key, value in
             if case .style(let name, let val) = value {
                 return name == "pointer-events" && val == "none"
             }
             return false
         })
 
-        XCTAssertTrue(vnode.props.contains { key, value in
+        #expect(vnode.props.contains { key, value in
             if case .style(let name, let val) = value {
                 return name == "opacity" && val == "0.5"
             }
             return false
         })
 
-        XCTAssertTrue(vnode.props.contains { key, value in
+        #expect(vnode.props.contains { key, value in
             if case .style(let name, let val) = value {
                 return name == "cursor" && val == "not-allowed"
             }
@@ -52,7 +53,7 @@ final class InteractionModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testDisabledModifierWhenFalse() {
+    @Test func disabledModifierWhenFalse() {
         // Create a non-disabled view
         let view = Text("Content")
             .disabled(false)
@@ -61,11 +62,11 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // When disabled is false, it should still create a wrapper but without the disabled styles
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
     }
 
     @MainActor
-    func testDisabledWithButton() {
+    @Test func disabledWithButton() {
         // Create a button with disabled modifier
         let view = Button("Submit") { }
             .disabled(true)
@@ -77,7 +78,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - OnTapGesture Modifier Tests
 
     @MainActor
-    func testOnTapGestureModifier() {
+    @Test func onTapGestureModifier() {
         var tapped = false
 
         // Create a view with tap gesture
@@ -87,11 +88,11 @@ final class InteractionModifierTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _OnTapGestureView<Text>)
+        #expect(view is _OnTapGestureView<Text>)
     }
 
     @MainActor
-    func testOnTapGestureVNode() {
+    @Test func onTapGestureVNode() {
         // Create a view with tap gesture
         let view = Text("Tap me")
             .onTapGesture {
@@ -102,7 +103,7 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's a div element (wrapper with event handler)
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify it has an event handler property
         let hasClickHandler = vnode.props.contains { key, value in
@@ -111,11 +112,11 @@ final class InteractionModifierTests: XCTestCase {
             }
             return false
         }
-        XCTAssertTrue(hasClickHandler)
+        #expect(hasClickHandler)
     }
 
     @MainActor
-    func testOnTapGestureWithCount() {
+    @Test func onTapGestureWithCount() {
         // Create a view with double-tap gesture
         let view = Text("Double tap me")
             .onTapGesture(count: 2) {
@@ -127,7 +128,7 @@ final class InteractionModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testOnTapGestureWithImage() {
+    @Test func onTapGestureWithImage() {
         // Test tap gesture on non-text view
         let view = Image(systemName: "star")
             .onTapGesture {
@@ -141,7 +142,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - OnAppear Modifier Tests
 
     @MainActor
-    func testOnAppearModifier() {
+    @Test func onAppearModifier() {
         var appeared = false
 
         // Create a view with onAppear
@@ -151,11 +152,11 @@ final class InteractionModifierTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _OnAppearView<Text>)
+        #expect(view is _OnAppearView<Text>)
     }
 
     @MainActor
-    func testOnAppearVNode() {
+    @Test func onAppearVNode() {
         // Create a view with onAppear
         let view = Text("Content")
             .onAppear {
@@ -166,7 +167,7 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's a div element with lifecycle handler
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify it has an appear event handler
         let hasAppearHandler = vnode.props.contains { key, value in
@@ -175,13 +176,13 @@ final class InteractionModifierTests: XCTestCase {
             }
             return false
         }
-        XCTAssertTrue(hasAppearHandler)
+        #expect(hasAppearHandler)
     }
 
     // MARK: - OnDisappear Modifier Tests
 
     @MainActor
-    func testOnDisappearModifier() {
+    @Test func onDisappearModifier() {
         var disappeared = false
 
         // Create a view with onDisappear
@@ -191,11 +192,11 @@ final class InteractionModifierTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _OnDisappearView<Text>)
+        #expect(view is _OnDisappearView<Text>)
     }
 
     @MainActor
-    func testOnDisappearVNode() {
+    @Test func onDisappearVNode() {
         // Create a view with onDisappear
         let view = Text("Content")
             .onDisappear {
@@ -206,7 +207,7 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's a div element with lifecycle handler
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify it has a disappear event handler
         let hasDisappearHandler = vnode.props.contains { key, value in
@@ -215,11 +216,11 @@ final class InteractionModifierTests: XCTestCase {
             }
             return false
         }
-        XCTAssertTrue(hasDisappearHandler)
+        #expect(hasDisappearHandler)
     }
 
     @MainActor
-    func testOnAppearAndOnDisappearTogether() {
+    @Test func onAppearAndOnDisappearTogether() {
         // Test using both lifecycle modifiers
         let view = Text("Content")
             .onAppear {
@@ -236,7 +237,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - OnChange Modifier Tests
 
     @MainActor
-    func testOnChangeModifier() {
+    @Test func onChangeModifier() {
         let value = "test"
         var changedValue: String?
 
@@ -247,11 +248,11 @@ final class InteractionModifierTests: XCTestCase {
             }
 
         // Verify the type is correct
-        XCTAssertTrue(view is _OnChangeView<Text, String>)
+        #expect(view is _OnChangeView<Text, String>)
     }
 
     @MainActor
-    func testOnChangeVNode() {
+    @Test func onChangeVNode() {
         let value = 42
 
         // Create a view with onChange
@@ -264,7 +265,7 @@ final class InteractionModifierTests: XCTestCase {
         let vnode = view.toVNode()
 
         // Verify it's a div element
-        XCTAssertEqual(vnode.elementTag, "div")
+        #expect(vnode.elementTag == "div")
 
         // Verify it has change tracking attributes
         let hasChangeHandler = vnode.props.contains { key, value in
@@ -273,11 +274,11 @@ final class InteractionModifierTests: XCTestCase {
             }
             return false
         }
-        XCTAssertTrue(hasChangeHandler)
+        #expect(hasChangeHandler)
     }
 
     @MainActor
-    func testOnChangeWithDifferentTypes() {
+    @Test func onChangeWithDifferentTypes() {
         // Test onChange with Int
         let intView = Text("Int")
             .onChange(of: 10) { newValue in
@@ -303,7 +304,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - Modifier Composition Tests
 
     @MainActor
-    func testModifierComposition() {
+    @Test func modifierComposition() {
         // Test chaining multiple interaction modifiers
         let view = Text("Content")
             .onAppear {
@@ -319,7 +320,7 @@ final class InteractionModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testInteractionModifiersWithLayoutModifiers() {
+    @Test func interactionModifiersWithLayoutModifiers() {
         // Mix interaction modifiers with layout modifiers
         let view = Text("Content")
             .padding(10)
@@ -335,7 +336,7 @@ final class InteractionModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testComplexModifierChain() {
+    @Test func complexModifierChain() {
         // Create a complex chain of modifiers
         let view = Button("Action") { }
             .padding()
@@ -358,7 +359,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - Sendable Conformance Tests
 
     @MainActor
-    func testInteractionModifiersAreSendable() {
+    @Test func interactionModifiersAreSendable() {
         // Verify that interaction views conform to Sendable
         let disabledView: any View & Sendable = Text("Test").disabled(true)
         let tapView: any View & Sendable = Text("Test").onTapGesture { }
@@ -377,7 +378,7 @@ final class InteractionModifierTests: XCTestCase {
     // MARK: - Edge Cases
 
     @MainActor
-    func testDisabledWithComplexView() {
+    @Test func disabledWithComplexView() {
         // Test disabled on a complex view hierarchy
         let view = VStack {
             Text("Title")
@@ -394,7 +395,7 @@ final class InteractionModifierTests: XCTestCase {
     }
 
     @MainActor
-    func testOnChangeWithOptionalValue() {
+    @Test func onChangeWithOptionalValue() {
         // Test onChange with optional values
         let value: Int? = 42
 

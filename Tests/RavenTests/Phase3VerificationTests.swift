@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 import RavenRuntime
 
@@ -20,11 +21,11 @@ typealias ObservedObject = Raven.ObservedObject
 /// 7. Toggle provides boolean two-way binding
 /// 8. Complete Todo app integration works end-to-end
 @MainActor
-final class Phase3VerificationTests: XCTestCase {
+@Suite struct Phase3VerificationTests {
 
     // MARK: - Test 1: ObservableObject Tests
 
-    func testObservableObjectConformance() async throws {
+    @Test func observableObjectConformance() async throws {
         // Create a simple observable object
         class Counter: ObservableObject {
             @Published var count: Int = 0
@@ -37,10 +38,10 @@ final class Phase3VerificationTests: XCTestCase {
         let counter = Counter()
 
         // Verify it has an objectWillChange publisher
-        XCTAssertNotNil(counter.objectWillChange, "ObservableObject should have objectWillChange publisher")
+        #expect(counter.objectWillChange != nil)
     }
 
-    func testObservableObjectPublisherFiresOnChange() async throws {
+    @Test func observableObjectPublisherFiresOnChange() async throws {
         class TestModel: ObservableObject {
             @Published var value: String = ""
 
@@ -58,18 +59,18 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         // Initial state
-        XCTAssertEqual(changeCount, 0)
+        #expect(changeCount == 0)
 
         // Change the published property
         model.value = "new"
-        XCTAssertEqual(changeCount, 1, "objectWillChange should fire when @Published property changes")
+        #expect(changeCount == 1)
 
         // Change again
         model.value = "another"
-        XCTAssertEqual(changeCount, 2)
+        #expect(changeCount == 2)
     }
 
-    func testObservableObjectWithMultiplePublishedProperties() async throws {
+    @Test func observableObjectWithMultiplePublishedProperties() async throws {
         class UserSettings: ObservableObject {
             @Published var username: String = ""
             @Published var age: Int = 0
@@ -89,16 +90,16 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Changes to any @Published property should trigger objectWillChange
         settings.username = "alice"
-        XCTAssertEqual(changeCount, 1)
+        #expect(changeCount == 1)
 
         settings.age = 30
-        XCTAssertEqual(changeCount, 2)
+        #expect(changeCount == 2)
 
         settings.isActive = true
-        XCTAssertEqual(changeCount, 3)
+        #expect(changeCount == 3)
     }
 
-    func testPublishedPropertyProjectedValue() async throws {
+    @Test func publishedPropertyProjectedValue() async throws {
         class DataStore: ObservableObject {
             @Published var text: String = "initial"
 
@@ -111,16 +112,16 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Access projected value to get a Binding
         let binding = store.$text
-        XCTAssertEqual(binding.wrappedValue, "initial")
+        #expect(binding.wrappedValue == "initial")
 
         // Modify through binding
         binding.wrappedValue = "updated"
-        XCTAssertEqual(store.text, "updated")
+        #expect(store.text == "updated")
     }
 
     // MARK: - Test 2: @StateObject Tests
 
-    func testStateObjectCreatesObjectLazily() async throws {
+    @Test func stateObjectCreatesObjectLazily() async throws {
         class LazyModel: ObservableObject {
             static var instanceCount = 0
             let id: Int
@@ -147,19 +148,19 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Creating the view shouldn't create the object yet
         let view = TestView()
-        XCTAssertEqual(LazyModel.instanceCount, 0, "Object should not be created until accessed")
+        #expect(LazyModel.instanceCount == 0)
 
         // Accessing wrappedValue should create it
         let model = view.$model
-        XCTAssertEqual(LazyModel.instanceCount, 1, "Object should be created on first access")
+        #expect(LazyModel.instanceCount == 1)
 
         // Accessing again shouldn't create another
         let model2 = view.$model
-        XCTAssertEqual(LazyModel.instanceCount, 1, "Same object should be reused")
-        XCTAssertEqual(model.id, model2.id, "Should return the same instance")
+        #expect(LazyModel.instanceCount == 1)
+        #expect(model.id == model2.id)
     }
 
-    func testStateObjectTriggersViewUpdates() async throws {
+    @Test func stateObjectTriggersViewUpdates() async throws {
         class ViewModel: ObservableObject {
             @Published var count: Int = 0
 
@@ -194,12 +195,12 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         // Changes should trigger updates
-        XCTAssertEqual(updateCount, 0)
+        #expect(updateCount == 0)
         model.increment()
-        XCTAssertEqual(updateCount, 1, "Changes to @Published properties should trigger view updates")
+        #expect(updateCount == 1)
     }
 
-    func testStateObjectProjectedValue() async throws {
+    @Test func stateObjectProjectedValue() async throws {
         class SharedModel: ObservableObject {
             @Published var name: String = "test"
 
@@ -222,12 +223,12 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Projected value should return the object itself for passing to children
         let projectedModel = parent.$model
-        XCTAssertTrue(type(of: projectedModel) == SharedModel.self, "Projected value should be the object")
+        #expect(type(of: projectedModel) == SharedModel.self)
     }
 
     // MARK: - Test 3: @ObservedObject Tests
 
-    func testObservedObjectDoesNotOwnObject() async throws {
+    @Test func observedObjectDoesNotOwnObject() async throws {
         class ExternalModel: ObservableObject {
             @Published var value: Int = 0
 
@@ -250,13 +251,13 @@ final class Phase3VerificationTests: XCTestCase {
         let child = ChildView(model: externalModel)
 
         // Child should observe the same object
-        XCTAssertEqual(child.model.value, 0)
+        #expect(child.model.value == 0)
 
         externalModel.value = 42
-        XCTAssertEqual(child.model.value, 42, "ObservedObject should reflect changes to external object")
+        #expect(child.model.value == 42)
     }
 
-    func testObservedObjectTriggersViewUpdates() async throws {
+    @Test func observedObjectTriggersViewUpdates() async throws {
         class DataModel: ObservableObject {
             @Published var text: String = ""
 
@@ -284,12 +285,12 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         // Changes to observed object should trigger updates
-        XCTAssertEqual(updateCount, 0)
+        #expect(updateCount == 0)
         data.text = "changed"
-        XCTAssertEqual(updateCount, 1, "Changes should trigger view updates")
+        #expect(updateCount == 1)
     }
 
-    func testObservedObjectParentChildFlow() async throws {
+    @Test func observedObjectParentChildFlow() async throws {
         class AppState: ObservableObject {
             @Published var message: String = "Hello"
 
@@ -325,15 +326,15 @@ final class Phase3VerificationTests: XCTestCase {
         let child = ChildView(appState: parentState)
 
         // Verify they share the same object
-        XCTAssertEqual(child.appState.message, "Hello")
+        #expect(child.appState.message == "Hello")
 
         parentState.message = "Updated"
-        XCTAssertEqual(child.appState.message, "Updated", "Child should observe parent's object")
+        #expect(child.appState.message == "Updated")
     }
 
     // MARK: - Test 4: ForEach Tests
 
-    func testForEachWithIdentifiableItems() async throws {
+    @Test func forEachWithIdentifiableItems() async throws {
         struct Item: Identifiable, Sendable {
             let id: UUID
             let name: String
@@ -351,10 +352,10 @@ final class Phase3VerificationTests: XCTestCase {
 
         // ForEach should have a body that can be accessed
         let body = forEach.body
-        XCTAssertNotNil(body, "ForEach should have a body")
+        #expect(body != nil)
     }
 
-    func testForEachWithCustomIDKeyPath() async throws {
+    @Test func forEachWithCustomIDKeyPath() async throws {
         struct Item: Sendable {
             let name: String
             let value: Int
@@ -371,21 +372,21 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         let body = forEach.body
-        XCTAssertNotNil(body)
+        #expect(body != nil)
     }
 
-    func testForEachWithRange() async throws {
+    @Test func forEachWithRange() async throws {
         let forEach = ForEach(0..<5) { index in
             Text("Item \(index)")
         }
 
         let body = forEach.body
-        XCTAssertNotNil(body)
+        #expect(body != nil)
     }
 
     // MARK: - Test 5: List Tests
 
-    func testListWithStaticContent() async throws {
+    @Test func listWithStaticContent() async throws {
         let list = List {
             Text("Item 1")
             Text("Item 2")
@@ -395,15 +396,15 @@ final class Phase3VerificationTests: XCTestCase {
         let vnode = list.toVNode()
 
         // List should create a div with role="list"
-        XCTAssertTrue(vnode.isElement(tag: "div"), "List should create a div element")
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "list"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "list"))
 
         // Verify layout styles
-        XCTAssertEqual(vnode.props["display"], .style(name: "display", value: "flex"))
-        XCTAssertEqual(vnode.props["flex-direction"], .style(name: "flex-direction", value: "column"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
+        #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
     }
 
-    func testListWithForEach() async throws {
+    @Test func listWithForEach() async throws {
         struct Item: Identifiable, Sendable {
             let id: Int
             let title: String
@@ -421,11 +422,11 @@ final class Phase3VerificationTests: XCTestCase {
         let vnode = list.toVNode()
 
         // Verify List structure
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "list"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "list"))
     }
 
-    func testListHTMLStructure() async throws {
+    @Test func listHTMLStructure() async throws {
         let list = List {
             Text("Content")
         }
@@ -433,20 +434,18 @@ final class Phase3VerificationTests: XCTestCase {
         let vnode = list.toVNode()
 
         // Verify accessibility attributes
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "list"),
-                      "List should have role='list' for accessibility")
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "list"))
 
         // Verify scrolling
-        XCTAssertEqual(vnode.props["overflow-y"], .style(name: "overflow-y", value: "auto"),
-                      "List should be scrollable")
+        #expect(vnode.props["overflow-y"] == .style(name: "overflow-y", value: "auto"))
 
         // Verify width
-        XCTAssertEqual(vnode.props["width"], .style(name: "width", value: "100%"))
+        #expect(vnode.props["width"] == .style(name: "width", value: "100%"))
     }
 
     // MARK: - Test 6: TextField Tests
 
-    func testTextFieldWithBinding() async throws {
+    @Test func textFieldWithBinding() async throws {
         let state = State(wrappedValue: "initial")
         let binding = state.projectedValue
 
@@ -455,37 +454,37 @@ final class Phase3VerificationTests: XCTestCase {
         let vnode = textField.toVNode()
 
         // Verify input element
-        XCTAssertTrue(vnode.isElement(tag: "input"), "TextField should create an input element")
-        XCTAssertEqual(vnode.props["type"], .attribute(name: "type", value: "text"))
+        #expect(vnode.isElement(tag: "input"))
+        #expect(vnode.props["type"] == .attribute(name: "type", value: "text"))
 
         // Verify placeholder
-        XCTAssertEqual(vnode.props["placeholder"], .attribute(name: "placeholder", value: "Placeholder"))
+        #expect(vnode.props["placeholder"] == .attribute(name: "placeholder", value: "Placeholder"))
 
         // Verify value reflects binding
-        XCTAssertEqual(vnode.props["value"], .attribute(name: "value", value: "initial"))
+        #expect(vnode.props["value"] == .attribute(name: "value", value: "initial"))
 
         // Verify event handler exists
-        XCTAssertNotNil(vnode.props["onInput"], "TextField should have input event handler")
+        #expect(vnode.props["onInput"] != nil)
     }
 
-    func testTextFieldTwoWayBinding() async throws {
+    @Test func textFieldTwoWayBinding() async throws {
         let state = State(wrappedValue: "")
         let binding = state.projectedValue
 
         // Verify binding works both ways
-        XCTAssertEqual(binding.wrappedValue, "")
+        #expect(binding.wrappedValue == "")
 
         // Simulate user input
         binding.wrappedValue = "user typed this"
-        XCTAssertEqual(state.wrappedValue, "user typed this", "Binding should update state")
+        #expect(state.wrappedValue == "user typed this")
 
         // Create new textfield to verify value updated
         let textField2 = TextField("Enter text", text: binding)
         let vnode = textField2.toVNode()
-        XCTAssertEqual(vnode.props["value"], .attribute(name: "value", value: "user typed this"))
+        #expect(vnode.props["value"] == .attribute(name: "value", value: "user typed this"))
     }
 
-    func testTextFieldEventHandling() async throws {
+    @Test func textFieldEventHandling() async throws {
         let state = State(wrappedValue: "")
         let textField = TextField("Test", text: state.projectedValue)
 
@@ -493,17 +492,17 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Extract event handler
         guard case .eventHandler(let event, let handlerID) = vnode.props["onInput"] else {
-            XCTFail("TextField should have onInput event handler")
+            Issue.record("TextField should have onInput event handler")
             return
         }
 
-        XCTAssertEqual(event, "input", "Event should be 'input'")
-        XCTAssertNotNil(handlerID, "Handler should have a unique ID")
+        #expect(event == "input")
+        #expect(handlerID != nil)
     }
 
     // MARK: - Test 7: Toggle Tests
 
-    func testToggleWithBinding() async throws {
+    @Test func toggleWithBinding() async throws {
         let state = State(wrappedValue: false)
         let binding = state.projectedValue
 
@@ -512,25 +511,24 @@ final class Phase3VerificationTests: XCTestCase {
         let vnode = toggle.toVNode()
 
         // Toggle renders as a label element
-        XCTAssertTrue(vnode.isElement(tag: "label"), "Toggle should create a label element")
+        #expect(vnode.isElement(tag: "label"))
 
         // Should contain an input checkbox
-        XCTAssertGreaterThan(vnode.children.count, 0, "Toggle should have children")
+        #expect(vnode.children.count > 0)
 
         let checkboxNode = vnode.children[0]
-        XCTAssertTrue(checkboxNode.isElement(tag: "input"), "First child should be input")
-        XCTAssertEqual(checkboxNode.props["type"], .attribute(name: "type", value: "checkbox"))
+        #expect(checkboxNode.isElement(tag: "input"))
+        #expect(checkboxNode.props["type"] == .attribute(name: "type", value: "checkbox"))
     }
 
-    func testToggleCheckedState() async throws {
+    @Test func toggleCheckedState() async throws {
         let stateOn = State(wrappedValue: true)
         let toggleOn = Toggle("On", isOn: stateOn.projectedValue)
 
         let vnodeOn = toggleOn.toVNode()
         let checkboxOn = vnodeOn.children[0]
 
-        XCTAssertEqual(checkboxOn.props["checked"], .boolAttribute(name: "checked", value: true),
-                      "Toggle should reflect checked state")
+        #expect(checkboxOn.props["checked"] == .boolAttribute(name: "checked", value: true))
 
         let stateOff = State(wrappedValue: false)
         let toggleOff = Toggle("Off", isOn: stateOff.projectedValue)
@@ -538,11 +536,10 @@ final class Phase3VerificationTests: XCTestCase {
         let vnodeOff = toggleOff.toVNode()
         let checkboxOff = vnodeOff.children[0]
 
-        XCTAssertEqual(checkboxOff.props["checked"], .boolAttribute(name: "checked", value: false),
-                      "Toggle should reflect unchecked state")
+        #expect(checkboxOff.props["checked"] == .boolAttribute(name: "checked", value: false))
     }
 
-    func testToggleChangeEventHandling() async throws {
+    @Test func toggleChangeEventHandling() async throws {
         let state = State(wrappedValue: false)
         let toggle = Toggle("Test", isOn: state.projectedValue)
 
@@ -551,25 +548,25 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Verify change event handler
         guard case .eventHandler(let event, let handlerID) = checkboxNode.props["onChange"] else {
-            XCTFail("Toggle should have onChange event handler")
+            Issue.record("Toggle should have onChange event handler")
             return
         }
 
-        XCTAssertEqual(event, "change", "Event should be 'change'")
-        XCTAssertNotNil(handlerID)
+        #expect(event == "change")
+        #expect(handlerID != nil)
 
         // Test the change handler
         let changeHandler = toggle.changeHandler
-        XCTAssertEqual(state.wrappedValue, false)
+        #expect(state.wrappedValue == false)
 
         changeHandler()
-        XCTAssertEqual(state.wrappedValue, true, "Change handler should toggle the value")
+        #expect(state.wrappedValue == true)
 
         changeHandler()
-        XCTAssertEqual(state.wrappedValue, false, "Change handler should toggle back")
+        #expect(state.wrappedValue == false)
     }
 
-    func testToggleAccessibilityAttributes() async throws {
+    @Test func toggleAccessibilityAttributes() async throws {
         let state = State(wrappedValue: true)
         let toggle = Toggle("Accessible", isOn: state.projectedValue)
 
@@ -577,13 +574,13 @@ final class Phase3VerificationTests: XCTestCase {
         let checkboxNode = vnode.children[0]
 
         // Verify ARIA attributes
-        XCTAssertEqual(checkboxNode.props["role"], .attribute(name: "role", value: "switch"))
-        XCTAssertEqual(checkboxNode.props["aria-checked"], .attribute(name: "aria-checked", value: "true"))
+        #expect(checkboxNode.props["role"] == .attribute(name: "role", value: "switch"))
+        #expect(checkboxNode.props["aria-checked"] == .attribute(name: "aria-checked", value: "true"))
     }
 
     // MARK: - Test 8: Complete Todo App Integration
 
-    func testTodoItemModel() async throws {
+    @Test func todoItemModel() async throws {
         struct TodoItem: Identifiable, Sendable {
             let id: UUID
             var title: String
@@ -592,12 +589,12 @@ final class Phase3VerificationTests: XCTestCase {
 
         let item = TodoItem(id: UUID(), title: "Buy milk", isCompleted: false)
 
-        XCTAssertNotNil(item.id)
-        XCTAssertEqual(item.title, "Buy milk")
-        XCTAssertFalse(item.isCompleted)
+        #expect(item.id != nil)
+        #expect(item.title == "Buy milk")
+        #expect(!item.isCompleted)
     }
 
-    func testTodoStoreAsObservableObject() async throws {
+    @Test func todoStoreAsObservableObject() async throws {
         struct TodoItem: Identifiable, Sendable {
             let id: UUID
             var title: String
@@ -630,19 +627,19 @@ final class Phase3VerificationTests: XCTestCase {
             changeCount += 1
         }
 
-        XCTAssertEqual(store.todos.count, 0)
+        #expect(store.todos.count == 0)
 
         store.addTodo(title: "Test task")
-        XCTAssertEqual(store.todos.count, 1)
-        XCTAssertEqual(changeCount, 1, "Adding todo should trigger objectWillChange")
+        #expect(store.todos.count == 1)
+        #expect(changeCount == 1)
 
         let todoID = store.todos[0].id
         store.toggleTodo(id: todoID)
-        XCTAssertTrue(store.todos[0].isCompleted)
-        XCTAssertEqual(changeCount, 2, "Toggling todo should trigger objectWillChange")
+        #expect(store.todos[0].isCompleted)
+        #expect(changeCount == 2)
     }
 
-    func testTodoAppViewStructure() async throws {
+    @Test func todoAppViewStructure() async throws {
         struct TodoItem: Identifiable, Sendable {
             let id: UUID
             var title: String
@@ -700,10 +697,10 @@ final class Phase3VerificationTests: XCTestCase {
         let app = TodoApp()
 
         // Verify the app structure compiles and can be instantiated
-        XCTAssertNotNil(app.body, "TodoApp should have a body")
+        #expect(app.body != nil)
     }
 
-    func testCompleteTodoAppIntegration() async throws {
+    @Test func completeTodoAppIntegration() async throws {
         struct TodoItem: Identifiable, Sendable {
             let id: UUID
             var title: String
@@ -786,30 +783,30 @@ final class Phase3VerificationTests: XCTestCase {
         store.newTodoText = "Buy groceries"
         store.addTodo()
 
-        XCTAssertEqual(store.todos.count, 1, "Should have one todo")
-        XCTAssertEqual(store.todos[0].title, "Buy groceries")
-        XCTAssertFalse(store.todos[0].isCompleted)
+        #expect(store.todos.count == 1)
+        #expect(store.todos[0].title == "Buy groceries")
+        #expect(!store.todos[0].isCompleted)
 
         // Add another
         store.newTodoText = "Write tests"
         store.addTodo()
 
-        XCTAssertEqual(store.todos.count, 2, "Should have two todos")
-        XCTAssertEqual(store.newTodoText, "", "Text should be cleared after adding")
+        #expect(store.todos.count == 2)
+        #expect(store.newTodoText == "")
 
         // Toggle completion
         let firstTodoID = store.todos[0].id
         store.toggleTodo(id: firstTodoID)
 
-        XCTAssertTrue(store.todos[0].isCompleted, "First todo should be completed")
-        XCTAssertFalse(store.todos[1].isCompleted, "Second todo should not be completed")
+        #expect(store.todos[0].isCompleted)
+        #expect(!store.todos[1].isCompleted)
 
         // Verify the view body exists
         let body = app.body
-        XCTAssertNotNil(body)
+        #expect(body != nil)
     }
 
-    func testTodoAppVNodeStructure() async throws {
+    @Test func todoAppVNodeStructure() async throws {
         struct TodoItem: Identifiable, Sendable {
             let id: UUID
             var title: String
@@ -844,7 +841,7 @@ final class Phase3VerificationTests: XCTestCase {
 
         // Verify the list can be converted to VNode
         let body = app.body
-        XCTAssertNotNil(body)
+        #expect(body != nil)
 
         // The body is a List, which should convert to VNode
         // This verifies the complete pipeline works
@@ -852,7 +849,7 @@ final class Phase3VerificationTests: XCTestCase {
 
     // MARK: - Integration Tests
 
-    func testStateObjectAndObservedObjectTogether() async throws {
+    @Test func stateObjectAndObservedObjectTogether() async throws {
         class SharedData: ObservableObject {
             @Published var count: Int = 0
 
@@ -888,14 +885,14 @@ final class Phase3VerificationTests: XCTestCase {
         let child = ChildView(data: sharedData)
 
         // Verify they share the same instance
-        XCTAssertEqual(sharedData.count, 0)
-        XCTAssertEqual(child.data.count, 0)
+        #expect(sharedData.count == 0)
+        #expect(child.data.count == 0)
 
         sharedData.count = 42
-        XCTAssertEqual(child.data.count, 42, "Child should see parent's changes")
+        #expect(child.data.count == 42)
     }
 
-    func testForEachInsideList() async throws {
+    @Test func forEachInsideList() async throws {
         struct Item: Identifiable, Sendable {
             let id: Int
             let name: String
@@ -913,11 +910,11 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         let vnode = list.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "list"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "list"))
     }
 
-    func testTextFieldInsideForm() async throws {
+    @Test func textFieldInsideForm() async throws {
         let state1 = State(wrappedValue: "")
         let state2 = State(wrappedValue: "")
 
@@ -930,10 +927,10 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         let vnode = form.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "div"))
+        #expect(vnode.isElement(tag: "div"))
     }
 
-    func testToggleInsideList() async throws {
+    @Test func toggleInsideList() async throws {
         struct Setting: Identifiable, Sendable {
             let id: Int
             let name: String
@@ -952,7 +949,7 @@ final class Phase3VerificationTests: XCTestCase {
         }
 
         let vnode = list.toVNode()
-        XCTAssertTrue(vnode.isElement(tag: "div"))
-        XCTAssertEqual(vnode.props["role"], .attribute(name: "role", value: "list"))
+        #expect(vnode.isElement(tag: "div"))
+        #expect(vnode.props["role"] == .attribute(name: "role", value: "list"))
     }
 }

@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Comprehensive tests for the alert view modifiers.
@@ -11,11 +11,11 @@ import XCTest
 /// - Alert with messages
 /// - Dismissal behavior
 @MainActor
-final class AlertModifierTests: XCTestCase {
+@Suite struct AlertModifierTests {
 
     // MARK: - Basic Alert Tests
 
-    func testBasicAlertModifier() {
+    @Test func basicAlertModifier() {
         let coordinator = PresentationCoordinator()
         var isPresented = false
 
@@ -30,15 +30,15 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Test Alert")
+        #expect(modifier != nil)
+        #expect(modifier.title == "Test Alert")
     }
 
-    func testAlertPresentation() {
+    @Test func alertPresentation() {
         let coordinator = PresentationCoordinator()
 
         // Initially no presentations
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Create a binding
         var isPresented = true
@@ -57,26 +57,26 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testAlertDismissal() {
+    @Test func alertDismissal() {
         var isPresented = true
         let binding = Binding(
             get: { isPresented },
             set: { isPresented = $0 }
         )
 
-        XCTAssertTrue(isPresented)
+        #expect(isPresented)
 
         // Simulate dismissal
         binding.wrappedValue = false
-        XCTAssertFalse(isPresented)
+        #expect(!isPresented)
     }
 
     // MARK: - Alert with Message Tests
 
-    func testAlertWithMessage() {
+    @Test func alertWithMessage() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -95,11 +95,11 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Save Changes")
+        #expect(modifier != nil)
+        #expect(modifier.title == "Save Changes")
     }
 
-    func testAlertWithMessagePresentation() {
+    @Test func alertWithMessagePresentation() {
         let coordinator = PresentationCoordinator()
         var isPresented = false
 
@@ -119,17 +119,17 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(modifier != nil)
+        #expect(coordinator.count == 0)
 
         // When presented, the coordinator would receive the presentation
         binding.wrappedValue = true
-        XCTAssertTrue(binding.wrappedValue)
+        #expect(binding.wrappedValue)
     }
 
     // MARK: - Data-Driven Alert Tests
 
-    func testDataAlertModifier() {
+    @Test func dataAlertModifier() {
         struct TestItem: Equatable {
             let name: String
         }
@@ -152,11 +152,11 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "Delete Item")
+        #expect(modifier != nil)
+        #expect(modifier.title == "Delete Item")
     }
 
-    func testDataAlertPresentation() {
+    @Test func dataAlertPresentation() {
         struct TestItem: Equatable {
             let name: String
         }
@@ -178,15 +178,15 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNil(selectedItem)
+        #expect(selectedItem == nil)
 
         // Set data to trigger presentation
         binding.wrappedValue = TestItem(name: "Test")
-        XCTAssertNotNil(selectedItem)
-        XCTAssertEqual(selectedItem?.name, "Test")
+        #expect(selectedItem != nil)
+        #expect(selectedItem?.name == "Test")
     }
 
-    func testDataAlertDismissal() {
+    @Test func dataAlertDismissal() {
         struct TestItem: Equatable {
             let name: String
         }
@@ -197,16 +197,16 @@ final class AlertModifierTests: XCTestCase {
             set: { selectedItem = $0 }
         )
 
-        XCTAssertNotNil(selectedItem)
+        #expect(selectedItem != nil)
 
         // Simulate dismissal
         binding.wrappedValue = nil
-        XCTAssertNil(selectedItem)
+        #expect(selectedItem == nil)
     }
 
     // MARK: - Button Action Tests
 
-    func testButtonActionExecution() {
+    @Test func buttonActionExecution() {
         var actionCalled = false
         var isPresented = false
 
@@ -225,13 +225,13 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
         // In a real scenario, tapping the button would execute the action
         // Here we verify the structure is correct
-        XCTAssertFalse(actionCalled)
+        #expect(!actionCalled)
     }
 
-    func testMultipleButtonActions() {
+    @Test func multipleButtonActions() {
         var primaryActionCalled = false
         var secondaryActionCalled = false
         var isPresented = false
@@ -254,14 +254,14 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertFalse(primaryActionCalled)
-        XCTAssertFalse(secondaryActionCalled)
+        #expect(modifier != nil)
+        #expect(!primaryActionCalled)
+        #expect(!secondaryActionCalled)
     }
 
     // MARK: - Button Role Tests
 
-    func testCancelButtonRole() {
+    @Test func cancelButtonRole() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -276,10 +276,10 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testDestructiveButtonRole() {
+    @Test func destructiveButtonRole() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -295,10 +295,10 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
-    func testMixedButtonRoles() {
+    @Test func mixedButtonRoles() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -318,12 +318,12 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 
     // MARK: - View Extension Tests
 
-    func testAlertViewExtension() {
+    @Test func alertViewExtension() {
         @MainActor struct TestView: View {
             @State private var showAlert = false
 
@@ -336,10 +336,10 @@ final class AlertModifierTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testAlertWithMessageViewExtension() {
+    @Test func alertWithMessageViewExtension() {
         @MainActor struct TestView: View {
             @State private var showAlert = false
 
@@ -354,10 +354,10 @@ final class AlertModifierTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
-    func testDataAlertViewExtension() {
+    @Test func dataAlertViewExtension() {
         struct Item: Equatable {
             let id: Int
         }
@@ -376,15 +376,15 @@ final class AlertModifierTests: XCTestCase {
         }
 
         let view = TestView()
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     // MARK: - Integration Tests
 
-    func testAlertWithPresentationCoordinator() {
+    @Test func alertWithPresentationCoordinator() {
         let coordinator = PresentationCoordinator()
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Simulate presenting an alert
         coordinator.present(
@@ -392,11 +392,11 @@ final class AlertModifierTests: XCTestCase {
             content: AnyView(Text("Alert Content"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.type, .alert)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.type == .alert)
     }
 
-    func testMultipleAlertsSequence() {
+    @Test func multipleAlertsSequence() {
         let coordinator = PresentationCoordinator()
 
         // Present first alert
@@ -405,11 +405,11 @@ final class AlertModifierTests: XCTestCase {
             content: AnyView(Text("Alert 1"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Dismiss first
         coordinator.dismiss(id1)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
 
         // Present second alert
         coordinator.present(
@@ -417,12 +417,12 @@ final class AlertModifierTests: XCTestCase {
             content: AnyView(Text("Alert 2"))
         )
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
     }
 
     // MARK: - Edge Cases
 
-    func testAlertWithEmptyTitle() {
+    @Test func alertWithEmptyTitle() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -437,11 +437,11 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
-        XCTAssertEqual(modifier.title, "")
+        #expect(modifier != nil)
+        #expect(modifier.title == "")
     }
 
-    func testAlertWithNoActions() {
+    @Test func alertWithNoActions() {
         var isPresented = false
         let binding = Binding(
             get: { isPresented },
@@ -456,6 +456,6 @@ final class AlertModifierTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(modifier)
+        #expect(modifier != nil)
     }
 }

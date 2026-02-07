@@ -1,13 +1,13 @@
-import XCTest
+import Testing
 @testable import Raven
 
 /// Tests for ContentUnavailableView composed view
 @MainActor
-final class ContentUnavailableViewTests: XCTestCase {
+@Suite struct ContentUnavailableViewTests {
 
     // MARK: - Basic Initialization Tests
 
-    func testContentUnavailableViewWithTitleAndIcon() throws {
+    @Test func contentUnavailableViewWithTitleAndIcon() throws {
         let view = ContentUnavailableView(
             "No Messages",
             systemImage: "envelope.open"
@@ -16,20 +16,20 @@ final class ContentUnavailableViewTests: XCTestCase {
         // ContentUnavailableView is a composed view, so we can't directly call toVNode()
         // Instead, we verify that it compiles and has the expected structure
         // The body should be a VStack containing the components
-        XCTAssertNotNil(view, "ContentUnavailableView should initialize")
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithDescription() throws {
+    @Test func contentUnavailableViewWithDescription() throws {
         let view = ContentUnavailableView(
             "No Messages",
             systemImage: "envelope.open",
             description: Text("You don't have any messages yet.")
         )
 
-        XCTAssertNotNil(view, "ContentUnavailableView with description should initialize")
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithActions() throws {
+    @Test func contentUnavailableViewWithActions() throws {
         var buttonTapped = false
         let view = ContentUnavailableView(
             "No Messages",
@@ -44,10 +44,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "ContentUnavailableView with actions should initialize")
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithDescriptionAndActions() throws {
+    @Test func contentUnavailableViewWithDescriptionAndActions() throws {
         var buttonTapped = false
         let view = ContentUnavailableView(
             "No Messages",
@@ -59,10 +59,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         }
 
-        XCTAssertNotNil(view, "ContentUnavailableView with description and actions should initialize")
+        #expect(view != nil)
     }
 
-    func testContentUnavailableViewWithViewBuilderDescription() throws {
+    @Test func contentUnavailableViewWithViewBuilderDescription() throws {
         var buttonTapped = false
         let view = ContentUnavailableView(
             "No Data",
@@ -80,21 +80,21 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "ContentUnavailableView with ViewBuilder description should initialize")
+        #expect(view != nil)
     }
 
     // MARK: - Search Variant Tests
 
-    func testSearchVariant() throws {
+    @Test func searchVariant() throws {
         let view = ContentUnavailableView<Text, EmptyView>.search
 
         // Verify the search variant exists and can be created
-        XCTAssertNotNil(view, "ContentUnavailableView.search should be available")
+        #expect(view != nil)
     }
 
     // MARK: - Type System Tests
 
-    func testTypeInferenceWithTextDescription() throws {
+    @Test func typeInferenceWithTextDescription() throws {
         // This should compile with Description = Text, Actions = EmptyView
         let view = ContentUnavailableView(
             "No Items",
@@ -102,10 +102,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             description: Text("Add your first item.")
         )
 
-        XCTAssertNotNil(view, "Type inference should work for Text description")
+        #expect(view != nil)
     }
 
-    func testTypeInferenceWithActions() throws {
+    @Test func typeInferenceWithActions() throws {
         // This should compile with Description = EmptyView, Actions = Button
         let view = ContentUnavailableView(
             "No Items",
@@ -118,10 +118,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "Type inference should work for actions")
+        #expect(view != nil)
     }
 
-    func testTypeInferenceWithBoth() throws {
+    @Test func typeInferenceWithBoth() throws {
         // This should compile with Description = Text, Actions = Button
         let view = ContentUnavailableView(
             "No Items",
@@ -131,12 +131,12 @@ final class ContentUnavailableViewTests: XCTestCase {
             Button("Add Item") { }
         }
 
-        XCTAssertNotNil(view, "Type inference should work with both description and actions")
+        #expect(view != nil)
     }
 
     // MARK: - Integration Tests
 
-    func testContentUnavailableViewInConditional() throws {
+    @Test func contentUnavailableViewInConditional() throws {
         struct TestView: View {
             let isEmpty: Bool
 
@@ -156,11 +156,11 @@ final class ContentUnavailableViewTests: XCTestCase {
         let emptyState = TestView(isEmpty: true)
         let normalState = TestView(isEmpty: false)
 
-        XCTAssertNotNil(emptyState, "Empty state should render")
-        XCTAssertNotNil(normalState, "Normal state should render")
+        #expect(emptyState != nil)
+        #expect(normalState != nil)
     }
 
-    func testContentUnavailableViewWithMultipleActions() throws {
+    @Test func contentUnavailableViewWithMultipleActions() throws {
         var primaryTapped = false
         var secondaryTapped = false
 
@@ -179,12 +179,12 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         }
 
-        XCTAssertNotNil(view, "ContentUnavailableView with multiple actions should initialize")
+        #expect(view != nil)
     }
 
     // MARK: - Real-World Usage Tests
 
-    func testEmptyListPattern() throws {
+    @Test func emptyListPattern() throws {
         struct Item: Identifiable {
             let id: Int
             let name: String
@@ -212,11 +212,11 @@ final class ContentUnavailableViewTests: XCTestCase {
         let emptyList = ItemListView(items: [])
         let nonEmptyList = ItemListView(items: [Item(id: 1, name: "Test")])
 
-        XCTAssertNotNil(emptyList, "Empty list view should render")
-        XCTAssertNotNil(nonEmptyList, "Non-empty list view should render")
+        #expect(emptyList != nil)
+        #expect(nonEmptyList != nil)
     }
 
-    func testEmptySearchPattern() throws {
+    @Test func emptySearchPattern() throws {
         struct SearchView: View {
             let query: String
             let results: [String]
@@ -234,12 +234,12 @@ final class ContentUnavailableViewTests: XCTestCase {
         let successfulSearch = SearchView(query: "test", results: ["result1", "result2"])
         let noQuery = SearchView(query: "", results: [])
 
-        XCTAssertNotNil(emptySearch, "Empty search should render")
-        XCTAssertNotNil(successfulSearch, "Successful search should render")
-        XCTAssertNotNil(noQuery, "No query state should render")
+        #expect(emptySearch != nil)
+        #expect(successfulSearch != nil)
+        #expect(noQuery != nil)
     }
 
-    func testPermissionRequiredPattern() throws {
+    @Test func permissionRequiredPattern() throws {
         let view = ContentUnavailableView(
             "Photos Access Required",
             systemImage: "photo.badge.exclamationmark",
@@ -249,10 +249,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "Permission required pattern should work")
+        #expect(view != nil)
     }
 
-    func testNoNetworkPattern() throws {
+    @Test func noNetworkPattern() throws {
         let view = ContentUnavailableView(
             "No Internet Connection",
             systemImage: "wifi.slash",
@@ -262,12 +262,12 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "No network pattern should work")
+        #expect(view != nil)
     }
 
     // MARK: - Custom Content Tests
 
-    func testCustomDescriptionView() throws {
+    @Test func customDescriptionView() throws {
         let view = ContentUnavailableView(
             "Custom Content",
             systemImage: "star",
@@ -283,10 +283,10 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "Custom description view should work")
+        #expect(view != nil)
     }
 
-    func testComplexActionsLayout() throws {
+    @Test func complexActionsLayout() throws {
         let view = ContentUnavailableView(
             "Multiple Actions",
             systemImage: "exclamationmark.triangle",
@@ -303,6 +303,6 @@ final class ContentUnavailableViewTests: XCTestCase {
             }
         )
 
-        XCTAssertNotNil(view, "Complex actions layout should work")
+        #expect(view != nil)
     }
 }

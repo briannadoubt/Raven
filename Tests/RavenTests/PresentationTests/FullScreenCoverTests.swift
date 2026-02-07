@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Raven
 
 /// Tests for full-screen cover presentation modifiers.
@@ -7,12 +8,12 @@ import XCTest
 /// `.fullScreenCover(item:)` modifiers, ensuring they properly manage presentation
 /// state and integrate with the PresentationCoordinator.
 @MainActor
-final class FullScreenCoverTests: XCTestCase {
+@Suite struct FullScreenCoverTests {
 
     // MARK: - isPresented Tests
 
     /// Tests that a full-screen cover is registered when isPresented becomes true.
-    func testFullScreenCoverRegistersWhenPresented() {
+    @Test func fullScreenCoverRegistersWhenPresented() {
         let coordinator = PresentationCoordinator()
 
         let modifier = FullScreenCoverModifier(
@@ -24,13 +25,13 @@ final class FullScreenCoverTests: XCTestCase {
 
         let presentationId = modifier.register(with: coordinator)
 
-        XCTAssertNotNil(presentationId)
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.type, .fullScreenCover)
+        #expect(presentationId != nil)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.type == .fullScreenCover)
     }
 
     /// Tests that a full-screen cover is not registered when isPresented is false.
-    func testFullScreenCoverDoesNotRegisterWhenNotPresented() {
+    @Test func fullScreenCoverDoesNotRegisterWhenNotPresented() {
         let coordinator = PresentationCoordinator()
 
         let modifier = FullScreenCoverModifier(
@@ -42,12 +43,12 @@ final class FullScreenCoverTests: XCTestCase {
 
         let presentationId = modifier.register(with: coordinator)
 
-        XCTAssertNil(presentationId)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(presentationId == nil)
+        #expect(coordinator.count == 0)
     }
 
     /// Tests that dismissing a full-screen cover removes it from the coordinator.
-    func testFullScreenCoverDismissal() {
+    @Test func fullScreenCoverDismissal() {
         let coordinator = PresentationCoordinator()
 
         let modifier = FullScreenCoverModifier(
@@ -58,20 +59,20 @@ final class FullScreenCoverTests: XCTestCase {
         }
 
         guard let presentationId = modifier.register(with: coordinator) else {
-            XCTFail("Failed to register presentation")
+            Issue.record("Failed to register presentation")
             return
         }
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Dismiss the cover
         modifier.unregister(id: presentationId, from: coordinator)
 
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(coordinator.count == 0)
     }
 
     /// Tests that the onDismiss callback is invoked when the cover is dismissed.
-    func testOnDismissCallback() {
+    @Test func onDismissCallback() {
         let coordinator = PresentationCoordinator()
         var dismissCallbackInvoked = false
 
@@ -84,18 +85,18 @@ final class FullScreenCoverTests: XCTestCase {
             }
         )
 
-        XCTAssertFalse(dismissCallbackInvoked)
+        #expect(!dismissCallbackInvoked)
 
         // Dismiss the presentation
         coordinator.dismiss(id)
 
-        XCTAssertTrue(dismissCallbackInvoked)
+        #expect(dismissCallbackInvoked)
     }
 
     // MARK: - Item-based Tests
 
     /// Tests that a full-screen cover is registered when an item is set.
-    func testItemFullScreenCoverRegistersWithItem() {
+    @Test func itemFullScreenCoverRegistersWithItem() {
         struct TestItem: Identifiable, Sendable, Equatable {
             let id = UUID()
             let title: String
@@ -117,13 +118,13 @@ final class FullScreenCoverTests: XCTestCase {
 
         let presentationId = modifier.register(with: coordinator)
 
-        XCTAssertNotNil(presentationId)
-        XCTAssertEqual(coordinator.count, 1)
-        XCTAssertEqual(coordinator.topPresentation()?.type, .fullScreenCover)
+        #expect(presentationId != nil)
+        #expect(coordinator.count == 1)
+        #expect(coordinator.topPresentation()?.type == .fullScreenCover)
     }
 
     /// Tests that a full-screen cover is not registered when the item is nil.
-    func testItemFullScreenCoverDoesNotRegisterWithNilItem() {
+    @Test func itemFullScreenCoverDoesNotRegisterWithNilItem() {
         struct TestItem: Identifiable, Sendable, Equatable {
             let id = UUID()
             let title: String
@@ -140,12 +141,12 @@ final class FullScreenCoverTests: XCTestCase {
 
         let presentationId = modifier.register(with: coordinator)
 
-        XCTAssertNil(presentationId)
-        XCTAssertEqual(coordinator.count, 0)
+        #expect(presentationId == nil)
+        #expect(coordinator.count == 0)
     }
 
     /// Tests that changing the item dismisses the old cover and presents a new one.
-    func testItemFullScreenCoverUpdatesWhenItemChanges() {
+    @Test func itemFullScreenCoverUpdatesWhenItemChanges() {
         struct TestItem: Identifiable, Sendable, Equatable {
             let id: UUID
             let title: String
@@ -164,11 +165,11 @@ final class FullScreenCoverTests: XCTestCase {
 
         // Register first item
         guard let id1 = modifier.register(with: coordinator) else {
-            XCTFail("Failed to register first presentation")
+            Issue.record("Failed to register first presentation")
             return
         }
 
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(coordinator.count == 1)
 
         // Simulate item change by unregistering old and registering new
         modifier.unregister(id: id1, from: coordinator)
@@ -182,15 +183,15 @@ final class FullScreenCoverTests: XCTestCase {
 
         let id2 = modifier2.register(with: coordinator)
 
-        XCTAssertNotNil(id2)
-        XCTAssertNotEqual(id1, id2)
-        XCTAssertEqual(coordinator.count, 1)
+        #expect(id2 != nil)
+        #expect(id1 != id2)
+        #expect(coordinator.count == 1)
     }
 
     // MARK: - Multiple Covers Tests
 
     /// Tests that multiple full-screen covers can be stacked.
-    func testMultipleFullScreenCovers() {
+    @Test func multipleFullScreenCovers() {
         let coordinator = PresentationCoordinator()
 
         let modifier1 = FullScreenCoverModifier(
@@ -210,22 +211,21 @@ final class FullScreenCoverTests: XCTestCase {
         let id1 = modifier1.register(with: coordinator)
         let id2 = modifier2.register(with: coordinator)
 
-        XCTAssertNotNil(id1)
-        XCTAssertNotNil(id2)
-        XCTAssertNotEqual(id1, id2)
-        XCTAssertEqual(coordinator.count, 2)
+        #expect(id1 != nil)
+        #expect(id2 != nil)
+        #expect(id1 != id2)
+        #expect(coordinator.count == 2)
 
         // Verify z-index ordering
-        XCTAssertNotNil(coordinator.presentations.first)
-        XCTAssertNotNil(coordinator.presentations.last)
-        XCTAssertLessThan(coordinator.presentations.first!.zIndex,
-                          coordinator.presentations.last!.zIndex)
+        #expect(coordinator.presentations.first != nil)
+        #expect(coordinator.presentations.last != nil)
+        #expect(coordinator.presentations.first!.zIndex < coordinator.presentations.last!.zIndex)
     }
 
     // MARK: - Presentation Type Tests
 
     /// Tests that full-screen covers use the correct presentation type.
-    func testFullScreenCoverPresentationType() {
+    @Test func fullScreenCoverPresentationType() {
         let coordinator = PresentationCoordinator()
 
         let modifier = FullScreenCoverModifier(
@@ -236,15 +236,15 @@ final class FullScreenCoverTests: XCTestCase {
         }
 
         guard let _ = modifier.register(with: coordinator) else {
-            XCTFail("Failed to register presentation")
+            Issue.record("Failed to register presentation")
             return
         }
 
-        XCTAssertEqual(coordinator.topPresentation()?.type, .fullScreenCover)
+        #expect(coordinator.topPresentation()?.type == .fullScreenCover)
     }
 
     /// Tests that full-screen covers and sheets can be differentiated.
-    func testFullScreenCoverVsSheet() {
+    @Test func fullScreenCoverVsSheet() {
         let coordinator = PresentationCoordinator()
 
         // Register a sheet
@@ -265,24 +265,24 @@ final class FullScreenCoverTests: XCTestCase {
         }
         let coverId = coverModifier.register(with: coordinator)
 
-        XCTAssertNotNil(sheetId)
-        XCTAssertNotNil(coverId)
-        XCTAssertEqual(coordinator.count, 2)
+        #expect(sheetId != nil)
+        #expect(coverId != nil)
+        #expect(coordinator.count == 2)
 
         // Verify types are different
         let presentations = coordinator.presentations
         let sheetPresentation = presentations.first { $0.id == sheetId }
         let coverPresentation = presentations.first { $0.id == coverId }
 
-        XCTAssertEqual(sheetPresentation?.type, .sheet)
-        XCTAssertEqual(coverPresentation?.type, .fullScreenCover)
-        XCTAssertNotEqual(sheetPresentation?.type, coverPresentation?.type)
+        #expect(sheetPresentation?.type == .sheet)
+        #expect(coverPresentation?.type == .fullScreenCover)
+        #expect(sheetPresentation?.type != coverPresentation?.type)
     }
 
     // MARK: - Modifier Composition Tests
 
     /// Tests that full-screen covers can be combined with other modifiers.
-    func testFullScreenCoverWithInteractiveDismissDisabled() {
+    @Test func fullScreenCoverWithInteractiveDismissDisabled() {
         // Verify the modifiers can be composed
         let view = Text("Content")
             .fullScreenCover(isPresented: .constant(false)) {
@@ -290,11 +290,11 @@ final class FullScreenCoverTests: XCTestCase {
             }
             .interactiveDismissDisabled()
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
     }
 
     /// Tests that full-screen covers work with conditional presentation.
-    func testConditionalFullScreenCover() {
+    @Test func conditionalFullScreenCover() {
         var shouldPresent = false
 
         let view = Text("Content")
@@ -302,7 +302,7 @@ final class FullScreenCoverTests: XCTestCase {
                 Text("Cover")
             }
 
-        XCTAssertNotNil(view)
+        #expect(view != nil)
 
         shouldPresent = true
 
@@ -311,6 +311,6 @@ final class FullScreenCoverTests: XCTestCase {
                 Text("Cover")
             }
 
-        XCTAssertNotNil(view2)
+        #expect(view2 != nil)
     }
 }
