@@ -33,7 +33,9 @@ struct DevCommand: AsyncParsableCommand {
 
     func run() async throws {
         // Disable stdout buffering so output appears immediately in pipes/logs
-        setbuf(stdout, nil)
+        // nonisolated(unsafe) silences the Swift 6 concurrency warning on Linux
+        nonisolated(unsafe) let stdoutPtr = stdout
+        setbuf(stdoutPtr, nil)
 
         print("Starting Raven development server...")
 
