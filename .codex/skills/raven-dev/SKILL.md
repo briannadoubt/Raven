@@ -23,11 +23,11 @@ cd Examples/TodoApp
 swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 ```
 
-2. Serve phase (use project server, not plain `http.server`)
+2. Serve phase (from the WASM UI package root, prefer Raven CLI dev server)
 
 ```bash
 cd Examples/TodoApp
-python3 serve.py
+raven dev
 ```
 
 3. Validate in browser

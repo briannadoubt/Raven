@@ -146,3 +146,23 @@ extension ForEach where Data == Range<Int>, ID == Int, Data.Element == Int {
     }
 }
 
+extension ForEach where Data == ClosedRange<Int>, ID == Int, Data.Element == Int {
+    /// Creates an instance that computes views for a closed range of integers.
+    ///
+    /// Use this initializer for inclusive integer ranges (for example `1...5`),
+    /// matching SwiftUI's API surface for `ForEach`.
+    ///
+    /// - Parameters:
+    ///   - data: A closed range of integers.
+    ///   - content: A view builder that creates the view for each integer.
+    @MainActor public init(
+        _ data: ClosedRange<Int>,
+        @ViewBuilder content: @escaping @Sendable @MainActor (Int) -> Content
+    ) {
+        self.data = data
+        self.idExtractor = { element in
+            element
+        }
+        self.content = content
+    }
+}

@@ -20,6 +20,20 @@ import Testing
         #expect(body is ForEachView<Text>)
     }
 
+    @Test func forEachWithClosedRange() async throws {
+        let forEach = ForEach(1...3) { index in
+            Text("Item \(index)")
+        }
+
+        let body = forEach.body
+
+        if let forEachView = body as? ForEachView<Text> {
+            #expect(forEachView.views.count == 3)
+        } else {
+            Issue.record("Body should be a ForEachView")
+        }
+    }
+
     // MARK: - Identifiable Collection
 
     struct Item: Identifiable, Sendable {
