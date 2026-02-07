@@ -66,6 +66,7 @@ struct DevCommand: AsyncParsableCommand {
 
         // Resolve the public/ directory (where we serve from)
         let publicPath = resolvePublicDirectory(in: projectPath)
+        try ensureDirectoryExists(at: publicPath)
 
         if verbose {
             print("  Serve directory: \(publicPath)")
@@ -270,6 +271,18 @@ struct DevCommand: AsyncParsableCommand {
         }
 
         try fileManager.copyItem(atPath: source, toPath: destination)
+    }
+
+    private func ensureDirectoryExists(at path: String) throws {
+        let fileManager = FileManager.default
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: path, isDirectory: &isDirectory) {
+            if isDirectory.boolValue {
+                return
+            }
+            throw DevError.invalidProject("Expected directory but found file at: \(path)")
+        }
+        try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true)
     }
 
     // MARK: - Helpers

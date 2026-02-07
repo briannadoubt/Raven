@@ -212,7 +212,17 @@ actor WasmCompiler {
             }
         }
 
-        var arguments = ["swift", "build", "--swift-sdk", sdkName]
+        let useSwiftly = await shouldUseSwiftlyForSDK(sdkName: sdkName)
+
+        var arguments: [String]
+        if useSwiftly {
+            arguments = ["swiftly", "run", "swift", "build", "--swift-sdk", sdkName]
+            if config.verbose {
+                print("Using Swiftly-managed Swift toolchain for SDK builds")
+            }
+        } else {
+            arguments = ["swift", "build", "--swift-sdk", sdkName]
+        }
 
         // JavaScriptKit requires the WASI reactor ABI execution model
         arguments.append(contentsOf: ["-Xswiftc", "-Xclang-linker", "-Xswiftc", "-mexec-model=reactor"])
@@ -252,6 +262,38 @@ actor WasmCompiler {
 
         // Find the built wasm file
         return try findBuiltWasm()
+    }
+
+    /// Returns true when `swiftly` is available and can see the requested SDK.
+    private func shouldUseSwiftlyForSDK(sdkName: String) async -> Bool {
+        let checkProcess = Process()
+        checkProcess.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        checkProcess.arguments = ["swiftly", "run", "swift", "sdk", "list"]
+        checkProcess.currentDirectoryURL = config.sourceDirectory
+
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        checkProcess.standardOutput = stdoutPipe
+        checkProcess.standardError = stderrPipe
+
+        do {
+            try checkProcess.run()
+            checkProcess.waitUntilExit()
+            guard checkProcess.terminationStatus == 0 else {
+                return false
+            }
+
+            let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else {
+                return false
+            }
+            return output
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .contains(sdkName)
+        } catch {
+            return false
+        }
     }
 
     /// Finds the built .wasm file in the build directory

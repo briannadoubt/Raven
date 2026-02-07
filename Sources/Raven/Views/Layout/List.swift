@@ -228,4 +228,24 @@ extension List {
             RowContent: View {
         self.content = ForEach(data, content: content)
     }
+
+    /// Creates a list that computes views on demand over a closed range of integers.
+    ///
+    /// - Parameters:
+    ///   - data: A closed range of integers.
+    ///   - content: A view builder that creates the view for each integer.
+    ///
+    /// Example:
+    /// ```swift
+    /// List(1...3) { index in
+    ///     Text("Row \(index)")
+    /// }
+    /// ```
+    @MainActor public init<RowContent>(
+        _ data: ClosedRange<Int>,
+        @ViewBuilder content: @escaping @Sendable @MainActor (Int) -> RowContent
+    ) where Content == ForEach<ClosedRange<Int>, Int, RowContent>,
+            RowContent: View {
+        self.content = ForEach(data, content: content)
+    }
 }

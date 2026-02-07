@@ -703,6 +703,7 @@ struct LayoutBasicDemos: View {
             VStackDemo()
             HStackDemo()
             ZStackDemo()
+            GroupAndClosedRangeDemo()
             NestedLayoutDemo()
             ModifierShowcase()
         }
@@ -743,6 +744,32 @@ struct VStackDemo: View {
                     .background(Color.yellow.opacity(0.2))
                     .foregroundColor(Color.orange)
                     .cornerRadius(6)
+            }
+        }
+    }
+}
+
+@MainActor
+struct GroupAndClosedRangeDemo: View {
+    var body: some View {
+        SectionCard(title: "Group + ClosedRange") {
+            VStack(alignment: .leading, spacing: 8) {
+                Group {
+                    Text("Group does not add extra layout.")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                    Text("Rows below are rendered by List(1...3).")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+
+                List(1...3) { index in
+                    Text("Range row \(index)")
+                        .padding(6)
+                }
+                .frame(height: 120)
+                .background(Color.secondarySystemBackground)
+                .cornerRadius(6)
             }
         }
     }

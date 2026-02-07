@@ -22,8 +22,9 @@ Repository-level guidance for Codex agents working on Raven.
 - WASM app build (example):
   - `cd Examples/TodoApp`
   - `swift build --swift-sdk swift-6.2.3-RELEASE_wasm`
-- Dev serve (example):
-  - `python3 serve.py`
+- Dev serve (example, from the WASM UI package root):
+  - `cd Examples/TodoApp`
+  - `raven dev`
 
 ## Skills
 

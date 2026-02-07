@@ -20,6 +20,7 @@ Cross compilation for SwiftUI to the DOM
 
 - Validate browser behavior with local serving and console checks.
 - Treat WASM caching as a common source of stale runtime behavior.
+- For WASM UI packages, prefer `raven dev` from the package root.
 
 ## Skills
 
