@@ -227,7 +227,7 @@ struct BuildCommand: ParsableCommand {
             cssFiles: checkForStylesheet(in: projectPath) ? ["styles.css"] : [],
             metaTags: [
                 "description": "Built with Raven - SwiftUI to DOM",
-                "generator": "Raven 0.1.0"
+                "generator": "Raven 0.10.0"
             ],
             javaScriptKitRuntimeSource: jsKitRuntime
         )

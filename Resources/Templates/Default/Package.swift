@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", from: "0.19.0"),
         // Add Raven dependency - adjust path/URL as needed
         // .package(path: "../Raven"),
-        // .package(url: "https://github.com/yourusername/Raven.git", from: "0.1.0"),
+        // .package(url: "https://github.com/yourusername/Raven.git", from: "0.10.0"),
     ],
     targets: [
         .executableTarget(

@@ -7,7 +7,7 @@ struct RavenCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "raven",
         abstract: "Raven - SwiftUI to DOM compiler",
-        version: "0.1.0",
+        version: "0.10.0",
         subcommands: [
             BuildCommand.self,
             DevCommand.self,
