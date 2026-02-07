@@ -68,7 +68,7 @@ let package = Package(
                 // Size optimization for release builds
                 .unsafeFlags(["-Osize"], .when(configuration: .release)),
                 .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
-            ],
+            ]
         ),
 
         // Runtime support library
