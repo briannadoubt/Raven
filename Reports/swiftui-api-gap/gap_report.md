@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-08T09:36:21.609938+00:00`
+Generated: `2026-02-08T09:45:24.779810+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1263**
-- Missing in Raven: **3306**
-- Name-based coverage: **27.64%**
+- Matched by Raven: **1287**
+- Missing in Raven: **3282**
+- Name-based coverage: **28.17%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 521 | 0 | 1238 |
+| `Constructor` | 500 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
 | `Func` | 1054 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 51 | 0 | 66 |
-| `Struct` | 357 | 0 | 484 |
+| `Struct` | 356 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 915 | 0 | 964 |
+| `Var` | 913 | 0 | 964 |
 
 ## Missing High-Signal Types (first 200)
 
@@ -60,7 +60,6 @@ Target: `arm64-apple-ios26.2`
 - `AnimationTimelineSchedule` (Struct, owner: `SwiftUI`)
 - `AnyScrollTargetBehavior` (Struct, owner: `SwiftUI`)
 - `AnyTabContent` (Struct, owner: `SwiftUI`)
-- `AppStorage` (Struct, owner: `SwiftUI`)
 - `AppearsActiveKey` (Struct, owner: `SwiftUI`)
 - `ArrayLiteralElement` (TypeAlias, owner: `AccessibilityDirectTouchOptions`)
 - `ArrayLiteralElement` (TypeAlias, owner: `AccessibilityTechnologies`)
@@ -231,6 +230,7 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `ShareLink`)
 - `Body` (TypeAlias, owner: `SidebarCommands`)
 - `Body` (TypeAlias, owner: `Slider`)
+- `Body` (TypeAlias, owner: `SliderTick`)
 
 ## Missing High-Signal Named APIs (first 300)
 
