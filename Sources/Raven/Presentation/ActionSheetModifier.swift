@@ -63,7 +63,7 @@ struct ActionSheetModifier: ViewModifier {
 }
 
 @MainActor
-struct ActionSheetItemModifier<Item: Identifiable & Sendable>: ViewModifier {
+struct ActionSheetItemModifier<Item: Identifiable & Sendable>: ViewModifier where Item.ID: Sendable {
     @Environment(\.presentationCoordinator) private var coordinator
 
     @Binding var item: Item?

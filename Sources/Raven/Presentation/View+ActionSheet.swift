@@ -23,7 +23,7 @@ extension View {
     public func actionSheet<Item: Identifiable & Sendable>(
         item: Binding<Item?>,
         content: @escaping @MainActor @Sendable (Item) -> ActionSheet
-    ) -> some View {
+    ) -> some View where Item.ID: Sendable {
         modifier(ActionSheetItemModifier(
             item: item,
             makeActionSheet: content
