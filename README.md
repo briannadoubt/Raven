@@ -142,8 +142,10 @@ Raven/
 
 ## Documentation and Examples
 
+- [Documentation Index](Documentation/)
 - [Getting Started](Documentation/GettingStarted.md)
 - [API Overview](Documentation/API-Overview.md)
+- [Architecture and Performance Notes](Docs/)
 - [Examples](Examples/)
 - [Changelog](CHANGELOG.md)
 
@@ -207,6 +209,17 @@ When opening a PR, include:
 - tests for new or changed behavior
 - documentation updates for public API changes
 
+Issue tracker: [GitHub Issues](https://github.com/briannadoubt/Raven/issues)
+Pull requests: [GitHub Pull Requests](https://github.com/briannadoubt/Raven/pulls)
+
+## Resources
+
+- [Swift](https://swift.org)
+- [SwiftWasm](https://swiftwasm.org)
+- [SwiftUI](https://developer.apple.com/swiftui/)
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+[Documentation](Documentation/) • [Examples](Examples/) • [Contributing](#contributing) • [License](LICENSE)
