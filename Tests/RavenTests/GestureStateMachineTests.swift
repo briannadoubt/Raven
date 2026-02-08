@@ -121,7 +121,8 @@ import Testing
         #expect(state.positionSamples.count == 2)
 
         state.addSample(location: Raven.CGPoint(x: 20, y: 20), time: 0.2)
-        #expect(state.positionSamples.count == 3)
+        // The rolling velocity window is 100ms, so the initial 0.0 sample is evicted.
+        #expect(state.positionSamples.count == 2)
 
         #expect(state.positionSamples.last?.location.x == 20)
         #expect(state.positionSamples.last?.location.y == 20)

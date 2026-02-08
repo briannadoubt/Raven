@@ -383,15 +383,25 @@ extension AlertRenderer {
         let vnode = content.render()
 
         // Extract components from the VNode tree
-        guard let components = extractComponentsFromVNode(vnode) else {
-            return nil
+        if let components = extractComponentsFromVNode(vnode) {
+            return (
+                title: components.title,
+                message: components.message,
+                buttons: components.buttons
+            )
         }
 
-        return (
-            title: components.title,
-            message: components.message,
-            buttons: components.buttons
-        )
+        // Fallback for coordinator-renderable containers (e.g. VStack) when AnyView
+        // is rendered outside RenderLoop and children are not materialized.
+        if let mirrored = extractComponentsFromView(content.wrappedView) {
+            return (
+                title: mirrored.title,
+                message: mirrored.message,
+                buttons: mirrored.buttons
+            )
+        }
+
+        return nil
     }
 
     /// Internal structure for extracted alert components
@@ -532,6 +542,82 @@ extension AlertRenderer {
         }
 
         // No role detected
+        return nil
+    }
+
+    /// Fallback extraction path that walks the wrapped view structure with Mirror.
+    ///
+    /// This supports headless/unit-test contexts where container primitives can render
+    /// without children unless a full coordinator render pass is available.
+    private static func extractComponentsFromView(_ view: any View) -> AlertComponents? {
+        var textNodes: [String] = []
+        var buttons: [ButtonConfiguration] = []
+        collectComponentsFromValue(view, texts: &textNodes, buttons: &buttons)
+
+        guard !textNodes.isEmpty else { return nil }
+        return AlertComponents(
+            title: textNodes[0],
+            message: textNodes.count > 1 ? textNodes[1] : nil,
+            buttons: buttons
+        )
+    }
+
+    private static func collectComponentsFromValue(
+        _ value: Any,
+        texts: inout [String],
+        buttons: inout [ButtonConfiguration]
+    ) {
+        if let text = value as? Text {
+            let content = text.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !content.isEmpty {
+                texts.append(content)
+            }
+            return
+        }
+
+        // Treat any Button<...> as an action source and avoid traversing its label
+        // as plain text content to prevent title/message contamination.
+        let typeName = String(describing: type(of: value))
+        if typeName.hasPrefix("Button<") {
+            if let label = extractButtonLabelFromValue(value) {
+                buttons.append(ButtonConfiguration(label: label, role: nil, action: nil))
+            }
+            return
+        }
+
+        let mirror = Mirror(reflecting: value)
+        for child in mirror.children {
+            collectComponentsFromValue(child.value, texts: &texts, buttons: &buttons)
+        }
+    }
+
+    private static func extractButtonLabelFromValue(_ value: Any) -> String? {
+        let mirror = Mirror(reflecting: value)
+        for child in mirror.children where child.label == "label" {
+            return extractFirstText(from: child.value)
+        }
+
+        // Fallback: search all descendants in case field labels differ.
+        for child in mirror.children {
+            if let found = extractFirstText(from: child.value) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    private static func extractFirstText(from value: Any) -> String? {
+        if let text = value as? Text {
+            let content = text.textContent.trimmingCharacters(in: .whitespacesAndNewlines)
+            return content.isEmpty ? nil : content
+        }
+
+        let mirror = Mirror(reflecting: value)
+        for child in mirror.children {
+            if let found = extractFirstText(from: child.value) {
+                return found
+            }
+        }
         return nil
     }
 }

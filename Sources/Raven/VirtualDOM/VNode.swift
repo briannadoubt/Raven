@@ -237,10 +237,16 @@ extension VNode {
 
     /// Get text content if this is a text node
     public var textContent: String? {
-        if case .text(let content) = type {
+        switch type {
+        case .text(let content):
             return content
+        case .element, .fragment, .component:
+            if children.isEmpty {
+                return nil
+            }
+            let joined = children.compactMap(\.textContent).joined()
+            return joined.isEmpty ? nil : joined
         }
-        return nil
     }
 
     /// Get element tag if this is an element node

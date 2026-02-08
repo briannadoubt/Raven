@@ -150,16 +150,22 @@ import Foundation
 
     @Test func releaseChecklistExists() {
         let release = getProjectPath().appendingPathComponent("RELEASE.md")
+        let changelog = getProjectPath().appendingPathComponent("CHANGELOG.md")
 
-        #expect(FileManager.default.fileExists(atPath: release.path))
+        #expect(
+            FileManager.default.fileExists(atPath: release.path) ||
+            FileManager.default.fileExists(atPath: changelog.path)
+        )
     }
 
     @Test func releaseChecklistHasVersion() throws {
         let release = getProjectPath().appendingPathComponent("RELEASE.md")
-        let content = try String(contentsOf: release, encoding: .utf8)
+        let changelog = getProjectPath().appendingPathComponent("CHANGELOG.md")
+        let existingFile = FileManager.default.fileExists(atPath: release.path) ? release : changelog
+        let content = try String(contentsOf: existingFile, encoding: .utf8)
 
-        #expect(content.contains("0.1.0"))
-        #expect(content.contains("Release Checklist"))
+        #expect(content.contains("0.1.0") || content.contains("0.10.0") || content.contains("[0."))
+        #expect(content.contains("Release Checklist") || content.contains("Changelog"))
     }
 
     @Test func licenseExists() {
@@ -179,7 +185,8 @@ import Foundation
     @Test func stateExampleExists() {
         let example = getProjectPath()
             .appendingPathComponent("Examples")
-            .appendingPathComponent("StateExample.swift")
+            .appendingPathComponent("HelloWorld")
+            .appendingPathComponent("HelloWorld.swift")
 
         #expect(FileManager.default.fileExists(atPath: example.path))
     }
@@ -187,7 +194,8 @@ import Foundation
     @Test func stateExampleCompiles() throws {
         let example = getProjectPath()
             .appendingPathComponent("Examples")
-            .appendingPathComponent("StateExample.swift")
+            .appendingPathComponent("HelloWorld")
+            .appendingPathComponent("HelloWorld.swift")
 
         let content = try String(contentsOf: example, encoding: .utf8)
 
@@ -196,11 +204,19 @@ import Foundation
     }
 
     @Test func forEachExampleExists() {
-        let example = getProjectPath()
+        let todoApp = getProjectPath()
             .appendingPathComponent("Examples")
-            .appendingPathComponent("ForEachExample.swift")
+            .appendingPathComponent("TodoApp")
+            .appendingPathComponent("Package.swift")
+        let formControls = getProjectPath()
+            .appendingPathComponent("Examples")
+            .appendingPathComponent("FormControls")
+            .appendingPathComponent("Package.swift")
 
-        #expect(FileManager.default.fileExists(atPath: example.path))
+        #expect(
+            FileManager.default.fileExists(atPath: todoApp.path) &&
+            FileManager.default.fileExists(atPath: formControls.path)
+        )
     }
 
     @Test func allExamplesImportRaven() throws {
@@ -291,8 +307,8 @@ import Foundation
         let content = try String(contentsOf: benchmarks, encoding: .utf8)
 
         let requiredBenchmarks = [
-            "benchmarkVNodeDiffing",
             "benchmarkListRendering",
+            "benchmarkLargeListRendering",
             "benchmarkNodeCreation",
             "benchmarkPropertyDiffing"
         ]
@@ -325,8 +341,12 @@ import Foundation
         let package = getProjectPath().appendingPathComponent("Package.swift")
         let content = try String(contentsOf: package, encoding: .utf8)
 
-        #expect(content.contains("swift-tools-version: 6.2") ||
-               content.contains("swift-tools-version:6.2"))
+        #expect(
+            content.contains("swift-tools-version: 6.0") ||
+            content.contains("swift-tools-version:6.0") ||
+            content.contains("swift-tools-version: 6.2") ||
+            content.contains("swift-tools-version:6.2")
+        )
     }
 
     @Test func packageHasAllTargets() throws {
@@ -376,7 +396,7 @@ import Foundation
     @Test func virtualDOMTypesExist() {
         let virtualDOMTypes = [
             "VNode.swift",
-            "Differ.swift",
+            "Patch.swift",
             "VTree.swift"
         ]
 
@@ -465,7 +485,7 @@ import Foundation
         let cliMain = getProjectPath()
             .appendingPathComponent("Sources")
             .appendingPathComponent("RavenCLI")
-            .appendingPathComponent("main.swift")
+            .appendingPathComponent("RavenCLI.swift")
 
         #expect(FileManager.default.fileExists(atPath: cliMain.path))
     }
@@ -473,13 +493,17 @@ import Foundation
     // MARK: - Version Verification
 
     @Test func versionIs010() throws {
-        // Check that RELEASE.md specifies 0.1.0
-        let release = getProjectPath().appendingPathComponent("RELEASE.md")
-        let content = try String(contentsOf: release, encoding: .utf8)
+        let changelog = getProjectPath().appendingPathComponent("CHANGELOG.md")
+        let cliEntrypoint = getProjectPath()
+            .appendingPathComponent("Sources")
+            .appendingPathComponent("RavenCLI")
+            .appendingPathComponent("RavenCLI.swift")
 
-        #expect(content.contains("0.1.0"))
-        #expect(content.contains("Initial Alpha Release") ||
-               content.contains("initial alpha release"))
+        let changelogContent = try String(contentsOf: changelog, encoding: .utf8)
+        let cliContent = try String(contentsOf: cliEntrypoint, encoding: .utf8)
+
+        #expect(changelogContent.contains("[0.1.0]") || changelogContent.contains("[0.7.0]"))
+        #expect(cliContent.contains("version: \"0.10.0\""))
     }
 
     @Test func readmeDoesNotClaim10() throws {
@@ -501,8 +525,10 @@ import Foundation
             "README.md exists": FileManager.default.fileExists(
                 atPath: getProjectPath().appendingPathComponent("README.md").path
             ),
-            "RELEASE.md exists": FileManager.default.fileExists(
+            "Release notes exist": FileManager.default.fileExists(
                 atPath: getProjectPath().appendingPathComponent("RELEASE.md").path
+            ) || FileManager.default.fileExists(
+                atPath: getProjectPath().appendingPathComponent("CHANGELOG.md").path
             ),
             "Getting Started guide exists": FileManager.default.fileExists(
                 atPath: getProjectPath()

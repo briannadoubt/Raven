@@ -102,8 +102,10 @@ import Foundation
         let initialCount = await counter.getCount()
         #expect(initialCount == 0)
 
-        // Wait for debounce period
-        try await Task.sleep(nanoseconds: 150_000_000) // 150ms
+        // Wait for debounce completion with bounded polling to avoid timing flakes.
+        for _ in 0..<100 where await counter.getCount() == 0 {
+            try await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        }
 
         // Should have executed only once
         let finalCount = await counter.getCount()

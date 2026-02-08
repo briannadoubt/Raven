@@ -22,14 +22,16 @@ import Testing
         let vnode = text.toVNode()
 
         // Verify the VNode structure is correct
-        #expect(vnode.isText)
+        #expect(vnode.isElement(tag: "span"))
         #expect(vnode.textContent == "Hello, Raven!")
 
         // Verify node ID is generated
         #expect(vnode.id != nil)
 
-        // Verify no children
-        #expect(vnode.children.isEmpty)
+        // Verify a single text child
+        #expect(vnode.children.count == 1)
+        #expect(vnode.children[0].isText)
+        #expect(vnode.children[0].textContent == "Hello, Raven!")
 
         // Verify no properties
         #expect(vnode.props.isEmpty)

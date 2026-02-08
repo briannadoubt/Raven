@@ -320,7 +320,11 @@ import Testing
         let (_, size, _) = font.cssProperties(scale: scale)
 
         // Caption is 12px, accessibilityLarge has scale factor 1.90, so 12 * 1.90 = 22.8
-        #expect(size.hasPrefix("22.8"))
+        let numeric = Double(size.replacingOccurrences(of: "px", with: ""))
+        #expect(numeric != nil)
+        if let numeric {
+            #expect(abs(numeric - 22.8) < 0.000_1)
+        }
     }
 
     @Test func fixedSizeFontDoesNotScale() {

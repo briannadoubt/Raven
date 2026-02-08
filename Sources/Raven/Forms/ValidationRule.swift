@@ -142,22 +142,82 @@ extension ValidationRule {
         field: String,
         message: String? = nil
     ) -> ValidationRule {
-        // RFC 5322 simplified email regex
-        let pattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
         return ValidationRule(field: field) { value in
             if value.isEmpty {
                 return ValidationResult.success // Empty is valid, use required() separately
             }
 
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+
+            // Reject obvious invalid forms first
+            guard !trimmed.isEmpty, !trimmed.contains(" ") else {
+                return .failure(.invalidFormat(
+                    field: field,
+                    message: message ?? "Please enter a valid email address"
+                ))
+            }
+
+            let parts = trimmed.split(separator: "@", omittingEmptySubsequences: false)
+            guard parts.count == 2 else {
                 return .failure(.invalidFormat(field: field, message: message))
             }
 
-            let range = NSRange(trimmed.startIndex..., in: trimmed)
-            let matches = regex.matches(in: trimmed, options: [], range: range)
+            let localPart = String(parts[0])
+            let domainPart = String(parts[1])
 
-            if matches.isEmpty {
+            // Reject empty local/domain, consecutive dots, and edge dots.
+            guard !localPart.isEmpty,
+                  !domainPart.isEmpty,
+                  !localPart.hasPrefix("."),
+                  !localPart.hasSuffix("."),
+                  !domainPart.hasPrefix("."),
+                  !domainPart.hasSuffix("."),
+                  !localPart.contains(".."),
+                  !domainPart.contains("..")
+            else {
+                return .failure(.invalidFormat(
+                    field: field,
+                    message: message ?? "Please enter a valid email address"
+                ))
+            }
+
+            // Domain must contain a dot and labels must be valid host labels.
+            let labels = domainPart.split(separator: ".", omittingEmptySubsequences: false)
+            guard labels.count >= 2 else {
+                return .failure(.invalidFormat(
+                    field: field,
+                    message: message ?? "Please enter a valid email address"
+                ))
+            }
+
+            let hostLabelPattern = "^[A-Za-z0-9-]+$"
+            guard let labelRegex = try? NSRegularExpression(pattern: hostLabelPattern, options: []) else {
+                return .failure(.invalidFormat(field: field, message: message))
+            }
+
+            for label in labels {
+                let labelString = String(label)
+                guard !labelString.isEmpty,
+                      !labelString.hasPrefix("-"),
+                      !labelString.hasSuffix("-")
+                else {
+                    return .failure(.invalidFormat(
+                        field: field,
+                        message: message ?? "Please enter a valid email address"
+                    ))
+                }
+
+                let range = NSRange(labelString.startIndex..., in: labelString)
+                if labelRegex.firstMatch(in: labelString, options: [], range: range) == nil {
+                    return .failure(.invalidFormat(
+                        field: field,
+                        message: message ?? "Please enter a valid email address"
+                    ))
+                }
+            }
+
+            // Require alphabetic TLD with at least 2 chars.
+            if let tld = labels.last, tld.count < 2 || !tld.allSatisfy({ $0.isLetter }) {
                 return .failure(.invalidFormat(
                     field: field,
                     message: message ?? "Please enter a valid email address"
