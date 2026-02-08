@@ -12,7 +12,7 @@ Successfully fixed browser cache issues and completed comprehensive TodoApp rend
 - Use reflection to extract placeholder and text binding
 - Register input event handlers in eventHandlerRegistry
 - Create properly styled input elements with focus effects
-- File: `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift:367-419`
+- File: `Sources/RavenRuntime/RenderLoop.swift:367-419`
 
 ### 2. List Component Rendering 🎯
 **Problem**: List was creating empty children, expecting RenderCoordinator to handle content
@@ -21,15 +21,15 @@ Successfully fixed browser cache issues and completed comprehensive TodoApp rend
 - Create div with proper list semantics (role="list")
 - Apply flexbox layout with gap spacing
 - Recursively render children (handles ForEach automatically)
-- File: `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift:601-649`
+- File: `Sources/RavenRuntime/RenderLoop.swift:601-649`
 
 ### 3. Conditional Rendering 🔀
 **Problem**: ConditionalContent and OptionalContent returned nil, causing empty renders
 **Solutions**:
 - **ConditionalContent**: Extract storage enum, check active case, render active branch
-  - File: `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift:651-671`
+  - File: `Sources/RavenRuntime/RenderLoop.swift:651-671`
 - **OptionalContent**: Check if optional has value, render if present, empty fragment if nil
-  - File: `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift:673-694`
+  - File: `Sources/RavenRuntime/RenderLoop.swift:673-694`
 
 ### 4. Professional CSS Styling System 🎨
 Created comprehensive stylesheet with:
@@ -41,7 +41,7 @@ Created comprehensive stylesheet with:
 - **Todo Items**: Cards with hover effects, proper spacing
 - **Responsive**: Max-width constraints, proper padding
 - **Accessibility**: Proper ARIA attributes, semantic HTML
-- File: `/Users/bri/dev/Raven/Examples/TodoApp/public/todoapp.css`
+- File: `Examples/TodoApp/public/todoapp.css`
 
 ### 5. Flask Dev Server Path Resolution 🔧
 **Problem**: Flask serve_from_directory used relative paths, causing 404s
@@ -51,7 +51,7 @@ Created comprehensive stylesheet with:
 ### 6. CLI Improvements 🛠️
 - Added venv Python detection and auto-activation
 - Updated raven CLI to use venv if available
-- File: `/Users/bri/dev/Raven/raven:19-26`
+- File: `raven:19-26`
 
 ## 📊 Component Status
 
@@ -133,18 +133,18 @@ All components rendering beautifully:
 ## 📁 Modified Files
 
 ### Core Framework
-- `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift` - Added TextField, List, Conditional, Optional extraction
-- `/Users/bri/dev/Raven/Sources/Raven/Rendering/DOMBridge.swift` - Improved addEventListener (still needs work)
+- `Sources/RavenRuntime/RenderLoop.swift` - Added TextField, List, Conditional, Optional extraction
+- `Sources/Raven/Rendering/DOMBridge.swift` - Improved addEventListener (still needs work)
 
 ### TodoApp
-- `/Users/bri/dev/Raven/Examples/TodoApp/public/todoapp.css` - New comprehensive stylesheet
-- `/Users/bri/dev/Raven/Examples/TodoApp/public/index.html` - Added CSS link
-- `/Users/bri/dev/Raven/Examples/TodoApp/public/TodoApp-v2.wasm` - Updated binary
+- `Examples/TodoApp/public/todoapp.css` - New comprehensive stylesheet
+- `Examples/TodoApp/public/index.html` - Added CSS link
+- `Examples/TodoApp/public/TodoApp-v2.wasm` - Updated binary
 
 ### CLI Tools
-- `/Users/bri/dev/Raven/cli/raven_dev.py` - Fixed path resolution
-- `/Users/bri/dev/Raven/cli/raven_serve.py` - Fixed path resolution
-- `/Users/bri/dev/Raven/raven` - Added venv auto-activation
+- `cli/raven_dev.py` - Fixed path resolution
+- `cli/raven_serve.py` - Fixed path resolution
+- `raven` - Added venv auto-activation
 
 ## 🚀 Performance Notes
 

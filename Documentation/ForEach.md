@@ -12,7 +12,7 @@ The `ForEach` view is a fundamental SwiftUI component for iterating over collect
 
 ## Location
 
-**File:** `/Users/bri/dev/Raven/Sources/Raven/Views/Layout/ForEach.swift`
+**File:** `Sources/Raven/Views/Layout/ForEach.swift`
 
 ## Architecture
 
@@ -163,7 +163,7 @@ All ForEach initializers and the body property are `@MainActor` isolated because
 
 ## Testing
 
-**Test File:** `/Users/bri/dev/Raven/Tests/RavenTests/ForEachTests.swift`
+**Test File:** `Tests/RavenTests/ForEachTests.swift`
 
 ### Test Coverage
 
@@ -179,7 +179,7 @@ All ForEach initializers and the body property are `@MainActor` isolated because
 
 ## Examples
 
-**Example File:** `/Users/bri/dev/Raven/Examples/ForEachExample.swift`
+**Example File:** `Examples/ForEachExample.swift`
 
 Includes examples for:
 - Todo lists with Identifiable items

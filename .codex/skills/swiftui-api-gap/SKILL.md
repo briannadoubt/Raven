@@ -70,7 +70,7 @@ Use these rules unless user asks to change methodology:
 
 - If skill tooling scripts fail with missing `yaml`, use repo venv:
 ```bash
-/Users/bri/dev/Raven/venv/bin/python -m pip install pyyaml
+venv/bin/python -m pip install pyyaml
 ```
 
 - If report looks noisy, inspect:
