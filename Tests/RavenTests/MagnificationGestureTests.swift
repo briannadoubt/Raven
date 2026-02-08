@@ -49,8 +49,8 @@ struct MagnificationGestureTests {
     func testMagnificationGestureConformance() {
         let gesture = MagnificationGesture()
 
-        // Verify Value type is CGFloat
-        #expect(MagnificationGesture.Value.self == CGFloat.self)
+        // Verify Value type matches Raven's CGFloat (alias-safe across platforms)
+        #expect(MagnificationGesture.Value.self == Raven.CGFloat.self)
 
         // Verify Body type is Never (primitive gesture)
         #expect(MagnificationGesture.Body.self == Never.self)
