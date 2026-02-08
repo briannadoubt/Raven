@@ -35,7 +35,7 @@ swift test
 
 ```bash
 cd Examples/TodoApp
-swift run raven dev
+raven dev
 ```
 
 Open `http://localhost:3000`.
@@ -64,26 +64,26 @@ swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 
 ## CLI Workflows
 
-Preferred CLI path in this repo: `swift run raven ...`
+CLI commands below assume Raven is installed and available on `PATH` (for example via Homebrew).
 
 ### Development server
 
 ```bash
-swift run raven dev
-swift run raven dev --port 3000 --host localhost
+raven dev
+raven dev --port 3000 --host localhost
 ```
 
 ### Production build
 
 ```bash
-swift run raven build
-swift run raven build --optimize --compress
+raven build
+raven build --optimize --compress
 ```
 
 ### Scaffold a new project
 
 ```bash
-swift run raven create MyApp
+raven create MyApp
 ```
 
 Note: `create` currently generates a template that still expects Raven import/dependency lines to be uncommented.
@@ -103,7 +103,7 @@ SwiftUI Views -> Virtual DOM -> DOM Bridge -> Browser DOM
 
 ### `No SwiftWasm toolchain found`
 
-Install a WASM-capable Swift SDK/toolchain, then retry `swift run raven dev`.
+Install a WASM-capable Swift SDK/toolchain, then retry `raven dev`.
 
 ### `No Package.swift found`
 
