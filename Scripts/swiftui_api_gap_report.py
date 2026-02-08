@@ -164,11 +164,14 @@ def load_swiftui_symbols(swiftui_json: pathlib.Path) -> list[SwiftUISymbol]:
 def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
     public_type_pat = re.compile(r"\bpublic\s+(?:final\s+)?(?:struct|class|enum|protocol|actor|typealias)\s+([A-Za-z_][A-Za-z0-9_]*)")
     type_or_extension_pat = re.compile(r"\b(?:public\s+)?(?:final\s+)?(?:struct|class|enum|protocol|actor|extension)\s+([A-Za-z_][A-Za-z0-9_]*)")
-    func_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|mutating\s+|nonmutating\s+|override\s+|convenience\s+|required\s+|final\s+)*func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+    # Capture public function names regardless of generic clauses or multiline parameter lists.
+    func_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|mutating\s+|nonmutating\s+|override\s+|convenience\s+|required\s+|final\s+)*func\s+([A-Za-z_][A-Za-z0-9_]*)\b")
     var_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|private\(set\)\s+|internal\(set\)\s+)*var\s+([A-Za-z_][A-Za-z0-9_]*)\b")
+    subscript_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|final\s+)*subscript\b")
     init_pat = re.compile(r"\bpublic\s+(?:convenience\s+|required\s+|override\s+)*init\b")
 
     type_names: set[str] = set()
+    qualified_type_names: set[str] = set()
     func_names: set[str] = set()
     var_names: set[str] = set()
     qualified_func_names: set[str] = set()
@@ -205,6 +208,7 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
                         type_stack.append((scope_name, future_depth))
                     if is_public_type and not scope_name.startswith("_"):
                         type_names.add(scope_name)
+                        qualified_type_names.add(owner_from_stack(type_stack))
                     pending_scope_name = None
                     pending_scope_is_public_type = False
                 else:
@@ -237,6 +241,7 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
                     type_stack.append((pending_scope_name, future_depth))
                 if pending_scope_is_public_type and not pending_scope_name.startswith("_"):
                     type_names.add(pending_scope_name)
+                    qualified_type_names.add(owner_from_stack(type_stack))
                 pending_scope_name = None
                 pending_scope_is_public_type = False
 
@@ -244,8 +249,13 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
             while type_stack and brace_depth < type_stack[-1][1]:
                 type_stack.pop()
 
+            if subscript_pat.search(line):
+                var_names.add("subscript")
+                qualified_var_names.add(qualified_member(owner or "GLOBAL", "subscript"))
+
     return {
         "type_names": sorted(type_names),
+        "qualified_type_names": sorted(qualified_type_names),
         "func_names": sorted(func_names),
         "var_names": sorted(var_names),
         "qualified_func_names": sorted(qualified_func_names),
@@ -254,18 +264,51 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
     }
 
 
+def owner_match_candidates(owner: str) -> list[str]:
+    """Return owner candidates for matching extension methods that project through wrappers."""
+    candidates = [owner]
+    # SwiftUI often reports extension methods on ModifiedContent/TabContent that are
+    # effectively surfaced from View extensions.
+    owner_aliases: dict[str, tuple[str, ...]] = {
+        "ModifiedContent": ("View",),
+        "TabContent": ("View",),
+    }
+    candidates.extend(owner_aliases.get(owner, ()))
+    return candidates
+
+
+def should_allow_name_only_fallback(sym: SwiftUISymbol, owner: str) -> bool:
+    """Allow name-only fallback only for global-ish APIs, not all member APIs."""
+    global_owners = {"", "GLOBAL", "SwiftUI", sym.module_name}
+    return owner in global_owners
+
+
 def match_symbol(sym: SwiftUISymbol, raven: dict[str, Any]) -> bool | None:
     if sym.decl_kind not in SCORABLE_DECL_KINDS:
         return None
     owner = owner_context(sym)
     if sym.decl_kind in TYPE_DECL_KINDS:
+        if owner and owner not in {"SwiftUI", sym.module_name}:
+            qualified = qualified_member(owner, sym.name)
+            if qualified in raven["qualified_type_names"]:
+                return True
         return sym.name in raven["type_names"]
     if sym.decl_kind == "Func" or sym.decl_kind == "Macro":
-        qualified = qualified_member(owner or "GLOBAL", sym.name)
-        return qualified in raven["qualified_func_names"] or sym.name in raven["func_names"]
+        for candidate_owner in owner_match_candidates(owner or "GLOBAL"):
+            qualified = qualified_member(candidate_owner, sym.name)
+            if qualified in raven["qualified_func_names"]:
+                return True
+        if should_allow_name_only_fallback(sym, owner):
+            return sym.name in raven["func_names"]
+        return False
     if sym.decl_kind == "Var" or sym.decl_kind == "Subscript":
-        qualified = qualified_member(owner or "GLOBAL", sym.name)
-        return qualified in raven["qualified_var_names"] or sym.name in raven["var_names"]
+        for candidate_owner in owner_match_candidates(owner or "GLOBAL"):
+            qualified = qualified_member(candidate_owner, sym.name)
+            if qualified in raven["qualified_var_names"]:
+                return True
+        if should_allow_name_only_fallback(sym, owner):
+            return sym.name in raven["var_names"]
+        return False
     if sym.decl_kind == "Constructor":
         # Constructor parity is tracked per owning type context.
         return owner in raven["constructor_owners"]

@@ -66,6 +66,8 @@ final class ShowcaseStore: Raven.ObservableObject {
     @Raven.Published var todos: [TodoItem] = []
 
     @Raven.Published var filter: Filter = .all
+    @Raven.Published var searchText: String = ""
+    @Raven.Published var isSearchFocused: Bool = false
 
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
@@ -116,14 +118,19 @@ final class ShowcaseStore: Raven.ObservableObject {
     }
 
     var filteredTodos: [TodoItem] {
+        let scopedTodos: [TodoItem]
         switch filter {
         case .all:
-            return todos
+            scopedTodos = todos
         case .active:
-            return todos.filter { !$0.isCompleted }
+            scopedTodos = todos.filter { !$0.isCompleted }
         case .completed:
-            return todos.filter { $0.isCompleted }
+            scopedTodos = todos.filter { $0.isCompleted }
         }
+
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return scopedTodos }
+        return scopedTodos.filter { $0.text.localizedCaseInsensitiveContains(query) }
     }
 
     var activeCount: Int {
@@ -306,6 +313,42 @@ struct TodosTab: View {
             }
         }
         .padding(16)
+        .contentMargins(.horizontal, 12, for: .scrollContent)
+        .containerBackground(Color.secondarySystemBackground.opacity(0.35), for: .automatic)
+        .searchable(
+            text: Binding(
+                get: { store.searchText },
+                set: { store.searchText = $0 }
+            ),
+            prompt: "Search todos"
+        ) {
+            ForEach(Array(store.filteredTodos.prefix(5))) { todo in
+                Text(todo.text)
+                    .searchCompletion(todo.text)
+            }
+        }
+        .searchSuggestions {
+            if store.searchText.isEmpty {
+                Text("Try searching: build, deploy, learn")
+            }
+        }
+        .searchScopes(
+            Binding(
+                get: { Optional(store.filter) },
+                set: { store.filter = $0 ?? .all }
+            ),
+            scopes: [.all, .active, .completed]
+        )
+        .searchFocused(
+            Binding(
+                get: { store.isSearchFocused },
+                set: { store.isSearchFocused = $0 }
+            )
+        )
+        .task(id: store.searchText, priority: .utility) {
+            // Phase 1 demo: task(id:) API re-runs as search query changes.
+            await Task.yield()
+        }
     }
 }
 

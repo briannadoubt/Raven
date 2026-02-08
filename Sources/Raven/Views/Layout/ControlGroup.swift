@@ -92,6 +92,8 @@ import Foundation
 public struct ControlGroup<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
+    @Environment(\.controlGroupStyle) private var controlGroupStyle
+
     /// The grouped control content
     private let content: Content
 
@@ -149,7 +151,7 @@ public struct ControlGroup<Content: View>: View, PrimitiveView, Sendable {
 
 extension ControlGroup: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        let containerProps: [String: VProperty] = [
+        var containerProps: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-control-group"),
             "role": .attribute(name: "role", value: "group"),
             "style": .style(
@@ -157,6 +159,15 @@ extension ControlGroup: _CoordinatorRenderable {
                 value: "display: flex; flex-direction: row; border: 1px solid #d0d0d0; border-radius: 4px; overflow: hidden; background-color: #f5f5f5;"
             )
         ]
+        if controlGroupStyle is CompactMenuControlGroupStyle {
+            containerProps["style"] = .style(
+                name: "style",
+                value: "display: inline-flex; flex-direction: row; border: 1px solid #d0d0d0; border-radius: 999px; overflow: hidden; background-color: #f5f5f5; padding: 2px;"
+            )
+            containerProps["data-control-group-style"] = .attribute(name: "data-control-group-style", value: "compactMenu")
+        } else {
+            containerProps["data-control-group-style"] = .attribute(name: "data-control-group-style", value: "automatic")
+        }
 
         let contentNode = context.renderChild(content)
         let children: [VNode]

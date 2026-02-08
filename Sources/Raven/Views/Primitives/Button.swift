@@ -123,6 +123,9 @@ import Foundation
 public struct Button<Label: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
+    @Environment(\.buttonStyle) private var buttonStyle
+    @Environment(\.primitiveButtonStyle) private var primitiveButtonStyle
+
     /// The action to perform when the button is clicked
     private let action: @Sendable @MainActor () -> Void
 
@@ -260,13 +263,154 @@ extension Button where Label == Text {
     }
 }
 
+// MARK: - Style Support
+
+/// A style for customizing the appearance and interaction of buttons.
+public protocol ButtonStyle: Sendable {
+    /// The body of the button style.
+    associatedtype Body: View
+
+    /// Creates a view representing the body of a button.
+    ///
+    /// - Parameter configuration: The properties of the button.
+    @MainActor func makeBody(configuration: Configuration) -> Body
+
+    /// The properties of a button.
+    typealias Configuration = ButtonStyleConfiguration
+}
+
+/// The properties of a button.
+public struct ButtonStyleConfiguration: Sendable {
+    /// A type-erased label for the button.
+    public let label: AnyView
+
+    /// Whether the button is currently pressed.
+    public let isPressed: Bool
+
+    /// Creates a button style configuration.
+    public init(label: AnyView, isPressed: Bool) {
+        self.label = label
+        self.isPressed = isPressed
+    }
+}
+
+/// A default button style.
+public struct DefaultButtonStyle: ButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
+/// A primitive style for customizing low-level button behavior.
+public protocol PrimitiveButtonStyle: Sendable {
+    associatedtype Body: View
+
+    @MainActor func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> Body
+}
+
+/// Configuration values for primitive button styles.
+public struct PrimitiveButtonStyleConfiguration: Sendable {
+    /// A type-erased label for the button.
+    public let label: AnyView
+
+    /// Creates a primitive button style configuration.
+    public init(label: AnyView) {
+        self.label = label
+    }
+}
+
+/// A bordered primitive button style.
+public struct BorderedButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+/// A prominent bordered primitive button style.
+public struct BorderedProminentButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+/// A borderless primitive button style.
+public struct BorderlessButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+extension PrimitiveButtonStyle where Self == BorderedButtonStyle {
+    /// A bordered button style.
+    public static var bordered: BorderedButtonStyle {
+        BorderedButtonStyle()
+    }
+}
+
+extension PrimitiveButtonStyle where Self == BorderedProminentButtonStyle {
+    /// A prominent bordered button style.
+    public static var borderedProminent: BorderedProminentButtonStyle {
+        BorderedProminentButtonStyle()
+    }
+}
+
+extension PrimitiveButtonStyle where Self == BorderlessButtonStyle {
+    /// A borderless button style.
+    public static var borderless: BorderlessButtonStyle {
+        BorderlessButtonStyle()
+    }
+}
+
+private struct ButtonStyleEnvironmentKey: EnvironmentKey {
+    static let defaultValue: any ButtonStyle = DefaultButtonStyle()
+}
+
+private struct PrimitiveButtonStyleEnvironmentKey: EnvironmentKey {
+    static let defaultValue: any PrimitiveButtonStyle = BorderedButtonStyle()
+}
+
+extension EnvironmentValues {
+    var buttonStyle: any ButtonStyle {
+        get { self[ButtonStyleEnvironmentKey.self] }
+        set { self[ButtonStyleEnvironmentKey.self] = newValue }
+    }
+
+    var primitiveButtonStyle: any PrimitiveButtonStyle {
+        get { self[PrimitiveButtonStyleEnvironmentKey.self] }
+        set { self[PrimitiveButtonStyleEnvironmentKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Sets the style for buttons within this view.
+    ///
+    /// - Parameter style: The button style to apply.
+    /// - Returns: A view with the specified button style.
+    @MainActor public func buttonStyle(_ style: some ButtonStyle) -> some View {
+        environment(\.buttonStyle, style)
+    }
+
+    /// Sets a primitive style for buttons within this view.
+    @MainActor public func buttonStyle(_ style: some PrimitiveButtonStyle) -> some View {
+        environment(\.primitiveButtonStyle, style)
+    }
+}
+
 // MARK: - Coordinator Renderable
 
 extension Button: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
         let handlerID = context.registerClickHandler(action)
         let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             "onClick": clickHandler,
             // Reset browser default button styles — modifiers handle all styling
             "border": .style(name: "border", value: "none"),
@@ -277,6 +421,22 @@ extension Button: _CoordinatorRenderable {
             "cursor": .style(name: "cursor", value: "pointer"),
             "text-align": .style(name: "text-align", value: "inherit"),
         ]
+        if primitiveButtonStyle is BorderedButtonStyle {
+            props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
+            props["padding"] = .style(name: "padding", value: "8px 12px")
+            props["border-radius"] = .style(name: "border-radius", value: "8px")
+            props["background"] = .style(name: "background", value: "var(--system-control-background)")
+        } else if primitiveButtonStyle is BorderedProminentButtonStyle {
+            props["border"] = .style(name: "border", value: "1px solid var(--system-accent)")
+            props["padding"] = .style(name: "padding", value: "8px 12px")
+            props["border-radius"] = .style(name: "border-radius", value: "8px")
+            props["background"] = .style(name: "background", value: "var(--system-accent)")
+            props["color"] = .style(name: "color", value: "white")
+        } else if primitiveButtonStyle is BorderlessButtonStyle {
+            props["border"] = .style(name: "border", value: "none")
+            props["padding"] = .style(name: "padding", value: "4px 6px")
+            props["background"] = .style(name: "background", value: "transparent")
+        }
         let children = [context.renderChild(label)]
         return VNode.element("button", props: props, children: children)
     }
