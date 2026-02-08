@@ -6,7 +6,7 @@
 
 **Swift-native UI for the modern web**
 
-Build browser apps with SwiftUI-style APIs in Swift, compiled to WebAssembly and rendered in the DOM.
+Build browser apps with SwiftUI APIs in Swift, compiled to WebAssembly and rendered in the DOM.
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
@@ -16,7 +16,7 @@ Build browser apps with SwiftUI-style APIs in Swift, compiled to WebAssembly and
 
 ## Overview
 
-Raven is a Swift framework for building browser applications with SwiftUI-style APIs.
+Raven is a Swift framework for building browser applications with SwiftUI APIs.
 
 It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and prioritizes type safety and modern concurrency practices.
 
@@ -26,7 +26,7 @@ Raven is actively developed and production-oriented, with some areas still matur
 
 ### Stable Today
 
-- SwiftUI-style view composition and modifiers
+- SwiftUI view composition and modifiers
 - State and data flow: `@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`, `@Bindable`
 - Virtual DOM diff-and-patch renderer
 - Gesture system (tap, drag, long press, magnification, rotation, gesture composition)
@@ -42,7 +42,7 @@ Raven is actively developed and production-oriented, with some areas still matur
 
 ## Features
 
-- SwiftUI-compatible API surface for web-first apps
+- SwiftUI API surface for web-first apps
 - WebAssembly runtime with JavaScriptKit interop
 - Virtual DOM architecture with minimal DOM updates
 - Navigation, forms, lists, grid layouts, and modern view modifiers
@@ -99,10 +99,10 @@ For active Raven development, prefer the Swift CLI target.
 Raven bridges declarative Swift views to the browser DOM through three layers:
 
 ```text
-SwiftUI-like Views -> Virtual DOM -> DOM Bridge -> Browser DOM
+SwiftUI Views -> Virtual DOM -> DOM Bridge -> Browser DOM
 ```
 
-1. Views are declared using SwiftUI-style APIs.
+1. Views are declared using SwiftUI APIs.
 2. The view tree is converted into virtual nodes.
 3. On state changes, a diff computes minimal patches.
 4. Patches are applied to real DOM nodes through the rendering bridge.
