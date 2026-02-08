@@ -11,6 +11,30 @@ public final class DOMBridge {
 
     // MARK: - Properties
 
+    private static let svgNamespace = "http://www.w3.org/2000/svg"
+    private static let svgTags: Set<String> = [
+        // Root
+        "svg",
+        // Common containers
+        "g",
+        "defs",
+        // Shapes / paths
+        "path",
+        "circle",
+        "ellipse",
+        "rect",
+        "line",
+        "polyline",
+        "polygon",
+        // Gradients
+        "lineargradient",
+        "radialgradient",
+        "stop",
+        // Text
+        "text",
+        "tspan",
+    ]
+
     #if arch(wasm32)
     /// Reference to the JavaScript document object
     private let document: JSObject
@@ -103,12 +127,25 @@ public final class DOMBridge {
 
     /// Create a new DOM element with the specified tag name
     public func createElement(tag: String) -> JSObject? {
+        let normalizedTag = tag.lowercased()
         #if arch(wasm32)
-        let result = document.createElement!(tag)
+        let result: JSValue
+        if Self.svgTags.contains(normalizedTag) {
+            // SVG nodes must be created with the SVG namespace; otherwise the browser
+            // treats them as HTMLUnknownElement and they don't render/measure correctly.
+            result = document.createElementNS!(Self.svgNamespace, normalizedTag)
+        } else {
+            result = document.createElement!(tag)
+        }
         return result.isNull || result.isUndefined ? nil : result.object
         #else
         guard let document else { return nil }
-        let result = document.createElement!(tag)
+        let result: JSValue
+        if Self.svgTags.contains(normalizedTag) {
+            result = document.createElementNS!(Self.svgNamespace, normalizedTag)
+        } else {
+            result = document.createElement!(tag)
+        }
         return result.isNull || result.isUndefined ? nil : result.object
         #endif
     }
@@ -467,4 +504,3 @@ public final class DOMBridge {
         #endif
     }
 }
-

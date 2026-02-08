@@ -256,7 +256,10 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
             applyProperty(value, to: element)
 
         case .remove(let key):
+            // PropPatch.remove doesn't carry whether the key represented an attribute or style.
+            // Remove both so diffing can cleanly drop CSS properties as well.
             DOMBridge.shared.removeAttribute(element: element, name: key)
+            DOMBridge.shared.removeStyle(element: element, name: key)
         }
     }
 
