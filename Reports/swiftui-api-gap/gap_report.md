@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-08T09:45:24.779810+00:00`
+Generated: `2026-02-08T12:06:45.338468+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,21 +10,21 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1287**
-- Missing in Raven: **3282**
-- Name-based coverage: **28.17%**
+- Matched by Raven: **1291**
+- Missing in Raven: **3278**
+- Name-based coverage: **28.26%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 500 | 0 | 1238 |
+| `Constructor` | 499 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1054 | 0 | 1366 |
+| `Func` | 1052 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 51 | 0 | 66 |
-| `Struct` | 356 | 0 | 484 |
+| `Struct` | 355 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
 | `Var` | 913 | 0 | 964 |
@@ -49,7 +49,6 @@ Target: `arm64-apple-ios26.2`
 - `AccessoryCircularGaugeStyle` (Struct, owner: `SwiftUI`)
 - `AccessoryLinearCapacityGaugeStyle` (Struct, owner: `SwiftUI`)
 - `AccessoryLinearGaugeStyle` (Struct, owner: `SwiftUI`)
-- `ActionSheet` (Struct, owner: `SwiftUI`)
 - `Actions` (Struct, owner: `SearchUnavailableContent`)
 - `Actions` (Struct, owner: `SectionConfiguration`)
 - `AdaptableTabBarPlacement` (Struct, owner: `SwiftUI`)
@@ -231,6 +230,7 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `SidebarCommands`)
 - `Body` (TypeAlias, owner: `Slider`)
 - `Body` (TypeAlias, owner: `SliderTick`)
+- `Body` (TypeAlias, owner: `SliderTickContentForEach`)
 
 ## Missing High-Signal Named APIs (first 300)
 
@@ -329,8 +329,6 @@ Target: `arm64-apple-ios26.2`
 - `accessoryLinear` (owner: `GaugeStyle`)
 - `accessoryLinearCapacity` (owner: `GaugeStyle`)
 - `action` (owner: `SubscriptionView`)
-- `actionSheet(isPresented:content:)` (owner: `View`)
-- `actionSheet(item:content:)` (owner: `View`)
 - `actions` (owner: `SectionConfiguration`)
 - `activate` (owner: `FocusInteractions`)
 - `affinity(in:)` (owner: `AttributedTextSelection`)
@@ -534,6 +532,8 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `Tab`)
 - `body` (owner: `TextEditingCommands`)
 - `body` (owner: `TextEditor`)
+- `body` (owner: `TextField`)
+- `body` (owner: `TextFormattingCommands`)
 
 ## Operator-Like API Gap Summary
 

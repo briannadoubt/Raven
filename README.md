@@ -14,6 +14,55 @@ Build browser apps with SwiftUI APIs, compile to WebAssembly, render in the DOM.
 
 </div>
 
+## Overview
+
+Raven is a Swift framework for building browser applications with SwiftUI-style APIs. It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and is built around modern Swift concurrency patterns.
+
+## Features
+
+- SwiftUI view composition and modifiers
+- State and data flow (`@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`, `@Bindable`)
+- Virtual DOM diff-and-patch renderer
+- Gestures, animations, and navigation/presentation primitives
+- CLI workflows (`raven dev`, `raven create`, build tooling)
+
+## Quick Start
+
+### Build and test Raven locally
+
+```bash
+git clone https://github.com/briannadoubt/Raven.git
+cd Raven
+swift build
+swift test
+```
+
+### Run a real example app
+
+```bash
+cd Examples/TodoApp
+raven dev
+```
+
+Open `http://localhost:3000`.
+
+## Installation
+
+Add Raven as a Swift Package dependency in Xcode or via `Package.swift`.
+
+## Example Code
+
+```swift
+import Raven
+
+@MainActor
+struct HelloView: View {
+    var body: some View {
+        Text("Hello, Raven!")
+    }
+}
+```
+
 ## What Raven Is
 
 Raven is a Swift framework for building browser applications with SwiftUI APIs.
@@ -161,6 +210,12 @@ Raven/
 - [Architecture and Performance Notes](Docs/)
 - [Examples](Examples/)
 - [Changelog](CHANGELOG.md)
+
+## Testing
+
+```bash
+swift test
+```
 
 ## Roadmap
 

@@ -1,7 +1,6 @@
 import Foundation
 import Testing
 @testable import Raven
-import RavenRuntime
 
 // Resolve ambiguities with Foundation types
 typealias ObservableObject = Raven.ObservableObject

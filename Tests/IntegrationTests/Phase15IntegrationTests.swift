@@ -35,7 +35,11 @@ import Foundation
             @State var password = ""
             @State var confirmPassword = ""
             @FocusState var focusedField: Field? = nil
-            @StateObject var formState = FormState()
+            @StateObject var formState: FormState
+
+            @MainActor init() {
+                _formState = StateObject(wrappedValue: FormState())
+            }
 
             var body: some View {
                 VStack {
@@ -105,7 +109,11 @@ import Foundation
             @State var username = ""
             @State var email = ""
             @FocusState var isFocused: Bool = false
-            @StateObject var formState = FormState()
+            @StateObject var formState: FormState
+
+            @MainActor init() {
+                _formState = StateObject(wrappedValue: FormState())
+            }
 
             var body: some View {
                 VStack {
@@ -347,7 +355,11 @@ import Foundation
         @MainActor
         struct AppTabView: View {
             @State var selectedTab: AppTab = .home
-            @StateObject var router = Router()
+            @StateObject var router: Router
+
+            @MainActor init() {
+                _router = StateObject(wrappedValue: Router())
+            }
 
             var body: some View {
                 TabView(selection: $selectedTab) {
@@ -445,7 +457,11 @@ import Foundation
     @Test func routerWithNavigation() async throws {
         @MainActor
         struct RouterTestView: View {
-            @StateObject var router = Router()
+            @StateObject var router: Router
+
+            @MainActor init() {
+                _router = StateObject(wrappedValue: Router())
+            }
 
             var body: some View {
                 VStack {
@@ -586,9 +602,14 @@ import Foundation
             @State var password = ""
             @State var confirmPassword = ""
             @FocusState var focusedField: Field? = nil
-            @StateObject var formState = FormState()
-            @StateObject var router = Router()
+            @StateObject var formState: FormState
+            @StateObject var router: Router
             @State var showSuccess = false
+
+            @MainActor init() {
+                _formState = StateObject(wrappedValue: FormState())
+                _router = StateObject(wrappedValue: Router())
+            }
 
             var body: some View {
                 VStack {
@@ -725,8 +746,12 @@ import Foundation
         @MainActor
         struct AppView: View {
             @State var selectedTab: Tab = .home
-            @StateObject var router = Router()
+            @StateObject var router: Router
             @State var favorites: Set<Product.ID> = []
+
+            @MainActor init() {
+                _router = StateObject(wrappedValue: Router())
+            }
 
             var body: some View {
                 TabView(selection: $selectedTab) {
@@ -784,8 +809,12 @@ import Foundation
             @State var description = ""
             @State var category = ""
             @FocusState var focusedField: FormField? = nil
-            @StateObject var formState = FormState()
+            @StateObject var formState: FormState
             @State var showSuccessAlert = false
+
+            @MainActor init() {
+                _formState = StateObject(wrappedValue: FormState())
+            }
 
             var body: some View {
                 VStack {

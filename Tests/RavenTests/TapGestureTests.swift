@@ -153,8 +153,8 @@ struct TapGestureTests {
     func testSpatialTapGestureConformance() {
         let gesture = SpatialTapGesture()
 
-        // Verify Value type is CGPoint
-        #expect(SpatialTapGesture.Value.self == CGPoint.self)
+        // Verify Value type matches Raven's CGPoint (avoids Foundation/CoreGraphics collisions)
+        #expect(SpatialTapGesture.Value.self == Raven.CGPoint.self)
 
         // Verify Body type is Never (primitive gesture)
         #expect(SpatialTapGesture.Body.self == Never.self)
