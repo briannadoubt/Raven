@@ -247,16 +247,6 @@ public struct AlertRenderer: Sendable {
             }
         }
 
-        // Create button action that dismisses and executes custom action
-        // Note: In the actual implementation, we'd register this with DOMBridge
-        let composedAction: @Sendable @MainActor () -> Void = { @MainActor in
-            // Execute custom action first
-            config.action?()
-
-            // Then dismiss the alert
-            coordinator.dismiss(presentationId)
-        }
-
         let props: [String: VProperty] = [
             "class": .attribute(name: "class", value: buttonClasses.joined(separator: " ")),
             "type": .attribute(name: "type", value: "button"),
@@ -280,7 +270,7 @@ public struct AlertRenderer: Sendable {
         try? await Task.sleep(for: .milliseconds(50))
 
         let bridge = DOMBridge.shared
-        guard let element = bridge.getNode(id: nodeId) else { return }
+        guard bridge.getNode(id: nodeId) != nil else { return }
 
         // Focus the first button for keyboard navigation
         if let eval = JSObject.global.eval.function,

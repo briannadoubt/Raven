@@ -86,7 +86,7 @@ public struct List<Content: View>: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A VNode configured as a list container with ARIA attributes.
     @MainActor public func toVNode() -> VNode {
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             // ARIA role for accessibility (WCAG 2.1 requirement)
             "role": .attribute(name: "role", value: "list"),
 

@@ -424,7 +424,7 @@ public struct PopoverRenderer: Sendable {
     private static func updateArrowEdge(_ popoverElement: JSObject, edge: Edge) {
         // Find arrow element and update its class
         let selector = ".raven-popover-arrow"
-        if let eval = JSObject.global.eval.function,
+        if JSObject.global.eval.function != nil,
            let arrow = popoverElement.querySelector?(selector).object {
             let newClass = "raven-popover-arrow raven-popover-arrow-\(edgeClassName(edge))"
             arrow.className = .string(newClass)

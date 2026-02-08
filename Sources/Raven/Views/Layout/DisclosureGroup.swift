@@ -217,7 +217,7 @@ public struct DisclosureGroup<Label: View, Content: View>: View, PrimitiveView, 
         )
 
         // Create the header div
-        var headerProps: [String: VProperty] = [
+        let headerProps: [String: VProperty] = [
             "id": .attribute(name: "id", value: headerID),
             "class": .attribute(name: "class", value: "raven-disclosure-header"),
             "role": .attribute(name: "role", value: "button"),

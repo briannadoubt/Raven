@@ -228,7 +228,7 @@ public final class ShareTarget: Sendable {
 
     /// Handle launch parameters from share target
     private func handleLaunchParams(_ launchParams: JSObject) {
-        guard let files = launchParams.files.object else {
+        guard launchParams.files.object != nil else {
             return
         }
 

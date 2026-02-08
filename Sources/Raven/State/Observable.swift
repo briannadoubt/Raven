@@ -1,4 +1,5 @@
 import Foundation
+@_exported import Observation
 
 // MARK: - Observable Macro
 
@@ -124,11 +125,6 @@ import Foundation
 /// - ``Bindable``
 /// - ``ObservationIgnored``
 /// - ``ObservableObject`` (legacy API)
-@attached(member, names: named(_$observationRegistrar), named(access), named(withMutation))
-@attached(memberAttribute)
-@attached(extension, conformances: Observable)
-public macro Observable() = #externalMacro(module: "RavenMacros", type: "ObservableMacro")
-
 // MARK: - Observable Protocol
 
 /// A protocol for types that can be observed for changes.

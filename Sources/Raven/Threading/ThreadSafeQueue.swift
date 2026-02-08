@@ -118,7 +118,7 @@ public final class ThreadSafeQueue<Element: Sendable>: Sendable {
     /// - Parameter element: The element to enqueue
     /// - Returns: True if enqueued successfully, false if full
     public func tryEnqueue(_ element: Int32) -> Bool {
-        var tail = atomic.load(index: tailIndex)
+        let tail = atomic.load(index: tailIndex)
         let head = atomic.load(index: headIndex)
 
         // Calculate next tail position
@@ -528,7 +528,7 @@ public final class MPSCQueue: Sendable {
 
     /// Enqueue from any producer thread.
     public func enqueue(_ element: Int32) -> Bool {
-        var tail = atomic.load(index: tailIndex)
+        let tail = atomic.load(index: tailIndex)
         let head = atomic.load(index: headIndex)
 
         let nextTail = (tail + 1) & Int32(mask)

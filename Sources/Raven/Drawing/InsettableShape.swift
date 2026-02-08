@@ -147,7 +147,7 @@ public struct _StrokeBorderView<S: InsettableShape, Style: ShapeStyle>: View, Pr
         ]
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),

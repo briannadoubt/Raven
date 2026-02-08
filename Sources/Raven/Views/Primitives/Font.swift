@@ -165,10 +165,10 @@ public struct Font: Sendable, Hashable {
         switch descriptor {
         case .system(let size, _, let design):
             return Font(descriptor: .system(size: size, weight: weight, design: design))
-        case .custom(let name, let size):
+        case .custom(_, let size):
             // For custom fonts, we'll store weight but application depends on font having that weight
             return Font(descriptor: .system(size: size, weight: weight, design: .default))
-        case .customFixed(let name, let fixedSize):
+        case .customFixed(_, let fixedSize):
             return Font(descriptor: .system(size: fixedSize, weight: weight, design: .default))
         default:
             // For text styles, convert to system font at standard size with weight

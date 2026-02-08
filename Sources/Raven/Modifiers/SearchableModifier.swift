@@ -250,7 +250,6 @@ public struct _SearchableView<Content: View, Suggestions: View>: View, Primitive
         // Generate unique IDs for the search elements
         let searchInputId = "search-\(UUID().uuidString)"
         let inputHandlerId = UUID()
-        let clearHandlerId = UUID()
         let suggestionsId = suggestions != nil ? "suggestions-\(UUID().uuidString)" : nil
 
         // Extract placeholder text from prompt
@@ -344,7 +343,7 @@ public struct _SearchableView<Content: View, Suggestions: View>: View, Primitive
         // Create suggestions element if provided
         var searchFieldChildren: [VNode] = [searchInputWrapper]
 
-        if let suggestions = suggestions, let suggestionsId = suggestionsId {
+        if suggestions != nil, let suggestionsId = suggestionsId {
             // For now, render suggestions as a datalist
             // A more advanced implementation could use a custom dropdown
             let suggestionsNode = VNode.element(

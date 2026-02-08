@@ -188,7 +188,6 @@ struct _SwipeActionsModifier<Actions: View>: ViewModifier, Sendable {
 
     /// Handles swipe gesture end.
     private func handleSwipeEnded(_ value: DragGesture.Value) {
-        let velocity = value.predictedEndTranslation.width - value.translation.width
         let threshold: CGFloat = 80
 
         // Check for full swipe

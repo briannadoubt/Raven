@@ -181,7 +181,7 @@ public struct HTMLSerializer: Sendable {
     private func serializeProperties(_ props: [String: VProperty]) -> String {
         var attributes: [String] = []
 
-        for (key, value) in props.sorted(by: { $0.key < $1.key }) {
+        for (_, value) in props.sorted(by: { $0.key < $1.key }) {
             switch value {
             case .attribute(let name, let attrValue):
                 attributes.append("\(name)=\"\(escapeAttribute(attrValue))\"")
@@ -191,7 +191,7 @@ public struct HTMLSerializer: Sendable {
                     attributes.append(name)
                 }
 
-            case .style(let name, let styleValue):
+            case .style:
                 // Styles will be collected and added as a style attribute
                 continue
 

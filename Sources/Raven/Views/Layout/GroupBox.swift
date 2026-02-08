@@ -136,7 +136,7 @@ public struct GroupBox<Label: View, Content: View>: View, PrimitiveView, Sendabl
         var children: [VNode] = []
 
         // Add legend if label is present
-        if hasLabel, let label = label {
+        if hasLabel, label != nil {
             let legendProps: [String: VProperty] = [
                 "class": .attribute(name: "class", value: "raven-groupbox-legend")
             ]
