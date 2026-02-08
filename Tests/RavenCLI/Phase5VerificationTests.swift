@@ -178,7 +178,8 @@ import Foundation
         let config = BuildConfig.default()
 
         #expect(config.optimizationLevel == .debug)
-        #expect(config.targetTriple == "wasm32-unknown-wasi")
+        // SwiftPM's WASI target triple is `wasm32-unknown-wasip1` in Swift 6.2+.
+        #expect(config.targetTriple == "wasm32-unknown-wasip1")
         #expect(config.debugSymbols)
         #expect(!config.verbose)
         #expect(config.additionalFlags == [])
@@ -273,4 +274,3 @@ import Foundation
         #expect(html.contains("<title>MyAwesomeApp</title>"))
     }
 }
-

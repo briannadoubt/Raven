@@ -298,31 +298,66 @@ actor WasmCompiler {
 
     /// Finds the built .wasm file in the build directory
     private func findBuiltWasm() throws -> URL {
-        // If we have an explicit target name, use the computed path directly
-        if config.executableTargetName != nil {
-            let path = config.swiftSDKWasmPath
-            if FileManager.default.fileExists(atPath: path.path) {
-                return path
+        let fileManager = FileManager.default
+
+        // If we have an explicit target name, first try known SwiftPM output locations.
+        if let targetName = config.executableTargetName {
+            let configurationDir = config.optimizationLevel == .debug ? "debug" : "release"
+            let candidateTriples = [
+                config.targetTriple,
+                "wasm32-unknown-wasip1",
+                "wasm32-unknown-wasi",
+            ]
+
+            for triple in candidateTriples {
+                let candidate = config.buildDirectory
+                    .appendingPathComponent(triple)
+                    .appendingPathComponent(configurationDir)
+                    .appendingPathComponent("\(targetName).wasm")
+                if fileManager.fileExists(atPath: candidate.path) {
+                    return candidate
+                }
+            }
+
+            // Legacy/older layout (rare, but cheap to check)
+            let legacy = config.buildDirectory
+                .appendingPathComponent(configurationDir)
+                .appendingPathComponent("\(targetName).wasm")
+            if fileManager.fileExists(atPath: legacy.path) {
+                return legacy
             }
         }
 
-        // Otherwise scan for .wasm files in the build output
-        let debugDir = config.buildDirectory.appendingPathComponent(
-            config.optimizationLevel == .debug ? "debug" : "release"
+        // Fallback: scan `.build/` for a `.wasm` output.
+        // SwiftPM SDK builds typically emit `.build/<triple>/<configuration>/<target>.wasm`.
+        let enumerator = fileManager.enumerator(
+            at: config.buildDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
         )
 
-        if let contents = try? FileManager.default.contentsOfDirectory(
-            at: debugDir,
-            includingPropertiesForKeys: nil
-        ) {
-            // Find .wasm files, excluding intermediates
-            let wasmFiles = contents.filter { $0.pathExtension == "wasm" }
-            if let first = wasmFiles.first {
-                return first
-            }
+        let desiredFileName: String? = config.executableTargetName.map { "\($0).wasm" }
+
+        guard let enumerator else {
+            let fallback = config.swiftSDKWasmPath
+            throw CompilationError.wasmFileNotFound(fallback.path)
         }
 
-        // Try the explicit path as last resort
+        while let next = enumerator.nextObject() as? URL {
+            switch next.lastPathComponent {
+            case "checkouts", "repositories", "plugins":
+                enumerator.skipDescendants()
+                continue
+            default:
+                break
+            }
+
+            guard next.pathExtension == "wasm" else { continue }
+            if next.lastPathComponent.contains(".temp.") { continue }
+            if let desiredFileName, next.lastPathComponent != desiredFileName { continue }
+            return next
+        }
+
         let fallback = config.swiftSDKWasmPath
         throw CompilationError.wasmFileNotFound(fallback.path)
     }

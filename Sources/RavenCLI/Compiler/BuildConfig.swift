@@ -70,7 +70,7 @@ struct BuildConfig: Sendable {
         sourceDirectory: URL,
         outputDirectory: URL,
         optimizationLevel: OptimizationLevel = .debug,
-        targetTriple: String = "wasm32-unknown-wasi",
+        targetTriple: String = "wasm32-unknown-wasip1",
         additionalFlags: [String] = [],
         debugSymbols: Bool = true,
         verbose: Bool = false,
@@ -112,6 +112,8 @@ struct BuildConfig: Sendable {
     var swiftSDKWasmPath: URL {
         let targetName = executableTargetName ?? "App"
         return buildDirectory
+            // SwiftPM places Swift SDK build outputs under `.build/<triple>/<configuration>/`.
+            .appendingPathComponent(targetTriple)
             .appendingPathComponent(optimizationLevel == .debug ? "debug" : "release")
             .appendingPathComponent("\(targetName).wasm")
     }
