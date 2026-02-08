@@ -37,7 +37,7 @@ import Foundation
             @FocusState var focusedField: Field? = nil
             @StateObject var formState: FormState
 
-            init() {
+            @MainActor init() {
                 _formState = StateObject(wrappedValue: FormState())
             }
 
@@ -111,7 +111,7 @@ import Foundation
             @FocusState var isFocused: Bool = false
             @StateObject var formState: FormState
 
-            init() {
+            @MainActor init() {
                 _formState = StateObject(wrappedValue: FormState())
             }
 
@@ -357,7 +357,7 @@ import Foundation
             @State var selectedTab: AppTab = .home
             @StateObject var router: Router
 
-            init() {
+            @MainActor init() {
                 _router = StateObject(wrappedValue: Router())
             }
 
@@ -459,7 +459,7 @@ import Foundation
         struct RouterTestView: View {
             @StateObject var router: Router
 
-            init() {
+            @MainActor init() {
                 _router = StateObject(wrappedValue: Router())
             }
 
@@ -606,7 +606,7 @@ import Foundation
             @StateObject var router: Router
             @State var showSuccess = false
 
-            init() {
+            @MainActor init() {
                 _formState = StateObject(wrappedValue: FormState())
                 _router = StateObject(wrappedValue: Router())
             }
@@ -749,7 +749,7 @@ import Foundation
             @StateObject var router: Router
             @State var favorites: Set<Product.ID> = []
 
-            init() {
+            @MainActor init() {
                 _router = StateObject(wrappedValue: Router())
             }
 
@@ -812,7 +812,7 @@ import Foundation
             @StateObject var formState: FormState
             @State var showSuccessAlert = false
 
-            init() {
+            @MainActor init() {
                 _formState = StateObject(wrappedValue: FormState())
             }
 
