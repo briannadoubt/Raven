@@ -1,4 +1,4 @@
-name: Bundle Size Check
+name: CI
 
 on:
   workflow_dispatch:
@@ -13,9 +13,37 @@ permissions:
   checks: write
 
 jobs:
+  tests:
+    name: Run Tests
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0"
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run swift test
+        run: swift test
+
   bundle-size:
     name: Check Bundle Size
     runs-on: ubuntu-22.04
+    needs: tests
 
     steps:
       - name: Checkout code
@@ -45,7 +73,7 @@ jobs:
         run: |
           swift sdk install https://github.com/nicktmro/aspect-swift/releases/download/0.0.2/swift-6.0.3-RELEASE_wasm32-unknown-wasi.artifactbundle.tar.gz 2>/dev/null \
             || swift sdk install https://github.com/nicktmro/aspect-swift/releases/download/0.0.2/swift-6.0.3-RELEASE_wasm32-unknown-wasi.artifactbundle.zip 2>/dev/null \
-            || echo "⚠️ WASM SDK install failed, skipping WASM build"
+            || echo "WASM SDK install failed, skipping WASM build"
           swift sdk list || true
 
       - name: Build TodoApp for WASM
@@ -57,9 +85,9 @@ jobs:
             swift build --swift-sdk "$SDK_NAME"
             SIZE=$(stat -c%s .build/debug/TodoApp.wasm)
             SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $SIZE/1024}")
-            echo "✅ WASM build succeeded: ${SIZE_KB}KB"
+            echo "WASM build succeeded: ${SIZE_KB}KB"
           else
-            echo "⚠️ No WASM SDK available, skipping WASM build"
+            echo "No WASM SDK available, skipping WASM build"
           fi
 
       - name: Create status check
@@ -79,3 +107,4 @@ jobs:
                 summary: 'Framework build completed successfully'
               }
             });
+
