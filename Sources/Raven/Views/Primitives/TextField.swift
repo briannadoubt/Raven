@@ -28,6 +28,7 @@ public struct TextField: View, PrimitiveView, Sendable {
 
     /// The placeholder text to display when the field is empty
     private let placeholder: String
+    private let prompt: Text?
 
     /// Two-way binding to the text value
     private let text: Binding<String>
@@ -51,6 +52,7 @@ public struct TextField: View, PrimitiveView, Sendable {
         text: Binding<String>
     ) {
         self.placeholder = placeholder
+        self.prompt = nil
         self.text = text
     }
 
@@ -71,6 +73,39 @@ public struct TextField: View, PrimitiveView, Sendable {
         text: Binding<String>
     ) {
         self.placeholder = titleKey.stringValue
+        self.prompt = nil
+        self.text = text
+    }
+
+    /// Creates a text field with a localized placeholder, text binding, and prompt.
+    ///
+    /// - Parameters:
+    ///   - titleKey: The localized string key for the placeholder text.
+    ///   - text: A binding to the text value.
+    ///   - prompt: A text view displayed as placeholder text when the field is empty.
+    @MainActor public init(
+        _ titleKey: LocalizedStringKey,
+        text: Binding<String>,
+        prompt: Text?
+    ) {
+        self.placeholder = titleKey.stringValue
+        self.prompt = prompt
+        self.text = text
+    }
+
+    /// Creates a text field with a placeholder string, text binding, and prompt.
+    ///
+    /// - Parameters:
+    ///   - placeholder: The placeholder text to display when the field is empty.
+    ///   - text: A binding to the text value.
+    ///   - prompt: A text view displayed as placeholder text when the field is empty.
+    @MainActor public init(
+        _ placeholder: String,
+        text: Binding<String>,
+        prompt: Text?
+    ) {
+        self.placeholder = placeholder
+        self.prompt = prompt
         self.text = text
     }
 
@@ -91,6 +126,7 @@ public struct TextField: View, PrimitiveView, Sendable {
     @MainActor public func toVNode() -> VNode {
         // Generate a unique ID for the input event handler
         let handlerID = UUID()
+        let placeholderText = prompt?.textContent ?? placeholder
 
         // Create properties for the input element
         var props: [String: VProperty] = [
@@ -98,7 +134,7 @@ public struct TextField: View, PrimitiveView, Sendable {
             "type": .attribute(name: "type", value: "text"),
 
             // Placeholder text
-            "placeholder": .attribute(name: "placeholder", value: placeholder),
+            "placeholder": .attribute(name: "placeholder", value: placeholderText),
 
             // Current value (reflects the binding)
             "value": .attribute(name: "value", value: text.wrappedValue),
@@ -234,6 +270,7 @@ public struct TextEditor: View, PrimitiveView, Sendable {
 extension TextField: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
         let binding = text
+        let placeholderText = prompt?.textContent ?? placeholder
         let handlerID = context.registerInputHandler { event in
             if let newValue = event.target.value.string {
                 binding.wrappedValue = newValue
@@ -242,7 +279,7 @@ extension TextField: _CoordinatorRenderable {
 
         var props: [String: VProperty] = [
             "type": .attribute(name: "type", value: "text"),
-            "placeholder": .attribute(name: "placeholder", value: placeholder),
+            "placeholder": .attribute(name: "placeholder", value: placeholderText),
             "value": .attribute(name: "value", value: binding.wrappedValue),
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
             "padding": .style(name: "padding", value: "8px"),
