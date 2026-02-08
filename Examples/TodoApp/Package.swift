@@ -5,10 +5,6 @@ import PackageDescription
 
 let package = Package(
     name: "TodoApp",
-    platforms: [
-        .macOS(.v14),
-        .iOS(.v17)
-    ],
     products: [
         .executable(
             name: "TodoApp",

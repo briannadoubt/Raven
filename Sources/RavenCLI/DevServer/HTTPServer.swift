@@ -167,6 +167,26 @@ actor HTTPServer {
             path = "/index.html"
         }
 
+        // Avoid noisy browser console errors when no favicon is present in the dev output.
+        if path == "/favicon.ico" {
+            let headers = """
+            HTTP/1.1 204 No Content\r
+            Content-Length: 0\r
+            Cache-Control: no-cache, no-store, must-revalidate\r
+            Connection: close\r
+            \r
+
+            """
+            if let headerData = headers.data(using: .utf8) {
+                connection.send(content: headerData, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            } else {
+                connection.cancel()
+            }
+            return
+        }
+
         // Serve generated HTML for index.html if available
         if path == "/index.html", let html = generatedHTML {
             let contentType = "text/html; charset=utf-8"

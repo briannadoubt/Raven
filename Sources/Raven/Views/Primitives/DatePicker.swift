@@ -168,6 +168,8 @@ import Foundation
 public struct DatePicker: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
+    @Environment(\.datePickerStyle) private var datePickerStyle
+
     /// The label to display for the picker
     private let label: String
 
@@ -521,6 +523,13 @@ extension DatePicker: _CoordinatorRenderable {
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
         ]
+        if datePickerStyle is CompactDatePickerStyle {
+            props["padding"] = .style(name: "padding", value: "6px 8px")
+            props["font-size"] = .style(name: "font-size", value: "13px")
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "compact")
+        } else {
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "automatic")
+        }
 
         switch dateRange {
         case .unlimited:

@@ -197,3 +197,27 @@ extension EnvironmentValues {
         set { self[IsEnabledKey.self] = newValue }
     }
 }
+
+// MARK: - Text Input
+
+/// Environment key for text autocorrection behavior.
+private struct AutocorrectionDisabledKey: EnvironmentKey {
+    static let defaultValue: Bool? = nil
+}
+
+extension EnvironmentValues {
+    /// Whether text inputs should disable autocorrection.
+    ///
+    /// When `true`, Raven renders text inputs with browser attributes that
+    /// disable autocorrect and spellchecking.
+    public var autocorrectionDisabled: Bool? {
+        get { self[AutocorrectionDisabledKey.self] }
+        set { self[AutocorrectionDisabledKey.self] = newValue }
+    }
+
+    /// Legacy alias for `autocorrectionDisabled`.
+    public var disableAutocorrection: Bool? {
+        get { autocorrectionDisabled }
+        set { autocorrectionDisabled = newValue }
+    }
+}

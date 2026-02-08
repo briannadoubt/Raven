@@ -26,6 +26,8 @@ import JavaScriptKit
 public struct TextField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
+    @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
+
     /// The placeholder text to display when the field is empty
     private let placeholder: String
     private let prompt: Text?
@@ -289,6 +291,10 @@ extension TextField: _CoordinatorRenderable {
             "width": .style(name: "width", value: "100%"),
             "box-sizing": .style(name: "box-sizing", value: "border-box"),
         ]
+        if let disabled = autocorrectionDisabled {
+            props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
+            props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
         props["aria-label"] = .attribute(name: "aria-label", value: placeholder)
         props["role"] = .attribute(name: "role", value: "textbox")
         return VNode.element("input", props: props, children: [])
