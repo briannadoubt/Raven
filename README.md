@@ -6,7 +6,7 @@
 
 **Swift-native UI for the modern web**
 
-Build browser apps with SwiftUI APIs in Swift, compiled to WebAssembly and rendered in the DOM.
+Build browser apps with SwiftUI APIs in Swift, compile to WebAssembly, render in the DOM.
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
@@ -14,52 +14,15 @@ Build browser apps with SwiftUI APIs in Swift, compiled to WebAssembly and rende
 
 </div>
 
-## Overview
+## What Raven Is
 
 Raven is a Swift framework for building browser applications with SwiftUI APIs.
 
-It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and prioritizes type safety and modern concurrency practices.
+It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and is built around modern Swift concurrency patterns.
 
-## Project Status
+## Start Here
 
-Raven is actively developed and production-oriented, with some areas still maturing.
-
-### Stable Today
-
-- SwiftUI view composition and modifiers
-- State and data flow: `@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`, `@Bindable`
-- Virtual DOM diff-and-patch renderer
-- Gesture system (tap, drag, long press, magnification, rotation, gesture composition)
-- Animation APIs (`withAnimation`, value-based animation, transitions, keyframes)
-- CLI workflows for create/build/dev
-- Swift 6.2 concurrency-focused patterns across core modules
-
-### Still Maturing
-
-- `raven create` scaffolding still requires uncommenting Raven dependencies/imports
-- Documentation quality is uneven across modules; active cleanup is ongoing
-- Deployment/performance guidance is improving but not fully consolidated yet
-
-## Features
-
-- SwiftUI API surface for web-first apps
-- WebAssembly runtime with JavaScriptKit interop
-- Virtual DOM architecture with minimal DOM updates
-- Navigation, forms, lists, grid layouts, and modern view modifiers
-- Gesture foundation with composition and gesture state handling
-- Animation/transition support with browser-optimized rendering paths
-- Accessibility, PWA, and SSR modules in active development
-- CLI development loop with hot reload and error overlay support
-
-## Quick Start
-
-### Prerequisites
-
-- Swift 6.2+
-- Swift WASM SDK/toolchain (for WASM builds)
-- Modern browser with WebAssembly support
-
-### Build the Package
+### 1) Build Raven locally
 
 ```bash
 git clone https://github.com/briannadoubt/Raven.git
@@ -68,79 +31,105 @@ swift build
 swift test
 ```
 
-### Build a Real Example App (WASM)
+### 2) Run a real example app
+
+```bash
+cd Examples/TodoApp
+swift run raven dev
+```
+
+Open `http://localhost:3000`.
+
+### 3) Build a WASM binary explicitly (optional)
 
 ```bash
 cd Examples/TodoApp
 swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 ```
 
-### Run the Dev Server
+## What Works Today
 
-From a Raven app package directory (for example, `Examples/TodoApp`):
+- SwiftUI view composition and modifiers
+- State/data flow: `@State`, `@Binding`, `@StateObject`, `@ObservedObject`, `@Observable`, `@Bindable`
+- Virtual DOM diff-and-patch renderer
+- Gestures (tap, drag, long press, magnification, rotation, composition)
+- Animations (`withAnimation`, value-based animation, transitions, keyframes)
+- Dev/build/create CLI workflows
+
+## Known Rough Edges
+
+- `raven create` scaffolding still requires uncommenting Raven dependencies/imports
+- Documentation depth varies by subsystem
+- Deployment and performance guidance is still being consolidated
+
+## CLI Workflows
+
+Preferred CLI path in this repo: `swift run raven ...`
+
+### Development server
 
 ```bash
 swift run raven dev
+swift run raven dev --port 3000 --host localhost
 ```
 
-Default URL: `http://localhost:3000`
+### Production build
 
-## CLI Notes
+```bash
+swift run raven build
+swift run raven build --optimize --compress
+```
 
-This repository currently includes two CLI paths:
+### Scaffold a new project
 
-- Swift CLI target (`swift run raven ...`) from `Sources/RavenCLI`
-- Legacy helper script (`./raven`) used by older local workflows
+```bash
+swift run raven create MyApp
+```
 
-For active Raven development, prefer the Swift CLI target.
+Note: `create` currently generates a template that still expects Raven import/dependency lines to be uncommented.
 
-## Architecture
-
-Raven bridges declarative Swift views to the browser DOM through three layers:
+## Architecture (Short Version)
 
 ```text
 SwiftUI Views -> Virtual DOM -> DOM Bridge -> Browser DOM
 ```
 
 1. Views are declared using SwiftUI APIs.
-2. The view tree is converted into virtual nodes.
-3. On state changes, a diff computes minimal patches.
-4. Patches are applied to real DOM nodes through the rendering bridge.
+2. The view tree is transformed into virtual nodes.
+3. State changes trigger a diff.
+4. Minimal patches are applied to real DOM nodes.
 
-This keeps updates predictable while minimizing unnecessary DOM churn.
+## Troubleshooting
 
-## Requirements
+### `No SwiftWasm toolchain found`
 
-### Development
+Install a WASM-capable Swift SDK/toolchain, then retry `swift run raven dev`.
 
-- Swift 6.2+
-- macOS or Linux for package development
-- WASM SDK/toolchain for browser targets
+### `No Package.swift found`
 
-### Runtime
+Run CLI commands from a Swift package root (for example, `Examples/TodoApp`).
 
-- Browser with WebAssembly support (current versions of Chrome, Firefox, Safari, Edge)
+### Dev server starts but page is blank
 
-### Dependencies
-
-- `JavaScriptKit` (WASM/JS interop)
-- `swift-argument-parser` (CLI)
+- Check terminal output for compiler errors.
+- Confirm `http://localhost:3000` is reachable.
+- Ensure the initial build finished successfully.
 
 ## Project Structure
 
 ```text
 Raven/
 ├── Sources/
-│   ├── Raven/              # Core framework
+│   ├── Raven/              # Framework
 │   ├── RavenRuntime/       # Runtime support
 │   └── RavenCLI/           # CLI implementation
-├── Tests/                  # Test suites
-├── Examples/               # Runnable sample apps
-├── Documentation/          # Guides and API docs
-└── Docs/                   # Deep dives (performance/architecture notes)
+├── Tests/
+├── Examples/
+├── Documentation/
+└── Docs/
 ```
 
-## Documentation and Examples
+## Documentation
 
 - [Documentation Index](Documentation/)
 - [Getting Started](Documentation/GettingStarted.md)
@@ -149,54 +138,27 @@ Raven/
 - [Examples](Examples/)
 - [Changelog](CHANGELOG.md)
 
-## Testing
-
-```bash
-# all tests
-swift test
-
-# focused suites
-swift test --filter RavenTests
-swift test --filter VirtualDOMTests
-swift test --filter IntegrationTests
-```
-
-## Performance
-
-Current performance strategy centers on:
-
-- minimal DOM patching through virtual DOM diffing
-- update coalescing in render loops
-- release-oriented WASM build optimization paths
-- bundle size inspection through CLI reporting
-
-A fuller benchmark story is on the roadmap.
-
 ## Roadmap
-
-The roadmap is ambitious, with milestones prioritized for practical delivery.
 
 ### Now
 
-- tighten SwiftUI API compatibility in high-usage primitives and modifiers
-- improve `raven dev` reliability and turnaround time
-- continue concurrency hardening and test expansion
+- tighten SwiftUI API coverage in high-usage primitives/modifiers
+- improve `raven dev` reliability and iteration speed
+- expand concurrency hardening and test coverage
 
 ### Next
 
-- make `raven create` turnkey without manual uncomment steps
-- ship more production-grade example apps
-- unify architecture, migration, and deployment documentation
+- make `raven create` turnkey
+- add more production-grade examples
+- unify migration/deployment documentation
 
 ### Later
 
 - deeper SSR + hydration support
-- stronger PWA/offline defaults and tooling
+- stronger offline/PWA defaults
 - formal benchmark suite and perf-budget guidance
 
 ## Contributing
-
-Contributions are welcome.
 
 ```bash
 swift build
@@ -205,18 +167,12 @@ swift test
 
 When opening a PR, include:
 
-- clear behavior summary
+- a clear behavior summary
 - tests for new or changed behavior
-- documentation updates for public API changes
+- docs updates for public API changes
 
 Issue tracker: [GitHub Issues](https://github.com/briannadoubt/Raven/issues)
 Pull requests: [GitHub Pull Requests](https://github.com/briannadoubt/Raven/pulls)
-
-## Resources
-
-- [Swift](https://swift.org)
-- [SwiftWasm](https://swiftwasm.org)
-- [SwiftUI](https://developer.apple.com/swiftui/)
 
 ## License
 
