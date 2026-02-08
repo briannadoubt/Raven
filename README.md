@@ -99,6 +99,18 @@ SwiftUI Views -> Virtual DOM -> DOM Bridge -> Browser DOM
 3. State changes trigger a diff.
 4. Minimal patches are applied to real DOM nodes.
 
+## Diffing and Identity
+
+Raven uses a Fiber reconciliation pipeline with a few practical rules:
+
+- Keyed reconciliation first: when children have keys, Raven matches by key so reorders and inserts stay stable.
+- Positional fallback second: unkeyed children are matched by index as a fallback.
+- Stable identity from tree paths: fiber/node identity is derived from deterministic path strings and hashed (FNV-1a) so matching remains consistent across renders.
+- Targeted patch generation: reconciliation emits focused mutations (`insert`, `remove`, `replace`, `updateProps`, `reorder`) instead of rebuilding entire subtrees.
+- Dirty-subtree skipping: clean branches are skipped entirely (`isDirty` / `hasDirtyDescendant`), which keeps updates fast as trees grow.
+
+In practice, this means Raven preserves state and DOM continuity better for keyed collections, while still handling simpler unkeyed trees predictably.
+
 ## Troubleshooting
 
 ### `No SwiftWasm toolchain found`
