@@ -45,7 +45,7 @@ struct TodoItem: Identifiable, Sendable {
 ///
 /// Used as the selection value for the TabView binding. Each case maps to a
 /// `.tabPath()` route so the browser URL updates when switching tabs.
-enum Tab: Hashable, Sendable {
+enum Tab: String, Codable, Hashable, Sendable {
     case todos
     case controls
     case display
@@ -60,7 +60,7 @@ enum Tab: Hashable, Sendable {
 @MainActor
 final class ShowcaseStore: Raven.ObservableObject {
     // -- Tab state --
-    @Raven.Published var selectedTab: Tab = .todos
+    @AppStorage("TodoApp.selectedTab") var selectedTab: Tab = .todos
 
     // -- Todo state --
     @Raven.Published var todos: [TodoItem] = []
