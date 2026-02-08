@@ -1,0 +1,31 @@
+# Allow Raven automation to generate the deterministic SwiftUI API gap report.
+# Doc reference: https://developers.openai.com/codex/rules
+
+prefix_rule(
+    pattern = ["Scripts/swiftui_api_gap_report.py"],
+    decision = "allow",
+    justification = "Allow direct execution of the SwiftUI API gap report script for recurring Codex automations.",
+    match = [
+        "Scripts/swiftui_api_gap_report.py --repo-root . --output-dir Reports/swiftui-api-gap",
+    ],
+    not_match = [
+        "./Scripts/swiftui_api_gap_report.py --repo-root . --output-dir Reports/swiftui-api-gap",
+    ],
+)
+
+prefix_rule(
+    pattern = [
+        ["python", "python3", "venv/bin/python"],
+        ["Scripts/swiftui_api_gap_report.py"],
+    ],
+    decision = "allow",
+    justification = "Allow Python-based invocation of the SwiftUI API gap report script for Codex automations.",
+    match = [
+        "python3 Scripts/swiftui_api_gap_report.py --repo-root . --output-dir Reports/swiftui-api-gap",
+        "venv/bin/python Scripts/swiftui_api_gap_report.py --repo-root . --output-dir Reports/swiftui-api-gap",
+    ],
+    not_match = [
+        "python3 Scripts/other_script.py",
+        "python3 -m pip install pyyaml",
+    ],
+)

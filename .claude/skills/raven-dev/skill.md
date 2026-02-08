@@ -283,17 +283,17 @@ guard let element = DOMBridge.shared.createElement(tag) else {
 ## File Locations Reference
 
 ### Framework Core
-- **DOMBridge:** `/Users/bri/dev/Raven/Sources/Raven/Rendering/DOMBridge.swift`
-- **RenderLoop:** `/Users/bri/dev/Raven/Sources/RavenRuntime/RenderLoop.swift`
-- **ViewBuilder:** `/Users/bri/dev/Raven/Sources/Raven/Core/ViewBuilder.swift`
-- **AppRuntime:** `/Users/bri/dev/Raven/Sources/RavenRuntime/AppRuntime.swift`
+- **DOMBridge:** `Sources/Raven/Rendering/DOMBridge.swift`
+- **RenderLoop:** `Sources/RavenRuntime/RenderLoop.swift`
+- **ViewBuilder:** `Sources/Raven/Core/ViewBuilder.swift`
+- **AppRuntime:** `Sources/RavenRuntime/AppRuntime.swift`
 
 ### TodoApp Example
-- **Main:** `/Users/bri/dev/Raven/Examples/TodoApp/Sources/TodoApp/TodoAppMain.swift`
-- **Package:** `/Users/bri/dev/Raven/Examples/TodoApp/Package.swift`
-- **Flask Server:** `/Users/bri/dev/Raven/Examples/TodoApp/serve.py`
-- **HTML:** `/Users/bri/dev/Raven/Examples/TodoApp/public/index.html`
-- **Runtime JS:** `/Users/bri/dev/Raven/Examples/TodoApp/public/runtime.js`
+- **Main:** `Examples/TodoApp/Sources/TodoApp/TodoAppMain.swift`
+- **Package:** `Examples/TodoApp/Package.swift`
+- **Flask Server:** `Examples/TodoApp/serve.py`
+- **HTML:** `Examples/TodoApp/public/index.html`
+- **Runtime JS:** `Examples/TodoApp/public/runtime.js`
 
 ### Memory
 - **Memory Dir:** `/Users/bri/.claude/projects/-Users-bri-dev-Raven/memory/`

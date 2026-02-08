@@ -10,7 +10,7 @@ This document describes the implementation of `TapGesture` and `SpatialTapGestur
 
 ## Files Created
 
-### 1. `/Users/bri/dev/Raven/Sources/Raven/Gestures/TapGesture.swift`
+### 1. `Sources/Raven/Gestures/TapGesture.swift`
 
 **Purpose:** Implements the basic tap gesture recognizer.
 
@@ -53,7 +53,7 @@ Text("Double tap")
 - Multi-tap Detection: Uses `event.detail` property from MouseEvent
 - Browser handles double-click timeout automatically
 
-### 2. `/Users/bri/dev/Raven/Sources/Raven/Gestures/SpatialTapGesture.swift`
+### 2. `Sources/Raven/Gestures/SpatialTapGesture.swift`
 
 **Purpose:** Implements tap gesture with location tracking.
 
@@ -111,7 +111,7 @@ Canvas { context, size in
 - Global Coordinates: `clientX/Y` (viewport coordinates)
 - Named Coordinates: Finds ancestor and calculates relative position
 
-### 3. `/Users/bri/dev/Raven/Tests/RavenTests/TapGestureTests.swift`
+### 3. `Tests/RavenTests/TapGestureTests.swift`
 
 **Purpose:** Comprehensive test suite for both gesture types.
 
@@ -369,10 +369,10 @@ Potential improvements for future phases:
 
 All files use absolute paths:
 
-- **TapGesture.swift:** `/Users/bri/dev/Raven/Sources/Raven/Gestures/TapGesture.swift`
-- **SpatialTapGesture.swift:** `/Users/bri/dev/Raven/Sources/Raven/Gestures/SpatialTapGesture.swift`
-- **TapGestureTests.swift:** `/Users/bri/dev/Raven/Tests/RavenTests/TapGestureTests.swift`
-- **This document:** `/Users/bri/dev/Raven/Documentation/TapGesture-Implementation.md`
+- **TapGesture.swift:** `Sources/Raven/Gestures/TapGesture.swift`
+- **SpatialTapGesture.swift:** `Sources/Raven/Gestures/SpatialTapGesture.swift`
+- **TapGestureTests.swift:** `Tests/RavenTests/TapGestureTests.swift`
+- **This document:** `Documentation/TapGesture-Implementation.md`
 
 ## Summary
 

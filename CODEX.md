@@ -24,5 +24,5 @@ Cross compilation for SwiftUI to the DOM
 
 ## Skills
 
-- Raven development workflow: `/Users/bri/dev/Raven/.codex/skills/raven-dev/SKILL.md`
-- Swift WASM workflow: `/Users/bri/dev/Raven/.codex/skills/swift-wasm/SKILL.md`
+- Raven development workflow: `.codex/skills/raven-dev/SKILL.md`
+- Swift WASM workflow: `.codex/skills/swift-wasm/SKILL.md`

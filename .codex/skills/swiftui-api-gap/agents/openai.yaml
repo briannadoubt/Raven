@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwiftUI API Gap"
+  short_description: "Generate deterministic SwiftUI parity gap reports."
+  default_prompt: "Generate or refresh the SwiftUI API gap report, interpret actionable gaps, and update related workflow automation in this repository."
