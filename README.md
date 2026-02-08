@@ -4,7 +4,7 @@
 
 <img width="256" height="256" alt="Raven logo" src="https://github.com/user-attachments/assets/8d0656c7-de7a-4ff8-8953-67affd5427fa" />
 
-**Swift-native UI for the modern web**
+**SwiftUI for the modern web**
 
 Build browser apps with SwiftUI APIs in Swift, compile to WebAssembly, render in the DOM.
 
