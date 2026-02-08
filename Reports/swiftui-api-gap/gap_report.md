@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-08T09:05:40.383429+00:00`
+Generated: `2026-02-08T09:36:21.609938+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,9 +10,9 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1234**
-- Missing in Raven: **3335**
-- Name-based coverage: **27.01%**
+- Matched by Raven: **1263**
+- Missing in Raven: **3306**
+- Name-based coverage: **27.64%**
 
 ### Missing by Declaration Kind
 
@@ -21,7 +21,7 @@ Target: `arm64-apple-ios26.2`
 | `Class` | 5 | 0 | 5 |
 | `Constructor` | 521 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1083 | 0 | 1366 |
+| `Func` | 1054 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 51 | 0 | 66 |
 | `Struct` | 357 | 0 | 484 |

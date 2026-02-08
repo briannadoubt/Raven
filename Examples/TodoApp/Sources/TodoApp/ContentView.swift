@@ -68,6 +68,9 @@ final class ShowcaseStore: Raven.ObservableObject {
     @Raven.Published var filter: Filter = .all
     @Raven.Published var searchText: String = ""
     @Raven.Published var isSearchFocused: Bool = false
+    @Raven.Published var isDropTargeted: Bool = false
+    @Raven.Published var isImportPresented: Bool = false
+    @Raven.Published var lastImportedFilesSummary: String = ""
 
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
@@ -237,6 +240,20 @@ struct TodosTab: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            // Phase 2 demo: fileImporter API
+            HStack(spacing: 10) {
+                Button("Import Todos...") {
+                    store.isImportPresented = true
+                }
+                .buttonStyle(.bordered)
+
+                if !store.lastImportedFilesSummary.isEmpty {
+                    Text(store.lastImportedFilesSummary)
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+            }
+
             // Add todo input
             HStack(spacing: 8) {
                 TextField("What needs to be done?", text: $newTodoText)
@@ -297,6 +314,26 @@ struct TodosTab: View {
                                 .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
                         }
                     }
+                    // Phase 2 demo: draggable() API
+                    .draggable(todo.text)
+                }
+                // Phase 2 demo: onDrop() API (drop text to create a new todo)
+                .onDrop(of: [.plainText, .text], isTargeted: Binding(
+                    get: { store.isDropTargeted },
+                    set: { store.isDropTargeted = $0 }
+                )) { items in
+                    guard let text = items.compactMap({ item -> String? in
+                        if case .text(let t) = item { return t }
+                        return nil
+                    }).first else {
+                        return false
+                    }
+
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return false }
+
+                    store.addTodo(trimmed)
+                    return true
                 }
             }
 
@@ -348,6 +385,21 @@ struct TodosTab: View {
         .task(id: store.searchText, priority: .utility) {
             // Phase 1 demo: task(id:) API re-runs as search query changes.
             await Task.yield()
+        }
+        .fileImporter(
+            isPresented: Binding(
+                get: { store.isImportPresented },
+                set: { store.isImportPresented = $0 }
+            ),
+            allowedContentTypes: [.plainText, .text, .data],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let files):
+                store.lastImportedFilesSummary = "Imported \(files.count) file(s)"
+            case .failure:
+                store.lastImportedFilesSummary = ""
+            }
         }
     }
 }
