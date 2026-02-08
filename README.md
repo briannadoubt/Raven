@@ -56,6 +56,18 @@ swift build --swift-sdk swift-6.2.3-RELEASE_wasm
 - Animations (`withAnimation`, value-based animation, transitions, keyframes)
 - Dev/build/create CLI workflows
 
+## Supported Components
+
+| Category | Components |
+| --- | --- |
+| Core primitives | `Text`, `Image`, `Button`, `Label`, `Link`, `Color`, `AsyncImage`, `ProgressView`, `ContentUnavailableView` |
+| Text and input | `TextField`, `TextEditor`, `SecureField`, `Toggle`, `Picker`, `DatePicker`, `Slider`, `Stepper`, `ColorPicker`, `Menu` |
+| Formatted inputs | `PhoneNumberField`, `CurrencyField`, `NumberFormatField` |
+| Layout | `VStack`, `HStack`, `ZStack`, `Spacer`, `Divider`, `Group`, `GroupBox`, `Form`, `Section`, `ControlGroup`, `GeometryReader`, `ViewThatFits` |
+| Collections and grids | `List`, `ForEach`, `Grid`, `GridRow`, `LazyVGrid`, `LazyHGrid`, `LazyVStack`, `Table`, `TableRow`, `TableColumn` |
+| Navigation | `NavigationView`, `NavigationStack`, `NavigationLink`, `TabView` |
+| Presentation | `sheet`, `popover`, `alert`, `confirmationDialog`, `fullScreenCover`, `interactiveDismissDisabled` |
+
 ## Known Rough Edges
 
 - `raven create` scaffolding still requires uncommenting Raven dependencies/imports
