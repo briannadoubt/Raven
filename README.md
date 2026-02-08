@@ -6,7 +6,7 @@
 
 **SwiftUI for the modern web**
 
-Build browser apps with SwiftUI APIs in Swift, compile to WebAssembly, render in the DOM.
+Build browser apps with SwiftUI APIs, compile to WebAssembly, render in the DOM.
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
