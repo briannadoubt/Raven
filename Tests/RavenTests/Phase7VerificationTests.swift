@@ -287,8 +287,8 @@ import Foundation
                 continue
             }
 
-            // Phase 5 verification covers CLI tooling and belongs under RavenCLITests.
-            if phase == "Phase5" {
+            // Some verification suites cover CLI/dev tooling and belong under RavenCLITests.
+            if phase == "Phase5" || phase == "Phase6" {
                 let ravenCLITestsPath = getProjectPath()
                     .appendingPathComponent("Tests")
                     .appendingPathComponent("RavenCLI")
