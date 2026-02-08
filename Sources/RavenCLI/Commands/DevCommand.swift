@@ -29,7 +29,7 @@ struct DevCommand: AsyncParsableCommand {
     var release: Bool = false
 
     @Flag(name: .long, inversion: .prefixedNo, help: "Open browser after starting server")
-    var open: Bool = true
+    var open: Bool = false
 
     func run() async throws {
         print("Starting Raven development server...")
