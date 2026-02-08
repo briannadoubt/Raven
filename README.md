@@ -4,9 +4,9 @@
 
 <img width="256" height="256" alt="Raven logo" src="https://github.com/user-attachments/assets/8d0656c7-de7a-4ff8-8953-67affd5427fa" />
 
-**SwiftUI for the web, without switching languages**
+**Swift-native UI for the modern web**
 
-Write SwiftUI-style views in Swift, compile to WebAssembly, and render in the DOM.
+Build browser apps with SwiftUI-style APIs in Swift, compiled to WebAssembly and rendered in the DOM.
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
@@ -16,9 +16,9 @@ Write SwiftUI-style views in Swift, compile to WebAssembly, and render in the DO
 
 ## Overview
 
-Raven is a Swift framework for building browser apps with SwiftUI-style APIs.
+Raven is a Swift framework for building browser applications with SwiftUI-style APIs.
 
-It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and focuses on modern Swift concurrency and type-safe UI development.
+It compiles Swift to WebAssembly, renders through a virtual DOM pipeline, and prioritizes type safety and modern concurrency practices.
 
 ## Project Status
 
@@ -172,7 +172,7 @@ A fuller benchmark story is on the roadmap.
 
 ## Roadmap
 
-Big scope, realistic sequencing.
+The roadmap is ambitious, with milestones prioritized for practical delivery.
 
 ### Now
 
