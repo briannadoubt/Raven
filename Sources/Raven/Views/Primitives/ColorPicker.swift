@@ -245,7 +245,7 @@ public struct ColorPicker: View, PrimitiveView, Sendable {
         let hexColor = colorToHex(selection.wrappedValue)
 
         // Create the color input element
-        var colorProps: [String: VProperty] = [
+        let colorProps: [String: VProperty] = [
             "type": .attribute(name: "type", value: "color"),
             "value": .attribute(name: "value", value: hexColor),
             "onChange": .eventHandler(event: "change", handlerID: colorHandlerID),

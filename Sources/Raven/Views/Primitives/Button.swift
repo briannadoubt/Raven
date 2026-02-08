@@ -165,7 +165,7 @@ public struct Button<Label: View>: View, PrimitiveView, Sendable {
         let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
 
         // Create button element with event handler
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "onClick": clickHandler
         ]
 

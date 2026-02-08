@@ -95,7 +95,7 @@ public struct Route: Sendable {
         var wildcardPath: [String] = []
         var segmentIndex = 0
 
-        for (index, segment) in segments.enumerated() {
+        for segment in segments {
             switch segment {
             case .static(let value):
                 guard segmentIndex < pathSegments.count else { return nil }

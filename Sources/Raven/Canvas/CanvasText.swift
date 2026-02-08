@@ -71,7 +71,7 @@ extension GraphicsContext {
         jsContext.fillStyle = .string(color.cssValue)
 
         // Draw text
-        jsContext.fillText!(text, point.x, point.y)
+        _ = jsContext.fillText!(text, point.x, point.y)
     }
 
     /// Draws stroked (outlined) text at the specified point.
@@ -107,7 +107,7 @@ extension GraphicsContext {
         jsContext.lineWidth = .number(lineWidth)
 
         // Draw text
-        jsContext.strokeText!(text, point.x, point.y)
+        _ = jsContext.strokeText!(text, point.x, point.y)
     }
 
     /// Measures the width of text with the specified font.

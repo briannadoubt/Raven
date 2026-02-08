@@ -240,7 +240,7 @@ public final class Camera: Sendable {
     ///   - vertical: Vertical rotation in radians.
     public func orbit(horizontal: Float, vertical: Float) {
         // Calculate the vector from target to camera
-        var offset = position - target
+        let offset = position - target
         let distance = offset.length
 
         // Calculate current angles

@@ -109,7 +109,7 @@ public struct DialogRenderer: Sendable {
         // This will typically be set by the specific dialog renderer
 
         // Add backdrop click handler if provided
-        if let handler = dismissHandler {
+        if dismissHandler != nil {
             let handlerID = UUID()
             props["onClick"] = .eventHandler(event: "click", handlerID: handlerID)
 

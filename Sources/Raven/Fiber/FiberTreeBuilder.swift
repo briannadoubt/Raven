@@ -98,7 +98,6 @@ public final class FiberTreeBuilder {
             let childKey = newChild.key ?? String(i)
             let childPath = "\(pathPrefix).\(childKey)"
             let reconciledFiber: Fiber
-            var isNew = false
 
             // Try key-based matching first
             if let key = newChild.key, let existing = existingByKey[key] {
@@ -116,7 +115,6 @@ public final class FiberTreeBuilder {
             } else {
                 // No match — create new fiber
                 reconciledFiber = createFiber(from: newChild, parent: parentFiber, path: childPath)
-                isNew = true
                 // Build sub-children for new fiber
                 if !newChild.children.isEmpty {
                     buildChildren(for: reconciledFiber, from: newChild.children, pathPrefix: childPath)

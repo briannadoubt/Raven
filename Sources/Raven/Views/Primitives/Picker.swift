@@ -481,7 +481,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
             }
 
             // Create properties for the option div
-            var optionProps: [String: VProperty] = [
+            let optionProps: [String: VProperty] = [
                 "class": .attribute(name: "class", value: classes),
                 // Store the option ID as a data attribute for event handling
                 "data-option-id": .attribute(name: "data-option-id", value: option.id),

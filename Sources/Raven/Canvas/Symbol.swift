@@ -242,7 +242,6 @@ public struct Symbol: Sendable, Hashable, Identifiable {
     /// - Parameter color: The foreground color to apply.
     /// - Returns: A new symbol with the specified color.
     public func foregroundColor(_ color: Color) -> Symbol {
-        var modified = self
         return Symbol(
             name: name,
             category: category,
@@ -315,19 +314,11 @@ public struct Symbol: Sendable, Hashable, Identifiable {
     public func path(size: CGSize) -> Path {
         let scaleX = size.width / viewBox.width
         let scaleY = size.height / viewBox.height
-        let scale = min(scaleX, scaleY) // Preserve aspect ratio
-
-        let transform = CGAffineTransform(scaleX: scale, y: scale)
-            .translatedBy(x: -viewBox.minX, y: -viewBox.minY)
+        _ = min(scaleX, scaleY) // Preserve aspect ratio
 
         // Create a path from the SVG data
         // Note: This is simplified - a full implementation would parse SVG path data
-        var path = Path()
-
-        // For now, we'll use the pathData directly
-        // A real implementation would parse and transform the SVG commands
-
-        return path
+        return Path()
     }
 
     /// Generates a Path for this symbol fitted to the specified rectangle.

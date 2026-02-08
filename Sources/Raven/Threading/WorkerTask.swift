@@ -314,7 +314,7 @@ public struct WorkerTask: Sendable, Identifiable {
             throw TaskError.invalidStatus
         }
 
-        guard let createdAt = jsObject.createdAt.number else {
+        guard jsObject.createdAt.number != nil else {
             throw TaskError.missingCreatedAt
         }
 

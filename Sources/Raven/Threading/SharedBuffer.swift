@@ -242,7 +242,7 @@ public final class SharedBuffer: Sendable {
     /// - Parameter object: The object to check
     /// - Returns: True if the object is a SharedArrayBuffer
     public static func isSharedArrayBuffer(_ object: JSObject) -> Bool {
-        guard let constructor = JSObject.global.SharedArrayBuffer.function else {
+        guard JSObject.global.SharedArrayBuffer.function != nil else {
             return false
         }
 

@@ -231,8 +231,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable & Hashable, Colum
         if let index = currentSort.firstIndex(where: { $0.id == columnID }) {
             if index == 0 {
                 // Primary sort - reverse the order
-                let descriptor = currentSort[index]
-                let newOrder = descriptor.order.reversed
+                _ = currentSort[index].order.reversed
                 // We need to recreate the descriptor with reversed order
                 // This is a simplification - actual implementation would need proper comparator access
                 currentSort.remove(at: index)

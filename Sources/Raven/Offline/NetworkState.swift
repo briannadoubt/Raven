@@ -222,7 +222,7 @@ public final class NetworkState: @unchecked Sendable {
             return .undefined
         }
         self.onlineHandler = onlineHandler
-        window.addEventListener?("online", onlineHandler)
+        _ = window.addEventListener?("online", onlineHandler)
 
         // Offline event
         let offlineHandler = JSClosure { [weak self] _ in
@@ -232,7 +232,7 @@ public final class NetworkState: @unchecked Sendable {
             return .undefined
         }
         self.offlineHandler = offlineHandler
-        window.addEventListener?("offline", offlineHandler)
+        _ = window.addEventListener?("offline", offlineHandler)
 
         // Connection change event
         let navigator = window.navigator
@@ -244,7 +244,7 @@ public final class NetworkState: @unchecked Sendable {
                 return .undefined
             }
             self.connectionChangeHandler = changeHandler
-            connection.addEventListener?("change", changeHandler)
+            _ = connection.addEventListener?("change", changeHandler)
         }
     }
 
@@ -282,17 +282,17 @@ public final class NetworkState: @unchecked Sendable {
         let window = JSObject.global
 
         if let handler = onlineHandler {
-            window.removeEventListener?("online", handler)
+            _ = window.removeEventListener?("online", handler)
         }
 
         if let handler = offlineHandler {
-            window.removeEventListener?("offline", handler)
+            _ = window.removeEventListener?("offline", handler)
         }
 
         if let handler = connectionChangeHandler {
             let navigator = window.navigator
             if let connection = navigator.connection.object ?? navigator.mozConnection.object ?? navigator.webkitConnection.object {
-                connection.removeEventListener?("change", handler)
+                _ = connection.removeEventListener?("change", handler)
             }
         }
     }

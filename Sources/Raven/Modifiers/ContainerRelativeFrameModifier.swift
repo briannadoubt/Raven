@@ -171,7 +171,7 @@ public struct _ContainerRelativeFrameView<Content: View>: View, PrimitiveView, S
                 let height = "calc(\(cellHeight) * \(gridConfig.span))"
                 innerProps["height"] = .style(name: "height", value: height)
             }
-        } else if let lengthCalculation = lengthCalculation {
+        } else if lengthCalculation != nil {
             // Closure-based calculation
             // For demonstration, we'll use a common pattern: percentage-based sizing
             // In a real implementation, we'd need to evaluate the closure

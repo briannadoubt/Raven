@@ -293,7 +293,7 @@ extension TableColumn {
         if comparatorID != nil {
             props["cursor"] = .style(name: "cursor", value: "pointer")
 
-            if let onSort = onSort {
+            if onSort != nil {
                 let handlerID = UUID()
                 props["onClick"] = .eventHandler(event: "click", handlerID: handlerID)
             }

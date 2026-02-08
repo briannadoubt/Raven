@@ -72,7 +72,7 @@ import Foundation
 ///
 /// - Note: Shapes in Raven are rendered using SVG, which provides excellent
 ///   performance and quality for vector graphics in modern web browsers.
-public protocol Shape: View {
+public protocol Shape: View where Body == Never {
     /// Describes the shape's path within the specified rectangle.
     ///
     /// Implement this method to define your shape's outline. The path is
@@ -97,9 +97,6 @@ public protocol Shape: View {
 // MARK: - Shape View Conformance
 
 extension Shape {
-    /// Shapes have `Never` as their body type because they render directly.
-    public typealias Body = Never
-
     /// Converts this shape to a virtual DOM node.
     ///
     /// This method renders the shape as an SVG element in the DOM.
@@ -114,7 +111,7 @@ extension Shape {
         let shapePath = path(in: defaultRect)
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -217,7 +214,7 @@ public struct _ShapeFillView<S: Shape, Style: ShapeStyle>: View, PrimitiveView, 
         ]
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -267,7 +264,7 @@ public struct _ShapeStrokeView<S: Shape, Style: ShapeStyle>: View, PrimitiveView
         ]
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),

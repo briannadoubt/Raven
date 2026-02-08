@@ -89,16 +89,12 @@ public final class ScreenWake: Sendable {
             return
         }
 
-        do {
-            let releasePromise = lock.release.function!()
-            _ = try? await JSPromise(from: releasePromise)?.getValue()
+        let releasePromise = lock.release.function!()
+        _ = try? await JSPromise(from: releasePromise)?.getValue()
 
-            wakeLock = nil
-            isActive = false
-            updateState(.released)
-        } catch {
-            print("⚠️ ScreenWake: Failed to release wake lock: \(error)")
-        }
+        wakeLock = nil
+        isActive = false
+        updateState(.released)
     }
 
     /// Get wake lock state

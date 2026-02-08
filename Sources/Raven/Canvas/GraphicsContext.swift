@@ -61,7 +61,7 @@ public struct GraphicsContext: Sendable {
         beginPath()
         addPath(path)
         applyShading(shading, mode: .fill)
-        jsContext.fill!()
+        _ = jsContext.fill!()
     }
 
     /// Strokes a path with the specified shading and line width.
@@ -75,7 +75,7 @@ public struct GraphicsContext: Sendable {
         addPath(path)
         jsContext.lineWidth = .number(lineWidth)
         applyShading(shading, mode: .stroke)
-        jsContext.stroke!()
+        _ = jsContext.stroke!()
     }
 
     /// Fills a path with the specified style and optional stroke.
@@ -90,16 +90,16 @@ public struct GraphicsContext: Sendable {
         applyShading(shading, mode: .fill)
 
         if style.isEOFilled {
-            jsContext.fill!("evenodd")
+            _ = jsContext.fill!("evenodd")
         } else {
-            jsContext.fill!()
+            _ = jsContext.fill!()
         }
     }
 
     // MARK: - Path Construction
 
     private func beginPath() {
-        jsContext.beginPath!()
+        _ = jsContext.beginPath!()
     }
 
     private func addPath(_ path: Path) {
@@ -204,14 +204,14 @@ public struct GraphicsContext: Sendable {
     ///   - x: The horizontal translation.
     ///   - y: The vertical translation.
     public func translateBy(x: Double, y: Double) {
-        jsContext.translate!(x, y)
+        _ = jsContext.translate!(x, y)
     }
 
     /// Rotates the coordinate system by the specified angle.
     ///
     /// - Parameter angle: The rotation angle.
     public func rotate(by angle: Angle) {
-        jsContext.rotate!(angle.radians)
+        _ = jsContext.rotate!(angle.radians)
     }
 
     /// Scales the coordinate system by the specified factors.
@@ -220,14 +220,14 @@ public struct GraphicsContext: Sendable {
     ///   - x: The horizontal scale factor.
     ///   - y: The vertical scale factor.
     public func scaleBy(x: Double, y: Double = 1.0) {
-        jsContext.scale!(x, y)
+        _ = jsContext.scale!(x, y)
     }
 
     /// Applies an affine transformation to the coordinate system.
     ///
     /// - Parameter transform: The transformation to apply.
     public func concatenate(_ transform: CGAffineTransform) {
-        jsContext.transform!(
+        _ = jsContext.transform!(
             transform.a,
             transform.b,
             transform.c,
@@ -243,7 +243,7 @@ public struct GraphicsContext: Sendable {
     ///
     /// Call this before making temporary state changes that you want to revert later.
     public func saveState() {
-        jsContext.save!()
+        _ = jsContext.save!()
     }
 
     /// Restores the most recently saved graphics state.
@@ -251,7 +251,7 @@ public struct GraphicsContext: Sendable {
     /// This reverts transformations, clip regions, and drawing attributes to their
     /// saved values.
     public func restoreState() {
-        jsContext.restore!()
+        _ = jsContext.restore!()
     }
 
     // MARK: - Clipping
@@ -262,7 +262,7 @@ public struct GraphicsContext: Sendable {
     public func clip(to path: Path) {
         beginPath()
         addPath(path)
-        jsContext.clip!()
+        _ = jsContext.clip!()
     }
 
     /// Clips subsequent drawing to the specified rectangle.
@@ -305,7 +305,7 @@ public struct GraphicsContext: Sendable {
         for (index, value) in pattern.enumerated() {
             jsArray[index] = .number(value)
         }
-        jsContext.setLineDash!(jsArray)
+        _ = jsContext.setLineDash!(jsArray)
         jsContext.lineDashOffset = .number(offset)
     }
 
@@ -354,7 +354,7 @@ public struct GraphicsContext: Sendable {
     ///
     /// - Parameter rect: The rectangle to clear.
     public func clear(_ rect: CGRect) {
-        jsContext.clearRect!(rect.minX, rect.minY, rect.width, rect.height)
+        _ = jsContext.clearRect!(rect.minX, rect.minY, rect.width, rect.height)
     }
 
     /// Clears the entire canvas.

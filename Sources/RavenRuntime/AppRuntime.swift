@@ -354,6 +354,6 @@ extension RavenApp {
     /// }
     /// ```
     public func run() async {
-        await AppRuntime.shared.run(app: self)
+        AppRuntime.shared.run(app: self)
     }
 }

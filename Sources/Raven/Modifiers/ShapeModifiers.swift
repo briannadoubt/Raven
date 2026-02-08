@@ -263,7 +263,7 @@ public struct _ShapeStyledStrokeView<S: Shape, Style: ShapeStyle>: View, Primiti
         ]
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -387,7 +387,7 @@ public struct _ShapeTrimView<S: Shape>: View, PrimitiveView, Sendable {
         let dashOffset = String(-trimStart)
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -396,7 +396,7 @@ public struct _ShapeTrimView<S: Shape>: View, PrimitiveView, Sendable {
         ]
 
         // Create path element with trim applied via dash pattern
-        var pathProps: [String: VProperty] = [
+        let pathProps: [String: VProperty] = [
             "d": .attribute(name: "d", value: shapePath.svgPathData),
             "pathLength": .attribute(name: "pathLength", value: pathLength),
             "stroke-dasharray": .attribute(name: "stroke-dasharray", value: dashArray),
@@ -461,7 +461,7 @@ public struct _ShapeTrimmedFillView<S: Shape, Style: ShapeStyle>: View, Primitiv
         let dashOffset = String(-from)
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -470,7 +470,7 @@ public struct _ShapeTrimmedFillView<S: Shape, Style: ShapeStyle>: View, Primitiv
         ]
 
         // For filled shapes, we stroke with the fill color to create the trim effect
-        var pathProps: [String: VProperty] = [
+        let pathProps: [String: VProperty] = [
             "d": .attribute(name: "d", value: shapePath.svgPathData),
             "pathLength": .attribute(name: "pathLength", value: pathLength),
             "stroke-dasharray": .attribute(name: "stroke-dasharray", value: dashArray),
@@ -536,7 +536,7 @@ public struct _ShapeTrimmedStrokeView<S: Shape, Style: ShapeStyle>: View, Primit
         let dashOffset = String(-from)
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),
@@ -545,7 +545,7 @@ public struct _ShapeTrimmedStrokeView<S: Shape, Style: ShapeStyle>: View, Primit
         ]
 
         // Create path element with stroke and trim
-        var pathProps: [String: VProperty] = [
+        let pathProps: [String: VProperty] = [
             "d": .attribute(name: "d", value: shapePath.svgPathData),
             "pathLength": .attribute(name: "pathLength", value: pathLength),
             "stroke-dasharray": .attribute(name: "stroke-dasharray", value: dashArray),
@@ -625,7 +625,7 @@ public struct _ShapeTrimmedStyledStrokeView<S: Shape, Style: ShapeStyle>: View, 
         }
 
         // Create SVG element
-        var props: [String: VProperty] = [
+        let props: [String: VProperty] = [
             "xmlns": .attribute(name: "xmlns", value: "http://www.w3.org/2000/svg"),
             "width": .attribute(name: "width", value: "100%"),
             "height": .attribute(name: "height", value: "100%"),

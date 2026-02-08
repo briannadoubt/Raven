@@ -185,8 +185,6 @@ public struct RenderPartition: Sendable {
     /// at that level.
     private func partitionByDepth(root: VNode, targetDepth: Int) -> [Partition] {
         var partitions: [Partition] = []
-        var nextID: Int = 0
-
         func collectAtDepth(node: VNode, depth: Int, currentDepth: Int) {
             if currentDepth == depth {
                 let work = estimateWork(node)
