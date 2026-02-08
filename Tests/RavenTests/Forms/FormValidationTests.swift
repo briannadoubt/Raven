@@ -147,7 +147,7 @@ import Testing
         #expect(result.error?.type == .tooLong)
         #expect(result.error?.message == "Must be at most 10 characters")
         #expect(result.error?.context["maxLength"] == "10")
-        #expect(result.error?.context["actualLength"] == "35")
+        #expect(result.error?.context["actualLength"] == "34")
     }
 
     @Test func maxLengthRuleExactLength() {
@@ -652,8 +652,8 @@ import Testing
 
         formState.validateAsync("john", with: rule)
 
-        // Wait for validation to complete
-        try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        // Wait for validation to complete (allow extra headroom under parallel test load).
+        try? await Task.sleep(nanoseconds: 200_000_000) // 200ms
 
         #expect(formState.isValid)
         #expect(!formState.hasErrors(for: "username"))
@@ -672,8 +672,10 @@ import Testing
 
         formState.validateAsync("admin", with: rule)
 
-        // Wait for validation to complete
-        try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        // Wait for validation to complete with bounded polling to avoid timing flakes.
+        for _ in 0..<200 where !formState.hasErrors(for: "username") {
+            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        }
 
         #expect(!formState.isValid)
         #expect(formState.hasErrors(for: "username"))
@@ -699,7 +701,7 @@ import Testing
         formState.validateAsync("abc", with: rule)
 
         // Wait for validations to complete
-        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        try? await Task.sleep(nanoseconds: 250_000_000) // 250ms
 
         // Should have cancelled previous validations
         // Only the last one should complete

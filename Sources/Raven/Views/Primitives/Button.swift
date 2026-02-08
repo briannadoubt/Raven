@@ -178,7 +178,7 @@ public struct Button<Label: View>: View, PrimitiveView, Sendable {
         let children: [VNode]
         if let textLabel = label as? Text {
             // Optimize for simple text labels
-            children = [textLabel.toVNode()]
+            children = [VNode.text(textLabel.textContent)]
         } else {
             // For complex labels, we'll need to render them
             // For now, create a placeholder that will be handled by the render system

@@ -150,7 +150,7 @@ import Foundation
         #expect(html.contains("fd_write"))
         // Should include WASM bootstrap
         #expect(html.contains("WebAssembly.instantiate"))
-        #expect(html.contains("_start"))
+        #expect(html.contains("instance.exports.main"))
     }
 
     @Test func ravenEventHelpers() {

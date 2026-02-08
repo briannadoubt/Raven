@@ -254,6 +254,13 @@ public final class FormState: ObservableObject {
 
         // Start new validation
         let task = Task { @MainActor in
+            // Give cancellation a chance to coalesce rapid successive calls.
+            await Task.yield()
+
+            guard !Task.isCancelled else {
+                return
+            }
+
             let result = await rule.validate(value)
 
             // Only update if this task wasn't cancelled

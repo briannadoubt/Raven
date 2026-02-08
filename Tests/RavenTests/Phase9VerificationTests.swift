@@ -147,10 +147,10 @@ import Testing
             }
         }
 
-        let layout = LayoutConfig(aspectRatio: 16/9, isClipped: true)
+        let layout = LayoutConfig(aspectRatio: 16.0 / 9.0, isClipped: true)
         let bindable = Bindable(wrappedValue: layout)
 
-        #expect(bindable.aspectRatio.wrappedValue == 16/9)
+        #expect(bindable.aspectRatio.wrappedValue == 16.0 / 9.0)
         #expect(bindable.isClipped.wrappedValue)
 
         // Modify through binding

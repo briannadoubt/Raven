@@ -121,6 +121,13 @@ public final class ViewportManager: Sendable {
 
     /// Set up the IntersectionObserver with configuration.
     private func setupObserver() {
+        #if !arch(wasm32)
+        // IntersectionObserver is only available in browser JavaScript environments.
+        self.observer = nil
+        self.observerClosure = nil
+        return
+        #endif
+
         // Create the callback closure
         let closure = JSClosure { [weak self] args -> JSValue in
             guard let self = self, args.count > 0 else {
@@ -377,4 +384,3 @@ extension ViewportManager {
         )
     }
 }
-

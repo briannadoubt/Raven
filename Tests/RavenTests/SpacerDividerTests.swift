@@ -119,7 +119,7 @@ import Testing
         #expect(vnode.props["border-top"] != nil)
 
         if case .style(name: "border-top", value: let value) = vnode.props["border-top"] {
-            #expect(value == "1px solid #d1d5db")
+            #expect(value == "1px solid var(--system-separator)")
         } else {
             Issue.record("border-top should be a style property")
         }

@@ -58,14 +58,14 @@ enum Tab: Hashable, Sendable {
 
 /// Central store managing all showcase state including todos and form controls
 @MainActor
-final class ShowcaseStore: ObservableObject {
+final class ShowcaseStore: Raven.ObservableObject {
     // -- Tab state --
-    @Published var selectedTab: Tab = .todos
+    @Raven.Published var selectedTab: Tab = .todos
 
     // -- Todo state --
-    @Published var todos: [TodoItem] = []
+    @Raven.Published var todos: [TodoItem] = []
 
-    @Published var filter: Filter = .all
+    @Raven.Published var filter: Filter = .all
 
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
@@ -74,16 +74,15 @@ final class ShowcaseStore: ObservableObject {
     }
 
     // -- Controls state --
-    @Published var toggleValue: Bool = false
-    @Published var sliderValue: Double = 50.0
-    @Published var stepperValue: Int = 0
-    @Published var secureText: String = ""
-    @Published var progressValue: Double = 0.65
-    @Published var pickerSelection: String = "option1"
-    @Published var disclosureExpanded: Bool = false
-    @Published var colorPickerValue: Color = .blue
-    @Published var datePickerValue: Date = Date()
-
+    @Raven.Published var toggleValue: Bool = false
+    @Raven.Published var sliderValue: Double = 50.0
+    @Raven.Published var stepperValue: Int = 0
+    @Raven.Published var secureText: String = ""
+    @Raven.Published var progressValue: Double = 0.65
+    @Raven.Published var pickerSelection: String = "option1"
+    @Raven.Published var disclosureExpanded: Bool = false
+    @Raven.Published var colorPickerValue: Color = .blue
+    @Raven.Published var datePickerValue: Date = Date()
     init() {
         setupPublished()
 
@@ -717,7 +716,11 @@ struct LayoutAdvancedDemos: View {
             GridDemo()
             LazyVGridDemo()
             LazyVStackDemo()
+            LazyHGridDemo()
             GeometryReaderDemo()
+            ViewThatFitsDemo()
+            NavigationViewDemo()
+            TableDemo()
         }
     }
 }
@@ -1032,6 +1035,19 @@ struct FormsTab: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            FormsCoreDemos(store: store)
+            FormsExtraDemos()
+        }
+        .padding(16)
+    }
+}
+
+@MainActor
+struct FormsCoreDemos: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(spacing: 16) {
             FormDemo(store: store)
             PickerDemo(store: store)
             GroupBoxDemo()
@@ -1041,7 +1057,19 @@ struct FormsTab: View {
             MenuDemo()
             ControlGroupDemo()
         }
-        .padding(16)
+    }
+}
+
+@MainActor
+struct FormsExtraDemos: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            EditButtonDemo()
+            LabelDemo()
+            AsyncImageDemo()
+            TextEditorDemo()
+            FormattedInputDemo()
+        }
     }
 }
 
@@ -1236,6 +1264,230 @@ struct ControlGroupDemo: View {
                 Button("Italic") { }
                 Button("Underline") { }
             }
+        }
+    }
+}
+
+// MARK: - Label Demo
+
+@MainActor
+struct LabelDemo: View {
+    var body: some View {
+        SectionCard(title: "Label") {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Favorites", systemImage: "star.fill")
+                Label("Downloads", systemImage: "arrow.down.circle")
+                Label {
+                    Text("Custom Label")
+                        .font(.caption)
+                } icon: {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.accent)
+                        .frame(width: 12, height: 12)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - AsyncImage Demo
+
+@MainActor
+struct AsyncImageDemo: View {
+    var body: some View {
+        SectionCard(title: "AsyncImage") {
+            if let url = URL(string: "https://picsum.photos/220/120") {
+                AsyncImage(url: url) { phase in
+                    if case .success(let image) = phase {
+                        image
+                            .frame(width: 220, height: 120)
+                            .cornerRadius(6)
+                    } else if case .failure = phase {
+                        Text("Image load failed")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    } else {
+                        ProgressView(value: 0.4, total: 1.0)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - TextEditor Demo
+
+@MainActor
+struct TextEditorDemo: View {
+    @State private var notesText = "Draft notes for the next release..."
+
+    var body: some View {
+        SectionCard(title: "TextEditor") {
+            VStack(spacing: 8) {
+                TextEditor(text: Binding(
+                    get: { notesText },
+                    set: { notesText = $0 }
+                ))
+                .frame(height: 110)
+
+                Text("Characters: \(notesText.count)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - Formatted Input Demo
+
+@MainActor
+struct FormattedInputDemo: View {
+    @State private var currencyAmount = 249.99
+    @State private var percentageValue = 73.5
+    @State private var phoneNumberValue = "(415) 555-0135"
+
+    var body: some View {
+        SectionCard(title: "Formatted Inputs") {
+            VStack(spacing: 8) {
+                CurrencyField("Amount", value: Binding(
+                    get: { currencyAmount },
+                    set: { currencyAmount = $0 }
+                ))
+
+                NumberFormatField("Completion %", value: Binding(
+                    get: { percentageValue },
+                    set: { percentageValue = $0 }
+                ), formatter: Raven.NumberFormatter.percentage, range: 0...100)
+
+                PhoneNumberField("Phone", text: Binding(
+                    get: { phoneNumberValue },
+                    set: { phoneNumberValue = $0 }
+                ))
+            }
+        }
+    }
+}
+
+// MARK: - EditButton Demo
+
+@MainActor
+struct EditButtonDemo: View {
+    @State private var editMode: EditMode = .inactive
+
+    var body: some View {
+        SectionCard(title: "EditButton") {
+            VStack(spacing: 8) {
+                EditButton()
+
+                Text(editMode.isEditing ? "Editing Enabled" : "Editing Disabled")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+            .environment(\.editMode, Optional($editMode))
+        }
+    }
+}
+
+// MARK: - LazyHGrid Demo
+
+@MainActor
+struct LazyHGridDemo: View {
+    var body: some View {
+        SectionCard(title: "LazyHGrid") {
+            ScrollView(.horizontal) {
+                LazyHGrid(rows: [GridItem(.fixed(40)), GridItem(.fixed(40))], spacing: 8) {
+                    ForEach(1...12, id: \.self) { index in
+                        Text("Cell \(index)")
+                            .padding(8)
+                            .background(Color.blue.opacity(0.15))
+                            .cornerRadius(4)
+                    }
+                }
+            }
+            .frame(height: 100)
+        }
+    }
+}
+
+// MARK: - ViewThatFits Demo
+
+@MainActor
+struct ViewThatFitsDemo: View {
+    var body: some View {
+        SectionCard(title: "ViewThatFits") {
+            VStack(spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        Text("Desktop Option")
+                        Text("With Extra Details")
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+                    HStack(spacing: 6) {
+                        Text("Compact")
+                    }
+                }
+                .padding(8)
+                .background(Color.secondarySystemBackground)
+                .cornerRadius(6)
+                .frame(width: 220)
+
+                Text("Chooses the first layout that fits.")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - NavigationView Demo
+
+@MainActor
+struct NavigationViewDemo: View {
+    var body: some View {
+        SectionCard(title: "NavigationView") {
+            NavigationView {
+                VStack(spacing: 8) {
+                    Text("Legacy navigation container")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+
+                    NavigationLink(destination: Text("Legacy detail screen")) {
+                        Text("Open detail")
+                    }
+                }
+            }
+            .frame(height: 120)
+            .background(Color.secondarySystemBackground)
+            .cornerRadius(6)
+        }
+    }
+}
+
+// MARK: - Table Demo
+
+struct TableRowData: Identifiable, Sendable {
+    let id: Int
+    let task: String
+    let owner: String
+    let status: String
+}
+
+@MainActor
+struct TableDemo: View {
+    private let rows = [
+        TableRowData(id: 1, task: "Ship release", owner: "Alex", status: "In Progress"),
+        TableRowData(id: 2, task: "Write docs", owner: "Sam", status: "Done"),
+        TableRowData(id: 3, task: "Polish UI", owner: "Jordan", status: "Todo")
+    ]
+
+    var body: some View {
+        SectionCard(title: "Table") {
+            Table(rows) {
+                TableColumn("Task", value: \TableRowData.task)
+                TableColumn("Owner", value: \TableRowData.owner)
+                TableColumn("Status", value: \TableRowData.status)
+            }
+            .frame(height: 160)
         }
     }
 }

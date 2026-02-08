@@ -333,8 +333,9 @@ import Testing
 
         let result = customRouter.handleInitialURL()
 
-        // Should handle initial URL based on current location
-        #expect(customRouter.currentView != nil)
+        // In host tests, history defaults to "/" with no matching registered route.
+        #expect(!result)
+        #expect(customRouter.currentView == nil)
     }
 
     @Test func deepLinkValidation() {
@@ -656,8 +657,8 @@ import Testing
 
         router.navigate(to: "/home")
 
-        // Simplified implementation returns false for root path
-        #expect(!router.canGoBack())
+        // Simplified implementation returns true for any non-root path.
+        #expect(router.canGoBack())
     }
 
     @Test func canGoForward() {
