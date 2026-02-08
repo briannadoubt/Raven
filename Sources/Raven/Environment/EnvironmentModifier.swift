@@ -48,6 +48,18 @@ public struct _EnvironmentModifierView<Content: View, Value: Sendable>: View, @u
     }
 }
 
+// MARK: - Coordinator Rendering
+
+extension _EnvironmentModifierView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let prior = EnvironmentValues._current
+        let modified = modifiedEnvironment(prior)
+        EnvironmentValues._current = modified
+        defer { EnvironmentValues._current = prior }
+        return context.renderChild(content)
+    }
+}
+
 // MARK: - View Extension
 
 extension View {

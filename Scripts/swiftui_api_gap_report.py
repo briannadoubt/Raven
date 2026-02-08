@@ -196,6 +196,9 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
 
         for raw_line in lines:
             line = raw_line.split("//", 1)[0]
+            # Normalize away leading attributes (e.g. `@MainActor public func ...`),
+            # since our declaration regexes operate on the remaining tokens.
+            line = re.sub(r"^\s*(?:@\w+(?:\([^)]*\))?\s*)+", "", line)
 
             # Track declaration-scoped owner context.
             decl = type_or_extension_pat.search(line)

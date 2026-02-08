@@ -35,8 +35,8 @@ public struct Environment<Value: Sendable>: @unchecked Sendable {
     @MainActor
     public var wrappedValue: Value {
         guard let environmentValues = environmentValues else {
-            // If no environment values are set, use default values
-            return EnvironmentValues()[keyPath: keyPath]
+            // No injected values: fall back to dynamically-scoped environment.
+            return EnvironmentValues._current[keyPath: keyPath]
         }
         return environmentValues[keyPath: keyPath]
     }

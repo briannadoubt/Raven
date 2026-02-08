@@ -17,6 +17,14 @@ import Foundation
 /// }
 /// ```
 public struct EnvironmentValues: Sendable {
+    /// The dynamically-scoped environment values during coordinator rendering.
+    ///
+    /// Raven's current render loop does not reflect into view storage to inject
+    /// `@Environment` wrappers. Instead, `@Environment` reads from this
+    /// dynamically-scoped value (set by environment modifier views) on the
+    /// `MainActor`.
+    @MainActor public static var _current: EnvironmentValues = EnvironmentValues()
+
     /// Internal storage for environment values using type erasure
     internal var storage: [String: any Sendable]
 
