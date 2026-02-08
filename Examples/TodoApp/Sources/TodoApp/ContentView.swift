@@ -690,6 +690,8 @@ struct DisplayTab: View {
                 }
             }
 
+            GaugeDemo()
+
             // Link section
             SectionCard(title: "Link") {
                 VStack(spacing: 8) {
@@ -698,6 +700,8 @@ struct DisplayTab: View {
                     Link("Swift.org", destination: URL(string: "https://swift.org")!)
                 }
             }
+
+            ShareLinkDemo()
 
             // Spacer demonstration
             SectionCard(title: "Spacer") {
@@ -766,6 +770,48 @@ struct ContentUnavailableDemo: View {
                 systemImage: "magnifyingglass",
                 description: Text("Try a different search term")
             )
+        }
+    }
+}
+
+// MARK: - Gauge Demo
+
+@MainActor
+struct GaugeDemo: View {
+    var body: some View {
+        SectionCard(title: "Gauge") {
+            VStack(spacing: 12) {
+                Gauge(value: 0.6, in: 0...1) {
+                    Text("Task Progress")
+                } currentValueLabel: {
+                    Text("60%")
+                } minimumValueLabel: {
+                    Text("0%")
+                } maximumValueLabel: {
+                    Text("100%")
+                }
+
+                Gauge("Storage", value: 32, in: 0...64)
+            }
+        }
+    }
+}
+
+// MARK: - ShareLink Demo
+
+@MainActor
+struct ShareLinkDemo: View {
+    private let shareURL = URL(string: "https://github.com/nicktowe/raven")!
+
+    var body: some View {
+        SectionCard(title: "ShareLink") {
+            VStack(spacing: 8) {
+                ShareLink("Share Raven", item: shareURL, subject: "Raven", message: "Check out Raven on GitHub!")
+
+                ShareLink(item: shareURL, subject: "Raven", message: "SwiftUI for the web") {
+                    Label("Share with Label", systemImage: "square.and.arrow.up")
+                }
+            }
         }
     }
 }
