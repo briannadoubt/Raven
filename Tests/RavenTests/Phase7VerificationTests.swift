@@ -278,12 +278,25 @@ import Foundation
         let phases = ["Phase1", "Phase2", "Phase3", "Phase4", "Phase5", "Phase6", "Phase7"]
 
         for phase in phases {
-            let testFile = getProjectPath()
+            let ravenTestsPath = getProjectPath()
                 .appendingPathComponent("Tests")
                 .appendingPathComponent("RavenTests")
                 .appendingPathComponent("\(phase)VerificationTests.swift")
 
-            #expect(FileManager.default.fileExists(atPath: testFile.path))
+            if FileManager.default.fileExists(atPath: ravenTestsPath.path) {
+                continue
+            }
+
+            // Phase 5 verification covers CLI tooling and belongs under RavenCLITests.
+            if phase == "Phase5" {
+                let ravenCLITestsPath = getProjectPath()
+                    .appendingPathComponent("Tests")
+                    .appendingPathComponent("RavenCLI")
+                    .appendingPathComponent("\(phase)VerificationTests.swift")
+                #expect(FileManager.default.fileExists(atPath: ravenCLITestsPath.path))
+            } else {
+                #expect(FileManager.default.fileExists(atPath: ravenTestsPath.path))
+            }
         }
     }
 
