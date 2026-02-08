@@ -195,16 +195,15 @@ public struct Label<Title: View, Icon: View>: View, Sendable {
 
 // MARK: - String Convenience
 
-extension Label where Title == Text, Icon == Text {
+extension Label where Title == Text, Icon == Image {
     /// Creates a label with a string title and system image name.
     ///
     /// This is a convenience initializer for creating simple labels with
-    /// text and system image references. Since SF Symbols are not available
-    /// in the web environment, the system image name is rendered as text.
+    /// text and system image references.
     ///
     /// - Parameters:
     ///   - title: The string to display as the label's title.
-    ///   - systemImage: The name of the system image (rendered as text placeholder).
+    ///   - systemImage: The name of the system image.
     ///
     /// ## Example
     ///
@@ -213,15 +212,11 @@ extension Label where Title == Text, Icon == Text {
     /// Label("Settings", systemImage: "gear")
     /// ```
     ///
-    /// - Note: In a web environment, SF Symbols are not available. The system
-    ///   image name will be displayed as text. For production applications,
-    ///   consider using custom images or web icon fonts instead.
+    /// - Note: Raven renders a small built-in set of system symbols as inline SVG
+    ///   (tintable via `.foregroundColor`). Unknown names fall back to a text glyph.
     @MainActor public init(_ title: String, systemImage: String) {
         self.title = Text(title)
-        // For now, render the system image name as text since we don't have
-        // SF Symbols on web. In the future, this could be replaced with an
-        // icon font or custom image mapping.
-        self.icon = Text(systemImage)
+        self.icon = Image(systemName: systemImage)
     }
 
     /// Creates a label with a localized string title and system image name.
@@ -239,6 +234,6 @@ extension Label where Title == Text, Icon == Text {
     /// ```
     @MainActor public init(_ titleKey: LocalizedStringKey, systemImage: String) {
         self.title = Text(titleKey)
-        self.icon = Text(systemImage)
+        self.icon = Image(systemName: systemImage)
     }
 }

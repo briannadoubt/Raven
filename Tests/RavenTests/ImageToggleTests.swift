@@ -29,15 +29,27 @@ import Testing
         let image = Image(systemName: "star.fill")
         let node = image.toVNode()
 
-        #expect(node.elementTag == "img")
+        #expect(node.elementTag == "svg")
 
-        // Verify src attribute for system icon
-        if case .attribute(name: "src", value: let src) = node.props["src"] {
-            #expect(src.contains("data:image/svg+xml"))
-            #expect(src.contains("star.fill"))
-        } else {
-            Issue.record("System image should have src attribute")
+        // Verify basic SVG attributes
+        #expect(node.props["viewBox"] != nil)
+        #expect(node.props["width"] != nil)
+        #expect(node.props["height"] != nil)
+
+        // Verify it renders a path (built-in symbol)
+        let pathNode = node.children.first { child in
+            child.elementTag == "path"
         }
+        #expect(pathNode != nil)
+        if let pathNode,
+           case .attribute(name: "d", value: let d) = pathNode.props["d"] {
+            #expect(!d.isEmpty)
+        } else {
+            Issue.record("System image should render a path with d attribute")
+        }
+
+        // Verify accessibility attributes are present
+        #expect(node.props["role"] != nil)
     }
 
     @Test func imageDecorativeInitializer() throws {
