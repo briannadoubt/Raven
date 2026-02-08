@@ -15,7 +15,8 @@ dist/
 .raven/
 *.wasm
 !Dockerfile.wasm
-Reports/swiftui-api-gap/*.json
+Reports/swiftui-api-gap/*
+!Reports/swiftui-api-gap/gap_report.md
 
 # IDE
 .vscode/
