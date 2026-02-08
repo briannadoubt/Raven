@@ -414,6 +414,7 @@ struct TodosTab: View {
 struct TodoDetailView: View {
     let store: ShowcaseStore
     let todoId: UUID
+    @State private var showActionSheet = false
 
     var body: some View {
         if let todo = store.todos.first(where: { $0.id == todoId }) {
@@ -447,11 +448,33 @@ struct TodoDetailView: View {
                 .foregroundColor(Color.red)
                 .cornerRadius(8)
 
+                Button("More Actions") {
+                    showActionSheet = true
+                }
+                .padding(12)
+                .background(Color.secondarySystemBackground)
+                .cornerRadius(8)
+
                 Spacer()
             }
             .padding(16)
             .navigationTitle(todo.text)
             .navigationBarTitleDisplayMode(.inline)
+            .actionSheet(isPresented: $showActionSheet) {
+                ActionSheet(
+                    title: Text("Todo Actions"),
+                    message: Text("Choose what to do with this item."),
+                    buttons: [
+                        .default(Text(todo.isCompleted ? "Mark Active" : "Mark Completed")) {
+                            store.toggleTodo(todoId)
+                        },
+                        .destructive(Text("Delete Todo")) {
+                            store.deleteTodo(todoId)
+                        },
+                        .cancel()
+                    ]
+                )
+            }
         } else {
             ContentUnavailableView(
                 "Todo Not Found",

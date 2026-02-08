@@ -109,6 +109,7 @@ def infer_target(sdk: str, sdk_version: str) -> str:
 
 def dump_swiftui_api(sdk: str, target: str, out_file: pathlib.Path) -> None:
     sdk_path, _ = detect_sdk(sdk)
+    module_cache_dir = pathlib.Path(tempfile.mkdtemp(prefix="swiftui-digester-cache-"))
     cmd = [
         "swift-api-digester",
         "-dump-sdk",
@@ -118,6 +119,8 @@ def dump_swiftui_api(sdk: str, target: str, out_file: pathlib.Path) -> None:
         sdk_path,
         "-target",
         target,
+        "-module-cache-path",
+        str(module_cache_dir),
         "-o",
         str(out_file),
     ]
