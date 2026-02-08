@@ -17,13 +17,13 @@ public struct ActionSheet: Sendable {
         public let role: ButtonRole?
 
         /// The action to perform when the button is tapped.
-        public let action: (@Sendable () -> Void)?
+        public let action: (@Sendable @MainActor () -> Void)?
 
         /// Creates a button with a label, optional role, and optional action.
         public init(
             label: Text,
             role: ButtonRole? = nil,
-            action: (@Sendable () -> Void)? = nil
+            action: (@Sendable @MainActor () -> Void)? = nil
         ) {
             self.id = UUID()
             self.label = label
@@ -34,7 +34,7 @@ public struct ActionSheet: Sendable {
         /// Creates a default button.
         public static func `default`(
             _ label: Text,
-            action: (@Sendable () -> Void)? = nil
+            action: (@Sendable @MainActor () -> Void)? = nil
         ) -> Button {
             Button(label: label, role: nil, action: action)
         }
@@ -42,7 +42,7 @@ public struct ActionSheet: Sendable {
         /// Creates a destructive button.
         public static func destructive(
             _ label: Text,
-            action: (@Sendable () -> Void)? = nil
+            action: (@Sendable @MainActor () -> Void)? = nil
         ) -> Button {
             Button(label: label, role: .destructive, action: action)
         }
@@ -50,7 +50,7 @@ public struct ActionSheet: Sendable {
         /// Creates a cancel button.
         public static func cancel(
             _ label: Text = Text("Cancel"),
-            action: (@Sendable () -> Void)? = nil
+            action: (@Sendable @MainActor () -> Void)? = nil
         ) -> Button {
             Button(label: label, role: .cancel, action: action)
         }
