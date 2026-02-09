@@ -18,6 +18,10 @@ dist/
 Reports/swiftui-api-gap/*
 !Reports/swiftui-api-gap/gap_report.md
 
+# Local dev outputs / tooling
+Examples/TodoApp/public/
+.codex/environments/
+
 # IDE
 .vscode/
 .idea/
