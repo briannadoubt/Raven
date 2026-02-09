@@ -167,7 +167,8 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
             entry: entry,
             anchor: attachmentAnchor,
             edge: arrowEdge,
-            coordinator: coordinator
+            coordinator: coordinator,
+            content: entry.content.render()
         )
     }
 }
@@ -350,7 +351,8 @@ struct PopoverItemModifier<Item: Identifiable & Sendable, PopoverContent: View>:
             entry: entry,
             anchor: attachmentAnchor,
             edge: arrowEdge,
-            coordinator: coordinator
+            coordinator: coordinator,
+            content: entry.content.render()
         )
     }
 }

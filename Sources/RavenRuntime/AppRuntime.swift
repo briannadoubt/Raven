@@ -60,6 +60,8 @@ public final class AppRuntime: Sendable {
 
         // Extract root view from app's scene hierarchy
         let rootView = extractRootView(from: app.body)
+        // Ensure Raven presentations (sheet/alert/actionSheet/etc.) actually render.
+        let wrappedRootView = AnyView(_PresentationHostRoot { rootView })
 
         // Set up scene phase tracking based on browser events
         setupScenePhaseTracking()
@@ -79,7 +81,7 @@ public final class AppRuntime: Sendable {
         coordinator.setRootContainer(rootContainer)
 
         // Render the root view (now synchronous!)
-        coordinator.render(view: rootView)
+        coordinator.render(view: wrappedRootView)
 
         // Set up color scheme tracking after coordinator is ready
         setupColorSchemeTracking()
@@ -157,6 +159,9 @@ public final class AppRuntime: Sendable {
            let head = doc.head.object {
             dom.appendChild(parent: head, child: styleElement)
         }
+
+        // Presentation system animations/backdrop styling.
+        PresentationAnimations.injectStylesheet()
     }
 
     /// Extracts the root view from a scene hierarchy.

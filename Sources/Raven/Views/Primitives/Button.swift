@@ -374,7 +374,9 @@ private struct ButtonStyleEnvironmentKey: EnvironmentKey {
 }
 
 private struct PrimitiveButtonStyleEnvironmentKey: EnvironmentKey {
-    static let defaultValue: any PrimitiveButtonStyle = BorderedButtonStyle()
+    // SwiftUI's default button appearance is effectively "plain"; opting into
+    // bordered styles should be explicit via `.buttonStyle(...)`.
+    static let defaultValue: any PrimitiveButtonStyle = BorderlessButtonStyle()
 }
 
 extension EnvironmentValues {
@@ -433,9 +435,8 @@ extension Button: _CoordinatorRenderable {
             props["background"] = .style(name: "background", value: "var(--system-accent)")
             props["color"] = .style(name: "color", value: "white")
         } else if primitiveButtonStyle is BorderlessButtonStyle {
-            props["border"] = .style(name: "border", value: "none")
-            props["padding"] = .style(name: "padding", value: "4px 6px")
-            props["background"] = .style(name: "background", value: "transparent")
+            // Keep the reset styles above. Visual styling should come from modifiers
+            // like `.padding()`, `.background()`, `.foregroundColor()`, etc.
         }
         let children = [context.renderChild(label)]
         return VNode.element("button", props: props, children: children)

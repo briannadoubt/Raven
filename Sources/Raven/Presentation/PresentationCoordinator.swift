@@ -1,4 +1,7 @@
 import Foundation
+#if arch(wasm32)
+import JavaScriptKit
+#endif
 
 // MARK: - PresentationType
 
@@ -128,7 +131,11 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
     private let zIndexIncrement: Int = 10
 
     /// Creates a new presentation coordinator.
-    public init() {}
+    public init() {
+        // Wire up `@Published` to `objectWillChange` so views observing the coordinator
+        // re-render when presentations are added/removed.
+        setupPublished()
+    }
 
     // MARK: - Public Methods
 
@@ -191,6 +198,7 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
 
         let entry = presentations.remove(at: index)
         entry.onDismiss?()
+        closeDialogIfPresent(presentationId: id)
         return true
     }
 
@@ -207,6 +215,7 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
         // Dismiss in reverse order (top to bottom)
         for entry in presentations.reversed() {
             entry.onDismiss?()
+            closeDialogIfPresent(presentationId: entry.id)
         }
         presentations.removeAll()
     }
@@ -232,5 +241,22 @@ public final class PresentationCoordinator: ObservableObject, Sendable {
     /// - Returns: The z-index value based on the current stack depth
     private func calculateZIndex() -> Int {
         baseZIndex + (presentations.count * zIndexIncrement)
+    }
+
+    /// Best-effort close of a corresponding `<dialog>` when a presentation is dismissed.
+    ///
+    /// DOM patching should remove the node, but closing ensures the browser top-layer
+    /// doesn't keep an orphaned modal dialog visible if something goes wrong.
+    @MainActor
+    private func closeDialogIfPresent(presentationId: UUID) {
+        #if arch(wasm32)
+        guard let doc = JSObject.global.document.object else { return }
+        let selector = "dialog[data-raven-presentation-id=\"\(presentationId.uuidString)\"]"
+        let result = doc.querySelector!(selector)
+        guard let dialog = result.object else { return }
+        if dialog.open.boolean == true {
+            _ = dialog.close?()
+        }
+        #endif
     }
 }

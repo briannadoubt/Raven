@@ -176,6 +176,25 @@ public struct _OnChangeView<Content: View, V: Equatable & Sendable>: View, Primi
     }
 }
 
+extension _OnChangeView: _CoordinatorRenderable {
+    @MainActor private final class _Storage: NSObject {
+        var previousValue: V?
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Run change detection during render (SwiftUI behavior: don't fire on first render).
+        let storage = context.persistentState(create: { _Storage() })
+        let prevValue = storage.previousValue
+        if let prev = prevValue, prev != value {
+            action(value)
+        }
+        storage.previousValue = value
+
+        // `.onChange` doesn't introduce layout; it just forwards the content.
+        return context.renderChild(content)
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {

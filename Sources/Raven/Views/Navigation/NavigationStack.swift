@@ -258,7 +258,8 @@ extension NavigationStack: _CoordinatorRenderable {
 
         // Clear transient state from the previous render pass; these are
         // re-populated by modifier children during this render.
-        controller.clearRenderState()
+        let isAtRoot = controller.viewStack.isEmpty
+        controller.clearRenderState(clearDestinations: isAtRoot)
 
         // 2. Save the outer NavigationStackController (supports nesting) and
         //    install this controller as current so children can find it.
@@ -279,18 +280,21 @@ extension NavigationStack: _CoordinatorRenderable {
             }
         }
 
-        // 4. Render root content first (this triggers NavigationDestinationView,
-        //    toolbar, searchable, title, and display mode registrations).
-        let rootNode = context.renderChild(root)
-
-        // 5. Handle deep linking on initial load (after destinations are registered)
-        controller.handleDeepLink()
-
-        // 6. Determine what content to display: top of stack or root
+        // 4. Render visible content.
+        //
+        // Important: when a view is pushed, the root content is no longer in the view hierarchy
+        // in SwiftUI, so root-scoped modifiers like `.searchable` should not leak into sub-pages.
+        // Raven persists `navigationDestination` registrations across pushes, so we only re-render
+        // root content when it is actually visible.
         let contentNode: VNode
         if let topView = controller.viewStack.last {
             contentNode = context.renderChild(topView)
         } else {
+            // Root is visible: this triggers `navigationDestination`, toolbar, searchable, title,
+            // and display mode registrations.
+            let rootNode = context.renderChild(root)
+            // Handle deep linking on initial load (after destinations are registered)
+            controller.handleDeepLink()
             contentNode = rootNode
         }
 
@@ -477,6 +481,11 @@ extension NavigationStack: _CoordinatorRenderable {
             "class": .attribute(name: "class", value: "raven-navigation-bar"),
             "border-bottom": .style(name: "border-bottom",
                                      value: controller.isNavBarHidden ? "none" : "1px solid var(--system-separator, #c6c6c8)"),
+            // Ensure the nav bar stays visible when it's inside a scroll container
+            // (e.g. a NavigationStack embedded inside a TabView tab panel).
+            "position": .style(name: "position", value: "sticky"),
+            "top": .style(name: "top", value: "0"),
+            "z-index": .style(name: "z-index", value: "10"),
         ]
         let navBar = VNode.element("header", props: navBarProps, children: navBarSections)
 

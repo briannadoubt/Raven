@@ -125,8 +125,8 @@ public struct SheetModifier<SheetContent: View>: ViewModifier, PresentationModif
             onDismiss: onDismiss
         )
 
-        // Use SheetRenderer to create the VNode
-        return SheetRenderer.render(entry: entry, coordinator: coordinator)
+        // Use SheetRenderer to create the VNode (fallback rendering path).
+        return SheetRenderer.render(entry: entry, coordinator: coordinator, content: entry.content.render())
     }
 
     // MARK: - ViewModifier
@@ -295,8 +295,8 @@ public struct ItemSheetModifier<Item: Identifiable & Sendable & Equatable, Sheet
             onDismiss: onDismiss
         )
 
-        // Use SheetRenderer to create the VNode
-        return SheetRenderer.render(entry: entry, coordinator: coordinator)
+        // Use SheetRenderer to create the VNode (fallback rendering path).
+        return SheetRenderer.render(entry: entry, coordinator: coordinator, content: entry.content.render())
     }
 
     // MARK: - ViewModifier

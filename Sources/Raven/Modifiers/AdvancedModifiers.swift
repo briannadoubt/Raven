@@ -184,7 +184,13 @@ public struct _CornerRadiusView<Content: View>: View, PrimitiveView, Sendable {
             "div",
             props: [
                 "border-radius": .style(name: "border-radius", value: "\(radius)px"),
-                "overflow": .style(name: "overflow", value: "hidden")
+                // When a flex item has `overflow: hidden`, CSS can reduce its
+                // automatic minimum size to 0, causing unexpected shrink + clipping.
+                // SwiftUI's `.cornerRadius` should not make content clip in common
+                // layouts like `HStack { TextField; Button }`.
+                "overflow": .style(name: "overflow", value: "hidden"),
+                "min-width": .style(name: "min-width", value: "max-content"),
+                "min-height": .style(name: "min-height", value: "max-content")
             ],
             children: []
         )

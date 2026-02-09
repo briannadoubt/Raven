@@ -1,5 +1,17 @@
 import Foundation
 
+// MARK: - Type-Erased Application
+
+/// A type-erased entry point for applying a modifier to a view.
+///
+/// This exists so `ModifiedContent` can apply `ViewModifier` protocol-based modifiers
+/// during coordinator rendering. It's underscored because it's not intended for
+/// direct use by apps.
+@MainActor
+public protocol _AnyViewModifier: Sendable {
+    @MainActor func _apply(to content: AnyView) -> AnyView
+}
+
 // MARK: - ViewModifier Protocol
 
 /// A modifier that you apply to a view or another view modifier, producing a different version of the original value.
@@ -45,7 +57,7 @@ import Foundation
 ///
 /// Text("Hello").border(.blue)
 /// ```
-@MainActor public protocol ViewModifier: Sendable {
+@MainActor public protocol ViewModifier: _AnyViewModifier, Sendable {
     /// The type of view representing the body of this modifier.
     associatedtype Body: View
 
@@ -63,6 +75,13 @@ import Foundation
     /// - Parameter content: The content view being modified.
     /// - Returns: The modified view.
     @ViewBuilder @MainActor func body(content: Content) -> Body
+}
+
+@MainActor
+extension ViewModifier {
+    @MainActor public func _apply(to content: AnyView) -> AnyView {
+        AnyView(body(content: _ViewModifier_Content<Self>(content)))
+    }
 }
 
 // MARK: - ViewModifier Content
@@ -85,34 +104,6 @@ public struct _ViewModifier_Content<Modifier: ViewModifier>: View, Sendable {
     /// The body of the content is the wrapped view itself.
     @MainActor public var body: some View {
         view
-    }
-}
-
-// MARK: - ModifiedContent with ViewModifier Support
-
-/// A view that applies a modifier to another view.
-///
-/// `ModifiedContent` is the result of calling `.modifier()` on a view. It stores both
-/// the original content and the modifier, and implements `View` by calling the modifier's
-/// `body(content:)` method.
-///
-/// You typically don't create `ModifiedContent` directly. Instead, use the `.modifier()` method:
-///
-/// ```swift
-/// Text("Hello")
-///     .modifier(MyCustomModifier())
-/// ```
-///
-/// ## Generic Modifiers
-///
-/// For basic modifiers that don't implement the full `ViewModifier` protocol (like `PaddingModifier`),
-/// use the specific wrapper views like `_PaddingView` instead.
-extension ModifiedContent where Modifier: ViewModifier {
-    /// The body of the modified content.
-    ///
-    /// This calls the modifier's `body(content:)` method with the wrapped content.
-    @MainActor public var body: Modifier.Body {
-        modifier.body(content: _ViewModifier_Content(content))
     }
 }
 

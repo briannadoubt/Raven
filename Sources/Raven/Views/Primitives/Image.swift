@@ -93,55 +93,117 @@ public struct Image: View, PrimitiveView, Sendable {
     ///
     /// - Returns: An img element VNode with appropriate attributes.
     @MainActor public func toVNode() -> VNode {
+        switch source {
+        case .system(let systemName):
+            return systemSymbolVNode(systemName: systemName)
+        case .named, .url:
+            return rasterImageVNode()
+        }
+    }
+
+    // MARK: - Helper Methods
+    @MainActor
+    private func rasterImageVNode() -> VNode {
         var props: [String: VProperty] = [:]
 
-        // Set the image source
         let srcValue: String
         switch source {
         case .named(let name):
-            // Named images could be resolved to a path
-            // For now, treat as a relative path to an assets folder
+            // Named images could be resolved to a path.
+            // For now, treat as a relative path to an assets folder.
             srcValue = "/assets/\(name)"
-        case .system(let systemName):
-            // System icons rendered as inline SVG with the name as text placeholder.
-            // Explicit width/height on the SVG prevent the img from scaling unbounded.
-            srcValue = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ctext x='50%25' y='50%25' font-size='10' dominant-baseline='middle' text-anchor='middle'%3E\(systemName)%3C/text%3E%3C/svg%3E"
         case .url(let urlString):
             srcValue = urlString
+        case .system:
+            // Unreachable by design.
+            srcValue = ""
         }
 
         props["src"] = .attribute(name: "src", value: srcValue)
 
-        // System icons get a fixed size to prevent unbounded scaling
-        if case .system = source {
-            props["width"] = .attribute(name: "width", value: "24")
-            props["height"] = .attribute(name: "height", value: "24")
-            props["display"] = .style(name: "display", value: "inline-block")
-            props["vertical-align"] = .style(name: "vertical-align", value: "middle")
-        }
-
         // Set accessibility attributes
         if isDecorative {
-            // Decorative images should have empty alt text and role="presentation"
             props["alt"] = .attribute(name: "alt", value: "")
             props["role"] = .attribute(name: "role", value: "presentation")
         } else {
-            // Non-decorative images should have meaningful alt text
             let altText = alternativeText ?? extractAltTextFromSource()
             props["alt"] = .attribute(name: "alt", value: altText)
         }
 
-        // Add loading attribute for lazy loading
         props["loading"] = .attribute(name: "loading", value: "lazy")
 
-        return VNode.element(
-            "img",
-            props: props,
-            children: []
-        )
+        return VNode.element("img", props: props, children: [])
     }
 
-    // MARK: - Helper Methods
+    /// Render a subset of SF-Symbol-like system images as inline SVG.
+    ///
+    /// This has two big benefits over rendering via `<img src="data:...">`:
+    /// - `.foregroundColor(...)` can tint the icon via `currentColor`.
+    /// - Icons are DOM-native and can be styled/laid out like SwiftUI symbols.
+    @MainActor
+    private func systemSymbolVNode(systemName: String) -> VNode {
+        let altText = isDecorative ? "" : (alternativeText ?? extractAltTextFromSource())
+
+        var svgProps: [String: VProperty] = [
+            "viewBox": .attribute(name: "viewBox", value: "0 0 1 1"),
+            "width": .attribute(name: "width", value: "24"),
+            "height": .attribute(name: "height", value: "24"),
+            "display": .style(name: "display", value: "inline-block"),
+            "vertical-align": .style(name: "vertical-align", value: "middle"),
+        ]
+
+        if isDecorative {
+            svgProps["role"] = .attribute(name: "role", value: "presentation")
+            svgProps["aria-hidden"] = .attribute(name: "aria-hidden", value: "true")
+        } else {
+            svgProps["role"] = .attribute(name: "role", value: "img")
+            svgProps["aria-label"] = .attribute(name: "aria-label", value: altText)
+        }
+
+        guard let symbol = Symbol.systemName(systemName) else {
+            // Fallback: show the name as a text glyph, still tintable via currentColor.
+            let textProps: [String: VProperty] = [
+                "x": .attribute(name: "x", value: "0.5"),
+                "y": .attribute(name: "y", value: "0.56"),
+                "text-anchor": .attribute(name: "text-anchor", value: "middle"),
+                "dominant-baseline": .attribute(name: "dominant-baseline", value: "middle"),
+                "font-size": .attribute(name: "font-size", value: "0.22"),
+                "fill": .attribute(name: "fill", value: "currentColor"),
+            ]
+
+            return VNode.element(
+                "svg",
+                props: svgProps,
+                children: [
+                    VNode.element("text", props: textProps, children: [.text(systemName)]),
+                ]
+            )
+        }
+
+        // Some symbols include open segments (lines) and closed shapes in one pathData.
+        // Using both `fill` and `stroke` keeps icons legible across that mix.
+        let isFilledSymbol = systemName.contains(".fill")
+        let fillValue = isFilledSymbol ? "currentColor" : "none"
+        let strokeValue = "currentColor"
+
+        let pathProps: [String: VProperty] = [
+            "d": .attribute(name: "d", value: symbol.pathData),
+            "fill": .attribute(name: "fill", value: fillValue),
+            "stroke": .attribute(name: "stroke", value: strokeValue),
+            // Unit-square viewBox: 0.08 is roughly a 2px stroke at 24px icon size.
+            "stroke-width": .attribute(name: "stroke-width", value: "0.08"),
+            "stroke-linecap": .attribute(name: "stroke-linecap", value: "round"),
+            "stroke-linejoin": .attribute(name: "stroke-linejoin", value: "round"),
+        ]
+
+        return VNode.element(
+            "svg",
+            props: svgProps,
+            children: [
+                VNode.element("path", props: pathProps, children: []),
+            ]
+        )
+    }
 
     /// Extracts a reasonable alt text from the image source when none is provided.
     ///

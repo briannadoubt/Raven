@@ -167,6 +167,14 @@ actor HTTPServer {
             path = "/index.html"
         }
 
+        // SPA fallback: when a client-side route is requested directly (e.g. /effects),
+        // serve index.html so the in-app router can take over. This also ensures hot reload
+        // page reloads don't break when the current URL is not a real file on disk.
+        let requestedPathExtension = (path as NSString).pathExtension
+        if requestedPathExtension.isEmpty && path != "/index.html" {
+            path = "/index.html"
+        }
+
         // Avoid noisy browser console errors when no favicon is present in the dev output.
         if path == "/favicon.ico" {
             let headers = """
