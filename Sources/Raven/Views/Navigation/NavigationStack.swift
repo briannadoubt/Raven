@@ -268,16 +268,38 @@ extension NavigationStack: _CoordinatorRenderable {
 
         // 3. Sync with external pathBinding if provided.
         if let pathBinding = pathBinding {
-            let externalCount = pathBinding.wrappedValue.count
-            while controller.viewStack.count > externalCount {
-                controller.viewStack.removeLast()
-                if !controller.pathStack.isEmpty {
-                    controller.pathStack.removeLast()
-                }
-                if controller.titleStack.count > controller.viewStack.count + 1 {
-                    controller.titleStack.removeLast()
-                }
+            controller.externalPathBinding = pathBinding
+
+            // Treat the binding as source-of-truth for pushed destinations.
+            // (NavigationPath stores only pushed views, not the root.)
+            let externalViews = pathBinding.wrappedValue.allDestinations
+            controller.viewStack = externalViews
+
+            // Path-based URLs are only tracked for value-based navigation; for view-based
+            // pushes driven by the binding, we default to nil paths.
+            controller.pathStack = Array(repeating: nil, count: externalViews.count)
+
+            // Ensure per-level stacks are sized correctly for the current depth.
+            while controller.titleStack.count < controller.viewStack.count + 1 {
+                controller.titleStack.append("")
             }
+            while controller.titleStack.count > controller.viewStack.count + 1 {
+                controller.titleStack.removeLast()
+            }
+            while controller.displayModeStack.count < controller.viewStack.count + 1 {
+                controller.displayModeStack.append(.large)
+            }
+            while controller.displayModeStack.count > controller.viewStack.count + 1 {
+                controller.displayModeStack.removeLast()
+            }
+            while controller.navBarHiddenStack.count < controller.viewStack.count + 1 {
+                controller.navBarHiddenStack.append(false)
+            }
+            while controller.navBarHiddenStack.count > controller.viewStack.count + 1 {
+                controller.navBarHiddenStack.removeLast()
+            }
+        } else {
+            controller.externalPathBinding = nil
         }
 
         // 4. Render visible content.
