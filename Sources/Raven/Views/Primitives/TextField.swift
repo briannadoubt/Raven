@@ -145,6 +145,12 @@ public struct TextField: View, PrimitiveView, Sendable {
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
 
             // Default styling
+            // Flex behavior: in SwiftUI, TextField typically expands to fill available space
+            // in horizontal stacks, and should be allowed to shrink when space is tight.
+            // `min-width: 0` fixes classic flexbox clipping issues where siblings (like
+            // a trailing Button) get squeezed and clipped instead of the text field.
+            "flex": .style(name: "flex", value: "1 1 0%"),
+            "min-width": .style(name: "min-width", value: "0"),
             "padding": .style(name: "padding", value: "8px"),
             "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
             "border-radius": .style(name: "border-radius", value: "4px"),
@@ -279,18 +285,23 @@ extension TextField: _CoordinatorRenderable {
             }
         }
 
-        var props: [String: VProperty] = [
-            "type": .attribute(name: "type", value: "text"),
-            "placeholder": .attribute(name: "placeholder", value: placeholderText),
-            "value": .attribute(name: "value", value: binding.wrappedValue),
-            "onInput": .eventHandler(event: "input", handlerID: handlerID),
-            "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
-            "border-radius": .style(name: "border-radius", value: "4px"),
-            "font-size": .style(name: "font-size", value: "14px"),
-            "width": .style(name: "width", value: "100%"),
-            "box-sizing": .style(name: "box-sizing", value: "border-box"),
-        ]
+	        var props: [String: VProperty] = [
+	            "type": .attribute(name: "type", value: "text"),
+	            "placeholder": .attribute(name: "placeholder", value: placeholderText),
+	            "value": .attribute(name: "value", value: binding.wrappedValue),
+	            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+	            // Match SwiftUI's typical layout behavior: text fields are flexible, expand to fill
+	            // available horizontal space, and should be allowed to shrink so sibling views
+	            // (like trailing buttons) are not clipped in an `HStack`.
+	            "flex": .style(name: "flex", value: "1 1 0%"),
+	            "min-width": .style(name: "min-width", value: "0"),
+	            "padding": .style(name: "padding", value: "8px"),
+	            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
+	            "border-radius": .style(name: "border-radius", value: "4px"),
+	            "font-size": .style(name: "font-size", value: "14px"),
+	            "width": .style(name: "width", value: "100%"),
+	            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+	        ]
         if let disabled = autocorrectionDisabled {
             props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
             props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
