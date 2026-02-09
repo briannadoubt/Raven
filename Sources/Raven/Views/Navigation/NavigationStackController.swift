@@ -23,8 +23,11 @@ internal final class NavigationStackController {
     /// Parallel stack of navigation titles for each level (index 0 = root title).
     var titleStack: [String] = [""]
 
-    /// Navigation destinations registered during the current render pass.
-    /// Cleared at the start of each render and re-populated by `navigationDestination` modifiers.
+    /// Navigation destinations registered by the root view.
+    ///
+    /// In SwiftUI, `.navigationDestination` is typically attached to the root of a stack and
+    /// remains in effect as you push deeper. Raven mirrors that behavior by persisting the
+    /// destinations across pushes and only refreshing them when the root view is visible.
     var destinations: [NavigationDestinationInfo] = []
 
     /// Display mode per stack level (default: .large). Index 0 = root.
@@ -355,8 +358,14 @@ internal final class NavigationStackController {
     // MARK: - Per-Render Cleanup
 
     /// Clear transient state that is re-populated each render pass.
-    func clearRenderState() {
-        destinations.removeAll()
+    ///
+    /// - Parameter clearDestinations: When `true`, clears `destinations` so the root view can
+    ///   re-register them. When `false`, keeps destinations stable (important for pushed pages,
+    ///   so root-only modifiers like `searchable` don't leak into sub-pages).
+    func clearRenderState(clearDestinations: Bool) {
+        if clearDestinations {
+            destinations.removeAll()
+        }
         toolbarItems.removeAll()
         searchBarInfo = nil
         toolbarBackground = nil

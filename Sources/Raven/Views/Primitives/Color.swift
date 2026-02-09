@@ -302,6 +302,7 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     /// - Returns: A new color with the specified opacity.
     nonisolated public func opacity(_ opacity: Double) -> Color {
         let clampedOpacity = min(max(opacity, 0.0), 1.0)
+        let pct = Int((clampedOpacity * 100.0).rounded())
 
         switch storage {
         case .rgb(let red, let green, let blue, _):
@@ -322,10 +323,19 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
             }
             // For unknown colors, keep as is
             return self
-        case .cssVariable, .systemColor:
-            // CSS variables and system colors can't have opacity applied directly
-            // They would need to be wrapped in a container with opacity
-            return self
+        case .cssVariable(let name):
+            // For CSS variables, use `color-mix` to apply opacity in the color itself.
+            // This is widely supported in modern Chromium and avoids changing ancestor opacity.
+            // If a target browser doesn't support `color-mix`, this gracefully falls back to
+            // an invalid color string which the browser will ignore, leaving the original color.
+            guard clampedOpacity < 1.0 else { return self }
+            let base = "var(--\(name))"
+            return Color(named: "color-mix(in srgb, \(base) \(pct)%, transparent)")
+        case .systemColor(let name):
+            // Same approach as css variables: apply opacity using `color-mix`.
+            guard clampedOpacity < 1.0 else { return self }
+            let base = "var(--system-\(name))"
+            return Color(named: "color-mix(in srgb, \(base) \(pct)%, transparent)")
         }
     }
 
