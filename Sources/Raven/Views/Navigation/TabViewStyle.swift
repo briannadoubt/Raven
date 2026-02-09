@@ -9,7 +9,9 @@ import Foundation
 ///
 /// Raven provides the following built-in tab view styles:
 ///
-/// - ``DefaultTabViewStyle``: Standard tab bar at the bottom (default)
+/// - ``AutomaticTabViewStyle``: Platform-appropriate default (top on WASI)
+/// - ``DefaultTabViewStyle``: Standard tab bar at the bottom
+/// - ``TopTabViewStyle``: Tab bar at the top
 /// - ``PageTabViewStyle``: Swipeable pages without visible tab bar
 ///
 /// ## Example
@@ -52,6 +54,30 @@ public enum TabBarPosition: Sendable {
     case none
 }
 
+// MARK: - Automatic Tab View Style
+
+/// A platform-appropriate tab view style.
+///
+/// This is the default style used by Raven when no explicit `.tabViewStyle(...)`
+/// is applied.
+///
+/// On `os(WASI)` (web), top tabs tend to match common web navigation patterns.
+/// On other platforms, this follows the iOS convention of a bottom tab bar.
+public struct AutomaticTabViewStyle: TabViewStyle {
+    public var tabBarPosition: TabBarPosition {
+        #if os(WASI)
+        .top
+        #else
+        .bottom
+        #endif
+    }
+
+    public var isSwipeable: Bool { false }
+    public var showsTabBar: Bool { true }
+
+    public init() {}
+}
+
 // MARK: - Default Tab View Style
 
 /// The default tab view style with a tab bar at the bottom.
@@ -67,7 +93,7 @@ public enum TabBarPosition: Sendable {
 ///     HomeView().tabItem { Label("Home", systemImage: "house") }
 ///     ProfileView().tabItem { Label("Profile", systemImage: "person") }
 /// }
-/// .tabViewStyle(.automatic) // Uses DefaultTabViewStyle
+/// .tabViewStyle(.bottom)
 /// ```
 ///
 /// ## Appearance
@@ -88,6 +114,20 @@ public struct DefaultTabViewStyle: TabViewStyle {
     public var showsTabBar: Bool { true }
 
     /// Creates a default tab view style.
+    public init() {}
+}
+
+// MARK: - Top Tab View Style
+
+/// A tab view style with a tab bar at the top.
+///
+/// This style is useful for web/desktop layouts where top navigation is more
+/// common than a bottom tab bar.
+public struct TopTabViewStyle: TabViewStyle {
+    public var tabBarPosition: TabBarPosition { .top }
+    public var isSwipeable: Bool { false }
+    public var showsTabBar: Bool { true }
+
     public init() {}
 }
 
@@ -172,7 +212,7 @@ public enum PageIndexDisplayMode: Sendable {
 
 /// Environment key for tab view style.
 private struct TabViewStyleKey: EnvironmentKey {
-    static let defaultValue: any TabViewStyle = DefaultTabViewStyle()
+    static let defaultValue: any TabViewStyle = AutomaticTabViewStyle()
 }
 
 extension EnvironmentValues {
@@ -222,16 +262,14 @@ extension View {
     /// - ``DefaultTabViewStyle``
     /// - ``PageTabViewStyle``
     @MainActor public func tabViewStyle<S: TabViewStyle>(_ style: S) -> some View {
-        // For now, return self as environment modifiers are not fully implemented
-        // In a full implementation, this would set the style in the environment
-        self
+        environment(\.tabViewStyle, style)
     }
 }
 
 // MARK: - Style Shortcuts
 
-extension TabViewStyle where Self == DefaultTabViewStyle {
-    /// The default tab view style with a bottom tab bar.
+extension TabViewStyle where Self == AutomaticTabViewStyle {
+    /// A platform-appropriate default style.
     ///
     /// ## Example
     ///
@@ -241,8 +279,22 @@ extension TabViewStyle where Self == DefaultTabViewStyle {
     /// }
     /// .tabViewStyle(.automatic)
     /// ```
-    public static var automatic: DefaultTabViewStyle {
+    public static var automatic: AutomaticTabViewStyle {
+        AutomaticTabViewStyle()
+    }
+}
+
+extension TabViewStyle where Self == DefaultTabViewStyle {
+    /// A bottom tab bar style (iOS-like).
+    public static var bottom: DefaultTabViewStyle {
         DefaultTabViewStyle()
+    }
+}
+
+extension TabViewStyle where Self == TopTabViewStyle {
+    /// A tab view style with a top tab bar.
+    public static var top: TopTabViewStyle {
+        TopTabViewStyle()
     }
 }
 
