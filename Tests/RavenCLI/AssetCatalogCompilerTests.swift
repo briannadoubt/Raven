@@ -22,6 +22,15 @@ import RavenAssetSupport
         let data = Data(base64Encoded: b64)!
         try data.write(to: url)
     }
+    
+    private func writeSVG(to url: URL) throws {
+        let svg = """
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+          <path d="M12 2L2 22h20L12 2z" fill="black"/>
+        </svg>
+        """
+        try Data(svg.utf8).write(to: url)
+    }
 
     private func makeImageSet(root: URL, name: String, scales: [String]) throws {
         let setDir = root
@@ -93,6 +102,24 @@ import RavenAssetSupport
         try content.write(to: setDir.appendingPathComponent(filename))
         let contents: [String: Any] = [
             "data": [["idiom": "universal", "filename": filename]],
+            "info": ["version": 1, "author": "xcode"],
+        ]
+        let data = try JSONSerialization.data(withJSONObject: contents, options: [.sortedKeys])
+        try data.write(to: setDir.appendingPathComponent("Contents.json"))
+    }
+    
+    private func makeSymbolSet(root: URL, name: String, filename: String = "symbol.svg") throws {
+        let setDir = root.appendingPathComponent("\(name).symbolset")
+        try FileManager.default.createDirectory(at: setDir, withIntermediateDirectories: true)
+        
+        try writeSVG(to: setDir.appendingPathComponent(filename))
+        let contents: [String: Any] = [
+            "symbols": [
+                [
+                    "idiom": "universal",
+                    "filename": filename,
+                ],
+            ],
             "info": ["version": 1, "author": "xcode"],
         ]
         let data = try JSONSerialization.data(withJSONObject: contents, options: [.sortedKeys])
@@ -192,6 +219,25 @@ import RavenAssetSupport
 
         let id = AssetID.fromName("Config")
         let file = distDir.appendingPathComponent("assets/data/\(id).json")
+        #expect(FileManager.default.fileExists(atPath: file.path))
+    }
+    
+    @Test func symbolsetCopiesFileAndExposesURL() throws {
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        
+        let appAssets = projectDir
+            .appendingPathComponent("Sources/MyApp/Assets.xcassets")
+        try FileManager.default.createDirectory(at: appAssets, withIntermediateDirectories: true)
+        try makeSymbolSet(root: appAssets, name: "CustomSymbol")
+        
+        let compiler = AssetCatalogCompiler(projectPath: projectDir.path, outputRoot: distDir.path, verbose: false)
+        let result = try compiler.compile()
+        
+        let entry = try #require(result.manifest.symbols["CustomSymbol"])
+        #expect(entry.url.hasPrefix("/assets/symbols/"))
+        
+        let id = AssetID.fromName("CustomSymbol")
+        let file = distDir.appendingPathComponent("assets/symbols/\(id).svg")
         #expect(FileManager.default.fileExists(atPath: file.path))
     }
 

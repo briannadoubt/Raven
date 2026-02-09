@@ -59,10 +59,12 @@ struct AssetCatalogCompiler: Sendable {
         let assetsDir = (outputRoot as NSString).appendingPathComponent("assets")
         let dataDir = (assetsDir as NSString).appendingPathComponent("data")
         let iconsDir = (assetsDir as NSString).appendingPathComponent("icons")
+        let symbolsDir = (assetsDir as NSString).appendingPathComponent("symbols")
 
         try FileManager.default.createDirectory(atPath: assetsDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(atPath: dataDir, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(atPath: iconsDir, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(atPath: symbolsDir, withIntermediateDirectories: true)
 
         let sortedCatalogs = catalogs.sorted { a, b in
             if a.origin != b.origin { return a.origin < b.origin }
@@ -77,7 +79,8 @@ struct AssetCatalogCompiler: Sendable {
                 manifest: &manifest,
                 assetsDir: assetsDir,
                 dataDir: dataDir,
-                iconsDir: iconsDir
+                iconsDir: iconsDir,
+                symbolsDir: symbolsDir
             )
         }
 
@@ -160,7 +163,8 @@ struct AssetCatalogCompiler: Sendable {
         manifest: inout AssetCatalogManifest,
         assetsDir: String,
         dataDir: String,
-        iconsDir: String
+        iconsDir: String,
+        symbolsDir: String
     ) throws {
         let fm = FileManager.default
         let url = URL(fileURLWithPath: catalogPath)
@@ -180,6 +184,9 @@ struct AssetCatalogCompiler: Sendable {
             case "imageset":
                 try compileImageSet(imagesetDir: next, origin: origin, winners: &winners, manifest: &manifest, assetsDir: assetsDir)
                 enumerator?.skipDescendants()
+            case "symbolset":
+                try compileSymbolSet(symbolsetDir: next, origin: origin, winners: &winners, manifest: &manifest, symbolsDir: symbolsDir)
+                enumerator?.skipDescendants()
             case "colorset":
                 try compileColorSet(colorsetDir: next, origin: origin, winners: &winners, manifest: &manifest)
                 enumerator?.skipDescendants()
@@ -193,6 +200,49 @@ struct AssetCatalogCompiler: Sendable {
                 break
             }
         }
+    }
+
+    private func compileSymbolSet(
+        symbolsetDir: URL,
+        origin: Origin,
+        winners: inout [String: Origin],
+        manifest: inout AssetCatalogManifest,
+        symbolsDir: String
+    ) throws {
+        let name = symbolsetDir.deletingPathExtension().lastPathComponent
+        guard shouldAccept(name: name, origin: origin, winners: &winners) else { return }
+
+        let contentsURL = symbolsetDir.appendingPathComponent("Contents.json")
+        guard let data = try? Data(contentsOf: contentsURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let symbols = json["symbols"] as? [[String: Any]] else {
+            if verbose { print("  ⚠ Missing/invalid Contents.json for symbolset: \(symbolsetDir.path)") }
+            return
+        }
+
+        var filename: String?
+        for sym in symbols {
+            let idiom = sym["idiom"] as? String
+            if let idiom, idiom != "universal" { continue }
+            if let f = sym["filename"] as? String {
+                filename = f
+                break
+            }
+        }
+        if filename == nil {
+            filename = symbols.compactMap { $0["filename"] as? String }.first
+        }
+
+        guard let filename else { return }
+
+        let src = symbolsetDir.appendingPathComponent(filename)
+        let ext = src.pathExtension.isEmpty ? "svg" : src.pathExtension.lowercased()
+        let id = AssetID.fromName(name)
+        let destName = "\(id).\(ext)"
+        let destPath = (symbolsDir as NSString).appendingPathComponent(destName)
+        try copyFile(from: src.path, to: destPath)
+
+        manifest.symbols[name] = .init(id: id, url: "/assets/symbols/\(destName)")
     }
 
     private func shouldAccept(name: String, origin: Origin, winners: inout [String: Origin]) -> Bool {

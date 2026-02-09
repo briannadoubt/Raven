@@ -10,6 +10,10 @@ enum AssetRegistry {
         let src: String
         let srcset: [String: String]?
     }
+    
+    struct ResolvedSymbol: Sendable {
+        let url: String
+    }
 
     #if arch(wasm32)
     private static var manifestObject: JSObject?
@@ -57,6 +61,19 @@ enum AssetRegistry {
         guard let dataObj = manifest[dynamicMember: "data"].object else { return nil }
         guard let entry = dataObj[dynamicMember: name].object else { return nil }
         return entry[dynamicMember: "url"].string
+        #else
+        _ = name
+        return nil
+        #endif
+    }
+    
+    static func resolveSymbol(_ name: String) -> ResolvedSymbol? {
+        #if arch(wasm32)
+        guard let manifest = loadManifestIfNeeded() else { return nil }
+        guard let symbols = manifest[dynamicMember: "symbols"].object else { return nil }
+        guard let entry = symbols[dynamicMember: name].object else { return nil }
+        guard let url = entry[dynamicMember: "url"].string else { return nil }
+        return ResolvedSymbol(url: url)
         #else
         _ = name
         return nil
