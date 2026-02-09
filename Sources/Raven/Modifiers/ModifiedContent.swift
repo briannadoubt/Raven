@@ -5,44 +5,19 @@ import Foundation
 /// This protocol is used for simple modifiers like `PaddingModifier`, `FrameModifier`, etc.
 /// that don't implement the full `ViewModifier` protocol pattern. These modifiers are
 /// used internally by specific wrapper views like `_PaddingView`, `_FrameView`, etc.
-///
-/// For custom modifiers with composable bodies, use the `ViewModifier` protocol instead,
-/// which is defined in `ViewModifier.swift`.
-///
-/// Example of a basic modifier:
-/// ```swift
-/// public struct PaddingModifier: BasicViewModifier {
-///     let edges: EdgeInsets
-/// }
-/// ```
-public protocol BasicViewModifier: Sendable {
-}
+public protocol BasicViewModifier: Sendable {}
 
-/// A view that wraps another view with a basic modifier applied.
+/// A view that applies a modifier to another view.
 ///
-/// `ModifiedContent` is a generic container that stores a view and its modifier.
-/// It can work with both `BasicViewModifier` types (for internal use) and
-/// `ViewModifier` types (for custom user-defined modifiers).
+/// `ModifiedContent` is the result of calling `.modifier()` on a view. In SwiftUI,
+/// this is the mechanism for applying `ViewModifier` protocol-based modifiers.
 ///
-/// ## Usage with BasicViewModifier
-///
-/// Basic modifiers are used internally and return specific wrapper views:
-/// ```swift
-/// Text("Hello")
-///     .padding()  // Returns _PaddingView<Text>
-/// ```
-///
-/// ## Usage with ViewModifier
-///
-/// Custom modifiers use the full ViewModifier protocol:
-/// ```swift
-/// Text("Hello")
-///     .modifier(MyCustomModifier())  // Returns ModifiedContent<Text, MyCustomModifier>
-/// ```
-///
-/// The implementation of `body` for ViewModifier is provided as an extension
-/// in `ViewModifier.swift`.
-public struct ModifiedContent<Content: View, Modifier: Sendable>: View, Sendable {
+/// In Raven, we implement `ModifiedContent` as a primitive, coordinator-rendered
+/// node so we can apply the modifier during `_render(with:)` without relying on
+/// `body` being a single static witness (which would make all modifiers no-ops).
+public struct ModifiedContent<Content: View, Modifier: Sendable>: View, PrimitiveView, Sendable {
+    public typealias Body = Never
+
     /// The original content being modified
     public let content: Content
 
@@ -59,12 +34,21 @@ public struct ModifiedContent<Content: View, Modifier: Sendable>: View, Sendable
         self.modifier = modifier
     }
 
-    /// Default behavior for non-`ViewModifier` modifiers: treat as identity.
-    ///
-    /// Raven's built-in modifiers usually return dedicated wrapper views (e.g. `_PaddingView`)
-    /// and do not rely on `ModifiedContent`. The identity body keeps source-compatibility for
-    /// any generic code that constructs `ModifiedContent` directly.
-    @MainActor public var body: some View {
-        content
+    @MainActor public func toVNode() -> VNode {
+        // `_render(with:)` does the real work; this exists for `PrimitiveView`.
+        VNode.fragment(children: [])
+    }
+}
+
+extension ModifiedContent: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // If this is a `ViewModifier`, apply it by calling `body(content:)`.
+        if let anyViewModifier = modifier as? any _AnyViewModifier {
+            let modified = anyViewModifier._apply(to: AnyView(content))
+            return context.renderChild(modified)
+        }
+
+        // Fallback: treat unknown modifier types as identity.
+        return context.renderChild(content)
     }
 }

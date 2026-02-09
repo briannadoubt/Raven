@@ -71,7 +71,8 @@ public struct PopoverRenderer: Sendable {
         entry: PresentationEntry,
         anchor: PopoverAttachmentAnchor,
         edge: Edge,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         // Create dismiss handler for backdrop clicks
         let dismissHandler = DialogRenderer.createBackdropClickHandler(
@@ -83,7 +84,7 @@ public struct PopoverRenderer: Sendable {
         let arrow = createArrow(edge: edge)
 
         // Create content container
-        let content = createContentContainer(content: entry.content)
+        let content = createContentContainer(content: content)
 
         // Build children
         let children = [arrow, content]
@@ -94,6 +95,10 @@ public struct PopoverRenderer: Sendable {
             "data-anchor": .attribute(name: "data-anchor", value: anchorIdentifier(anchor)),
             "data-edge": .attribute(name: "data-edge", value: edge.rawValue)
         ]
+        props["data-raven-presentation-id"] = .attribute(
+            name: "data-raven-presentation-id",
+            value: entry.id.uuidString
+        )
 
         // Store anchor and edge in metadata for post-render positioning
         props["data-popover-metadata"] = .attribute(
@@ -136,23 +141,15 @@ public struct PopoverRenderer: Sendable {
     ///
     /// - Parameter content: The content to display in the popover
     /// - Returns: A VNode for the content container
-    private static func createContentContainer(content: AnyView) -> VNode {
+    private static func createContentContainer(content: VNode) -> VNode {
         return VNode.element(
             "div",
             props: [
                 "class": .attribute(name: "class", value: "raven-popover-content"),
                 "role": .attribute(name: "role", value: "dialog")
             ],
-            children: [renderContent(content)]
+            children: [content]
         )
-    }
-
-    /// Renders the content view into a VNode.
-    ///
-    /// - Parameter content: The AnyView content to render
-    /// - Returns: A VNode representing the content
-    private static func renderContent(_ content: AnyView) -> VNode {
-        return content.render()
     }
 
     /// Converts an edge to a CSS class name.

@@ -61,6 +61,8 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
 
         DOMBridge.shared.appendChild(parent: container, child: domNode)
         DOMBridge.shared.registerNode(id: root.id, element: domNode)
+
+        activateDialogs(in: domNode)
     }
 
     // MARK: - DOM Node Creation
@@ -152,6 +154,7 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
             }
 
             DOMBridge.shared.registerNode(id: node.id, element: newElement)
+            activateDialogs(in: newElement)
 
         case .remove(let nodeID):
             guard let element = DOMBridge.shared.getNode(id: nodeID) else {
@@ -159,7 +162,17 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
                 return
             }
 
-            if let parent = element.parentNode.object {
+            // `<dialog>` elements participate in the browser "top layer" when open.
+            // Closing before removal avoids leaving a modal dialog stuck open.
+            let isDialog = (element.tagName.string ?? "").lowercased() == "dialog"
+            if isDialog, element.open.boolean == true {
+                DialogRenderer.closeDialog(element)
+            }
+
+            // Prefer `Element.remove()` so top-layer nodes (like `<dialog>`) detach reliably.
+            if element.remove != .undefined && element.remove != .null {
+                _ = element.remove!()
+            } else if let parent = element.parentNode.object {
                 DOMBridge.shared.removeChild(parent: parent, child: element)
             }
             DOMBridge.shared.unregisterNode(id: nodeID)
@@ -179,6 +192,7 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
             DOMBridge.shared.replaceChild(parent: parent, old: oldElement, new: newElement)
             DOMBridge.shared.unregisterNode(id: oldID)
             DOMBridge.shared.registerNode(id: newNode.id, element: newElement)
+            activateDialogs(in: newElement)
 
         case .updateProps(let nodeID, let propPatches):
             guard let element = DOMBridge.shared.getNode(id: nodeID) else {
@@ -260,6 +274,35 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
             // Remove both so diffing can cleanly drop CSS properties as well.
             DOMBridge.shared.removeAttribute(element: element, name: key)
             DOMBridge.shared.removeStyle(element: element, name: key)
+        }
+    }
+
+    // MARK: - Dialog Activation
+
+    /// HTML `<dialog>` elements are inert until `showModal()` is called.
+    /// Raven's presentation renderers emit `<dialog data-raven-dialog="true">`,
+    /// so once those nodes are mounted we activate them.
+    private func activateDialogs(in root: JSObject) {
+        func maybeShow(_ element: JSObject) {
+            let isDialog = (element.tagName.string ?? "").lowercased() == "dialog"
+            guard isDialog else { return }
+            let isRavenDialog = element.getAttribute?("data-raven-dialog").string != nil
+            guard isRavenDialog else { return }
+
+            // Avoid exceptions by only calling showModal() once.
+            if element.open.boolean == true { return }
+            DialogRenderer.showDialog(element)
+        }
+
+        maybeShow(root)
+
+        if let list = root.querySelectorAll?("dialog[data-raven-dialog]") {
+            let length = Int(list.length.number ?? 0)
+            for i in 0..<length {
+                if let el = list[i].object {
+                    maybeShow(el)
+                }
+            }
         }
     }
 

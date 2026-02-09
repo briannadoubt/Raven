@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-09T00:38:33.395589+00:00`
+Generated: `2026-02-09T03:36:24.921865+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,21 +10,21 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1335**
-- Missing in Raven: **3234**
-- Name-based coverage: **29.22%**
+- Matched by Raven: **1342**
+- Missing in Raven: **3227**
+- Name-based coverage: **29.37%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 458 | 0 | 1238 |
+| `Constructor` | 456 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1052 | 0 | 1366 |
+| `Func` | 1051 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 51 | 0 | 66 |
-| `Struct` | 353 | 0 | 484 |
+| `Struct` | 349 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
 | `Var` | 912 | 0 | 964 |
@@ -51,14 +51,12 @@ Target: `arm64-apple-ios26.2`
 - `AccessoryLinearGaugeStyle` (Struct, owner: `SwiftUI`)
 - `Actions` (Struct, owner: `SearchUnavailableContent`)
 - `Actions` (Struct, owner: `SectionConfiguration`)
-- `AdaptableTabBarPlacement` (Struct, owner: `SwiftUI`)
 - `AllCases` (TypeAlias, owner: `InterfaceOrientation`)
 - `AnimatableData` (TypeAlias, owner: `ButtonBorderShape`)
 - `AnimatableData` (TypeAlias, owner: `GridLayout`)
 - `AnimatableModifier` (Protocol, owner: `SwiftUI`)
 - `AnimationTimelineSchedule` (Struct, owner: `SwiftUI`)
 - `AnyScrollTargetBehavior` (Struct, owner: `SwiftUI`)
-- `AnyTabContent` (Struct, owner: `SwiftUI`)
 - `AppearsActiveKey` (Struct, owner: `SwiftUI`)
 - `ArrayLiteralElement` (TypeAlias, owner: `AccessibilityDirectTouchOptions`)
 - `ArrayLiteralElement` (TypeAlias, owner: `AccessibilityTechnologies`)
@@ -231,6 +229,8 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `Slider`)
 - `Body` (TypeAlias, owner: `SliderTick`)
 - `Body` (TypeAlias, owner: `SliderTickContentForEach`)
+- `Body` (TypeAlias, owner: `SpatialEventGesture`)
+- `Body` (TypeAlias, owner: `SpatialTapGesture`)
 
 ## Missing High-Signal Named APIs (first 300)
 

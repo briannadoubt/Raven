@@ -59,10 +59,11 @@ public struct AlertRenderer: Sendable {
     /// - Returns: A VNode representing the alert dialog
     public static func render(
         entry: PresentationEntry,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         // Extract alert data from content
-        if let alertData = extractAlertData(from: entry.content) {
+        if let alertData = extractAlertData(from: content, view: entry.content.wrappedView) {
             // Use extracted data to render the alert
             return renderAlert(
                 title: alertData.title,
@@ -126,6 +127,10 @@ public struct AlertRenderer: Sendable {
             dismissHandler: nil,
             children: children,
             additionalProps: [
+                "data-raven-presentation-id": .attribute(
+                    name: "data-raven-presentation-id",
+                    value: presentationId.uuidString
+                ),
                 "role": .attribute(name: "role", value: "alertdialog"),
                 "aria-modal": .attribute(name: "aria-modal", value: "true"),
                 "aria-labelledby": .attribute(name: "aria-labelledby", value: "alert-title")
@@ -369,9 +374,19 @@ extension AlertRenderer {
     public static func extractAlertData(
         from content: AnyView
     ) -> (title: String, message: String?, buttons: [ButtonConfiguration])? {
-        // Render the AnyView to a VNode to examine its structure
-        let vnode = content.render()
+        // This overload exists for source compatibility (including tests) and
+        // for call sites that don't have access to a RenderLoop context.
+        extractAlertData(from: content.render(), view: content.wrappedView)
+    }
 
+    /// Extracts alert configuration from a VNode plus an optional view fallback.
+    ///
+    /// Prefer this API at runtime, where the alert's content VNode can be produced
+    /// via the render context (so coordinator-renderable primitives expand properly).
+    public static func extractAlertData(
+        from vnode: VNode,
+        view: any View
+    ) -> (title: String, message: String?, buttons: [ButtonConfiguration])? {
         // Extract components from the VNode tree
         if let components = extractComponentsFromVNode(vnode) {
             return (
@@ -383,7 +398,7 @@ extension AlertRenderer {
 
         // Fallback for coordinator-renderable containers (e.g. VStack) when AnyView
         // is rendered outside RenderLoop and children are not materialized.
-        if let mirrored = extractComponentsFromView(content.wrappedView) {
+        if let mirrored = extractComponentsFromView(view) {
             return (
                 title: mirrored.title,
                 message: mirrored.message,
