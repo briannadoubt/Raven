@@ -1,14 +1,8 @@
 {
   "images" : [
     {
-      "filename" : "RavenMark.png",
-      "idiom" : "universal",
-      "scale" : "1x"
-    },
-    {
-      "filename" : "RavenMark@2x.png",
-      "idiom" : "universal",
-      "scale" : "2x"
+      "filename" : "RavenMark.svg",
+      "idiom" : "universal"
     }
   ],
   "info" : {

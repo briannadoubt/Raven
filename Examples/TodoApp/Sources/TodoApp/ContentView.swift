@@ -1030,7 +1030,7 @@ struct ImageDemo: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 12) {
                         Image("RavenMark")
-                            .frame(width: 28, height: 28)
+                            .frame(width: 44, height: 44)
 
                         Text("Image(\"RavenMark\") from Assets.xcassets")
                             .font(.caption)
