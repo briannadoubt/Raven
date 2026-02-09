@@ -109,9 +109,23 @@ public struct Image: View, PrimitiveView, Sendable {
         let srcValue: String
         switch source {
         case .named(let name):
-            // Named images could be resolved to a path.
-            // For now, treat as a relative path to an assets folder.
-            srcValue = "/assets/\(name)"
+            if let resolved = AssetRegistry.resolveImage(name) {
+                srcValue = resolved.src
+                if let srcset = resolved.srcset, !srcset.isEmpty {
+                    let preferredOrder = ["1x", "2x", "3x"]
+                    let orderedKeys = preferredOrder + srcset.keys.filter { !preferredOrder.contains($0) }.sorted()
+                    let parts = orderedKeys.compactMap { key -> String? in
+                        guard let url = srcset[key] else { return nil }
+                        return "\(url) \(key)"
+                    }
+                    if !parts.isEmpty {
+                        props["srcset"] = .attribute(name: "srcset", value: parts.joined(separator: ", "))
+                    }
+                }
+            } else {
+                // Backwards-compatible fallback: treat as a relative path to an assets folder.
+                srcValue = "/assets/\(name)"
+            }
         case .url(let urlString):
             srcValue = urlString
         case .system:

@@ -1010,18 +1010,53 @@ struct DisplayTab: View {
 @MainActor
 struct ImageDemo: View {
     var body: some View {
-        SectionCard(title: "Image") {
-            VStack(spacing: 8) {
-                HStack(spacing: 16) {
-                    Image(systemName: "star.fill")
-                    Image(systemName: "heart.fill")
-                    Image(systemName: "bell.fill")
-                    Image(systemName: "gear")
-                }
+        VStack(spacing: 16) {
+            SectionCard(title: "Image") {
+                VStack(spacing: 8) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "star.fill")
+                        Image(systemName: "heart.fill")
+                        Image(systemName: "bell.fill")
+                        Image(systemName: "gear")
+                    }
 
-                Text("System SF Symbol icons")
-                    .font(.caption)
-                    .foregroundColor(Color.secondaryLabel)
+                    Text("System SF Symbol icons")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+            }
+
+            SectionCard(title: "Asset Catalog (.xcassets)") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        Image("RavenMark")
+                            .frame(width: 28, height: 28)
+
+                        Text("Image(\"RavenMark\") from Assets.xcassets")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color("BrandPrimary"))
+                            .frame(width: 56, height: 22)
+
+                        Text("Color(\"BrandPrimary\") (light/dark)")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    if let url = Asset.url("SampleText") {
+                        Text("Asset.url(\"SampleText\") → \(url)")
+                            .font(.caption2)
+                            .foregroundColor(Color.tertiaryLabel)
+                    } else {
+                        Text("Asset.url(\"SampleText\") → (not found)")
+                            .font(.caption2)
+                            .foregroundColor(Color.tertiaryLabel)
+                    }
+                }
             }
         }
     }

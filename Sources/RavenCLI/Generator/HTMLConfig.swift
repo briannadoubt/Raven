@@ -33,6 +33,9 @@ public struct HTMLConfig: Sendable {
     /// If nil, falls back to loading from a `runtime.js` script tag.
     let javaScriptKitRuntimeSource: String?
 
+    /// Optional script to inject Raven asset manifest + related tags (colors/icons).
+    let assetInjectionScript: String?
+
     public init(
         projectName: String,
         title: String? = nil,
@@ -43,7 +46,8 @@ public struct HTMLConfig: Sendable {
         mountElementID: String = "root",
         isDevelopment: Bool = false,
         hotReloadPort: Int = 35729,
-        javaScriptKitRuntimeSource: String? = nil
+        javaScriptKitRuntimeSource: String? = nil,
+        assetInjectionScript: String? = nil
     ) {
         self.projectName = projectName
         self.title = title ?? projectName
@@ -55,5 +59,6 @@ public struct HTMLConfig: Sendable {
         self.isDevelopment = isDevelopment
         self.hotReloadPort = hotReloadPort
         self.javaScriptKitRuntimeSource = javaScriptKitRuntimeSource
+        self.assetInjectionScript = assetInjectionScript
     }
 }

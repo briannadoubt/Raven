@@ -1,0 +1,2 @@
+Hello from SampleText.dataset.
+If you can read this in the browser, asset catalogs are working.

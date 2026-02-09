@@ -35,10 +35,17 @@ let package = Package(
     targets: [
         // MARK: - Main Library Targets
 
+        // Shared support for asset catalogs (IDs, normalization) used by both CLI and runtime.
+        .target(
+            name: "RavenAssetSupport",
+            path: "Sources/RavenAssetSupport"
+        ),
+
         // Main Raven library with SwiftUI API
         .target(
             name: "Raven",
             dependencies: [
+                "RavenAssetSupport",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
@@ -65,9 +72,6 @@ let package = Package(
             swiftSettings: [
 
                 .enableExperimentalFeature("AccessLevelOnImport"),
-                // Size optimization for release builds
-                .unsafeFlags(["-Osize"], .when(configuration: .release)),
-                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
             ]
         ),
 
@@ -83,9 +87,6 @@ let package = Package(
             swiftSettings: [
 
                 .enableExperimentalFeature("AccessLevelOnImport"),
-                // Size optimization for release builds
-                .unsafeFlags(["-Osize"], .when(configuration: .release)),
-                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
             ]
         ),
 
@@ -94,6 +95,7 @@ let package = Package(
             name: "RavenCLI",
             dependencies: [
                 "Raven",
+                "RavenAssetSupport",
                 "RavenRuntime",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
@@ -109,7 +111,7 @@ let package = Package(
         // Core Raven tests
         .testTarget(
             name: "RavenTests",
-            dependencies: ["Raven"],
+            dependencies: ["Raven", "RavenAssetSupport"],
             path: "Tests/RavenTests",
             swiftSettings: [
 
@@ -146,7 +148,8 @@ let package = Package(
         .testTarget(
             name: "RavenCLITests",
             dependencies: [
-                "RavenCLI"
+                "RavenCLI",
+                "RavenAssetSupport",
             ],
             path: "Tests/RavenCLI",
             swiftSettings: [
