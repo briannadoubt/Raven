@@ -1038,6 +1038,15 @@ struct ImageDemo: View {
                     }
 
                     HStack(spacing: 12) {
+                        Image("RavenCustom")
+                            .foregroundColor(Color("BrandPrimary"))
+
+                        Text("Image(\"RavenCustom\") from .symbolset (tintable)")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color("BrandPrimary"))
                             .frame(width: 56, height: 22)
