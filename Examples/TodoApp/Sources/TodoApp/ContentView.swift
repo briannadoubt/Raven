@@ -1047,6 +1047,33 @@ struct ImageDemo: View {
                     }
 
                     HStack(spacing: 12) {
+                        Image("git.commit")
+                            .foregroundColor(Color("BrandPrimary"))
+
+                        Text("Image(\"git.commit\") from MoreSFSymbols (.symbolset)")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    HStack(spacing: 12) {
+                        Image("git.branch")
+                            .foregroundColor(Color.blue)
+
+                        Text("Image(\"git.branch\") from MoreSFSymbols (.symbolset)")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    HStack(spacing: 12) {
+                        Image("git.merge")
+                            .foregroundColor(Color.purple)
+
+                        Text("Image(\"git.merge\") from MoreSFSymbols (.symbolset)")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                    }
+
+                    HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color("BrandPrimary"))
                             .frame(width: 56, height: 22)
