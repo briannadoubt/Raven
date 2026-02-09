@@ -34,12 +34,12 @@ enum AssetRegistry {
 
         var srcsetDict: [String: String] = [:]
         if let srcsetObj = entry[dynamicMember: "srcset"].object {
-            let keys = JSObject.global.Object.keys(srcsetObj)
-            let length = Int(keys.length.number ?? 0)
-            for i in 0..<length {
-                guard let key = keys[i].string else { continue }
-                if let value = srcsetObj[dynamicMember: key].string {
-                    srcsetDict[key] = value
+            // JavaScriptKit's `JSValue[dynamicMember: String] -> ((...) -> JSValue)`
+            // is unsafe and will trap if the member isn't callable. Avoid `Object.keys`
+            // and just probe the expected scales we emit from the bundler.
+            for scale in ["1x", "2x", "3x"] {
+                if let value = srcsetObj[dynamicMember: scale].string {
+                    srcsetDict[scale] = value
                 }
             }
         }
