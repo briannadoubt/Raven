@@ -261,6 +261,21 @@ extension TableColumn: View, PrimitiveView {
     }
 }
 
+// MARK: - Type Erasure For Table Rendering
+
+extension TableColumn: _AnyTableColumnErasing {
+    @MainActor public func _eraseToAnyTableColumn() -> Any {
+        AnyTableColumn<RowValue>(
+            id: id,
+            title: title,
+            label: AnyView(label),
+            makeCell: { row in AnyView(self.content(row)) },
+            comparatorID: comparatorID,
+            compareFunc: compareFunc
+        )
+    }
+}
+
 // MARK: - Internal Helpers
 
 extension TableColumn {

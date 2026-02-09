@@ -239,8 +239,9 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
             // Styling - standard table appearance
             "width": .style(name: "width", value: "100%"),
             "border-collapse": .style(name: "border-collapse", value: "collapse"),
-            "border": .style(name: "border", value: "1px solid #e5e7eb"),
-            "background-color": .style(name: "background-color", value: "white"),
+            "border": .style(name: "border", value: "1px solid var(--system-separator, #e5e7eb)"),
+            "background-color": .style(name: "background-color", value: "var(--system-background, white)"),
+            "color": .style(name: "color", value: "var(--system-label, #111827)"),
         ]
 
         // Add multi-selectable ARIA attribute if multi-selection is enabled
@@ -387,6 +388,310 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         }
 
         sortOrderBinding.wrappedValue = currentSort
+    }
+}
+
+// MARK: - Column Extraction
+
+/// Type-erased representation of a `TableColumn` so `Table` can render headers and cells.
+@MainActor
+internal struct AnyTableColumn<RowValue: Sendable>: Sendable {
+    let id: String
+    let title: String
+    let label: AnyView
+    let makeCell: @Sendable @MainActor (RowValue) -> AnyView
+
+    let comparatorID: String?
+    let compareFunc: (@Sendable (RowValue, RowValue) -> Bool)?
+}
+
+/// Internal protocol used to erase a `TableColumn` instance without fighting its generics.
+@MainActor
+internal protocol _AnyTableColumnErasing: View {
+    /// Returns `AnyTableColumn<RowValue>` for the concrete `RowValue` the column was built with.
+    /// The return type is `Any` so `Table` can downcast to its own `RowValue`.
+    func _eraseToAnyTableColumn() -> Any
+}
+
+@MainActor
+private protocol _TableColumnsExtractable {
+    func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable
+}
+
+extension TupleView: _TableColumnsExtractable {
+    @MainActor fileprivate func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        for child in _extractChildren() {
+            extractFromView(child, into: &columns)
+        }
+    }
+
+    @MainActor private func extractFromView<RowValue: Identifiable & Sendable>(_ view: any View, into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        if let erasing = view as? any _AnyTableColumnErasing,
+           let erased = erasing._eraseToAnyTableColumn() as? AnyTableColumn<RowValue> {
+            columns.append(erased)
+        } else if let tuple = view as? any _TableColumnsExtractable {
+            tuple.extractTableColumns(into: &columns)
+        } else if let conditional = view as? any _TableColumnsConditionalExtractable {
+            conditional.extractTableColumns(into: &columns)
+        } else if let optional = view as? any _TableColumnsOptionalExtractable {
+            optional.extractTableColumns(into: &columns)
+        } else if let forEach = view as? any _TableColumnsForEachExtractable {
+            forEach.extractTableColumns(into: &columns)
+        }
+    }
+}
+
+@MainActor
+private protocol _TableColumnsConditionalExtractable {
+    func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable
+}
+
+extension ConditionalContent: _TableColumnsConditionalExtractable {
+    @MainActor fileprivate func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        switch storage {
+        case .trueContent(let content):
+            extractFromView(content, into: &columns)
+        case .falseContent(let content):
+            extractFromView(content, into: &columns)
+        }
+    }
+
+    @MainActor private func extractFromView<RowValue: Identifiable & Sendable>(_ view: any View, into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        if let erasing = view as? any _AnyTableColumnErasing,
+           let erased = erasing._eraseToAnyTableColumn() as? AnyTableColumn<RowValue> {
+            columns.append(erased)
+        } else if let tuple = view as? any _TableColumnsExtractable {
+            tuple.extractTableColumns(into: &columns)
+        } else if let conditional = view as? any _TableColumnsConditionalExtractable {
+            conditional.extractTableColumns(into: &columns)
+        } else if let optional = view as? any _TableColumnsOptionalExtractable {
+            optional.extractTableColumns(into: &columns)
+        } else if let forEach = view as? any _TableColumnsForEachExtractable {
+            forEach.extractTableColumns(into: &columns)
+        }
+    }
+}
+
+@MainActor
+private protocol _TableColumnsOptionalExtractable {
+    func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable
+}
+
+extension OptionalContent: _TableColumnsOptionalExtractable {
+    @MainActor fileprivate func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        if let content = content {
+            extractFromView(content, into: &columns)
+        }
+    }
+
+    @MainActor private func extractFromView<RowValue: Identifiable & Sendable>(_ view: any View, into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        if let erasing = view as? any _AnyTableColumnErasing,
+           let erased = erasing._eraseToAnyTableColumn() as? AnyTableColumn<RowValue> {
+            columns.append(erased)
+        } else if let tuple = view as? any _TableColumnsExtractable {
+            tuple.extractTableColumns(into: &columns)
+        } else if let conditional = view as? any _TableColumnsConditionalExtractable {
+            conditional.extractTableColumns(into: &columns)
+        } else if let optional = view as? any _TableColumnsOptionalExtractable {
+            optional.extractTableColumns(into: &columns)
+        } else if let forEach = view as? any _TableColumnsForEachExtractable {
+            forEach.extractTableColumns(into: &columns)
+        }
+    }
+}
+
+@MainActor
+private protocol _TableColumnsForEachExtractable {
+    func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable
+}
+
+extension ForEachView: _TableColumnsForEachExtractable {
+    @MainActor fileprivate func extractTableColumns<RowValue: Identifiable & Sendable>(into columns: inout [AnyTableColumn<RowValue>]) where RowValue.ID: Sendable {
+        for view in views {
+            if let erasing = view as? any _AnyTableColumnErasing,
+               let erased = erasing._eraseToAnyTableColumn() as? AnyTableColumn<RowValue> {
+                columns.append(erased)
+            } else if let tuple = view as? any _TableColumnsExtractable {
+                tuple.extractTableColumns(into: &columns)
+            } else if let conditional = view as? any _TableColumnsConditionalExtractable {
+                conditional.extractTableColumns(into: &columns)
+            } else if let optional = view as? any _TableColumnsOptionalExtractable {
+                optional.extractTableColumns(into: &columns)
+            } else if let forEach = view as? any _TableColumnsForEachExtractable {
+                forEach.extractTableColumns(into: &columns)
+            }
+        }
+    }
+}
+
+// MARK: - Coordinator Renderable
+
+extension Table: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // Extract columns from the view builder output.
+        //
+        // Use `_ViewTuple` traversal as the primary mechanism, because `@ViewBuilder`
+        // always emits `TupleView` / conditional wrappers, and we want the extraction
+        // to keep working even if `Columns` isn't exactly `TupleView`.
+        func extractColumns(from view: any View, into output: inout [AnyTableColumn<RowValue>]) {
+            if let erasing = view as? any _AnyTableColumnErasing,
+               let erased = erasing._eraseToAnyTableColumn() as? AnyTableColumn<RowValue> {
+                output.append(erased)
+                return
+            }
+
+            if let tuple = view as? any _ViewTuple {
+                for child in tuple._extractChildren() {
+                    extractColumns(from: child, into: &output)
+                }
+                return
+            }
+
+            if let conditional = view as? any _TableColumnsConditionalExtractable {
+                conditional.extractTableColumns(into: &output)
+                return
+            }
+
+            if let optional = view as? any _TableColumnsOptionalExtractable {
+                optional.extractTableColumns(into: &output)
+                return
+            }
+
+            if let forEach = view as? any _TableColumnsForEachExtractable {
+                forEach.extractTableColumns(into: &output)
+                return
+            }
+        }
+
+        var extractedColumns: [AnyTableColumn<RowValue>] = []
+        extractColumns(from: columns, into: &extractedColumns)
+
+        // If we couldn't extract columns, fall back to `toVNode()` skeleton.
+        if extractedColumns.isEmpty {
+            return toVNode()
+        }
+
+        let rows = getSortedData()
+
+        // Wrapper enables scrolling and rounded borders without fighting `<table>` rendering.
+        let wrapper = VNode.element(
+            "div",
+            props: [
+                "class": .attribute(name: "class", value: "raven-table-wrapper"),
+                "width": .style(name: "width", value: "100%"),
+                "overflow": .style(name: "overflow", value: "auto"),
+                "border": .style(name: "border", value: "1px solid var(--system-separator, #e5e7eb)"),
+                "border-radius": .style(name: "border-radius", value: "10px"),
+                "background-color": .style(name: "background-color", value: "var(--system-background, white)"),
+            ],
+            children: []
+        )
+
+        let table = VNode.element(
+            "table",
+            props: [
+                "class": .attribute(name: "class", value: "raven-table"),
+                "role": .attribute(name: "role", value: "table"),
+                "aria-label": .attribute(name: "aria-label", value: "Data table"),
+                "width": .style(name: "width", value: "100%"),
+                "border-collapse": .style(name: "border-collapse", value: "separate"),
+                "border-spacing": .style(name: "border-spacing", value: "0"),
+                "color": .style(name: "color", value: "var(--system-label, #111827)"),
+            ],
+            children: []
+        )
+
+        // Header row
+        let headerCells: [VNode] = extractedColumns.map { column in
+            let labelNode = context.renderChild(column.label)
+            return VNode.element(
+                "th",
+                props: [
+                    "role": .attribute(name: "role", value: "columnheader"),
+                    "scope": .attribute(name: "scope", value: "col"),
+                    "text-align": .style(name: "text-align", value: "left"),
+                    "font-weight": .style(name: "font-weight", value: "600"),
+                    "font-size": .style(name: "font-size", value: "12px"),
+                    "letter-spacing": .style(name: "letter-spacing", value: "0.02em"),
+                    "text-transform": .style(name: "text-transform", value: "uppercase"),
+                    "padding": .style(name: "padding", value: "10px 12px"),
+                    "background-color": .style(name: "background-color", value: "var(--system-secondary-background, #f2f2f7)"),
+                    "border-bottom": .style(name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)"),
+                    "position": .style(name: "position", value: "sticky"),
+                    "top": .style(name: "top", value: "0"),
+                    "z-index": .style(name: "z-index", value: "1"),
+                ],
+                children: [labelNode]
+            )
+        }
+
+        let thead = VNode.element(
+            "thead",
+            props: [:],
+            children: [
+                VNode.element("tr", props: ["role": .attribute(name: "role", value: "row")], children: headerCells)
+            ]
+        )
+
+        // Body rows
+        let bodyRows: [VNode] = rows.enumerated().map { index, row in
+            let isSelected = isRowSelected(row.id)
+            // Keep it readable in both light/dark without relying on advanced CSS color functions.
+            // In the future we can switch to `color-mix()` if we decide to require it.
+            let rowBg = isSelected
+                ? "rgba(0, 122, 255, 0.12)"
+                : (index % 2 == 0 ? "transparent" : "var(--system-tertiary-background, rgba(0,0,0,0.02))")
+
+            var rowProps: [String: VProperty] = [
+                "role": .attribute(name: "role", value: "row"),
+                "background-color": .style(name: "background-color", value: rowBg),
+            ]
+
+            if selection != nil || multiSelection != nil {
+                rowProps["cursor"] = .style(name: "cursor", value: "pointer")
+                let handlerID = context.registerClickHandler {
+                    selectRow(row.id)
+                }
+                rowProps["onClick"] = .eventHandler(event: "click", handlerID: handlerID)
+                rowProps["aria-selected"] = .attribute(name: "aria-selected", value: isSelected ? "true" : "false")
+            }
+
+            let cells: [VNode] = extractedColumns.map { column in
+                let cellView = column.makeCell(row)
+                let cellNode = context.renderChild(cellView)
+                return VNode.element(
+                    "td",
+                    props: [
+                        "role": .attribute(name: "role", value: "cell"),
+                        "padding": .style(name: "padding", value: "10px 12px"),
+                        "border-bottom": .style(name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)"),
+                        "vertical-align": .style(name: "vertical-align", value: "middle"),
+                        "font-size": .style(name: "font-size", value: "14px"),
+                    ],
+                    children: [cellNode]
+                )
+            }
+
+            return VNode.element("tr", props: rowProps, children: cells)
+        }
+
+        let tbody = VNode.element("tbody", props: [:], children: bodyRows)
+
+        let fullTable = VNode(
+            id: table.id,
+            type: table.type,
+            props: table.props,
+            children: [thead, tbody],
+            key: table.key
+        )
+
+        return VNode(
+            id: wrapper.id,
+            type: wrapper.type,
+            props: wrapper.props,
+            children: [fullTable],
+            key: wrapper.key
+        )
     }
 }
 
