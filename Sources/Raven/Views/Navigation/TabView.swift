@@ -738,7 +738,10 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "flex-direction": .style(name: "flex-direction", value: "column"),
                 "height": .style(name: "height", value: "100%"),
                 "min-height": .style(name: "min-height", value: "0"),
-                "overflow": .style(name: "overflow", value: "hidden"),
+                // Allow `position: sticky` tab bars to stick to the viewport when the page
+                // (not the tab panel) is the scrolling container. `overflow: hidden` would
+                // establish a containing scroll box and break sticky positioning.
+                "overflow": .style(name: "overflow", value: "visible"),
             ],
             children: children
         )
