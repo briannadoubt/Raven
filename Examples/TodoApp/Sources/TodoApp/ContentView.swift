@@ -883,7 +883,6 @@ struct LayoutAdvancedDemos: View {
             LazyHGridDemo()
             GeometryReaderDemo()
             ViewThatFitsDemo()
-            NavigationViewDemo()
             TableDemo()
         }
     }
@@ -1008,6 +1007,8 @@ struct NestedLayoutDemo: View {
                     .padding(12)
                     .background(Color.green.opacity(0.1))
                     .cornerRadius(6)
+
+                    Spacer()
 
                     VStack(spacing: 4) {
                         Text("Top Right")

@@ -52,6 +52,31 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// Guard against reentrant renders (e.g., from stale event handlers firing during mount)
     private var isRendering: Bool = false
 
+    // MARK: - Lifecycle Events (onAppear/onDisappear/.task)
+
+    /// Special "event" names used in VProperty.eventHandler to represent lifecycle hooks.
+    /// These are not real DOM events; the coordinator wires them to IntersectionObserver
+    /// plus DOM connection tracking to mimic SwiftUI's appear/disappear behavior.
+    private static let lifecycleAppearEvent = "__ravenAppear"
+    private static let lifecycleDisappearEvent = "__ravenDisappear"
+
+#if arch(wasm32)
+    private struct _LifecycleHandlers {
+        var appear: Set<UUID> = []
+        var disappear: Set<UUID> = []
+        var isIntersecting: Bool = false
+    }
+
+    private var lifecycleByElement: [ObjectIdentifier: _LifecycleHandlers] = [:]
+    private var lifecycleElementMap: [ObjectIdentifier: JSObject] = [:]
+
+    private var lifecycleIntersectionObserver: JSObject?
+    private var lifecycleIntersectionClosure: JSClosure?
+
+    private var lifecycleMutationObserver: JSObject?
+    private var lifecycleMutationClosure: JSClosure?
+#endif
+
     // MARK: - State Batching
 
     /// Whether a render has been scheduled via `queueMicrotask` but not yet flushed.
@@ -281,6 +306,12 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// method based on whether it's an input or click handler.
     /// Called by the DOMRenderer's `eventAttacher` callback.
     private func attachEventToElement(_ element: JSObject, event: String, handlerID: UUID) {
+#if arch(wasm32)
+        if event == Self.lifecycleAppearEvent || event == Self.lifecycleDisappearEvent {
+            attachLifecycleHandler(to: element, event: event, handlerID: handlerID)
+            return
+        }
+#endif
         if let inputHandler = inputEventHandlerRegistry[handlerID] {
             DOMBridge.shared.addGestureEventListener(
                 element: element,
@@ -297,6 +328,143 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
             )
         }
     }
+
+#if arch(wasm32)
+    // MARK: - Lifecycle Wiring
+
+    private func attachLifecycleHandler(to element: JSObject, event: String, handlerID: UUID) {
+        ensureLifecycleObservers()
+
+        let oid = ObjectIdentifier(element as AnyObject)
+        var handlers = lifecycleByElement[oid] ?? _LifecycleHandlers()
+
+        if event == Self.lifecycleAppearEvent {
+            handlers.appear.insert(handlerID)
+        } else if event == Self.lifecycleDisappearEvent {
+            handlers.disappear.insert(handlerID)
+        }
+
+        let wasNew = lifecycleByElement[oid] == nil
+        lifecycleByElement[oid] = handlers
+        lifecycleElementMap[oid] = element
+
+        if wasNew {
+            if let obs = lifecycleIntersectionObserver {
+                _ = obs.observe!(element)
+            }
+        }
+    }
+
+    private func ensureLifecycleObservers() {
+        guard lifecycleIntersectionObserver == nil else { return }
+
+        // Intersection observer callback (runs on the JS event loop).
+        lifecycleIntersectionClosure = JSClosure { [weak self] args -> JSValue in
+            guard let self, args.count > 0 else { return .undefined }
+            self.handleLifecycleIntersections(args[0])
+            return .undefined
+        }
+
+        // Options: use a zero threshold so we get called as soon as any pixel intersects.
+        let options = JSObject.global.Object.function!.new()
+        options.root = .null
+        options.rootMargin = .string("0px")
+        let thresholdArray = JSObject.global.Array.function!.new()
+        thresholdArray[0] = .number(0.0)
+        options.threshold = .object(thresholdArray)
+
+        guard let ctor = JSObject.global.IntersectionObserver.function else {
+            // Unsupported environment: degrade gracefully (no lifecycle callbacks).
+            lifecycleIntersectionClosure = nil
+            lifecycleIntersectionObserver = nil
+            return
+        }
+
+        lifecycleIntersectionObserver = ctor.new(lifecycleIntersectionClosure!, options)
+
+        // Mutation observer: sweep disconnected elements so disappear fires on unmount and we can unobserve.
+        lifecycleMutationClosure = JSClosure { [weak self] _ -> JSValue in
+            self?.sweepDisconnectedLifecycleElements()
+            return .undefined
+        }
+
+        if let moCtor = JSObject.global.MutationObserver.function,
+           let root = rootContainer {
+            lifecycleMutationObserver = moCtor.new(lifecycleMutationClosure!)
+            let moOptions = JSObject.global.Object.function!.new()
+            moOptions.childList = .boolean(true)
+            moOptions.subtree = .boolean(true)
+            _ = lifecycleMutationObserver?.observe?(root, moOptions)
+        }
+    }
+
+    private func handleLifecycleIntersections(_ entriesValue: JSValue) {
+        guard let entries = entriesValue.object else { return }
+        let length = Int(entries.length.number ?? 0)
+        guard length > 0 else { return }
+
+        for i in 0..<length {
+            guard let entry = entries[i].object,
+                  let target = entry.target.object else { continue }
+
+            let isIntersecting = entry.isIntersecting.boolean ?? false
+            let oid = ObjectIdentifier(target as AnyObject)
+
+            guard var handlers = lifecycleByElement[oid] else { continue }
+            let wasIntersecting = handlers.isIntersecting
+            if isIntersecting == wasIntersecting { continue }
+
+            handlers.isIntersecting = isIntersecting
+            lifecycleByElement[oid] = handlers
+
+            if isIntersecting {
+                for id in handlers.appear {
+                    eventHandlerRegistry[id]?()
+                }
+            } else {
+                for id in handlers.disappear {
+                    eventHandlerRegistry[id]?()
+                }
+            }
+        }
+    }
+
+    private func sweepDisconnectedLifecycleElements() {
+        guard !lifecycleElementMap.isEmpty else { return }
+
+        var toRemove: [ObjectIdentifier] = []
+        toRemove.reserveCapacity(8)
+
+        for (oid, element) in lifecycleElementMap {
+            let connected = element.isConnected.boolean ?? true
+            if !connected {
+                toRemove.append(oid)
+            }
+        }
+
+        for oid in toRemove {
+            guard let element = lifecycleElementMap[oid],
+                  let handlers = lifecycleByElement[oid] else {
+                lifecycleElementMap.removeValue(forKey: oid)
+                lifecycleByElement.removeValue(forKey: oid)
+                continue
+            }
+
+            // If it was currently intersecting, fire disappear handlers to mirror SwiftUI cancel-on-unmount.
+            if handlers.isIntersecting {
+                for id in handlers.disappear {
+                    eventHandlerRegistry[id]?()
+                }
+            }
+
+            if let obs = lifecycleIntersectionObserver {
+                _ = obs.unobserve!(element)
+            }
+            lifecycleElementMap.removeValue(forKey: oid)
+            lifecycleByElement.removeValue(forKey: oid)
+        }
+    }
+#endif
 
     // MARK: - Public API
 

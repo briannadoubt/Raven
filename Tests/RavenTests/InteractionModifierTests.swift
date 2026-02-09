@@ -172,7 +172,7 @@ import Testing
         // Verify it has an appear event handler
         let hasAppearHandler = vnode.props.contains { key, value in
             if case .eventHandler(let event, _) = value {
-                return event == "appear"
+                return event == "__ravenAppear"
             }
             return false
         }
@@ -212,7 +212,7 @@ import Testing
         // Verify it has a disappear event handler
         let hasDisappearHandler = vnode.props.contains { key, value in
             if case .eventHandler(let event, _) = value {
-                return event == "disappear"
+                return event == "__ravenDisappear"
             }
             return false
         }

@@ -41,17 +41,12 @@ public struct _OnTapGestureView<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Generate a unique ID for this event handler
+        // Non-coordinator path (AnyView.toVNode): use a random handler ID.
+        // The runtime render coordinator provides stable handler IDs.
         let handlerID = UUID()
-
-        // Create the click event handler property
-        let clickHandler = VProperty.eventHandler(event: "click", handlerID: handlerID)
-
-        // For multi-tap gestures (count > 1), we would need additional JavaScript logic
-        // For now, we'll handle single taps and double taps with standard events
         let eventName = count == 2 ? "dblclick" : "click"
         let props: [String: VProperty] = [
-            "on\(eventName.prefix(1).uppercased())\(eventName.dropFirst())": clickHandler
+            "on\(eventName.prefix(1).uppercased())\(eventName.dropFirst())": .eventHandler(event: eventName, handlerID: handlerID)
         ]
 
         return VNode.element("div", props: props, children: [])
@@ -71,17 +66,13 @@ public struct _OnAppearView<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Generate a unique ID for the lifecycle handler
+        // Non-coordinator path (AnyView.toVNode): use a random handler ID.
+        // The runtime render coordinator provides stable handler IDs and
+        // wires the lifecycle events to IntersectionObserver/mount tracking.
         let handlerID = UUID()
-
-        // Create a lifecycle event handler property
-        // In the actual implementation, this would be handled by the renderer
-        let lifecycleHandler = VProperty.eventHandler(event: "appear", handlerID: handlerID)
-
         let props: [String: VProperty] = [
-            "data-on-appear": lifecycleHandler
+            "data-on-appear": .eventHandler(event: "__ravenAppear", handlerID: handlerID)
         ]
-
         return VNode.element("div", props: props, children: [])
     }
 }
@@ -99,16 +90,13 @@ public struct _OnDisappearView<Content: View>: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Generate a unique ID for the lifecycle handler
+        // Non-coordinator path (AnyView.toVNode): use a random handler ID.
+        // The runtime render coordinator provides stable handler IDs and
+        // wires the lifecycle events to IntersectionObserver/mount tracking.
         let handlerID = UUID()
-
-        // Create a lifecycle event handler property
-        let lifecycleHandler = VProperty.eventHandler(event: "disappear", handlerID: handlerID)
-
         let props: [String: VProperty] = [
-            "data-on-disappear": lifecycleHandler
+            "data-on-disappear": .eventHandler(event: "__ravenDisappear", handlerID: handlerID)
         ]
-
         return VNode.element("div", props: props, children: [])
     }
 }
@@ -356,12 +344,73 @@ extension _OnTapGestureView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }
 
+// MARK: - Coordinator-Based Rendering
+
+extension _OnTapGestureView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let handlerID = context.registerClickHandler(action)
+        let eventName = count == 2 ? "dblclick" : "click"
+
+        let props: [String: VProperty] = [
+            "on\(eventName.prefix(1).uppercased())\(eventName.dropFirst())": .eventHandler(event: eventName, handlerID: handlerID)
+        ]
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+
+        return VNode.element("div", props: props, children: children)
+    }
+}
+
 extension _OnAppearView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }
 
 extension _OnDisappearView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
+}
+
+extension _OnAppearView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let handlerID = context.registerClickHandler(action)
+        let props: [String: VProperty] = [
+            "data-on-appear": .eventHandler(event: "__ravenAppear", handlerID: handlerID)
+        ]
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+
+        return VNode.element("div", props: props, children: children)
+    }
+}
+
+extension _OnDisappearView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let handlerID = context.registerClickHandler(action)
+        let props: [String: VProperty] = [
+            "data-on-disappear": .eventHandler(event: "__ravenDisappear", handlerID: handlerID)
+        ]
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+
+        return VNode.element("div", props: props, children: children)
+    }
 }
 
 extension _OnChangeView: _ModifierRenderable {

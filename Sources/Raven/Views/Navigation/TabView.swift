@@ -89,7 +89,7 @@ import Foundation
 /// TabView {
 ///     // Tab content
 /// }
-/// .tabViewStyle(.automatic) // Default bottom tab bar
+/// .tabViewStyle(.automatic) // Platform-appropriate tab bar (top on WASI)
 ///
 /// TabView {
 ///     // Tab content
@@ -653,21 +653,50 @@ extension TabViewContainer: _CoordinatorRenderable {
         }
 
         // Tab bar container
+        let style = EnvironmentValues._current.tabViewStyle
+
+        let tabBarBorderStyle: (name: String, value: String)? = switch style.tabBarPosition {
+        case .top:
+            (name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)")
+        case .bottom:
+            (name: "border-top", value: "1px solid var(--system-separator, #e0e0e0)")
+        case .none:
+            nil
+        }
+
+        let stickyEdgeStyle: (name: String, value: String)? = switch style.tabBarPosition {
+        case .top:
+            (name: "top", value: "0")
+        case .bottom:
+            (name: "bottom", value: "0")
+        case .none:
+            nil
+        }
+
+        var tabBarProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-tab-bar"),
+            "role": .attribute(name: "role", value: "tablist"),
+            "aria-label": .attribute(name: "aria-label", value: "Tab navigation"),
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "row"),
+            "flex": .style(name: "flex", value: "0 0 auto"),
+            // Keep the bar visible when the page scrolls (e.g. if the TabView isn't
+            // height-constrained by its parent). When the content panel is the scroll
+            // container, sticky behaves like normal flow.
+            "position": .style(name: "position", value: "sticky"),
+            "z-index": .style(name: "z-index", value: "10"),
+            "background-color": .style(name: "background-color", value: "var(--system-secondary-background, #f2f2f7)"),
+        ]
+        if let tabBarBorderStyle {
+            tabBarProps[tabBarBorderStyle.name] = .style(name: tabBarBorderStyle.name, value: tabBarBorderStyle.value)
+        }
+        if let stickyEdgeStyle {
+            tabBarProps[stickyEdgeStyle.name] = .style(name: stickyEdgeStyle.name, value: stickyEdgeStyle.value)
+        }
+
         let tabBar = VNode.element(
             "div",
-            props: [
-                "class": .attribute(name: "class", value: "raven-tab-bar"),
-                "role": .attribute(name: "role", value: "tablist"),
-                "aria-label": .attribute(name: "aria-label", value: "Tab navigation"),
-                "display": .style(name: "display", value: "flex"),
-                "flex-direction": .style(name: "flex-direction", value: "row"),
-                // Keep the tab strip visible while its surrounding content scrolls.
-                "position": .style(name: "position", value: "sticky"),
-                "top": .style(name: "top", value: "0"),
-                "z-index": .style(name: "z-index", value: "5"),
-                "border-bottom": .style(name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)"),
-                "background-color": .style(name: "background-color", value: "var(--system-secondary-background, #f2f2f7)"),
-            ],
+            props: tabBarProps,
             children: tabButtons
         )
 
@@ -683,12 +712,24 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "aria-labelledby": .attribute(name: "aria-labelledby", value: "tab-\(selectedIndex)"),
                 "tabindex": .attribute(name: "tabindex", value: "0"),
                 "flex": .style(name: "flex", value: "1"),
+                // Critical for flexbox + overflow scrolling:
+                // without min-height: 0, long content can force the panel to grow,
+                // pushing the (bottom) tab bar off-screen instead of scrolling.
+                "min-height": .style(name: "min-height", value: "0"),
                 "overflow": .style(name: "overflow", value: "auto"),
             ],
             children: [selectedContent]
         )
 
-        // 6. Return flex-column container with tab bar in header.
+        // 6. Return container with tab bar positioned per style.
+        let children: [VNode] = switch (style.showsTabBar, style.tabBarPosition) {
+        case (false, _), (_, .none):
+            [contentArea]
+        case (true, .top):
+            [tabBar, contentArea]
+        case (true, .bottom):
+            [contentArea, tabBar]
+        }
         return VNode.element(
             "div",
             props: [
@@ -696,8 +737,13 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "display": .style(name: "display", value: "flex"),
                 "flex-direction": .style(name: "flex-direction", value: "column"),
                 "height": .style(name: "height", value: "100%"),
+                "min-height": .style(name: "min-height", value: "0"),
+                // Allow `position: sticky` tab bars to stick to the viewport when the page
+                // (not the tab panel) is the scrolling container. `overflow: hidden` would
+                // establish a containing scroll box and break sticky positioning.
+                "overflow": .style(name: "overflow", value: "visible"),
             ],
-            children: [tabBar, contentArea]
+            children: children
         )
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 /// A container view that selects the first child view that fits within the available space.
 ///
@@ -247,6 +248,203 @@ public struct ViewThatFits<Content: View>: View, PrimitiveView, Sendable {
         } else {
             return "vertical" // default
         }
+    }
+}
+
+// MARK: - Coordinator Rendering (WASM)
+
+@MainActor
+internal final class ViewThatFitsController: @unchecked Sendable {
+    let id: String = UUID().uuidString
+
+    private(set) var selectedIndex: Int = 0
+
+    weak var renderScheduler: (any _StateChangeReceiver)?
+
+    private var didStart = false
+    private var rafClosure: JSClosure?
+    private var resizeObserver: JSObject?
+    private var resizeObserverClosure: JSClosure?
+    private var observedContainer: JSObject?
+
+    private var lastAxes: Axis.Set = .vertical
+    private var lastOptionCount: Int = 0
+
+    func startIfNeeded() {
+        guard !didStart else { return }
+        didStart = true
+        scheduleMeasure(force: true)
+    }
+
+    func updateConfig(axes: Axis.Set, optionCount: Int) {
+        let configChanged = axes != lastAxes || optionCount != lastOptionCount
+        lastAxes = axes
+        lastOptionCount = optionCount
+
+        if configChanged {
+            scheduleMeasure(force: true)
+        }
+    }
+
+    func scheduleMeasure(force: Bool) {
+        // If we're already observing and this isn't a forced re-measure, do nothing.
+        if !force, observedContainer != nil, resizeObserver != nil { return }
+
+        // Avoid stacking RAF calls.
+        guard rafClosure == nil else { return }
+
+        let closure = JSClosure { [weak self] _ -> JSValue in
+            guard let self else { return .undefined }
+            self.rafClosure = nil
+            self.measureAndObserveIfNeeded()
+            return .undefined
+        }
+        rafClosure = closure
+
+        if let raf = JSObject.global.requestAnimationFrame.function {
+            _ = raf(closure)
+        } else if let setTimeout = JSObject.global.setTimeout.function {
+            _ = setTimeout(closure, 0)
+        }
+    }
+
+    private func measureAndObserveIfNeeded() {
+        guard let document = JSObject.global.document.object else { return }
+
+        // Find the container for this instance.
+        //
+        // Important: DOM methods like `document.querySelector` require a proper `this`
+        // binding. Calling an unbound function triggers "Illegal invocation".
+        let selector = "[data-raven-vtf-id=\"\(id)\"]"
+        guard let querySelectorFn = document.querySelector.function else { return }
+        let containerResult = querySelectorFn(this: document, selector)
+        guard !containerResult.isNull, let container = containerResult.object else { return }
+
+        if observedContainer == nil {
+            observedContainer = container
+            attachResizeObserverIfAvailable(to: container)
+        }
+
+        // Grab all option wrappers.
+        let optionSelector = "\(selector) [data-raven-vtf-option]"
+        guard let querySelectorAllFn = document.querySelectorAll.function else { return }
+        let nodeListResult = querySelectorAllFn(this: document, optionSelector)
+        let length = nodeListResult.length.number ?? 0
+        var options: [JSObject] = []
+        options.reserveCapacity(Int(length))
+        for i in 0..<Int(length) {
+            if let element = nodeListResult[i].object {
+                options.append(element)
+            }
+        }
+        guard !options.isEmpty else { return }
+
+        // Prefer clientWidth/clientHeight because bounding rect width can be influenced
+        // by layout, while scrollWidth/scrollHeight captures overflow content.
+        let containerWidth = container.clientWidth.number ?? DOMBridge.shared.measureGeometry(element: container).size.width
+        let containerHeight = container.clientHeight.number ?? DOMBridge.shared.measureGeometry(element: container).size.height
+
+        // Pick the first option that fits; if none do, fall back to the last.
+        var bestIndex = max(0, options.count - 1)
+
+        for (idx, option) in options.enumerated() {
+            // Use scroll size to detect overflow (e.g. wide HStack that doesn't wrap).
+            let optionWidth = option.scrollWidth.number ?? DOMBridge.shared.measureGeometry(element: option).size.width
+            let optionHeight = option.scrollHeight.number ?? DOMBridge.shared.measureGeometry(element: option).size.height
+
+            let fitsHorizontally: Bool =
+                !lastAxes.contains(.horizontal) || optionWidth <= containerWidth + 0.5
+            let fitsVertically: Bool =
+                !lastAxes.contains(.vertical) || optionHeight <= containerHeight + 0.5
+
+            if fitsHorizontally && fitsVertically {
+                bestIndex = idx
+                break
+            }
+        }
+
+        if bestIndex != selectedIndex {
+            selectedIndex = bestIndex
+            renderScheduler?.scheduleRender()
+        }
+    }
+
+    private func attachResizeObserverIfAvailable(to element: JSObject) {
+        guard resizeObserver == nil else { return }
+        guard let resizeObserverCtor = JSObject.global.ResizeObserver.function else { return }
+
+        let closure = JSClosure { [weak self] _ -> JSValue in
+            guard let self else { return .undefined }
+            self.measureAndObserveIfNeeded()
+            return .undefined
+        }
+        resizeObserverClosure = closure
+        let observer = resizeObserverCtor.new(closure)
+        resizeObserver = observer
+        _ = observer.observe!(element)
+    }
+}
+
+extension ViewThatFits: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let controller = context.persistentState(create: { ViewThatFitsController() })
+        controller.renderScheduler = _RenderScheduler.current
+        controller.startIfNeeded()
+
+        let contentNode = context.renderChild(content)
+        let options: [VNode]
+        if case .fragment = contentNode.type {
+            options = contentNode.children
+        } else {
+            options = [contentNode]
+        }
+
+        controller.updateConfig(axes: axes, optionCount: options.count)
+
+        let selected = min(max(controller.selectedIndex, 0), max(0, options.count - 1))
+
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative"),
+            "min-width": .style(name: "min-width", value: "0"),
+            "data-raven-vtf-id": .attribute(name: "data-raven-vtf-id", value: controller.id),
+        ]
+
+        // Make sure the container actually has a horizontal proposal when asked.
+        if axes.contains(.horizontal) {
+            props["width"] = .style(name: "width", value: "100%")
+        }
+        if axes.contains(.vertical) {
+            props["height"] = .style(name: "height", value: "100%")
+        }
+
+        // Render each option exactly once.
+        //
+        // We keep non-selected options in the DOM (visibility:hidden) so we can measure
+        // their scroll sizes, but we take them out of flow (position:absolute) so they
+        // don't affect layout. This avoids duplicate VNode IDs (which can cause blank
+        // output) while still allowing measurement.
+        let children = options.enumerated().map { (idx, option) in
+            let isSelected = idx == selected
+            var optionProps: [String: VProperty] = [
+                "display": .style(name: "display", value: "block"),
+                "data-raven-vtf-option": .attribute(name: "data-raven-vtf-option", value: "\(idx)"),
+                "pointer-events": .style(name: "pointer-events", value: isSelected ? "auto" : "none"),
+                "visibility": .style(name: "visibility", value: isSelected ? "visible" : "hidden"),
+            ]
+
+            if isSelected {
+                optionProps["position"] = .style(name: "position", value: "relative")
+            } else {
+                optionProps["position"] = .style(name: "position", value: "absolute")
+                optionProps["top"] = .style(name: "top", value: "0")
+                optionProps["left"] = .style(name: "left", value: "0")
+            }
+
+            return VNode.element("div", props: optionProps, children: [option])
+        }
+
+        return VNode.element("div", props: props, children: children)
     }
 }
 

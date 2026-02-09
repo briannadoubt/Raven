@@ -28,6 +28,13 @@ struct DevCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Build in release mode")
     var release: Bool = false
 
+    @Flag(
+        name: .long,
+        help:
+            "In debug builds, also watch Raven's own Sources/ for changes (useful when developing Raven itself). Ignored in release builds."
+    )
+    var maintenance: Bool = false
+
     @Flag(name: .long, inversion: .prefixedNo, help: "Open browser after starting server")
     var open: Bool = false
 
@@ -134,6 +141,31 @@ struct DevCommand: AsyncParsableCommand {
         // Step 4: Start file watcher
         print("[4/5] Starting file watcher...")
         let sourcesPath = (projectPath as NSString).appendingPathComponent("Sources")
+
+        var watchPaths: [String] = [sourcesPath]
+        if maintenance {
+            #if DEBUG
+            // DevCommand.swift lives at Sources/RavenCLI/Commands/DevCommand.swift.
+            // Walk up to the package root so we can watch the core Raven Sources/.
+            let ravenRoot =
+                URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()  // Commands
+                .deletingLastPathComponent()  // RavenCLI
+                .deletingLastPathComponent()  // Sources
+                .deletingLastPathComponent()  // package root
+                .path
+
+            let coreSourcesPath = (ravenRoot as NSString).appendingPathComponent("Sources")
+            if coreSourcesPath != sourcesPath {
+                watchPaths.append(coreSourcesPath)
+            }
+            #else
+            if verbose {
+                print("  Note: --maintenance is ignored in release builds.")
+            }
+            #endif
+        }
+
         let debouncer = ChangeDebouncer(delayMilliseconds: 300) { [projectPath, publicPath, hasCustomHTML, hotReloadServer] in
             print("\n[File Change Detected] Rebuilding...")
             let rebuildStart = Date()
@@ -159,11 +191,18 @@ struct DevCommand: AsyncParsableCommand {
             }
         }
 
-        let fileWatcher = FileWatcher(path: sourcesPath) {
+        let fileWatcher = FileWatcher(paths: watchPaths) {
             await debouncer.trigger()
         }
         try await fileWatcher.start()
-        print("  Watching for changes in \(sourcesPath)")
+        if watchPaths.count == 1 {
+            print("  Watching for changes in \(sourcesPath)")
+        } else {
+            print("  Watching for changes in:")
+            for path in watchPaths {
+                print("    - \(path)")
+            }
+        }
 
         // Step 5: Ready
         print("[5/5] Development server ready!")

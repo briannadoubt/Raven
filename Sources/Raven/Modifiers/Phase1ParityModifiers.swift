@@ -208,17 +208,101 @@ public enum TaskExecutorPreference: Sendable, Hashable {
     case background
 }
 
+// MARK: - Task Modifier (SwiftUI-Accurate Lifecycle)
+
+@MainActor
+private final class _TaskEffectState<ID: Equatable & Sendable>: AnyObject {
+    var isVisible: Bool = false
+    var currentID: ID?
+    var task: Task<Void, Never>?
+
+    func cancel() {
+        task?.cancel()
+        task = nil
+    }
+}
+
+/// Internal modifier view that runs an async task tied to view visibility and identity.
+///
+/// This is intended to match SwiftUI's `.task` behavior:
+/// - Starts when the view appears (enters the visible hierarchy).
+/// - Cancels when the view disappears.
+/// - For `id:` variants, cancels and restarts when the id changes while visible.
+public struct _TaskView<Content: View, ID: Equatable & Sendable>: View, PrimitiveView, Sendable {
+    let content: Content
+    let id: ID?
+    let priority: TaskPriority
+    let action: @Sendable () async -> Void
+
+    public typealias Body = Never
+
+    // Non-coordinator path (AnyView.toVNode): represent lifecycle wiring structurally.
+    @MainActor public func toVNode() -> VNode {
+        let appearID = UUID()
+        let disappearID = UUID()
+        let props: [String: VProperty] = [
+            "data-task-appear": .eventHandler(event: "__ravenAppear", handlerID: appearID),
+            "data-task-disappear": .eventHandler(event: "__ravenDisappear", handlerID: disappearID),
+        ]
+        return VNode.element("div", props: props, children: [])
+    }
+}
+
+extension _TaskView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let state: _TaskEffectState<ID> = context.persistentState { _TaskEffectState<ID>() }
+
+        // If the task ID changed while visible, cancel + restart immediately.
+        if state.isVisible, let id, state.currentID != id {
+            state.cancel()
+            state.currentID = id
+            state.task = Task(priority: priority) {
+                await action()
+            }
+        }
+
+        let appearHandlerID = context.registerClickHandler { [state, id, priority, action] in
+            state.isVisible = true
+
+            // SwiftUI: re-appearing re-runs even if id is unchanged.
+            state.cancel()
+            state.currentID = id
+            state.task = Task(priority: priority) {
+                await action()
+            }
+        }
+
+        let disappearHandlerID = context.registerClickHandler { [state] in
+            state.isVisible = false
+            state.cancel()
+            // Reset identity so a future appear re-runs (matches SwiftUI).
+            state.currentID = nil
+        }
+
+        let props: [String: VProperty] = [
+            "data-task-appear": .eventHandler(event: "__ravenAppear", handlerID: appearHandlerID),
+            "data-task-disappear": .eventHandler(event: "__ravenDisappear", handlerID: disappearHandlerID),
+        ]
+
+        let contentNode = context.renderChild(content)
+        let children: [VNode]
+        if case .fragment = contentNode.type {
+            children = contentNode.children
+        } else {
+            children = [contentNode]
+        }
+
+        return VNode.element("div", props: props, children: children)
+    }
+}
+
 extension View {
     /// Adds an asynchronous task that runs when the view appears.
     @MainActor public func task(
         priority: TaskPriority = .userInitiated,
         _ action: @escaping @Sendable () async -> Void
     ) -> some View {
-        onAppear {
-            Task(priority: priority) {
-                await action()
-            }
-        }
+        _TaskView(content: self, id: Optional<Int>.none, priority: priority, action: action)
     }
 
     /// Adds an asynchronous task that re-runs when an ID changes.
@@ -227,16 +311,7 @@ extension View {
         priority: TaskPriority = .userInitiated,
         _ action: @escaping @Sendable () async -> Void
     ) -> some View {
-        onAppear {
-            Task(priority: priority) {
-                await action()
-            }
-        }
-        .onChange(of: id) { _ in
-            Task(priority: priority) {
-                await action()
-            }
-        }
+        _TaskView(content: self, id: id, priority: priority, action: action)
     }
 
     /// Adds an asynchronous task with additional scheduling metadata.

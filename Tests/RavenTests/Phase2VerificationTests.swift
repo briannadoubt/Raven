@@ -158,7 +158,9 @@ import Testing
         // Verify CSS properties
         #expect(vnode.props["display"] == .style(name: "display", value: "flex"))
         #expect(vnode.props["flex-direction"] == .style(name: "flex-direction", value: "column"))
-        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "center"))
+        // VStack uses `align-items: stretch` so child views still receive a full-width
+        // proposal. Alignment is applied by the render coordinator via per-child rows.
+        #expect(vnode.props["align-items"] == .style(name: "align-items", value: "stretch"))
     }
 
     @Test func vStackWithAlignment() async throws {
@@ -168,7 +170,7 @@ import Testing
 
         let vnodeLeading = vstackLeading.toVNode()
         #expect(vnodeLeading.props["align-items"] ==
-                       .style(name: "align-items", value: "flex-start"))
+                       .style(name: "align-items", value: "stretch"))
 
         let vstackTrailing = VStack(alignment: .trailing) {
             Text("Trailing")
@@ -176,7 +178,7 @@ import Testing
 
         let vnodeTrailing = vstackTrailing.toVNode()
         #expect(vnodeTrailing.props["align-items"] ==
-                       .style(name: "align-items", value: "flex-end"))
+                       .style(name: "align-items", value: "stretch"))
 
         let vstackCenter = VStack(alignment: .center) {
             Text("Center")
@@ -184,7 +186,7 @@ import Testing
 
         let vnodeCenter = vstackCenter.toVNode()
         #expect(vnodeCenter.props["align-items"] ==
-                       .style(name: "align-items", value: "center"))
+                       .style(name: "align-items", value: "stretch"))
     }
 
     @Test func vStackWithSpacing() async throws {

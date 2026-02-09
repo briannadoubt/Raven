@@ -28,56 +28,58 @@ import Foundation
 /// - Parameters:
 ///   - minLength: The minimum length this spacer can be shrunk to. Defaults to `nil` (no minimum).
 public struct Spacer: View, PrimitiveView, Sendable {
-    public typealias Body = Never
+  public typealias Body = Never
 
-    /// The minimum length this spacer can be shrunk to, in pixels
-    private let minLength: Double?
+  /// The minimum length this spacer can be shrunk to, in pixels
+  private let minLength: Double?
 
-    // MARK: - Initializers
+  // MARK: - Initializers
 
-    /// Creates a spacer with an optional minimum length.
-    ///
-    /// - Parameter minLength: The minimum length this spacer can be shrunk to, in pixels.
-    ///                        Defaults to `nil` (no minimum).
-    public init(minLength: Double? = nil) {
-        self.minLength = minLength
+  /// Creates a spacer with an optional minimum length.
+  ///
+  /// - Parameter minLength: The minimum length this spacer can be shrunk to, in pixels.
+  ///                        Defaults to `nil` (no minimum).
+  public init(minLength: Double? = nil) {
+    self.minLength = minLength
+  }
+
+  // MARK: - VNode Conversion
+
+  /// Converts this Spacer to a virtual DOM node.
+  ///
+  /// The Spacer is rendered as a `div` element with flexbox styling:
+  /// - `flex-grow: 1` to expand and fill available space
+  /// - `flex-shrink: 1` to allow shrinking when needed
+  /// - `flex-basis: 0` to start from zero size
+  /// - `min-width` or `min-height` if minLength is specified
+  ///
+  /// Note: The parent stack container determines whether the spacer expands
+  /// horizontally (in HStack) or vertically (in VStack) through its flex-direction.
+  ///
+  /// - Returns: A VNode configured as a flexible spacer.
+  @MainActor public func toVNode() -> VNode {
+    var props: [String: VProperty] = [
+      "flex-grow": .style(name: "flex-grow", value: "1"),
+      "flex-shrink": .style(name: "flex-shrink", value: "1"),
+      "flex-basis": .style(name: "flex-basis", value: "0"),
+      // Make Spacer identifiable in the VNode tree for layout heuristics.
+      "data-raven-spacer": .attribute(name: "data-raven-spacer", value: "true"),
+    ]
+
+    // Add minimum length if specified
+    // Note: In a full implementation, we would detect the parent stack direction
+    // to determine whether to use min-width or min-height. For now, we apply both
+    // to support both horizontal and vertical layouts.
+    if let minLength = minLength {
+      props["min-width"] = .style(name: "min-width", value: "\(minLength)px")
+      props["min-height"] = .style(name: "min-height", value: "\(minLength)px")
     }
 
-    // MARK: - VNode Conversion
-
-    /// Converts this Spacer to a virtual DOM node.
-    ///
-    /// The Spacer is rendered as a `div` element with flexbox styling:
-    /// - `flex-grow: 1` to expand and fill available space
-    /// - `flex-shrink: 1` to allow shrinking when needed
-    /// - `flex-basis: 0` to start from zero size
-    /// - `min-width` or `min-height` if minLength is specified
-    ///
-    /// Note: The parent stack container determines whether the spacer expands
-    /// horizontally (in HStack) or vertically (in VStack) through its flex-direction.
-    ///
-    /// - Returns: A VNode configured as a flexible spacer.
-    @MainActor public func toVNode() -> VNode {
-        var props: [String: VProperty] = [
-            "flex-grow": .style(name: "flex-grow", value: "1"),
-            "flex-shrink": .style(name: "flex-shrink", value: "1"),
-            "flex-basis": .style(name: "flex-basis", value: "0")
-        ]
-
-        // Add minimum length if specified
-        // Note: In a full implementation, we would detect the parent stack direction
-        // to determine whether to use min-width or min-height. For now, we apply both
-        // to support both horizontal and vertical layouts.
-        if let minLength = minLength {
-            props["min-width"] = .style(name: "min-width", value: "\(minLength)px")
-            props["min-height"] = .style(name: "min-height", value: "\(minLength)px")
-        }
-
-        // Return empty div that will expand to fill space
-        return VNode.element(
-            "div",
-            props: props,
-            children: []
-        )
-    }
+    // Return empty div that will expand to fill space
+    return VNode.element(
+      "div",
+      props: props,
+      children: []
+    )
+  }
 }
