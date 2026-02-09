@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-08T12:06:45.338468+00:00`
+Generated: `2026-02-09T00:38:33.395589+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1291**
-- Missing in Raven: **3278**
-- Name-based coverage: **28.26%**
+- Matched by Raven: **1335**
+- Missing in Raven: **3234**
+- Name-based coverage: **29.22%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 499 | 0 | 1238 |
+| `Constructor` | 458 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
 | `Func` | 1052 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 51 | 0 | 66 |
-| `Struct` | 355 | 0 | 484 |
+| `Struct` | 353 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 913 | 0 | 964 |
+| `Var` | 912 | 0 | 964 |
 
 ## Missing High-Signal Types (first 200)
 
@@ -521,7 +521,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `ScrollView`)
 - `body` (owner: `ScrollViewReader`)
 - `body` (owner: `SecureField`)
-- `body` (owner: `ShareLink`)
 - `body` (owner: `SidebarCommands`)
 - `body` (owner: `Slider`)
 - `body` (owner: `SliderTick`)
@@ -534,6 +533,7 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `TextEditor`)
 - `body` (owner: `TextField`)
 - `body` (owner: `TextFormattingCommands`)
+- `body` (owner: `Toggle`)
 
 ## Operator-Like API Gap Summary
 

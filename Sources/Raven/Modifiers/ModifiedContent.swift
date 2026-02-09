@@ -59,9 +59,12 @@ public struct ModifiedContent<Content: View, Modifier: Sendable>: View, Sendable
         self.modifier = modifier
     }
 
-    /// Default body type for basic modifiers that don't use the ViewModifier protocol.
+    /// Default behavior for non-`ViewModifier` modifiers: treat as identity.
     ///
-    /// This is overridden by the extension in ViewModifier.swift for modifiers that
-    /// conform to the ViewModifier protocol.
-    public typealias Body = Never
+    /// Raven's built-in modifiers usually return dedicated wrapper views (e.g. `_PaddingView`)
+    /// and do not rely on `ModifiedContent`. The identity body keeps source-compatibility for
+    /// any generic code that constructs `ModifiedContent` directly.
+    @MainActor public var body: some View {
+        content
+    }
 }

@@ -111,7 +111,7 @@ extension ModifiedContent where Modifier: ViewModifier {
     /// The body of the modified content.
     ///
     /// This calls the modifier's `body(content:)` method with the wrapped content.
-    @MainActor public var body: Modifier.Body {
+    @MainActor public var body: some View {
         modifier.body(content: _ViewModifier_Content(content))
     }
 }
