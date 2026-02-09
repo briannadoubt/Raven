@@ -265,6 +265,114 @@ internal struct _GeometryReaderContainer<Content: View>: View, PrimitiveView, Se
     }
 }
 
+// MARK: - Geometry Reader Controller
+
+/// Persistent controller that measures the mounted DOM node for a GeometryReader.
+///
+/// Raven doesn't currently have a first-class view lifecycle callback (onMount / afterRender).
+/// To bridge that gap, this controller:
+/// 1. Tags the container node with a stable `data-raven-geometry-id`
+/// 2. Schedules a `requestAnimationFrame` to find + measure the element after DOM updates
+/// 3. Attaches a ResizeObserver (when available) to keep measurements current
+@MainActor
+internal final class GeometryReaderController: @unchecked Sendable {
+    let id: String = UUID().uuidString
+
+    private(set) var proxy: GeometryProxy = GeometryProxy(size: .zero, localFrame: .zero, globalFrame: .zero)
+
+    weak var renderScheduler: (any _StateChangeReceiver)?
+
+    private var didStart = false
+    private var rafClosure: JSClosure?
+    private var resizeObserver: JSObject?
+    private var resizeObserverClosure: JSClosure?
+    private var observedElement: JSObject?
+
+    func startIfNeeded() {
+        guard !didStart else { return }
+        didStart = true
+        scheduleMeasure()
+    }
+
+    func scheduleMeasure() {
+        // If we're already observing the element for size changes, don't keep scheduling
+        // RAF measurements on every render pass.
+        if observedElement != nil, resizeObserver != nil {
+            return
+        }
+
+        // Avoid stacking RAF calls on every render pass.
+        guard rafClosure == nil else { return }
+
+        let closure = JSClosure { [weak self] _ -> JSValue in
+            guard let self else { return .undefined }
+            self.rafClosure = nil
+            self.measureAndObserveIfNeeded()
+            return .undefined
+        }
+        rafClosure = closure
+
+        // requestAnimationFrame is preferable to setTimeout(0) for layout measurement.
+        if let raf = JSObject.global.requestAnimationFrame.function {
+            _ = raf(closure)
+        } else if let setTimeout = JSObject.global.setTimeout.function {
+            _ = setTimeout(closure, 0)
+        }
+    }
+
+    private func measureAndObserveIfNeeded() {
+        guard let document = JSObject.global.document.object else { return }
+
+        // Find the element created for this GeometryReader instance.
+        //
+        // Important: DOM methods like `document.querySelector` require a proper `this`
+        // binding. Calling an unbound function in JS (or via JavaScriptKit) triggers
+        // "Illegal invocation".
+        let selector = "[data-raven-geometry-id=\"\(id)\"]"
+        guard let querySelectorFn = document.querySelector.function else { return }
+        let result = querySelectorFn(this: document, selector)
+        guard !result.isNull, let element = result.object else { return }
+
+        // Cache the element and attach ResizeObserver once.
+        if observedElement == nil {
+            observedElement = element
+            attachResizeObserverIfAvailable(to: element)
+        }
+
+        let newProxy = DOMBridge.shared.measureGeometry(element: element)
+        let oldSize = proxy.size
+        let newSize = newProxy.size
+
+        func nearlyEqual(_ a: Double, _ b: Double, epsilon: Double = 0.5) -> Bool {
+            abs(a - b) < epsilon
+        }
+
+        // Only re-render when geometry materially changes; otherwise we'd RAF-loop forever.
+        if !nearlyEqual(oldSize.width, newSize.width) || !nearlyEqual(oldSize.height, newSize.height) {
+            proxy = newProxy
+            renderScheduler?.scheduleRender()
+        } else {
+            // Still update frames even if size is unchanged, but don't force a render.
+            proxy = newProxy
+        }
+    }
+
+    private func attachResizeObserverIfAvailable(to element: JSObject) {
+        guard resizeObserver == nil else { return }
+        guard let resizeObserverCtor = JSObject.global.ResizeObserver.function else { return }
+
+        let closure = JSClosure { [weak self] _ -> JSValue in
+            guard let self else { return .undefined }
+            self.measureAndObserveIfNeeded()
+            return .undefined
+        }
+        resizeObserverClosure = closure
+        let observer = resizeObserverCtor.new(closure)
+        resizeObserver = observer
+        _ = observer.observe!(element)
+    }
+}
+
 // MARK: - DOM Bridge Extensions
 
 extension DOMBridge {
@@ -316,6 +424,10 @@ extension DOMBridge {
 
 extension _GeometryReaderContainer: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let controller = context.persistentState(create: { GeometryReaderController() })
+        controller.renderScheduler = _RenderScheduler.current
+        controller.startIfNeeded()
+
         let props: [String: VProperty] = [
             "display": .style(name: "display", value: "block"),
             "position": .style(name: "position", value: "relative"),
@@ -324,13 +436,10 @@ extension _GeometryReaderContainer: _CoordinatorRenderable {
             "data-geometry-reader": .attribute(name: "data-geometry-reader", value: "true")
         ]
 
-        // Create a default proxy with zero size for initial render
-        let defaultProxy = GeometryProxy(
-            size: .zero,
-            localFrame: .zero,
-            globalFrame: .zero
-        )
-        let childView = content(defaultProxy)
+        var mergedProps = props
+        mergedProps["data-raven-geometry-id"] = .attribute(name: "data-raven-geometry-id", value: controller.id)
+
+        let childView = content(controller.proxy)
         let contentNode = context.renderChild(childView)
         let children: [VNode]
         if case .fragment = contentNode.type {
@@ -338,6 +447,6 @@ extension _GeometryReaderContainer: _CoordinatorRenderable {
         } else {
             children = [contentNode]
         }
-        return VNode.element("div", props: props, children: children)
+        return VNode.element("div", props: mergedProps, children: children)
     }
 }

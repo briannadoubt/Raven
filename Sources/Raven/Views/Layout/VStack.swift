@@ -138,87 +138,143 @@ import Foundation
 ///   - spacing: The vertical spacing between child views in pixels. Defaults to `nil` (no explicit spacing).
 ///   - content: A view builder that creates the child views.
 public struct VStack<Content: View>: View, PrimitiveView, Sendable {
-    public typealias Body = Never
+  public typealias Body = Never
 
-    /// The horizontal alignment of child views
-    let alignment: HorizontalAlignment
+  /// The horizontal alignment of child views
+  let alignment: HorizontalAlignment
 
-    /// The spacing between child views in pixels
-    let spacing: Double?
+  /// The spacing between child views in pixels
+  let spacing: Double?
 
-    /// The child views
-    let content: Content
+  /// The child views
+  let content: Content
 
-    // MARK: - Initializers
+  // MARK: - Initializers
 
-    /// Creates a vertical stack with optional alignment and spacing.
-    ///
-    /// - Parameters:
-    ///   - alignment: The horizontal alignment of child views. Defaults to `.center`.
-    ///   - spacing: The vertical spacing between child views in pixels. Defaults to `nil`.
-    ///   - content: A view builder that creates the child views.
-    @MainActor public init(
-        alignment: HorizontalAlignment = .center,
-        spacing: Double? = nil,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.alignment = alignment
-        self.spacing = spacing
-        self.content = content()
+  /// Creates a vertical stack with optional alignment and spacing.
+  ///
+  /// - Parameters:
+  ///   - alignment: The horizontal alignment of child views. Defaults to `.center`.
+  ///   - spacing: The vertical spacing between child views in pixels. Defaults to `nil`.
+  ///   - content: A view builder that creates the child views.
+  @MainActor public init(
+    alignment: HorizontalAlignment = .center,
+    spacing: Double? = nil,
+    @ViewBuilder content: () -> Content
+  ) {
+    self.alignment = alignment
+    self.spacing = spacing
+    self.content = content()
+  }
+
+  // MARK: - VNode Conversion
+
+  /// Converts this VStack to a virtual DOM node.
+  ///
+  /// The VStack is rendered as a `div` element with flexbox styling:
+  /// - `display: flex`
+  /// - `flex-direction: column`
+  /// - `align-items: <alignment>` (based on the alignment parameter)
+  /// - `gap: <spacing>px` (if spacing is provided)
+  ///
+  /// Note: The children are not converted here. The RenderCoordinator
+  /// will handle rendering the content by accessing the `content` property.
+  ///
+  /// - Returns: A VNode configured as a vertical flexbox container.
+  @MainActor public func toVNode() -> VNode {
+    var props: [String: VProperty] = [
+      "display": .style(name: "display", value: "flex"),
+      "flex-direction": .style(name: "flex-direction", value: "column"),
+      // SwiftUI proposes the full available width to children. We approximate that
+      // by stretching items on the cross axis; alignment is applied per-child.
+      "align-items": .style(name: "align-items", value: "stretch"),
+    ]
+
+    // Add gap spacing if provided
+    if let spacing = spacing {
+      props["gap"] = .style(name: "gap", value: "\(spacing)px")
     }
 
-    // MARK: - VNode Conversion
-
-    /// Converts this VStack to a virtual DOM node.
-    ///
-    /// The VStack is rendered as a `div` element with flexbox styling:
-    /// - `display: flex`
-    /// - `flex-direction: column`
-    /// - `align-items: <alignment>` (based on the alignment parameter)
-    /// - `gap: <spacing>px` (if spacing is provided)
-    ///
-    /// Note: The children are not converted here. The RenderCoordinator
-    /// will handle rendering the content by accessing the `content` property.
-    ///
-    /// - Returns: A VNode configured as a vertical flexbox container.
-    @MainActor public func toVNode() -> VNode {
-        var props: [String: VProperty] = [
-            "display": .style(name: "display", value: "flex"),
-            "flex-direction": .style(name: "flex-direction", value: "column"),
-            "align-items": .style(name: "align-items", value: alignment.cssValue),
-        ]
-
-        // Add gap spacing if provided
-        if let spacing = spacing {
-            props["gap"] = .style(name: "gap", value: "\(spacing)px")
-        }
-
-        // Return element with empty children - the RenderCoordinator will populate them
-        return VNode.element(
-            "div",
-            props: props,
-            children: []
-        )
-    }
+    // Return element with empty children - the RenderCoordinator will populate them
+    return VNode.element(
+      "div",
+      props: props,
+      children: []
+    )
+  }
 }
 
 extension VStack: _CoordinatorRenderable {
-    @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        var props: [String: VProperty] = [
-            "display": .style(name: "display", value: "flex"),
-            "flex-direction": .style(name: "flex-direction", value: "column"),
-            "align-items": .style(name: "align-items", value: alignment.cssValue),
-        ]
-        if let spacing = spacing {
-            props["gap"] = .style(name: "gap", value: "\(spacing)px")
-        }
-        let contentNode = context.renderChild(content)
-        let children: [VNode]
-        if case .fragment = contentNode.type {
-            children = contentNode.children
-        } else {
-            children = [contentNode]
-        }
-        return VNode.element("div", props: props, children: children)
+  @MainActor public func _render(with context: any _RenderContext) -> VNode {
+    var props: [String: VProperty] = [
+      "display": .style(name: "display", value: "flex"),
+      "flex-direction": .style(name: "flex-direction", value: "column"),
+      "align-items": .style(name: "align-items", value: "stretch"),
+    ]
+    if let spacing = spacing {
+      props["gap"] = .style(name: "gap", value: "\(spacing)px")
     }
+    let contentNode = context.renderChild(content)
+    let rawChildren: [VNode]
+    if case .fragment = contentNode.type {
+      rawChildren = contentNode.children
+    } else {
+      rawChildren = [contentNode]
+    }
+
+    func subtreeContainsSpacer(_ node: VNode) -> Bool {
+      if node.props["data-raven-spacer"] != nil { return true }
+      return node.children.contains(where: subtreeContainsSpacer)
+    }
+
+    func subtreeContainsGeometryReader(_ node: VNode) -> Bool {
+      if node.props["data-geometry-reader"] != nil || node.props["data-raven-geometry-id"] != nil {
+        return true
+      }
+      return node.children.contains(where: subtreeContainsGeometryReader)
+    }
+
+    let justifyContent: String =
+      switch alignment {
+      case .leading: "flex-start"
+      case .center: "center"
+      case .trailing: "flex-end"
+      }
+
+    // Wrap each child in a full-width "proposal" row and use `justify-content`
+    // to apply the requested alignment without forcing every child to be full width.
+    let children: [VNode] = rawChildren.map { child in
+      let expands = subtreeContainsSpacer(child) || subtreeContainsGeometryReader(child)
+
+      let alignedChild: VNode
+      if expands {
+        alignedChild = VNode.element(
+          "div",
+          props: [
+            "flex": .style(name: "flex", value: "1 1 auto"),
+            "min-width": .style(name: "min-width", value: "0"),
+          ],
+          children: [child]
+        )
+      } else {
+        alignedChild = child
+      }
+
+      return VNode.element(
+        "div",
+        props: [
+          "display": .style(name: "display", value: "flex"),
+          "flex-direction": .style(name: "flex-direction", value: "row"),
+          "justify-content": .style(name: "justify-content", value: justifyContent),
+          // Stretch row to the VStack's cross-axis without introducing explicit
+          // percentage widths (which can force parents to become full-width).
+          "align-self": .style(name: "align-self", value: "stretch"),
+          "min-width": .style(name: "min-width", value: "0"),
+        ],
+        children: [alignedChild]
+      )
+    }
+
+    return VNode.element("div", props: props, children: children)
+  }
 }
