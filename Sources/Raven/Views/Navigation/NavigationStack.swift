@@ -477,6 +477,11 @@ extension NavigationStack: _CoordinatorRenderable {
             "class": .attribute(name: "class", value: "raven-navigation-bar"),
             "border-bottom": .style(name: "border-bottom",
                                      value: controller.isNavBarHidden ? "none" : "1px solid var(--system-separator, #c6c6c8)"),
+            // Ensure the nav bar stays visible when it's inside a scroll container
+            // (e.g. a NavigationStack embedded inside a TabView tab panel).
+            "position": .style(name: "position", value: "sticky"),
+            "top": .style(name: "top", value: "0"),
+            "z-index": .style(name: "z-index", value: "10"),
         ]
         let navBar = VNode.element("header", props: navBarProps, children: navBarSections)
 

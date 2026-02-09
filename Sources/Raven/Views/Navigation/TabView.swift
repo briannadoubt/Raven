@@ -280,7 +280,8 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
         return VNode.element(
             "div",
             props: props,
-            children: [contentArea, tabBar]
+            // Web UX: tabs read better as header chrome than footer chrome.
+            children: [tabBar, contentArea]
         )
     }
 
@@ -660,6 +661,10 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "aria-label": .attribute(name: "aria-label", value: "Tab navigation"),
                 "display": .style(name: "display", value: "flex"),
                 "flex-direction": .style(name: "flex-direction", value: "row"),
+                // Keep the tab strip visible while its surrounding content scrolls.
+                "position": .style(name: "position", value: "sticky"),
+                "top": .style(name: "top", value: "0"),
+                "z-index": .style(name: "z-index", value: "5"),
                 "border-bottom": .style(name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)"),
                 "background-color": .style(name: "background-color", value: "var(--system-secondary-background, #f2f2f7)"),
             ],
@@ -683,7 +688,7 @@ extension TabViewContainer: _CoordinatorRenderable {
             children: [selectedContent]
         )
 
-        // 6. Return flex-column container with content on top, tab bar at bottom (iOS style)
+        // 6. Return flex-column container with tab bar in header.
         return VNode.element(
             "div",
             props: [
@@ -692,7 +697,7 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "flex-direction": .style(name: "flex-direction", value: "column"),
                 "height": .style(name: "height", value: "100%"),
             ],
-            children: [contentArea, tabBar]
+            children: [tabBar, contentArea]
         )
     }
 
