@@ -59,7 +59,8 @@ public struct SheetRenderer: Sendable {
     /// - Returns: A VNode representing the sheet dialog
     public static func render(
         entry: PresentationEntry,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         // Check if interactive dismiss is disabled from environment
         let dismissDisabled = (entry.metadata["isInteractiveDismissDisabled"] as? Bool) ?? false
@@ -77,7 +78,7 @@ public struct SheetRenderer: Sendable {
         children.append(createDragIndicator())
 
         // Add content container
-        children.append(createContentContainer(content: entry.content))
+        children.append(createContentContainer(content: content))
 
         // Create dialog with sheet styling
         var props: [String: VProperty] = [:]
@@ -87,6 +88,10 @@ public struct SheetRenderer: Sendable {
         let detent = detents.first ?? .large
         let maxHeight = calculateMaxHeight(for: detent)
         props["style_max-height"] = .style(name: "max-height", value: "\(Int(maxHeight * 100))vh")
+        props["data-raven-presentation-id"] = .attribute(
+            name: "data-raven-presentation-id",
+            value: entry.id.uuidString
+        )
 
         return DialogRenderer.createDialog(
             type: "sheet",
@@ -123,23 +128,15 @@ public struct SheetRenderer: Sendable {
     ///
     /// - Parameter content: The content to display in the sheet
     /// - Returns: A VNode for the content container
-    private static func createContentContainer(content: AnyView) -> VNode {
+    private static func createContentContainer(content: VNode) -> VNode {
         return VNode.element(
             "div",
             props: [
                 "class": .attribute(name: "class", value: "raven-sheet-container"),
                 "role": .attribute(name: "role", value: "document")
             ],
-            children: [renderContent(content)]
+            children: [content]
         )
-    }
-
-    /// Renders the content view into a VNode.
-    ///
-    /// - Parameter content: The AnyView content to render
-    /// - Returns: A VNode representing the content
-    private static func renderContent(_ content: AnyView) -> VNode {
-        return content.render()
     }
 
     /// Calculates the maximum height for a detent.

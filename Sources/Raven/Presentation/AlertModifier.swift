@@ -324,7 +324,7 @@ struct AlertPresentationWithMessageModifier<Actions: View, Message: View>: ViewM
         guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
             return nil
         }
-        return AlertRenderer.render(entry: entry, coordinator: coordinator)
+        return AlertRenderer.render(entry: entry, coordinator: coordinator, content: entry.content.render())
     }
 }
 
@@ -368,6 +368,6 @@ struct DataAlertPresentationModifier<Item: Sendable, Actions: View, Message: Vie
         guard let entry = coordinator.presentations.first(where: { $0.id == presentationId }) else {
             return nil
         }
-        return AlertRenderer.render(entry: entry, coordinator: coordinator)
+        return AlertRenderer.render(entry: entry, coordinator: coordinator, content: entry.content.render())
     }
 }

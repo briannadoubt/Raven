@@ -43,28 +43,30 @@ public struct DialogRenderer: Sendable {
     /// - Returns: A VNode representing the dialog element and its content
     public static func render(
         entry: PresentationEntry,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         switch entry.type {
         case .sheet:
-            return SheetRenderer.render(entry: entry, coordinator: coordinator)
+            return SheetRenderer.render(entry: entry, coordinator: coordinator, content: content)
 
         case .alert:
-            return AlertRenderer.render(entry: entry, coordinator: coordinator)
+            return AlertRenderer.render(entry: entry, coordinator: coordinator, content: content)
 
         case .popover(let anchor, let edge):
             return PopoverRenderer.render(
                 entry: entry,
                 anchor: anchor,
                 edge: edge,
-                coordinator: coordinator
+                coordinator: coordinator,
+                content: content
             )
 
         case .fullScreenCover:
-            return renderFullScreenCover(entry: entry, coordinator: coordinator)
+            return renderFullScreenCover(entry: entry, coordinator: coordinator, content: content)
 
         case .confirmationDialog:
-            return renderConfirmationDialog(entry: entry, coordinator: coordinator)
+            return renderConfirmationDialog(entry: entry, coordinator: coordinator, content: content)
         }
     }
 
@@ -165,7 +167,8 @@ public struct DialogRenderer: Sendable {
     /// - Returns: A VNode for the full screen cover
     private static func renderFullScreenCover(
         entry: PresentationEntry,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         // Create content wrapper
         let contentWrapper = VNode.element(
@@ -173,7 +176,7 @@ public struct DialogRenderer: Sendable {
             props: [
                 "class": .attribute(name: "class", value: "raven-fullscreen-content")
             ],
-            children: [renderContent(entry.content)]
+            children: [content]
         )
 
         // Create dialog without backdrop click handler
@@ -181,7 +184,13 @@ public struct DialogRenderer: Sendable {
             type: "fullscreen",
             zIndex: entry.zIndex,
             dismissHandler: nil,
-            children: [contentWrapper]
+            children: [contentWrapper],
+            additionalProps: [
+                "data-raven-presentation-id": .attribute(
+                    name: "data-raven-presentation-id",
+                    value: entry.id.uuidString
+                )
+            ]
         )
     }
 
@@ -198,7 +207,8 @@ public struct DialogRenderer: Sendable {
     /// - Returns: A VNode for the confirmation dialog
     private static func renderConfirmationDialog(
         entry: PresentationEntry,
-        coordinator: PresentationCoordinator
+        coordinator: PresentationCoordinator,
+        content: VNode
     ) -> VNode {
         let dismissHandler = createBackdropClickHandler(
             presentationId: entry.id,
@@ -211,14 +221,20 @@ public struct DialogRenderer: Sendable {
             props: [
                 "class": .attribute(name: "class", value: "raven-confirmation-content")
             ],
-            children: [renderContent(entry.content)]
+            children: [content]
         )
 
         return createDialog(
             type: "confirmation",
             zIndex: entry.zIndex,
             dismissHandler: dismissHandler,
-            children: [contentWrapper]
+            children: [contentWrapper],
+            additionalProps: [
+                "data-raven-presentation-id": .attribute(
+                    name: "data-raven-presentation-id",
+                    value: entry.id.uuidString
+                )
+            ]
         )
     }
 
@@ -230,10 +246,6 @@ public struct DialogRenderer: Sendable {
     ///
     /// - Parameter content: The AnyView content to render
     /// - Returns: A VNode representing the content
-    private static func renderContent(_ content: AnyView) -> VNode {
-        return content.render()
-    }
-
     /// Extracts text content from a Text view if possible.
     ///
     /// Helper method to extract string content from Text views

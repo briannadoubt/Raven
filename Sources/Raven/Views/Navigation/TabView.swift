@@ -280,7 +280,8 @@ private struct TabViewContainer<SelectionValue: Hashable, Content: View>: View, 
         return VNode.element(
             "div",
             props: props,
-            children: [contentArea, tabBar]
+            // Web UX: tabs read better as header chrome than footer chrome.
+            children: [tabBar, contentArea]
         )
     }
 
@@ -729,7 +730,6 @@ extension TabViewContainer: _CoordinatorRenderable {
         case (true, .bottom):
             [contentArea, tabBar]
         }
-
         return VNode.element(
             "div",
             props: [
@@ -743,6 +743,7 @@ extension TabViewContainer: _CoordinatorRenderable {
                 // establish a containing scroll box and break sticky positioning.
                 "overflow": .style(name: "overflow", value: "visible"),
             ],
+            children: children
             children: children
         )
     }

@@ -1665,12 +1665,39 @@ struct EffectsTab: View {
         VStack(spacing: 16) {
             VisualEffectsDemo()
             TransformDemo()
+            EquatableAndModifierDemo()
         }
         .padding(16)
     }
 }
 
-// MARK: - Visual Effects Demo
+// MARK: - EquatableView + EmptyModifier Demo
+
+@MainActor
+private struct EquatableAndModifierDemo: View {
+    @State private var taps: Int = 0
+
+    var body: some View {
+        SectionCard(title: "EquatableView + EmptyModifier") {
+	            VStack(spacing: 12) {
+	                Button("Tap count: \(taps)") { taps += 1 }
+
+	                // This demonstrates the new SwiftUI-parity API compiling and rendering.
+	                // (Raven currently forwards through; future renderer optimizations can
+	                // use this as a hint to skip work when the view's Equatable input is unchanged.)
+	                Text("Badge value: \(taps % 2) (toggles every 2 taps)")
+	                    .padding(10)
+	                    .background(Color.accent.opacity(0.12))
+	                    .foregroundColor(Color.label)
+	                    .cornerRadius(8)
+	                    .equatable()
+	                    .modifier(EmptyModifier())
+	            }
+	        }
+	    }
+	}
+
+	// MARK: - Visual Effects Demo
 
 @MainActor
 struct VisualEffectsDemo: View {

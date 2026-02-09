@@ -331,8 +331,14 @@ public struct Published<Value: Sendable>: @unchecked Sendable {
     /// observable object's `objectWillChange` publisher before updating.
     @MainActor
     public var wrappedValue: Value {
-        get {
-            storage.value
+        nonmutating _read {
+            yield storage.value
+        }
+        nonmutating _modify {
+            // Support in-place mutations like `array.append(...)` by sending willChange
+            // before yielding a mutable reference.
+            storage.owner?.objectWillChange.send()
+            yield &storage.value
         }
         nonmutating set {
             // Send willChange notification before updating
