@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-09T03:36:24.921865+00:00`
+Generated: `2026-02-09T18:44:25.810539+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1342**
-- Missing in Raven: **3227**
-- Name-based coverage: **29.37%**
+- Matched by Raven: **1365**
+- Missing in Raven: **3204**
+- Name-based coverage: **29.88%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 456 | 0 | 1238 |
+| `Constructor` | 445 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1051 | 0 | 1366 |
+| `Func` | 1050 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 51 | 0 | 66 |
-| `Struct` | 349 | 0 | 484 |
+| `Protocol` | 50 | 0 | 66 |
+| `Struct` | 343 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 912 | 0 | 964 |
+| `Var` | 908 | 0 | 964 |
 
 ## Missing High-Signal Types (first 200)
 
@@ -79,7 +79,6 @@ Target: `arm64-apple-ios26.2`
 - `AutomaticFormStyle` (Struct, owner: `SwiftUI`)
 - `AutomaticHoverEffect` (Struct, owner: `SwiftUI`)
 - `AutomaticLabeledContentStyle` (Struct, owner: `SwiftUI`)
-- `AutomaticNavigationSplitViewStyle` (Struct, owner: `SwiftUI`)
 - `AutomaticNavigationTransition` (Struct, owner: `SwiftUI`)
 - `AutomaticPresentationSizing` (Struct, owner: `SwiftUI`)
 - `AutomaticTableStyle` (Struct, owner: `SwiftUI`)
@@ -87,7 +86,6 @@ Target: `arm64-apple-ios26.2`
 - `BackgroundDisplayMode` (Struct, owner: `PageIndexViewStyle`)
 - `BackgroundTask` (Struct, owner: `SwiftUI`)
 - `BadgeProminence` (Struct, owner: `SwiftUI`)
-- `BalancedNavigationSplitViewStyle` (Struct, owner: `SwiftUI`)
 - `Body` (TypeAlias, owner: `AccessibilityAttachmentModifier`)
 - `Body` (TypeAlias, owner: `AccessibilityRotorEntry`)
 - `Body` (TypeAlias, owner: `AccessoryCircularCapacityGaugeStyle`)
@@ -231,6 +229,8 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `SliderTickContentForEach`)
 - `Body` (TypeAlias, owner: `SpatialEventGesture`)
 - `Body` (TypeAlias, owner: `SpatialTapGesture`)
+- `Body` (TypeAlias, owner: `Stepper`)
+- `Body` (TypeAlias, owner: `SubscriptionView`)
 
 ## Missing High-Signal Named APIs (first 300)
 
@@ -398,7 +398,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `MenuOrder`)
 - `automatic` (owner: `MenuStyle`)
 - `automatic` (owner: `NavigationBarDrawerDisplayMode`)
-- `automatic` (owner: `NavigationSplitViewStyle`)
 - `automatic` (owner: `NavigationSplitViewVisibility`)
 - `automatic` (owner: `NavigationTransition`)
 - `automatic` (owner: `NavigationViewStyle`)
@@ -456,7 +455,6 @@ Target: `arm64-apple-ios26.2`
 - `backgroundTask(_:action:)` (owner: `WidgetConfiguration`)
 - `badgeProminence` (owner: `EnvironmentValues`)
 - `badgeProminence(_:)` (owner: `View`)
-- `balanced` (owner: `NavigationSplitViewStyle`)
 - `base` (owner: `AnyScrollTargetBehavior`)
 - `base` (owner: `DocumentBaseBox`)
 - `base` (owner: `GestureStateGesture`)
@@ -507,7 +505,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `Menu`)
 - `body` (owner: `MultiDatePicker`)
 - `body` (owner: `NavigationLink`)
-- `body` (owner: `NavigationSplitView`)
 - `body` (owner: `NavigationStack`)
 - `body` (owner: `NewDocumentButton`)
 - `body` (owner: `OnInsertTableRowModifier`)
@@ -534,6 +531,9 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `TextField`)
 - `body` (owner: `TextFormattingCommands`)
 - `body` (owner: `Toggle`)
+- `body` (owner: `ToolbarCommands`)
+- `body` (owner: `ToolbarContent`)
+- `body` (owner: `TupleSliderTickContent`)
 
 ## Operator-Like API Gap Summary
 

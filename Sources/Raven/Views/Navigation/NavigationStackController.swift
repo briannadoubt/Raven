@@ -58,6 +58,11 @@ internal final class NavigationStackController {
     /// Weak reference to the render scheduler for triggering re-renders.
     weak var renderScheduler: (any _StateChangeReceiver)?
 
+    /// Optional external path binding (when NavigationStack is created with a path binding).
+    ///
+    /// When present, pushes/pops also update the binding so external state stays in sync.
+    var externalPathBinding: Binding<NavigationPath>?
+
     /// Whether the popstate listener has been set up.
     private var popstateListenerSetup = false
 
@@ -109,6 +114,13 @@ internal final class NavigationStackController {
         viewStack.append(view)
         pathStack.append(path)
 
+        // Sync to external path binding if provided.
+        if let externalPathBinding {
+            var external = externalPathBinding.wrappedValue
+            external.append(view)
+            externalPathBinding.wrappedValue = external
+        }
+
         // Ensure title stack has an entry for the new level
         if titleStack.count <= viewStack.count {
             titleStack.append("")
@@ -148,6 +160,13 @@ internal final class NavigationStackController {
         viewStack.removeLast()
         pathStack.removeLast()
 
+        // Sync to external path binding if provided.
+        if let externalPathBinding {
+            var external = externalPathBinding.wrappedValue
+            _ = external.removeLast()
+            externalPathBinding.wrappedValue = external
+        }
+
         // Trim title stack to match
         if titleStack.count > viewStack.count + 1 {
             titleStack.removeLast()
@@ -179,6 +198,13 @@ internal final class NavigationStackController {
         titleStack = [titleStack.first ?? ""]
         displayModeStack = [displayModeStack.first ?? .large]
         navBarHiddenStack = [navBarHiddenStack.first ?? false]
+
+        // Sync to external path binding if provided.
+        if let externalPathBinding {
+            var external = externalPathBinding.wrappedValue
+            external.removeAll()
+            externalPathBinding.wrappedValue = external
+        }
 
         // Navigate browser back for all path-based entries
         if pathEntries > 0 {

@@ -71,6 +71,11 @@ final class ShowcaseStore: Raven.ObservableObject {
     @Raven.Published var isDropTargeted: Bool = false
     @Raven.Published var isImportPresented: Bool = false
     @Raven.Published var lastImportedFilesSummary: String = ""
+    @Raven.Published var selectedTodoId: UUID? = nil
+    @Raven.Published var todosSplitVisibility: NavigationSplitViewVisibility = .all
+    @Raven.Published var todoSidebarPath: NavigationPath = NavigationPath()
+    @Raven.Published var todoListPath: NavigationPath = NavigationPath()
+    @Raven.Published var todoDetailPath: NavigationPath = NavigationPath()
 
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
@@ -169,10 +174,7 @@ struct ContentView: View {
             set: { store.selectedTab = $0 }
         )) {
             // -- Todos tab --
-            NavigationStack {
-                TodosTab(store: store, newTodoText: $newTodoText)
-                    .navigationTitle("Todos")
-            }
+            TodosTab(store: store, newTodoText: $newTodoText)
             .tabItem { Text("Todos") }
             .tag(Tab.todos)
             .tabPath("/todos")
@@ -227,19 +229,263 @@ struct ContentView: View {
 
 // MARK: - Todos Tab
 
-/// Demonstrates NavigationStack drill-down inside a TabView tab.
+/// Demonstrates a NavigationSplitView-driven master/detail experience inside a TabView tab.
 ///
-/// Tapping a todo pushes a `TodoDetailView` onto the NavigationStack. Because
-/// the Todos tab has `.tabPath("/todos")`, the URL stays at `/todos` for the
-/// list and would extend to `/todos/detail/:id` for detail views when using
-/// path-based `navigationDestination`.
+/// The sidebar hosts the filter controls, the middle column shows the list, and
+/// the detail column renders the selected todo.
 @MainActor
 struct TodosTab: View {
     let store: ShowcaseStore
     @Binding var newTodoText: String
 
     var body: some View {
+        NavigationSplitView(columnVisibility: Binding(
+            get: { store.todosSplitVisibility },
+            set: { store.todosSplitVisibility = $0 }
+        )) {
+            NavigationStack(path: Binding(
+                get: { store.todoSidebarPath },
+                set: { store.todoSidebarPath = $0 }
+            )) {
+                TodosSidebar(store: store)
+                    .navigationTitle("Todos")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        } content: {
+            NavigationStack(path: Binding(
+                get: { store.todoListPath },
+                set: { store.todoListPath = $0 }
+            )) {
+                TodosListColumn(
+                    store: store,
+                    newTodoText: $newTodoText,
+                    selectedTodoId: Binding(
+                        get: { store.selectedTodoId },
+                        set: { store.selectedTodoId = $0 }
+                    )
+                )
+                .navigationTitle("List")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+        } detail: {
+            TodosDetailColumn(store: store, selectedTodoId: Binding(
+                get: { store.selectedTodoId },
+                set: { store.selectedTodoId = $0 }
+            ))
+        }
+        .navigationSplitViewStyle(.automatic)
+        .onAppear {
+            ensureSelectionIsValid()
+        }
+        .onChange(of: store.selectedTodoId) { _ in
+            // Selection changes should reset nested detail navigation.
+            store.todoDetailPath = NavigationPath()
+        }
+        .onChange(of: store.filter) { _ in
+            ensureSelectionIsValid()
+        }
+        .onChange(of: store.searchText) { _ in
+            ensureSelectionIsValid()
+        }
+        .onChange(of: store.todos.count) { _ in
+            ensureSelectionIsValid()
+        }
+    }
+
+    private func ensureSelectionIsValid() {
+        if let selectedTodoId = store.selectedTodoId,
+           store.filteredTodos.contains(where: { $0.id == selectedTodoId }) {
+            return
+        }
+        store.selectedTodoId = store.filteredTodos.first?.id
+    }
+}
+
+@MainActor
+private struct TodosSidebar: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            NavigationLink("Sidebar Help", destination: TodosSidebarHelpView())
+                .buttonStyle(.bordered)
+
+            Text("Filter")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            VStack(spacing: 8) {
+                ForEach(ShowcaseStore.Filter.allCases, id: \.self) { filter in
+                    Button {
+                        store.filter = filter
+                    } label: {
+                        HStack {
+                            Text(filter.rawValue)
+                            Spacer()
+                            Text(filterCountLabel(for: filter))
+                                .foregroundColor(Color.secondaryLabel)
+                        }
+                    }
+                    .padding(10)
+                    .background(store.filter == filter ? Color.accent.opacity(0.12) : Color.fill)
+                    .cornerRadius(8)
+                }
+            }
+
+            Divider()
+
+            Text("Drag a row to re-add its text, or drop text into the list.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            Spacer()
+        }
+        .padding(16)
+    }
+
+    private func filterCountLabel(for filter: ShowcaseStore.Filter) -> String {
+        switch filter {
+        case .all:
+            return "\(store.todos.count)"
+        case .active:
+            return "\(store.activeCount)"
+        case .completed:
+            return "\(store.completedCount)"
+        }
+    }
+}
+
+@MainActor
+private struct TodosSidebarHelpView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Sidebar Help")
+                .font(.title3)
+
+            Text("This screen is pushed inside the sidebar column's NavigationStack.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            Text("In SwiftUI it is common to keep independent stacks per column so toolbars, titles, and searchable state stay scoped.")
+                .font(.body)
+
+            Spacer()
+        }
+        .padding(16)
+        .navigationTitle("Sidebar Help")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+@MainActor
+private struct TodosDetailColumn: View {
+    let store: ShowcaseStore
+    @Binding var selectedTodoId: UUID?
+
+    var body: some View {
+        if let selectedTodoId {
+            // Common SwiftUI pattern: embed a NavigationStack inside the split view column.
+            NavigationStack(path: Binding(
+                get: { store.todoDetailPath },
+                set: { store.todoDetailPath = $0 }
+            )) {
+                TodoDetailView(store: store, todoId: selectedTodoId)
+            }
+        } else {
+            ContentUnavailableView(
+                "Select a Todo",
+                systemImage: "sidebar.left",
+                description: Text("Choose an item from the list to see details here.")
+            )
+        }
+    }
+}
+
+@MainActor
+private struct TodosListColumn: View {
+    let store: ShowcaseStore
+    @Binding var newTodoText: String
+    @Binding var selectedTodoId: UUID?
+
+    var body: some View {
+        let base = TodosListColumnBase(
+            store: store,
+            newTodoText: $newTodoText,
+            selectedTodoId: $selectedTodoId
+        )
+
+        let padded = base
+            .padding(16)
+            .contentMargins(.horizontal, 12, for: .scrollContent)
+            .containerBackground(Color.secondarySystemBackground.opacity(0.35), for: .automatic)
+
+        let searchable = padded.searchable(
+            text: Binding(
+                get: { store.searchText },
+                set: { store.searchText = $0 }
+            ),
+            prompt: "Search todos"
+        ) {
+            ForEach(Array(store.filteredTodos.prefix(5))) { todo in
+                Text(todo.text)
+                    .searchCompletion(todo.text)
+            }
+        }
+
+        let suggestions = searchable
+            .searchSuggestions {
+                if store.searchText.isEmpty {
+                    Text("Try searching: build, deploy, learn")
+                }
+            }
+            .searchScopes(
+                Binding(
+                    get: { Optional(store.filter) },
+                    set: { store.filter = $0 ?? .all }
+                ),
+                scopes: [.all, .active, .completed]
+            )
+            .searchFocused(
+                Binding(
+                    get: { store.isSearchFocused },
+                    set: { store.isSearchFocused = $0 }
+                )
+            )
+
+        let tasked = suggestions.task(id: store.searchText, priority: .utility) {
+            // Phase 1 demo: task(id:) API re-runs as search query changes.
+            await Task.yield()
+        }
+
+        return tasked.fileImporter(
+            isPresented: Binding(
+                get: { store.isImportPresented },
+                set: { store.isImportPresented = $0 }
+            ),
+            allowedContentTypes: [.plainText, .text, .data],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let files):
+                store.lastImportedFilesSummary = "Imported \(files.count) file(s)"
+            case .failure:
+                store.lastImportedFilesSummary = ""
+            }
+        }
+    }
+}
+
+@MainActor
+private struct TodosListColumnBase: View {
+    let store: ShowcaseStore
+    @Binding var newTodoText: String
+    @Binding var selectedTodoId: UUID?
+
+    var body: some View {
         VStack(spacing: 16) {
+            NavigationLink("List Info", destination: TodosListInfoView(store: store))
+                .buttonStyle(.bordered)
+
             // Phase 2 demo: fileImporter API
             HStack(spacing: 10) {
                 Button("Import Todos...") {
@@ -296,46 +542,10 @@ struct TodosTab: View {
                 }
             }
 
-            // Todo list — each item is a NavigationLink to its detail view
-            if store.filteredTodos.isEmpty {
-                ContentUnavailableView(
-                    "No Todos",
-                    systemImage: "checklist",
-                    description: Text("Add a todo above to get started")
-                )
-            } else {
-                List(store.filteredTodos) { todo in
-                    NavigationLink(destination: TodoDetailView(store: store, todoId: todo.id)) {
-                        HStack(spacing: 8) {
-                            Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(todo.isCompleted ? Color.green : Color.tertiaryLabel)
-
-                            Text(todo.text)
-                                .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
-                        }
-                    }
-                    // Phase 2 demo: draggable() API
-                    .draggable(todo.text)
-                }
-                // Phase 2 demo: onDrop() API (drop text to create a new todo)
-                .onDrop(of: [.plainText, .text], isTargeted: Binding(
-                    get: { store.isDropTargeted },
-                    set: { store.isDropTargeted = $0 }
-                )) { items in
-                    guard let text = items.compactMap({ item -> String? in
-                        if case .text(let t) = item { return t }
-                        return nil
-                    }).first else {
-                        return false
-                    }
-
-                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return false }
-
-                    store.addTodo(trimmed)
-                    return true
-                }
-            }
+            TodosList(
+                store: store,
+                selectedTodoId: $selectedTodoId
+            )
 
             // Clear completed
             if store.completedCount > 0 {
@@ -349,58 +559,89 @@ struct TodosTab: View {
                 .font(.caption)
             }
         }
+    }
+}
+
+@MainActor
+private struct TodosListInfoView: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("List Info")
+                .font(.title3)
+
+            LabeledContent("Filter", value: store.filter.rawValue)
+            LabeledContent("Count", value: "\(store.filteredTodos.count)")
+
+            Text("This screen is pushed inside the list column's NavigationStack. The detail column remains a separate stack.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            Spacer()
+        }
         .padding(16)
-        .contentMargins(.horizontal, 12, for: .scrollContent)
-        .containerBackground(Color.secondarySystemBackground.opacity(0.35), for: .automatic)
-        .searchable(
-            text: Binding(
-                get: { store.searchText },
-                set: { store.searchText = $0 }
-            ),
-            prompt: "Search todos"
-        ) {
-            ForEach(Array(store.filteredTodos.prefix(5))) { todo in
-                Text(todo.text)
-                    .searchCompletion(todo.text)
-            }
-        }
-        .searchSuggestions {
-            if store.searchText.isEmpty {
-                Text("Try searching: build, deploy, learn")
-            }
-        }
-        .searchScopes(
-            Binding(
-                get: { Optional(store.filter) },
-                set: { store.filter = $0 ?? .all }
-            ),
-            scopes: [.all, .active, .completed]
-        )
-        .searchFocused(
-            Binding(
-                get: { store.isSearchFocused },
-                set: { store.isSearchFocused = $0 }
+        .navigationTitle("List Info")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+@MainActor
+private struct TodosList: View {
+    let store: ShowcaseStore
+    @Binding var selectedTodoId: UUID?
+
+    var body: some View {
+        if store.filteredTodos.isEmpty {
+            ContentUnavailableView(
+                "No Todos",
+                systemImage: "checklist",
+                description: Text("Add a todo above to get started")
             )
-        )
-        .task(id: store.searchText, priority: .utility) {
-            // Phase 1 demo: task(id:) API re-runs as search query changes.
-            await Task.yield()
-        }
-        .fileImporter(
-            isPresented: Binding(
-                get: { store.isImportPresented },
-                set: { store.isImportPresented = $0 }
-            ),
-            allowedContentTypes: [.plainText, .text, .data],
-            allowsMultipleSelection: true
-        ) { result in
-            switch result {
-            case .success(let files):
-                store.lastImportedFilesSummary = "Imported \(files.count) file(s)"
-            case .failure:
-                store.lastImportedFilesSummary = ""
+        } else {
+            List(store.filteredTodos) { todo in
+                Button {
+                    selectedTodoId = todo.id
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .foregroundColor(todo.isCompleted ? Color.green : Color.tertiaryLabel)
+
+                        Text(todo.text)
+                            .foregroundColor(todo.isCompleted ? Color.tertiaryLabel : Color.label)
+
+                        Spacer()
+                    }
+                    .padding(EdgeInsets(top: 6, leading: 4, bottom: 6, trailing: 4))
+                    .background(selectedTodoId == todo.id ? Color.accent.opacity(0.08) : Color.clear)
+                    .cornerRadius(6)
+                }
+                // Phase 2 demo: draggable() API
+                .draggable(todo.text)
+            }
+            // Phase 2 demo: onDrop() API (drop text to create a new todo)
+            .onDrop(of: [.plainText, .text], isTargeted: Binding(
+                get: { store.isDropTargeted },
+                set: { store.isDropTargeted = $0 }
+            )) { items in
+                handleDrop(items)
             }
         }
+    }
+
+    private func handleDrop(_ items: [DropItem]) -> Bool {
+        guard let text = items.compactMap({ item -> String? in
+            if case .text(let t) = item { return t }
+            return nil
+        }).first else {
+            return false
+        }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+
+        store.addTodo(trimmed)
+        return true
     }
 }
 
@@ -431,6 +672,9 @@ struct TodoDetailView: View {
                 }
 
                 Divider()
+
+                NavigationLink("More Details", destination: TodoMoreDetailsView(todo: todo))
+                    .buttonStyle(.bordered)
 
                 Button(todo.isCompleted ? "Mark Active" : "Mark Completed") {
                     store.toggleTodo(todoId)
@@ -482,6 +726,30 @@ struct TodoDetailView: View {
                 description: Text("This todo may have been deleted")
             )
         }
+    }
+}
+
+@MainActor
+private struct TodoMoreDetailsView: View {
+    let todo: TodoItem
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Details")
+                .font(.title3)
+
+            LabeledContent("ID", value: todo.id.uuidString)
+            LabeledContent("Status", value: todo.isCompleted ? "Completed" : "Active")
+
+            Text("This screen is pushed inside the detail column's NavigationStack.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            Spacer()
+        }
+        .padding(16)
+        .navigationTitle("More Details")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -883,6 +1151,7 @@ struct LayoutAdvancedDemos: View {
             LazyHGridDemo()
             GeometryReaderDemo()
             ViewThatFitsDemo()
+            NavigationSplitViewDemo()
             TableDemo()
         }
     }
@@ -1600,6 +1869,72 @@ struct ViewThatFitsDemo: View {
                     .font(.caption)
                     .foregroundColor(Color.secondaryLabel)
             }
+        }
+    }
+}
+
+@MainActor
+struct NavigationSplitViewDemo: View {
+    @State private var visibility: NavigationSplitViewVisibility = .all
+
+    var body: some View {
+        SectionCard(title: "NavigationSplitView") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Text("Visibility")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+
+                    Picker("Visibility", selection: $visibility) {
+                        ForEach(NavigationSplitViewVisibility.allCases, id: \.self) { option in
+                            Text(option.displayName)
+                                .tag(option)
+                        }
+                    }
+                }
+
+                NavigationSplitView(columnVisibility: $visibility) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Sidebar")
+                            .font(.headline)
+                        Text("Favorites")
+                        Text("Projects")
+                        Text("Shared")
+                    }
+                } content: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Content")
+                            .font(.headline)
+                        Text("Select a project to see details.")
+                        ProgressView(value: 0.62)
+                    }
+                } detail: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Detail")
+                            .font(.headline)
+                        Text("Project status")
+                        LabeledContent("Owner", value: "Jordan")
+                        LabeledContent("Due", value: "Mar 12")
+                    }
+                }
+                .navigationSplitViewStyle(.balanced)
+                .frame(height: 220)
+            }
+        }
+    }
+}
+
+extension NavigationSplitViewVisibility {
+    var displayName: String {
+        switch self {
+        case .automatic:
+            return "Automatic"
+        case .all:
+            return "All"
+        case .doubleColumn:
+            return "Double Column"
+        case .detailOnly:
+            return "Detail Only"
         }
     }
 }

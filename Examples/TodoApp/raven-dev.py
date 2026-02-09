@@ -120,8 +120,10 @@ class RavenDevServer:
         try:
             # Run swift build
             start_time = time.time()
+            # Use swiftly so the WASM toolchain/sdk is available even when the
+            # system Swift toolchain can't target wasm32.
             result = subprocess.run(
-                ['swift', 'build', '--swift-sdk', SWIFT_SDK],
+                ['swiftly', 'run', 'swift', 'build', '--swift-sdk', SWIFT_SDK],
                 capture_output=True,
                 text=True,
                 timeout=120
