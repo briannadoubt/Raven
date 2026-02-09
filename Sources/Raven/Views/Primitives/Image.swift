@@ -106,6 +106,14 @@ public struct Image: View, PrimitiveView, Sendable {
     private func rasterImageVNode() -> VNode {
         var props: [String: VProperty] = [:]
 
+        // Images should respect parent layout constraints (e.g. `.frame(width:height:)`).
+        // Without these, the browser uses the image's intrinsic size which can overflow
+        // and overlap neighboring views in flex layouts.
+        props["display"] = .style(name: "display", value: "block")
+        props["max-width"] = .style(name: "max-width", value: "100%")
+        props["max-height"] = .style(name: "max-height", value: "100%")
+        props["object-fit"] = .style(name: "object-fit", value: "contain")
+
         let srcValue: String
         switch source {
         case .named(let name):
