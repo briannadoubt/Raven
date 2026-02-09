@@ -744,7 +744,6 @@ extension TabViewContainer: _CoordinatorRenderable {
                 "overflow": .style(name: "overflow", value: "visible"),
             ],
             children: children
-            children: children
         )
     }
 
