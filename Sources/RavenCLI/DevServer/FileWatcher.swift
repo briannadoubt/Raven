@@ -6,8 +6,8 @@ actor FileWatcher {
     /// Type alias for the change handler callback
     typealias ChangeHandler = @Sendable () async -> Void
 
-    /// Path to watch for changes
-    private let path: String
+    /// Paths to watch for changes
+    private let paths: [String]
 
     /// Handler to call when changes are detected
     private let onChange: ChangeHandler
@@ -27,7 +27,19 @@ actor FileWatcher {
     ///   - path: Directory path to watch for changes
     ///   - onChange: Callback to invoke when changes are detected
     init(path: String, onChange: @escaping ChangeHandler) {
-        self.path = path
+        self.paths = [path]
+        self.onChange = onChange
+        self.debouncer = ChangeDebouncer(delayMilliseconds: 100) {
+            await onChange()
+        }
+    }
+
+    /// Initialize file watcher
+    /// - Parameters:
+    ///   - paths: Directory paths to watch for changes
+    ///   - onChange: Callback to invoke when changes are detected
+    init(paths: [String], onChange: @escaping ChangeHandler) {
+        self.paths = paths
         self.onChange = onChange
         self.debouncer = ChangeDebouncer(delayMilliseconds: 100) {
             await onChange()
@@ -38,14 +50,16 @@ actor FileWatcher {
     func start() async throws {
         guard !isRunning else { return }
 
-        // Verify the path exists
+        // Verify the paths exist
         let fileManager = FileManager.default
-        var isDirectory: ObjCBool = false
-        guard fileManager.fileExists(atPath: path, isDirectory: &isDirectory) else {
-            throw FileWatcherError.pathNotFound(path)
-        }
-        guard isDirectory.boolValue else {
-            throw FileWatcherError.notADirectory(path)
+        for path in paths {
+            var isDirectory: ObjCBool = false
+            guard fileManager.fileExists(atPath: path, isDirectory: &isDirectory) else {
+                throw FileWatcherError.pathNotFound(path)
+            }
+            guard isDirectory.boolValue else {
+                throw FileWatcherError.notADirectory(path)
+            }
         }
 
         // Initialize modification dates
@@ -96,18 +110,21 @@ actor FileWatcher {
         var dates: [String: Date] = [:]
         let fileManager = FileManager.default
 
-        guard let enumerator = fileManager.enumerator(atPath: path) else {
-            return dates
-        }
+        for path in paths {
+            guard let enumerator = fileManager.enumerator(atPath: path) else {
+                continue
+            }
 
-        let files = enumerator.allObjects.compactMap { $0 as? String }
-        for file in files {
-            guard file.hasSuffix(".swift") else { continue }
+            let files = enumerator.allObjects.compactMap { $0 as? String }
+            for file in files {
+                guard file.hasSuffix(".swift") else { continue }
 
-            let fullPath = (path as NSString).appendingPathComponent(file)
-            if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
-               let modificationDate = attributes[.modificationDate] as? Date {
-                dates[file] = modificationDate
+                let fullPath = (path as NSString).appendingPathComponent(file)
+                if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
+                   let modificationDate = attributes[.modificationDate] as? Date {
+                    // Use the full path as the key to avoid collisions across roots.
+                    dates[fullPath] = modificationDate
+                }
             }
         }
 
