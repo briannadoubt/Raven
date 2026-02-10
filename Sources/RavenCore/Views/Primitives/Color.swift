@@ -87,10 +87,23 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
 
     private enum Storage: Sendable, Hashable {
         case rgb(red: Double, green: Double, blue: Double, opacity: Double)
+        case displayP3(red: Double, green: Double, blue: Double, opacity: Double)
         case hex(String)
         case named(String)
         case cssVariable(String)
         case systemColor(String)
+    }
+
+    /// An RGB-based color space for color component initializers.
+    ///
+    /// Matches SwiftUI's `Color.RGBColorSpace` API surface.
+    public enum RGBColorSpace: Sendable, Hashable {
+        /// The standard sRGB color space.
+        case sRGB
+        /// Linear sRGB (components are in linear space).
+        case sRGBLinear
+        /// Display P3 wide-gamut color space.
+        case displayP3
     }
 
     // MARK: - Initializers
@@ -117,6 +130,61 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
             blue: min(max(blue, 0.0), 1.0),
             opacity: min(max(opacity, 0.0), 1.0)
         )
+    }
+
+    /// Creates a color from RGB components in a specified color space.
+    ///
+    /// This matches SwiftUI's `Color.init(_:red:green:blue:opacity:)`.
+    ///
+    /// - Parameters:
+    ///   - colorSpace: The color space of the provided components.
+    ///   - red: The red component (0.0 to 1.0).
+    ///   - green: The green component (0.0 to 1.0).
+    ///   - blue: The blue component (0.0 to 1.0).
+    ///   - opacity: The opacity (0.0 to 1.0). Defaults to 1.0.
+    nonisolated public init(
+        _ colorSpace: RGBColorSpace,
+        red: Double,
+        green: Double,
+        blue: Double,
+        opacity: Double = 1.0
+    ) {
+        func clamp01(_ x: Double) -> Double { min(max(x, 0.0), 1.0) }
+
+        func linearToSRGB(_ x: Double) -> Double {
+            // IEC 61966-2-1:1999 (sRGB) transfer function (linear -> encoded).
+            let x = clamp01(x)
+            if x <= 0.0031308 {
+                return 12.92 * x
+            } else {
+                return 1.055 * pow(x, 1.0 / 2.4) - 0.055
+            }
+        }
+
+        let a = clamp01(opacity)
+        switch colorSpace {
+        case .sRGB:
+            self.storage = .rgb(
+                red: clamp01(red),
+                green: clamp01(green),
+                blue: clamp01(blue),
+                opacity: a
+            )
+        case .sRGBLinear:
+            self.storage = .rgb(
+                red: linearToSRGB(red),
+                green: linearToSRGB(green),
+                blue: linearToSRGB(blue),
+                opacity: a
+            )
+        case .displayP3:
+            self.storage = .displayP3(
+                red: clamp01(red),
+                green: clamp01(green),
+                blue: clamp01(blue),
+                opacity: a
+            )
+        }
     }
 
     /// Creates a color from a hex string.
@@ -272,6 +340,18 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
             } else {
                 return "rgb(\(r), \(g), \(b))"
             }
+        case .displayP3(let red, let green, let blue, let opacity):
+            // Use the modern CSS Color 4 syntax for wide-gamut colors.
+            // Browsers that don't support this will ignore the declaration.
+            // Avoid `String(format:)` because it is not reliable across Swift WASM toolchains.
+            let r = String(red)
+            let g = String(green)
+            let b = String(blue)
+            if opacity < 1.0 {
+                return "color(display-p3 \(r) \(g) \(b) / \(opacity))"
+            } else {
+                return "color(display-p3 \(r) \(g) \(b))"
+            }
         case .hex(let hex):
             return hex
         case .named(let name):
@@ -316,6 +396,8 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
         switch storage {
         case .rgb(let red, let green, let blue, _):
             return Color(red: red, green: green, blue: blue, opacity: clampedOpacity)
+        case .displayP3(let red, let green, let blue, _):
+            return Color(.displayP3, red: red, green: green, blue: blue, opacity: clampedOpacity)
         case .hex(let hexString):
             // Parse hex color and convert to RGBA
             if let (r, g, b) = parseHex(hexString) {
@@ -367,6 +449,15 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
         switch storage {
         case .rgb(let red, let green, let blue, let opacity):
             let lighterColor = Color(
+                red: min(red + 0.2, 1.0),
+                green: min(green + 0.2, 1.0),
+                blue: min(blue + 0.2, 1.0),
+                opacity: opacity
+            )
+            return LinearGradient(colors: [lighterColor, self], angle: Angle(degrees: 180))
+        case .displayP3(let red, let green, let blue, let opacity):
+            let lighterColor = Color(
+                .displayP3,
                 red: min(red + 0.2, 1.0),
                 green: min(green + 0.2, 1.0),
                 blue: min(blue + 0.2, 1.0),

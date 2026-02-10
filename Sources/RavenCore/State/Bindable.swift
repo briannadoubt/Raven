@@ -192,6 +192,13 @@ public struct Bindable<Value: Observable>: DynamicProperty {
         self.object = wrappedValue
     }
 
+    /// Convenience initializer matching SwiftUI-style unlabeled construction.
+    ///
+    /// Allows `Bindable(value)` in addition to `Bindable(wrappedValue: value)`.
+    public init(_ value: Value) {
+        self.object = value
+    }
+
     /// The observable object.
     ///
     /// Access the wrapped observable object directly through this property.

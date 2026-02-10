@@ -82,6 +82,25 @@ public struct CGRect: Sendable, Hashable {
     /// The rectangle at the origin with zero width and height.
     public static let zero = CGRect(origin: .zero, size: .zero)
 
+    /// A null rectangle.
+    ///
+    /// Raven uses an Infinity-origin sentinel similar to CoreGraphics' `CGRect.null`.
+    /// A null rect represents "no area" and is the result of operations like
+    /// intersection when two rects do not overlap.
+    public static let null = CGRect(x: .infinity, y: .infinity, width: 0, height: 0)
+
+    /// Returns true if this rect is the null sentinel.
+    public var isNull: Bool {
+        origin.x.isInfinite && origin.y.isInfinite
+    }
+
+    /// Returns true if this rectangle has zero or negative area.
+    ///
+    /// Note: This does not consider `.null` to be empty; use `isNull` to check that.
+    public var isEmpty: Bool {
+        width <= 0 || height <= 0
+    }
+
     /// Creates a rectangle with the specified origin and size.
     ///
     /// - Parameters:
@@ -102,6 +121,28 @@ public struct CGRect: Sendable, Hashable {
     public init(x: Double, y: Double, width: Double, height: Double) {
         self.origin = CGPoint(x: x, y: y)
         self.size = CGSize(width: width, height: height)
+    }
+
+    /// Returns the intersection of this rectangle and the given rectangle.
+    ///
+    /// - Parameter rect: The rectangle to intersect with.
+    /// - Returns: The overlapping portion of the two rectangles, or `.null` if there is no overlap.
+    public func intersection(_ rect: CGRect) -> CGRect {
+        if isNull || rect.isNull {
+            return .null
+        }
+
+        let nx = max(minX, rect.minX)
+        let ny = max(minY, rect.minY)
+        let mx = min(maxX, rect.maxX)
+        let my = min(maxY, rect.maxY)
+
+        // CoreGraphics returns `.null` when there is no overlap.
+        if mx <= nx || my <= ny {
+            return .null
+        }
+
+        return CGRect(x: nx, y: ny, width: mx - nx, height: my - ny)
     }
 }
 

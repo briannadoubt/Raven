@@ -1,73 +1,121 @@
 import Foundation
 
-/// A type-erased list of views representing a navigation stack.
+/// A type-erased list representing a navigation stack.
 ///
-/// `NavigationPath` maintains a stack of views for navigation purposes.
-/// For Phase 4, this is a simple in-memory stack. Future phases will integrate
-/// with the browser's HTML5 History API for proper URL-based navigation.
+/// Raven supports two styles of `NavigationPath`:
+/// - View-based: `append(_ view: some View)` (legacy Raven behavior)
+/// - Value-based: `append(_ value: some Hashable)` (SwiftUI-style API surface)
 ///
-/// Example:
-/// ```swift
-/// var path = NavigationPath()
-/// path.append(DetailView())
-/// path.removeLast()
-/// ```
-public struct NavigationPath: Sendable {
-    /// Type-erased storage for navigation destinations
-    private var destinations: [AnyView]
+/// Note: Raven's `NavigationStack` currently uses view-based destinations when
+/// provided. Value-based path elements are stored for API parity and route-style
+/// workflows, but require destination mapping elsewhere.
+public struct NavigationPath: Sendable, Equatable {
+    private final class _ViewBox: @unchecked Sendable {
+        let id: UUID = UUID()
+        let view: AnyView
+        init(_ view: AnyView) { self.view = view }
+    }
+
+    private enum _Item: @unchecked Sendable, Equatable {
+        case value(AnyHashable)
+        case view(_ViewBox)
+
+        static func == (lhs: _Item, rhs: _Item) -> Bool {
+            switch (lhs, rhs) {
+            case (.value(let a), .value(let b)):
+                return a == b
+            case (.view(let a), .view(let b)):
+                return a.id == b.id
+            default:
+                return false
+            }
+        }
+    }
+
+    private var items: [_Item]
 
     /// Creates an empty navigation path.
     public init() {
-        self.destinations = []
+        self.items = []
     }
 
-    /// The number of views in the navigation stack.
-    public var count: Int {
-        destinations.count
-    }
+    /// The number of elements in the navigation path.
+    public var count: Int { items.count }
 
-    /// Whether the navigation stack is empty.
-    public var isEmpty: Bool {
-        destinations.isEmpty
-    }
+    /// Whether the navigation path is empty.
+    public var isEmpty: Bool { items.isEmpty }
 
-    /// Appends a view to the navigation stack.
-    ///
-    /// - Parameter view: The view to push onto the stack.
+    // MARK: - Append
+
+    /// Appends a view to the navigation stack (legacy Raven behavior).
     @MainActor
     public mutating func append<V: View>(_ view: V) {
-        destinations.append(AnyView(view))
+        items.append(.view(_ViewBox(AnyView(view))))
     }
 
-    /// Removes the last view from the navigation stack.
-    ///
-    /// This method does nothing if the stack is already empty.
+    /// Appends a hashable value to the navigation path (SwiftUI-style).
+    public mutating func append<T: Hashable>(_ value: T) {
+        items.append(.value(AnyHashable(value)))
+    }
+
+    // MARK: - Remove
+
+    /// Removes the last element from the navigation path.
     @discardableResult
     public mutating func removeLast() -> AnyView? {
-        guard !destinations.isEmpty else { return nil }
-        return destinations.removeLast()
+        guard let last = items.popLast() else { return nil }
+        if case .view(let box) = last {
+            return box.view
+        }
+        return nil
     }
 
-    /// Returns the view at the top of the stack without removing it.
-    public func peek() -> AnyView? {
-        destinations.last
+    /// Removes the given number of elements from the end of the path.
+    public mutating func removeLast(_ k: Int) {
+        guard k > 0 else { return }
+        let n = min(k, items.count)
+        items.removeLast(n)
     }
 
-    /// Removes all views from the navigation stack.
+    /// Removes all elements from the navigation path.
     public mutating func removeAll() {
-        destinations.removeAll()
+        items.removeAll()
     }
 
-    /// Returns the view at the specified index.
-    ///
-    /// - Parameter index: The position of the view to access.
-    /// - Returns: The view at the specified index.
-    public subscript(index: Int) -> AnyView {
-        destinations[index]
+    // MARK: - Peek/Indexing
+
+    /// Returns the view at the top of the stack without removing it (if the last item is a view).
+    public func peek() -> AnyView? {
+        guard let last = items.last else { return nil }
+        if case .view(let box) = last { return box.view }
+        return nil
     }
 
-    /// Access to all destinations for iteration
+    /// Returns the view destination at the specified index (view-only).
+    @MainActor public subscript(index: Int) -> AnyView {
+        switch items[index] {
+        case .view(let box):
+            return box.view
+        case .value:
+            return AnyView(EmptyView())
+        }
+    }
+
+    // MARK: - Internal Access (NavigationStack)
+
+    /// Access to all view-based destinations for iteration.
     internal var allDestinations: [AnyView] {
-        destinations
+        items.compactMap { item in
+            if case .view(let box) = item { return box.view }
+            return nil
+        }
+    }
+
+    /// Access to all value-based elements for route-style workflows.
+    public var elements: [AnyHashable] {
+        items.compactMap { item in
+            if case .value(let v) = item { return v }
+            return nil
+        }
     }
 }
