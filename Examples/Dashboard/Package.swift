@@ -23,8 +23,7 @@ let package = Package(
         .executableTarget(
             name: "Dashboard",
             dependencies: [
-                .product(name: "Raven", package: "Raven"),
-                .product(name: "RavenRuntime", package: "Raven")
+                .product(name: "Raven", package: "Raven")
             ],
             path: "Sources/Dashboard",
             swiftSettings: [

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Tests for the Gesture protocol and foundation types.
@@ -173,13 +173,13 @@ import Testing
     }
 
     @Test func gestureStateWithCGSize() {
-        let gestureState = GestureState(wrappedValue: Raven.CGSize(width: 0, height: 0))
+        let gestureState = GestureState(wrappedValue: SwiftUI.CGSize(width: 0, height: 0))
         #expect(gestureState.wrappedValue.width == 0)
         #expect(gestureState.wrappedValue.height == 0)
     }
 
     @Test func gestureStateWithCGPoint() {
-        let gestureState = GestureState(wrappedValue: Raven.CGPoint(x: 0, y: 0))
+        let gestureState = GestureState(wrappedValue: SwiftUI.CGPoint(x: 0, y: 0))
         #expect(gestureState.wrappedValue.x == 0)
         #expect(gestureState.wrappedValue.y == 0)
     }
@@ -235,14 +235,14 @@ import Testing
             reset: { _, transaction in
                 transaction.animation = .spring()
             },
-            initialValue: Raven.CGSize(width: 0, height: 0)
+            initialValue: SwiftUI.CGSize(width: 0, height: 0)
         )
 
         var transaction = Transaction()
         #expect(transaction.animation == nil)
 
         gestureState.update(
-            value: Raven.CGSize(width: 100, height: 100),
+            value: SwiftUI.CGSize(width: 100, height: 100),
             transaction: &transaction
         )
         gestureState.reset(transaction: &transaction)
@@ -297,11 +297,11 @@ import Testing
 
     @Test func gestureValueType() {
         struct TestGesture: Gesture {
-            typealias Value = Raven.CGPoint
+            typealias Value = SwiftUI.CGPoint
         }
 
         // Verify the associated type is what we expect
-        #expect(TestGesture.Value.self == Raven.CGPoint.self)
+        #expect(TestGesture.Value.self == SwiftUI.CGPoint.self)
     }
 
     @Test func gestureWithCustomValueType() {
@@ -371,7 +371,7 @@ import Testing
     // MARK: - DragGestureState Tests
 
     @Test func dragGestureStateInitialization() {
-        let startLocation = Raven.CGPoint(x: 100, y: 200)
+        let startLocation = SwiftUI.CGPoint(x: 100, y: 200)
         let startTime = Date().timeIntervalSince1970
         let minimumDistance = 10.0
 
@@ -390,7 +390,7 @@ import Testing
     }
 
     @Test func dragGestureStateMinimumDistanceCheck() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         let state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -398,16 +398,16 @@ import Testing
         )
 
         // Test point within minimum distance
-        let nearPoint = Raven.CGPoint(x: 5, y: 5)
+        let nearPoint = SwiftUI.CGPoint(x: 5, y: 5)
         #expect(!state.hasExceededMinimumDistance(to: nearPoint))
 
         // Test point beyond minimum distance
-        let farPoint = Raven.CGPoint(x: 10, y: 10)
+        let farPoint = SwiftUI.CGPoint(x: 10, y: 10)
         #expect(state.hasExceededMinimumDistance(to: farPoint))
     }
 
     @Test func dragGestureStateAddSample() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -415,8 +415,8 @@ import Testing
         )
 
         // Add samples
-        state.addSample(location: Raven.CGPoint(x: 10, y: 10), time: 0.1)
-        state.addSample(location: Raven.CGPoint(x: 20, y: 20), time: 0.2)
+        state.addSample(location: SwiftUI.CGPoint(x: 10, y: 10), time: 0.1)
+        state.addSample(location: SwiftUI.CGPoint(x: 20, y: 20), time: 0.2)
 
         // The rolling velocity window is 100ms, so the initial 0.0 sample is evicted.
         #expect(state.positionSamples.count == 2)
@@ -424,7 +424,7 @@ import Testing
     }
 
     @Test func dragGestureStateVelocityCalculation() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -432,7 +432,7 @@ import Testing
         )
 
         // Add sample that moves 100 points in 0.1 seconds
-        state.addSample(location: Raven.CGPoint(x: 100, y: 100), time: 0.1)
+        state.addSample(location: SwiftUI.CGPoint(x: 100, y: 100), time: 0.1)
 
         let velocity = state.calculateVelocity()
 
@@ -442,7 +442,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionStateTransitions() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -466,7 +466,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionFromPossibleToCancelled() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -479,7 +479,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionFromPossibleToFailed() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -492,7 +492,7 @@ import Testing
     }
 
     @Test func dragGestureStateDeprecatedIsRecognizedGetter() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,

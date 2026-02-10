@@ -1,5 +1,5 @@
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Tests for the keyframe animator system.
@@ -21,8 +21,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGFloat interpolation works correctly")
     func testCGFloatInterpolation() {
-        let start: Raven.CGFloat = 0.0
-        let end: Raven.CGFloat = 100.0
+        let start: SwiftUI.CGFloat = 0.0
+        let end: SwiftUI.CGFloat = 100.0
 
         #expect(start.interpolated(to: end, amount: 0.0) == 0.0)
         #expect(start.interpolated(to: end, amount: 0.25) == 25.0)
@@ -31,8 +31,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGPoint interpolation works correctly")
     func testCGPointInterpolation() {
-        let start = Raven.CGPoint(x: 0, y: 0)
-        let end = Raven.CGPoint(x: 100, y: 200)
+        let start = SwiftUI.CGPoint(x: 0, y: 0)
+        let end = SwiftUI.CGPoint(x: 100, y: 200)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.x == 50)
@@ -41,8 +41,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGSize interpolation works correctly")
     func testCGSizeInterpolation() {
-        let start = Raven.CGSize(width: 10, height: 20)
-        let end = Raven.CGSize(width: 50, height: 80)
+        let start = SwiftUI.CGSize(width: 10, height: 20)
+        let end = SwiftUI.CGSize(width: 50, height: 80)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.width == 30)
@@ -51,8 +51,8 @@ struct KeyframeAnimatorTests {
 
     @Test("CGRect interpolation works correctly")
     func testCGRectInterpolation() {
-        let start = Raven.CGRect(x: 0, y: 0, width: 10, height: 20)
-        let end = Raven.CGRect(x: 100, y: 200, width: 50, height: 80)
+        let start = SwiftUI.CGRect(x: 0, y: 0, width: 10, height: 20)
+        let end = SwiftUI.CGRect(x: 100, y: 200, width: 50, height: 80)
 
         let mid = start.interpolated(to: end, amount: 0.5)
         #expect(mid.origin.x == 50)
@@ -210,7 +210,7 @@ struct KeyframeAnimatorTests {
 
     @Test("CSS keyframe stops include properties")
     func testCSSKeyframeStopsProperties() {
-        var sequence = KeyframeSequence<Raven.CGFloat>()
+        var sequence = KeyframeSequence<SwiftUI.CGFloat>()
         sequence.add(.linear(value: 1.0, duration: 0.5))
         sequence.add(.linear(value: 2.0, duration: 0.5))
 
@@ -262,13 +262,13 @@ struct KeyframeAnimatorTests {
     func testKeyframeAnimatorWithCGPoint() {
         let view = Rectangle()
             .keyframeAnimator(
-                initialValue: Raven.CGPoint(x: 0, y: 0),
+                initialValue: SwiftUI.CGPoint(x: 0, y: 0),
                 repeating: false
             ) { content, value in
                 content.offset(x: value.x, y: value.y)
             } keyframes: { track in
-                track.linear(Raven.CGPoint(x: 100, y: 50), duration: 0.5)
-                track.spring(Raven.CGPoint(x: 0, y: 0), duration: 0.5, bounce: 0.2)
+                track.linear(SwiftUI.CGPoint(x: 100, y: 50), duration: 0.5)
+                track.spring(SwiftUI.CGPoint(x: 0, y: 0), duration: 0.5, bounce: 0.2)
             }
 
         #expect(type(of: view) != Never.self)

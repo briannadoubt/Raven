@@ -1,13 +1,13 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 // Resolve ambiguities with Foundation types
-typealias ObservableObject = Raven.ObservableObject
-typealias Published = Raven.Published
-typealias StateObject = Raven.StateObject
-typealias ObservedObject = Raven.ObservedObject
+typealias ObservableObject = SwiftUI.ObservableObject
+typealias Published = SwiftUI.Published
+typealias StateObject = SwiftUI.StateObject
+typealias ObservedObject = SwiftUI.ObservedObject
 
 /// Comprehensive Phase 3 verification tests that validate the Todo app works.
 ///

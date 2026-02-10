@@ -1,5 +1,5 @@
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 import Foundation
 
@@ -72,7 +72,7 @@ import Foundation
         let content = try String(contentsOf: readme, encoding: .utf8)
 
         #expect(content.contains("```swift"))
-        #expect(content.contains("import Raven"))
+        #expect(content.contains("import SwiftUI"))
     }
 
     @Test func gettingStartedGuideExists() {
@@ -200,7 +200,7 @@ import Foundation
 
         let content = try String(contentsOf: example, encoding: .utf8)
 
-        #expect(content.contains("import Raven"))
+        #expect(content.contains("import SwiftUI"))
         #expect(content.contains("@State"))
     }
 
@@ -241,7 +241,7 @@ import Foundation
             let filePath = examples.appendingPathComponent(file)
             let content = try String(contentsOf: filePath, encoding: .utf8)
 
-            #expect(content.contains("import Raven"))
+            #expect(content.contains("import SwiftUI"))
             exampleCount += 1
         }
 

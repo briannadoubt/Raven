@@ -11,20 +11,18 @@ let package = Package(
         .iOS(.v17)
     ],
     products: [
-        // Main library product
+        // Main library product (exports the SwiftUI-compatible module + compat shims).
+        //
+        // This lets Raven apps `import SwiftUI`, `import TipKit`, and
+        // `import Accessibility` after adding only the `Raven` product.
         .library(
             name: "Raven",
-            targets: ["Raven"]
+            targets: ["SwiftUI", "Accessibility", "TipKit"]
         ),
         // Runtime support library
         .library(
             name: "RavenRuntime",
             targets: ["RavenRuntime"]
-        ),
-        // TipKit compatibility shims (including macros) for Raven.
-        .library(
-            name: "TipKit",
-            targets: ["TipKit"]
         ),
         // CLI executable
         .executable(
@@ -42,6 +40,12 @@ let package = Package(
     ],
     targets: [
         // MARK: - Main Library Targets
+
+        // Accessibility API shim (WASM-friendly).
+        .target(
+            name: "Accessibility",
+            path: "Sources/Accessibility"
+        ),
 
         // Shared support for asset catalogs (IDs, normalization) used by both CLI and runtime.
         .target(
@@ -79,15 +83,16 @@ let package = Package(
             ]
         ),
 
-        // Umbrella module: "import Raven" should pull in both the API surface and runtime.
+        // Umbrella module: "import SwiftUI" should pull in both the API surface and runtime.
         .target(
-            name: "Raven",
+            name: "SwiftUI",
             dependencies: [
                 "RavenCore",
                 "RavenRuntime"
             ],
-            path: "Sources/Raven"
+            path: "Sources/SwiftUI"
         ),
+        // Note: The exposed module name is "SwiftUI" (target below).
 
         // TipKit API shims for Raven (including macros).
         //
@@ -128,7 +133,7 @@ let package = Package(
         .executableTarget(
             name: "RavenCLI",
             dependencies: [
-                "Raven",
+                "SwiftUI",
                 "RavenAssetSupport",
                 "RavenRuntime",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
@@ -142,7 +147,7 @@ let package = Package(
         // Core Raven tests
         .testTarget(
             name: "RavenTests",
-            dependencies: ["Raven", "RavenCore", "RavenAssetSupport"],
+            dependencies: ["SwiftUI", "RavenCore", "RavenAssetSupport"],
             path: "Tests/RavenTests",
             swiftSettings: []
         ),
@@ -150,7 +155,7 @@ let package = Package(
         // VirtualDOM-specific tests
         .testTarget(
             name: "VirtualDOMTests",
-            dependencies: ["Raven"],
+            dependencies: ["SwiftUI"],
             path: "Tests/VirtualDOMTests",
             swiftSettings: []
         ),
@@ -159,7 +164,7 @@ let package = Package(
         .testTarget(
             name: "IntegrationTests",
             dependencies: [
-                "Raven",
+                "SwiftUI",
                 "RavenRuntime"
             ],
             path: "Tests/IntegrationTests",

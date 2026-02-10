@@ -1,5 +1,5 @@
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 
 /// Performance benchmarks for Raven framework
 ///

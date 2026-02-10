@@ -1,5 +1,5 @@
 import Foundation
-// import Raven
+// import SwiftUI
 
 /// Main application view - a simple counter example
 /// Demonstrates basic Raven concepts: @State, VStack, Text, Button

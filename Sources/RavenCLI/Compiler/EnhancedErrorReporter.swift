@@ -94,7 +94,7 @@ public struct EnhancedErrorReporter: Sendable {
 
         // Missing import suggestions
         if message.contains("cannot find type") || message.contains("use of undeclared type") {
-            suggestions.append("Check that you've imported the necessary module (e.g., 'import Raven')")
+            suggestions.append("Check that you've imported the necessary module (e.g., 'import SwiftUI')")
             suggestions.append("Verify the type name is spelled correctly")
         }
 

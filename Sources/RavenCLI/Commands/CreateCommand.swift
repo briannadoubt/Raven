@@ -278,8 +278,7 @@ struct CreateCommand: ParsableCommand {
                 .executableTarget(
                     name: "{{ProjectName}}",
                     dependencies: [
-                        // "Raven",
-                        // "RavenRuntime",
+                        // "SwiftUI",
                         .product(name: "JavaScriptKit", package: "JavaScriptKit")
                     ],
                     swiftSettings: [
@@ -296,7 +295,7 @@ struct CreateCommand: ParsableCommand {
     private func generateAppSwift() -> String {
         """
         import Foundation
-        // import Raven
+        // import SwiftUI
 
         /// Main application view - a simple counter example
         @MainActor
@@ -330,7 +329,7 @@ struct CreateCommand: ParsableCommand {
         """
         import Foundation
         import JavaScriptKit
-        // import Raven
+        // import SwiftUI
         // import RavenRuntime
 
         @MainActor

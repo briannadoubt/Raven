@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 
 // MARK: - Phase 15 Integration Tests
 //

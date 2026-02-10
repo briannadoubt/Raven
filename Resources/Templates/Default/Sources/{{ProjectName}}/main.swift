@@ -1,6 +1,6 @@
 import Foundation
 import JavaScriptKit
-// import Raven
+// import SwiftUI
 // import RavenRuntime
 
 /// Entry point for the {{ProjectName}} application

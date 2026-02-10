@@ -86,7 +86,7 @@ Raven enables you to build web applications using Swift and SwiftUI-style declar
 ### Basic Example
 
 ```swift
-import Raven
+import SwiftUI
 
 struct HelloWorld: View {
     var body: some View {

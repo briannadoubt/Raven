@@ -63,7 +63,9 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "MyRavenApp",
-            dependencies: ["Raven"],
+            dependencies: [
+                .product(name: "Raven", package: "Raven")
+            ],
             path: "Sources"
         )
     ]
@@ -78,7 +80,7 @@ mkdir -p Sources
 
 ```bash
 cat > Sources/main.swift << 'EOF'
-import Raven
+import SwiftUI
 
 @main
 struct MyApp {
@@ -402,7 +404,7 @@ wasm-opt -O3 input.wasm -o output.wasm
 
 **Solution:**
 ```swift
-import Raven  // Must be first line
+import SwiftUI  // Must be first line
 
 @main
 struct MyApp {

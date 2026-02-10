@@ -1,6 +1,6 @@
-// Raven umbrella module.
+// SwiftUI umbrella module for Raven.
 //
-// This target exists to give apps a single import (`import Raven`) while keeping
+// This target exists to give apps a single import (`import SwiftUI`) while keeping
 // build graph cycles out of SwiftPM targets.
 //
 // - RavenCore: SwiftUI-style API surface (views, modifiers, VDOM, state)

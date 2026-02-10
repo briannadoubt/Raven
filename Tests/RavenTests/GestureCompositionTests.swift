@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 // MARK: - Gesture Composition Tests
@@ -122,7 +122,7 @@ struct GestureCompositionTests {
     /// Test sequence gesture value - first case.
     @Test("SequenceGestureValue .first case")
     func sequenceGestureValueFirst() throws {
-        let value: SequenceGestureValue<Bool, Raven.CGSize> = .first(true)
+        let value: SequenceGestureValue<Bool, SwiftUI.CGSize> = .first(true)
 
         switch value {
         case .first(let val):
@@ -135,7 +135,7 @@ struct GestureCompositionTests {
     /// Test sequence gesture value - second case with nil.
     @Test("SequenceGestureValue .second case with nil")
     func sequenceGestureValueSecondNil() throws {
-        let value: SequenceGestureValue<Bool, Raven.CGSize> = .second(true, nil)
+        let value: SequenceGestureValue<Bool, SwiftUI.CGSize> = .second(true, nil)
 
         switch value {
         case .first:
@@ -149,8 +149,8 @@ struct GestureCompositionTests {
     /// Test sequence gesture value - second case with value.
     @Test("SequenceGestureValue .second case with value")
     func sequenceGestureValueSecondWithValue() throws {
-        let size = Raven.CGSize(width: 10, height: 20)
-        let value: SequenceGestureValue<Bool, Raven.CGSize> = .second(true, size)
+        let size = SwiftUI.CGSize(width: 10, height: 20)
+        let value: SequenceGestureValue<Bool, SwiftUI.CGSize> = .second(true, size)
 
         switch value {
         case .first:
