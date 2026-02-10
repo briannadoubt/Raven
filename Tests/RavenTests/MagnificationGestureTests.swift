@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive test suite for MagnificationGesture.
 ///

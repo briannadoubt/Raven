@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive Phase 2 verification tests that validate interactive apps work.
 ///

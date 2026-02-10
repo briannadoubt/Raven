@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Simplified verification tests for @Observable and @Bindable
 /// These tests verify the basic functionality works correctly

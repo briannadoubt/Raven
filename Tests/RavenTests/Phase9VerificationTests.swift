@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Phase 9 Verification: Integration Tests for Observable, ContentUnavailableView, and Modifiers
 ///

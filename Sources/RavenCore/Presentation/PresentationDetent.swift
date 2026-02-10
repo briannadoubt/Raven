@@ -267,7 +267,7 @@ extension PresentationDetent {
     ///
     /// - Parameter context: The context providing maximum available height.
     /// - Returns: The resolved height in points.
-    internal func resolvedHeight(in context: Context) -> Double {
+    public func resolvedHeight(in context: Context) -> Double {
         switch type {
         case .large:
             return context.maxDetentValue

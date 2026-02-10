@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive tests for Track D.1: Enhanced List Features
 ///

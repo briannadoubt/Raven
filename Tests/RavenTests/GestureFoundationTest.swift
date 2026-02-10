@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Quick verification tests for gesture foundation.
 @Suite("Gesture Foundation Tests")

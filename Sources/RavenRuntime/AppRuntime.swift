@@ -1,6 +1,6 @@
 import JavaScriptKit
 import JavaScriptEventLoop
-@_exported import Raven
+import RavenCore
 import Foundation
 
 /// The main runtime coordinator for Raven apps.

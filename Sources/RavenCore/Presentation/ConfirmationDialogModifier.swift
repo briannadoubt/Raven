@@ -25,7 +25,7 @@ import Foundation
 /// }
 /// ```
 @MainActor
-struct BasicConfirmationDialogModifier<Actions: View>: ViewModifier {
+public struct BasicConfirmationDialogModifier<Actions: View>: ViewModifier {
     /// The title of the confirmation dialog
     let title: String
 
@@ -64,7 +64,7 @@ struct BasicConfirmationDialogModifier<Actions: View>: ViewModifier {
         self.actions = actions
     }
 
-    func body(content: Content) -> some View {
+    public func body(content: Content) -> some View {
         content
             .onChange(of: isPresented) { newValue in
                 if newValue {

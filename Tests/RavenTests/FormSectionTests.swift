@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for Form and Section views to verify their VNode conversion
 /// and proper semantic structure.

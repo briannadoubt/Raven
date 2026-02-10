@@ -15,13 +15,6 @@ let package = Package(
             name: "Raven",
             targets: ["Raven"]
         ),
-        // Umbrella module intended for WASI apps:
-        // re-exports Raven + RavenRuntime + Foundation so apps can just `import SwiftUI`
-        // when using SwiftPM `moduleAliases` (and avoid importing RavenRuntime directly).
-        .library(
-            name: "RavenSwiftUI",
-            targets: ["RavenSwiftUI"]
-        ),
         // Runtime support library
         .library(
             name: "RavenRuntime",
@@ -48,15 +41,15 @@ let package = Package(
             path: "Sources/RavenAssetSupport"
         ),
 
-        // Main Raven library with SwiftUI API
+        // Core Raven library with SwiftUI API (views, modifiers, VDOM, state).
         .target(
-            name: "Raven",
+            name: "RavenCore",
             dependencies: [
                 "RavenAssetSupport",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
-            path: "Sources/Raven",
+            path: "Sources/RavenCore",
             exclude: [
                 "Rendering/Virtualization/README.md",
                 "Accessibility/QUICK_REFERENCE.md",
@@ -78,21 +71,21 @@ let package = Package(
             ]
         ),
 
-        // SwiftUI umbrella module (no cycles): depends on Raven + RavenRuntime.
+        // Umbrella module: "import Raven" should pull in both the API surface and runtime.
         .target(
-            name: "RavenSwiftUI",
+            name: "Raven",
             dependencies: [
-                "Raven",
+                "RavenCore",
                 "RavenRuntime"
             ],
-            path: "Sources/RavenSwiftUI"
+            path: "Sources/Raven"
         ),
 
         // Runtime support library
         .target(
             name: "RavenRuntime",
             dependencies: [
-                "Raven",
+                "RavenCore",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
@@ -118,7 +111,7 @@ let package = Package(
         // Core Raven tests
         .testTarget(
             name: "RavenTests",
-            dependencies: ["Raven", "RavenAssetSupport"],
+            dependencies: ["Raven", "RavenCore", "RavenAssetSupport"],
             path: "Tests/RavenTests",
             swiftSettings: []
         ),

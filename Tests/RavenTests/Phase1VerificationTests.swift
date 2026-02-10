@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive Phase 1 verification tests that validate the entire pipeline
 /// from View to VNode.

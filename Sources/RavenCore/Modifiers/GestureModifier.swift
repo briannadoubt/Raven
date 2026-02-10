@@ -390,7 +390,7 @@ struct _GestureAttachment<Content: View, G: Gesture>: View, PrimitiveView, Senda
 /// - Parameter gesture: The gesture to map.
 /// - Returns: An array of event names needed for the gesture.
 @MainActor
-func eventNamesForGesture<G: Gesture>(_ gesture: G) -> [String] {
+public func eventNamesForGesture<G: Gesture>(_ gesture: G) -> [String] {
     let gestureTypeName = String(describing: type(of: gesture))
 
     // Map gesture types to their required events

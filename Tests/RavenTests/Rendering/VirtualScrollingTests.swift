@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive tests for the Virtual Scrolling System (Track A.1).
 ///

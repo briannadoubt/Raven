@@ -101,9 +101,9 @@ import Foundation
 /// - ``View/transition(_:)``
 public struct AnyTransition: Sendable, Hashable {
     /// The internal representation of the transition behavior.
-    internal let storage: Storage
+    public let storage: Storage
 
-    internal indirect enum Storage: Sendable, Hashable {
+    public indirect enum Storage: Sendable, Hashable {
         /// No transition effect.
         case identity
 
@@ -656,7 +656,7 @@ extension AnyTransition {
     /// keyframe animations into the page's stylesheet.
     ///
     /// - Returns: CSS keyframe definitions.
-    internal func cssKeyframes() -> String {
+    public func cssKeyframes() -> String {
         switch storage {
         case .identity:
             return ""

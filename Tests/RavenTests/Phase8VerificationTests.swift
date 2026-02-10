@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Phase 8 Verification: Form Controls and Interactive Elements
 ///
