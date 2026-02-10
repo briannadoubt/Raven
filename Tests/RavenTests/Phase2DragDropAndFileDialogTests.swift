@@ -21,6 +21,10 @@ final class Phase2FakeRenderContext: _RenderContext {
         return VNode.element("div", props: [:], children: [])
     }
 
+    func renderChildWithPreferences(_ view: any View) -> (VNode, PreferenceValues) {
+        (renderChild(view), PreferenceValues())
+    }
+
     func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID {
         _ = action
         counter += 1
@@ -39,6 +43,10 @@ final class Phase2FakeRenderContext: _RenderContext {
 
     func persistentState<T: AnyObject>(create: () -> T) -> T {
         create()
+    }
+
+    func enqueuePostRender(_ action: @escaping @Sendable @MainActor () -> Void) {
+        action()
     }
 
     // Generic helper to render composite views in tests.
