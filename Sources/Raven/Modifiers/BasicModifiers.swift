@@ -89,9 +89,18 @@ public struct _FrameView<Content: View>: View, PrimitiveView, Sendable {
     @MainActor public func toVNode() -> VNode {
         var props: [String: VProperty] = [:]
 
+        // SwiftUI default behavior: content is centered within the frame.
+        // Using flexbox also makes fixed-size frames participate better in parent flex layouts.
+        props["display"] = .style(name: "display", value: "flex")
+        props["align-items"] = .style(name: "align-items", value: "center")
+        props["justify-content"] = .style(name: "justify-content", value: "center")
+        props["box-sizing"] = .style(name: "box-sizing", value: "border-box")
+
         // Add size styles
         if let width = width {
             props["width"] = .style(name: "width", value: "\(width)px")
+            // A fixed frame should not collapse under flexbox pressure.
+            props["flex-shrink"] = .style(name: "flex-shrink", value: "0")
         }
 
         if let height = height {

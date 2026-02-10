@@ -18,7 +18,10 @@ actor HTTPServer {
     private let hotReloadPort: Int
 
     /// Pre-generated HTML content to serve for index.html requests
-    private let generatedHTML: String?
+    private var generatedHTML: String?
+
+    /// Optional asset manifest injection script (for custom HTML served from disk)
+    private var assetInjectionScript: String?
 
     /// Network listener
     #if canImport(Network)
@@ -27,6 +30,11 @@ actor HTTPServer {
 
     /// Server running state
     private var isRunning = false
+    
+    #if canImport(Network)
+    /// Used to await NWListener readiness so we can fail fast on port conflicts.
+    private var startContinuation: CheckedContinuation<Void, Error>?
+    #endif
 
     /// MIME type mapping
     private let mimeTypes: [String: String] = [
@@ -50,12 +58,30 @@ actor HTTPServer {
     ///   - serveDirectory: Directory containing files to serve
     ///   - injectHotReload: Whether to inject hot reload script into HTML
     ///   - hotReloadPort: Port of the hot reload WebSocket server
-    init(port: Int, serveDirectory: String, injectHotReload: Bool = true, hotReloadPort: Int = 35729, generatedHTML: String? = nil) {
+    init(
+        port: Int,
+        serveDirectory: String,
+        injectHotReload: Bool = true,
+        hotReloadPort: Int = 35729,
+        generatedHTML: String? = nil,
+        assetInjectionScript: String? = nil
+    ) {
         self.port = port
         self.serveDirectory = serveDirectory
         self.injectHotReload = injectHotReload
         self.hotReloadPort = hotReloadPort
         self.generatedHTML = generatedHTML
+        self.assetInjectionScript = assetInjectionScript
+    }
+
+    /// Updates the HTML string used for `/index.html` when serving generated HTML.
+    func updateGeneratedHTML(_ html: String?) {
+        self.generatedHTML = html
+    }
+
+    /// Updates the asset manifest injection script used for served HTML.
+    func updateAssetInjectionScript(_ script: String?) {
+        self.assetInjectionScript = script
     }
 
     /// Start the HTTP server
@@ -69,33 +95,54 @@ actor HTTPServer {
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
 
-        listener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: UInt16(port)))
+        let newListener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: UInt16(port)))
+        listener = newListener
 
-        listener?.stateUpdateHandler = { [port] state in
-            switch state {
-            case .ready:
-                print("[HTTPServer] Server ready on port \(port)")
-            case .failed(let error):
-                print("[HTTPServer] Server failed: \(error)")
-            case .cancelled:
-                print("[HTTPServer] Server cancelled")
-            default:
-                break
-            }
+        // Bridge NWListener state into the actor so we can deterministically throw when the port is in use.
+        newListener.stateUpdateHandler = { [weak self, port] state in
+            Task { await self?.handleListenerStateUpdate(state, port: port) }
         }
 
-        listener?.newConnectionHandler = { [weak self] connection in
+        newListener.newConnectionHandler = { [weak self] connection in
             Task {
                 await self?.handleConnection(connection)
             }
         }
 
-        listener?.start(queue: .main)
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            self.startContinuation = cont
+            newListener.start(queue: .main)
+        }
+        // Mark running only after the listener is actually ready.
         isRunning = true
         #else
         throw HTTPServerError.networkFrameworkUnavailable
         #endif
     }
+    
+    #if canImport(Network)
+    private func handleListenerStateUpdate(_ state: NWListener.State, port: Int) {
+        switch state {
+        case .ready:
+            print("[HTTPServer] Server ready on port \(port)")
+            startContinuation?.resume()
+            startContinuation = nil
+        case .failed(let error):
+            print("[HTTPServer] Server failed: \(error)")
+            startContinuation?.resume(throwing: error)
+            startContinuation = nil
+        case .cancelled:
+            print("[HTTPServer] Server cancelled")
+            // If we were still starting up, treat cancellation as an error.
+            if let cont = startContinuation {
+                cont.resume(throwing: CancellationError())
+                startContinuation = nil
+            }
+        default:
+            break
+        }
+    }
+    #endif
 
     /// Stop the HTTP server
     func stop() {
@@ -272,11 +319,18 @@ actor HTTPServer {
         let pathExtension = (path as NSString).pathExtension
         let contentType = mimeTypes[pathExtension] ?? "application/octet-stream"
 
-        // Inject hot reload script for HTML files
+        // Inject scripts for HTML files
         var responseData = fileData
-        if injectHotReload && pathExtension == "html" {
+        if pathExtension == "html" && (injectHotReload || assetInjectionScript != nil) {
             if let htmlString = String(data: fileData, encoding: .utf8) {
-                let hotReloadScript = """
+                var injectedHTML = htmlString
+
+                if let assetScript = assetInjectionScript, !assetScript.isEmpty {
+                    injectedHTML = HTMLInjector.injectAssetScriptIfNeeded(html: injectedHTML, script: assetScript)
+                }
+
+                if injectHotReload {
+                    let hotReloadScript = """
 
                 <script>
                 // Hot reload client
@@ -308,11 +362,12 @@ actor HTTPServer {
                 </script>
                 """
 
-                // Inject before closing </body> tag
-                let injectedHTML = htmlString.replacingOccurrences(
-                    of: "</body>",
-                    with: "\(hotReloadScript)\n</body>"
-                )
+                    // Inject before closing </body> tag
+                    injectedHTML = injectedHTML.replacingOccurrences(
+                        of: "</body>",
+                        with: "\(hotReloadScript)\n</body>"
+                    )
+                }
 
                 if let injectedData = injectedHTML.data(using: .utf8) {
                     responseData = injectedData
@@ -374,6 +429,7 @@ actor HTTPServer {
         })
     }
     #endif
+
 }
 
 // MARK: - Errors

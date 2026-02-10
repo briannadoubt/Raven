@@ -1,4 +1,5 @@
 import Foundation
+import RavenAssetSupport
 
 // MARK: - Gradient Types
 
@@ -93,6 +94,14 @@ public struct Color: View, PrimitiveView, Sendable, Hashable {
     }
 
     // MARK: - Initializers
+
+    /// Creates a color from a named asset-catalog color.
+    ///
+    /// This resolves against the asset manifest injected by RavenCLI and maps to a CSS variable:
+    /// `var(--raven-color-<assetID>)`.
+    nonisolated public init(_ assetName: String) {
+        self.storage = .cssVariable("raven-color-\(AssetID.fromName(assetName))")
+    }
 
     /// Creates a color from RGB values.
     ///

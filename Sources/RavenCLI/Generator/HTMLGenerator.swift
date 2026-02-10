@@ -48,6 +48,11 @@ struct HTMLGenerator: Sendable {
             html += "    <script src=\"runtime.js\"></script>\n\n"
         }
 
+        // Asset manifest + CSS variables/icons injection (must run before Swift main).
+        if let assetScript = config.assetInjectionScript, !assetScript.isEmpty {
+            html += "    <script>\n\(assetScript)\n    </script>\n\n"
+        }
+
         // Raven event handler helpers
         html += """
             <script>

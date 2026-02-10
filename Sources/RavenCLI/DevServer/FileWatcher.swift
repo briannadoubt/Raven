@@ -9,6 +9,12 @@ actor FileWatcher {
     /// Paths to watch for changes
     private let paths: [String]
 
+    /// File extensions to watch (lowercase, without leading dot).
+    private let fileExtensions: Set<String>
+
+    /// Exact file names to watch regardless of extension.
+    private let fileNames: Set<String>
+
     /// Handler to call when changes are detected
     private let onChange: ChangeHandler
 
@@ -26,8 +32,15 @@ actor FileWatcher {
     /// - Parameters:
     ///   - path: Directory path to watch for changes
     ///   - onChange: Callback to invoke when changes are detected
-    init(path: String, onChange: @escaping ChangeHandler) {
+    init(
+        path: String,
+        fileExtensions: Set<String> = ["swift"],
+        fileNames: Set<String> = [],
+        onChange: @escaping ChangeHandler
+    ) {
         self.paths = [path]
+        self.fileExtensions = fileExtensions
+        self.fileNames = fileNames
         self.onChange = onChange
         self.debouncer = ChangeDebouncer(delayMilliseconds: 100) {
             await onChange()
@@ -38,8 +51,15 @@ actor FileWatcher {
     /// - Parameters:
     ///   - paths: Directory paths to watch for changes
     ///   - onChange: Callback to invoke when changes are detected
-    init(paths: [String], onChange: @escaping ChangeHandler) {
+    init(
+        paths: [String],
+        fileExtensions: Set<String> = ["swift"],
+        fileNames: Set<String> = [],
+        onChange: @escaping ChangeHandler
+    ) {
         self.paths = paths
+        self.fileExtensions = fileExtensions
+        self.fileNames = fileNames
         self.onChange = onChange
         self.debouncer = ChangeDebouncer(delayMilliseconds: 100) {
             await onChange()
@@ -72,7 +92,7 @@ actor FileWatcher {
 
                 guard !Task.isCancelled, let self = self else { break }
 
-                let currentDates = await self.collectFileModificationDates()
+                let currentDates = self.collectFileModificationDates()
                 let oldDates = await self.fileModificationDates
 
                 if Self.hasChanges(old: oldDates, new: currentDates) {
@@ -117,7 +137,11 @@ actor FileWatcher {
 
             let files = enumerator.allObjects.compactMap { $0 as? String }
             for file in files {
-                guard file.hasSuffix(".swift") else { continue }
+                let last = (file as NSString).lastPathComponent
+                let ext = (last as NSString).pathExtension.lowercased()
+                if !fileNames.contains(last) && !fileExtensions.contains(ext) {
+                    continue
+                }
 
                 let fullPath = (path as NSString).appendingPathComponent(file)
                 if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),

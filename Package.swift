@@ -35,10 +35,17 @@ let package = Package(
     targets: [
         // MARK: - Main Library Targets
 
+        // Shared support for asset catalogs (IDs, normalization) used by both CLI and runtime.
+        .target(
+            name: "RavenAssetSupport",
+            path: "Sources/RavenAssetSupport"
+        ),
+
         // Main Raven library with SwiftUI API
         .target(
             name: "Raven",
             dependencies: [
+                "RavenAssetSupport",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
@@ -61,13 +68,6 @@ let package = Package(
                 "Performance/README.md",
                 "Views/Layout/DisclosureGroup.css",
                 "Views/Layout/ListFeatures/README.md",
-            ],
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport"),
-                // Size optimization for release builds
-                .unsafeFlags(["-Osize"], .when(configuration: .release)),
-                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
             ]
         ),
 
@@ -80,13 +80,7 @@ let package = Package(
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
             path: "Sources/RavenRuntime",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport"),
-                // Size optimization for release builds
-                .unsafeFlags(["-Osize"], .when(configuration: .release)),
-                .unsafeFlags(["-whole-module-optimization"], .when(configuration: .release)),
-            ]
+            swiftSettings: []
         ),
 
         // CLI executable for build tooling
@@ -94,14 +88,12 @@ let package = Package(
             name: "RavenCLI",
             dependencies: [
                 "Raven",
+                "RavenAssetSupport",
                 "RavenRuntime",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/RavenCLI",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // MARK: - Test Targets
@@ -109,12 +101,9 @@ let package = Package(
         // Core Raven tests
         .testTarget(
             name: "RavenTests",
-            dependencies: ["Raven"],
+            dependencies: ["Raven", "RavenAssetSupport"],
             path: "Tests/RavenTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // VirtualDOM-specific tests
@@ -122,10 +111,7 @@ let package = Package(
             name: "VirtualDOMTests",
             dependencies: ["Raven"],
             path: "Tests/VirtualDOMTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // Integration tests
@@ -136,23 +122,18 @@ let package = Package(
                 "RavenRuntime"
             ],
             path: "Tests/IntegrationTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // RavenCLI tests
         .testTarget(
             name: "RavenCLITests",
             dependencies: [
-                "RavenCLI"
+                "RavenCLI",
+                "RavenAssetSupport",
             ],
             path: "Tests/RavenCLI",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         )
     ]
 )

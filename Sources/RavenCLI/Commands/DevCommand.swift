@@ -96,6 +96,10 @@ struct DevCommand: AsyncParsableCommand {
         let initialBuildTime = Date().timeIntervalSince(startTime)
         print("  Build complete (\(String(format: "%.2fs", initialBuildTime)))")
 
+        // Compile asset catalogs (app + dependencies) into public/ after the first build,
+        // so SwiftPM has resolved dependencies and `.build/workspace-state.json` exists.
+        let initialAssets = try compileAssetCatalogs(projectPath: projectPath, publicPath: publicPath)
+
         // Generate HTML if no custom index.html exists
         var generatedHTML: String? = nil
         if !hasCustomHTML {
@@ -112,7 +116,8 @@ struct DevCommand: AsyncParsableCommand {
                 wasmFile: wasmFileName,
                 isDevelopment: true,
                 hotReloadPort: hotReloadPort,
-                javaScriptKitRuntimeSource: jsKitRuntime
+                javaScriptKitRuntimeSource: jsKitRuntime,
+                assetInjectionScript: initialAssets.injectionScript
             )
 
             let generator = HTMLGenerator()
@@ -127,7 +132,8 @@ struct DevCommand: AsyncParsableCommand {
             serveDirectory: publicPath,
             injectHotReload: hasCustomHTML, // Only inject for custom HTML; generated HTML already has it
             hotReloadPort: hotReloadPort,
-            generatedHTML: generatedHTML
+            generatedHTML: generatedHTML,
+            assetInjectionScript: initialAssets.injectionScript
         )
         try await httpServer.start()
         print("  HTTP server started on http://\(host):\(port)")
@@ -143,6 +149,7 @@ struct DevCommand: AsyncParsableCommand {
         let sourcesPath = (projectPath as NSString).appendingPathComponent("Sources")
 
         var watchPaths: [String] = [sourcesPath]
+        watchPaths.append(contentsOf: initialAssets.discoveredCatalogPaths)
         if maintenance {
             #if DEBUG
             // DevCommand.swift lives at Sources/RavenCLI/Commands/DevCommand.swift.
@@ -166,7 +173,8 @@ struct DevCommand: AsyncParsableCommand {
             #endif
         }
 
-        let debouncer = ChangeDebouncer(delayMilliseconds: 300) { [projectPath, publicPath, hasCustomHTML, hotReloadServer] in
+        let capturedHotReloadPort = hotReloadPort
+        let debouncer = ChangeDebouncer(delayMilliseconds: 300) { [projectPath, publicPath, hasCustomHTML, hotReloadServer, httpServer, targetName, capturedHotReloadPort] in
             print("\n[File Change Detected] Rebuilding...")
             let rebuildStart = Date()
 
@@ -180,6 +188,27 @@ struct DevCommand: AsyncParsableCommand {
                     incremental: true,
                     copyWasmToPublic: true
                 )
+
+                // Re-compile asset catalogs on each rebuild to keep manifest and injected CSS/icons in sync.
+                let assets = try self.compileAssetCatalogs(projectPath: projectPath, publicPath: publicPath)
+                await httpServer.updateAssetInjectionScript(assets.injectionScript)
+                if !hasCustomHTML {
+                    // Regenerate generated HTML so the inlined manifest stays fresh.
+                    let jsKitRuntime = WasmCompiler.findJavaScriptKitRuntime(in: projectPath)
+                    let wasmFileName = targetName.map { "\($0).wasm" } ?? "app.wasm"
+                    let htmlConfig = HTMLConfig(
+                        projectName: targetName ?? "RavenApp",
+                        wasmFile: wasmFileName,
+                        isDevelopment: true,
+                        hotReloadPort: capturedHotReloadPort,
+                        javaScriptKitRuntimeSource: jsKitRuntime,
+                        assetInjectionScript: assets.injectionScript
+                    )
+                    let generator = HTMLGenerator()
+                    let newHTML = generator.generate(config: htmlConfig)
+                    await httpServer.updateGeneratedHTML(newHTML)
+                }
+
                 let rebuildTime = Date().timeIntervalSince(rebuildStart)
                 print("  Rebuild complete (\(String(format: "%.2fs", rebuildTime)))")
 
@@ -191,7 +220,24 @@ struct DevCommand: AsyncParsableCommand {
             }
         }
 
-        let fileWatcher = FileWatcher(paths: watchPaths) {
+        let assetExtensions: Set<String> = [
+            "swift",
+            "json",
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "svg",
+            "pdf",
+            "txt",
+            "data",
+            "bin",
+        ]
+        let fileWatcher = FileWatcher(
+            paths: watchPaths,
+            fileExtensions: assetExtensions,
+            fileNames: ["Contents.json"]
+        ) {
             await debouncer.trigger()
         }
         try await fileWatcher.start()
@@ -265,6 +311,18 @@ struct DevCommand: AsyncParsableCommand {
             let wasmDestination = (publicPath as NSString).appendingPathComponent(wasmFileName)
             try copyFile(from: wasmPath.path, to: wasmDestination)
         }
+    }
+
+    private func compileAssetCatalogs(projectPath: String, publicPath: String) throws -> AssetCatalogCompiler.Result {
+        if verbose {
+            print("  Compiling asset catalogs...")
+        }
+        let compiler = AssetCatalogCompiler(projectPath: projectPath, outputRoot: publicPath, verbose: verbose)
+        let result = try compiler.compile()
+        if verbose, !result.discoveredCatalogPaths.isEmpty {
+            print("  ✓ Discovered \(result.discoveredCatalogPaths.count) asset catalog(s)")
+        }
+        return result
     }
 
     private func validateProjectStructure(at path: String) throws {

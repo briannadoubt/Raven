@@ -22,6 +22,11 @@ actor WebSocketServer {
 
     /// Server running state
     private var isRunning = false
+    
+    #if canImport(Network)
+    /// Used to await NWListener readiness so we can fail fast on port conflicts.
+    private var startContinuation: CheckedContinuation<Void, Error>?
+    #endif
 
     /// Represents a connected SSE client
     private struct Client: Sendable {
@@ -48,28 +53,25 @@ actor WebSocketServer {
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
 
-        listener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: UInt16(port)))
+        let newListener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: UInt16(port)))
+        listener = newListener
 
-        listener?.stateUpdateHandler = { [port] state in
-            switch state {
-            case .ready:
-                print("[WebSocketServer] Server ready on port \(port)")
-            case .failed(let error):
-                print("[WebSocketServer] Server failed: \(error)")
-            case .cancelled:
-                print("[WebSocketServer] Server cancelled")
-            default:
-                break
-            }
+        // Bridge NWListener state into the actor so we can deterministically throw when the port is in use.
+        newListener.stateUpdateHandler = { [weak self, port] state in
+            Task { await self?.handleListenerStateUpdate(state, port: port) }
         }
 
-        listener?.newConnectionHandler = { [weak self] connection in
+        newListener.newConnectionHandler = { [weak self] connection in
             Task {
                 await self?.handleNewConnection(connection)
             }
         }
 
-        listener?.start(queue: .main)
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            self.startContinuation = cont
+            newListener.start(queue: .main)
+        }
+        // Mark running only after the listener is actually ready.
         isRunning = true
         print("[WebSocketServer] Started SSE server on port \(port)")
         #else
@@ -78,6 +80,29 @@ actor WebSocketServer {
         ])
         #endif
     }
+    
+    #if canImport(Network)
+    private func handleListenerStateUpdate(_ state: NWListener.State, port: Int) {
+        switch state {
+        case .ready:
+            print("[WebSocketServer] Server ready on port \(port)")
+            startContinuation?.resume()
+            startContinuation = nil
+        case .failed(let error):
+            print("[WebSocketServer] Server failed: \(error)")
+            startContinuation?.resume(throwing: error)
+            startContinuation = nil
+        case .cancelled:
+            print("[WebSocketServer] Server cancelled")
+            if let cont = startContinuation {
+                cont.resume(throwing: CancellationError())
+                startContinuation = nil
+            }
+        default:
+            break
+        }
+    }
+    #endif
 
     /// Stop the SSE server
     func stop() {
@@ -198,7 +223,7 @@ actor WebSocketServer {
 
         // Send initial connection message
         Task {
-            await sendToClient(client, message: "connected")
+            sendToClient(client, message: "connected")
         }
 
         // Monitor connection state

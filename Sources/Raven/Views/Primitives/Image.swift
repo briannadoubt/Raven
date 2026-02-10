@@ -106,12 +106,39 @@ public struct Image: View, PrimitiveView, Sendable {
     private func rasterImageVNode() -> VNode {
         var props: [String: VProperty] = [:]
 
+        // Images should respect parent layout constraints (e.g. `.frame(width:height:)`).
+        // Without these, the browser uses the image's intrinsic size which can overflow
+        // and overlap neighboring views in flex layouts.
+        props["display"] = .style(name: "display", value: "block")
+        props["max-width"] = .style(name: "max-width", value: "100%")
+        props["max-height"] = .style(name: "max-height", value: "100%")
+        props["object-fit"] = .style(name: "object-fit", value: "contain")
+
         let srcValue: String
         switch source {
         case .named(let name):
-            // Named images could be resolved to a path.
-            // For now, treat as a relative path to an assets folder.
-            srcValue = "/assets/\(name)"
+            // Support Xcode symbol sets ("Symbol Image Set") for custom SF Symbols.
+            // We render these as a CSS mask so they inherit `currentColor` like system symbols.
+            if let symbol = AssetRegistry.resolveSymbol(name) {
+                return symbolMaskVNode(symbolURL: symbol.url)
+            }
+            if let resolved = AssetRegistry.resolveImage(name) {
+                srcValue = resolved.src
+                if let srcset = resolved.srcset, !srcset.isEmpty {
+                    let preferredOrder = ["1x", "2x", "3x"]
+                    let orderedKeys = preferredOrder + srcset.keys.filter { !preferredOrder.contains($0) }.sorted()
+                    let parts = orderedKeys.compactMap { key -> String? in
+                        guard let url = srcset[key] else { return nil }
+                        return "\(url) \(key)"
+                    }
+                    if !parts.isEmpty {
+                        props["srcset"] = .attribute(name: "srcset", value: parts.joined(separator: ", "))
+                    }
+                }
+            } else {
+                // Backwards-compatible fallback: treat as a relative path to an assets folder.
+                srcValue = "/assets/\(name)"
+            }
         case .url(let urlString):
             srcValue = urlString
         case .system:
@@ -133,6 +160,39 @@ public struct Image: View, PrimitiveView, Sendable {
         props["loading"] = .attribute(name: "loading", value: "lazy")
 
         return VNode.element("img", props: props, children: [])
+    }
+    
+    @MainActor
+    private func symbolMaskVNode(symbolURL: String) -> VNode {
+        let altText = isDecorative ? "" : (alternativeText ?? extractAltTextFromSource())
+
+        var props: [String: VProperty] = [
+            "display": .style(name: "display", value: "inline-block"),
+            "width": .style(name: "width", value: "24px"),
+            "height": .style(name: "height", value: "24px"),
+            "max-width": .style(name: "max-width", value: "100%"),
+            "max-height": .style(name: "max-height", value: "100%"),
+            "background-color": .style(name: "background-color", value: "currentColor"),
+            "vertical-align": .style(name: "vertical-align", value: "middle"),
+            "-webkit-mask-image": .style(name: "-webkit-mask-image", value: "url('\(symbolURL)')"),
+            "-webkit-mask-repeat": .style(name: "-webkit-mask-repeat", value: "no-repeat"),
+            "-webkit-mask-position": .style(name: "-webkit-mask-position", value: "center"),
+            "-webkit-mask-size": .style(name: "-webkit-mask-size", value: "contain"),
+            "mask-image": .style(name: "mask-image", value: "url('\(symbolURL)')"),
+            "mask-repeat": .style(name: "mask-repeat", value: "no-repeat"),
+            "mask-position": .style(name: "mask-position", value: "center"),
+            "mask-size": .style(name: "mask-size", value: "contain"),
+        ]
+
+        if isDecorative {
+            props["role"] = .attribute(name: "role", value: "presentation")
+            props["aria-hidden"] = .attribute(name: "aria-hidden", value: "true")
+        } else {
+            props["role"] = .attribute(name: "role", value: "img")
+            props["aria-label"] = .attribute(name: "aria-label", value: altText)
+        }
+
+        return VNode.element("span", props: props, children: [])
     }
 
     /// Render a subset of SF-Symbol-like system images as inline SVG.

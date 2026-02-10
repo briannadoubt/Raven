@@ -51,10 +51,11 @@ struct BuildCommand: ParsableCommand {
             print("  Compress: \(compress)")
         }
 
-        // Determine number of steps
-        var stepCount = 6
+        // Determine number of steps (for progress output)
+        // Base: validate, compile, copy wasm, copy assets, compile catalogs, prepare index, finalize.
+        var stepCount = 7
+        if stripDebug && !debug { stepCount += 1 }
         if optimize { stepCount += 1 }
-        if stripDebug { stepCount += 1 }
         if compress { stepCount += 1 }
         if reportSize { stepCount += 1 }
         let totalSteps = stepCount
@@ -87,15 +88,20 @@ struct BuildCommand: ParsableCommand {
             try optimizeWasm(at: wasmOutputPath)
         }
 
-        // Step 6: Generate index.html
-        currentStep += 1
-        print("[\(currentStep)/\(totalSteps)] Generating index.html...")
-        try generateHTML(outputPath: outputPath, projectPath: inputPath)
-
-        // Step 7: Copy Public/ assets to dist/
+        // Step 6: Copy Public/ assets to dist/
         currentStep += 1
         print("[\(currentStep)/\(totalSteps)] Copying assets...")
         try bundleAssets(from: inputPath, to: outputPath)
+
+        // Step 7: Compile asset catalogs (app + dependencies) into dist/
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Compiling asset catalogs...")
+        let assetResult = try compileAssetCatalogs(projectPath: inputPath, outputPath: outputPath)
+
+        // Step 8: Ensure index.html exists and includes the asset manifest injection
+        currentStep += 1
+        print("[\(currentStep)/\(totalSteps)] Preparing index.html...")
+        try ensureIndexHTML(outputPath: outputPath, projectPath: inputPath, assetInjectionScript: assetResult.injectionScript)
 
         // Step 8: Compress (if requested)
         if compress {
@@ -206,43 +212,8 @@ struct BuildCommand: ParsableCommand {
         }
     }
 
-    private func generateHTML(outputPath: String, projectPath: String) throws {
-        // Extract project name from path or Package.swift
-        let projectName = extractProjectName(from: projectPath)
-
-        // Find JavaScriptKit runtime source for inlining
-        let jsKitRuntime = WasmCompiler.findJavaScriptKitRuntime(in: projectPath)
-        if verbose {
-            if jsKitRuntime != nil {
-                print("  ✓ Found JavaScriptKit runtime for inlining")
-            } else {
-                print("  ⚠ JavaScriptKit runtime not found, HTML will use external runtime.js")
-            }
-        }
-
-        let config = HTMLConfig(
-            projectName: projectName,
-            title: projectName,
-            wasmFile: "app.wasm",
-            cssFiles: checkForStylesheet(in: projectPath) ? ["styles.css"] : [],
-            metaTags: [
-                "description": "Built with Raven - SwiftUI to DOM",
-                "generator": "Raven 0.10.0"
-            ],
-            javaScriptKitRuntimeSource: jsKitRuntime
-        )
-
-        let generator = HTMLGenerator()
-        let htmlPath = (outputPath as NSString).appendingPathComponent("index.html")
-        try generator.writeToFile(config: config, path: htmlPath)
-
-        if verbose {
-            print("  ✓ Generated index.html")
-        }
-    }
-
     private func bundleAssets(from inputPath: String, to outputPath: String) throws {
-        let publicPath = (inputPath as NSString).appendingPathComponent("Public")
+        let publicPath = resolvePublicDirectory(in: inputPath)
         let bundler = AssetBundler(verbose: verbose)
 
         let result = try bundler.bundleAssets(from: publicPath, to: outputPath)
@@ -264,6 +235,60 @@ struct BuildCommand: ParsableCommand {
                 }
             }
         }
+    }
+
+    private func compileAssetCatalogs(projectPath: String, outputPath: String) throws -> AssetCatalogCompiler.Result {
+        let compiler = AssetCatalogCompiler(projectPath: projectPath, outputRoot: outputPath, verbose: verbose)
+        return try compiler.compile()
+    }
+
+    private func ensureIndexHTML(outputPath: String, projectPath: String, assetInjectionScript: String) throws {
+        let indexPath = (outputPath as NSString).appendingPathComponent("index.html")
+        let fm = FileManager.default
+        if fm.fileExists(atPath: indexPath) {
+            // Custom HTML copied from Public/; inject script into file.
+            let html = try String(contentsOfFile: indexPath, encoding: .utf8)
+            let injected = HTMLInjector.injectAssetScriptIfNeeded(html: html, script: assetInjectionScript)
+            try injected.write(toFile: indexPath, atomically: true, encoding: .utf8)
+            return
+        }
+
+        // No custom HTML present; generate our own with injection.
+        let projectName = extractProjectName(from: projectPath)
+        let jsKitRuntime = WasmCompiler.findJavaScriptKitRuntime(in: projectPath)
+
+        let config = HTMLConfig(
+            projectName: projectName,
+            title: projectName,
+            wasmFile: "app.wasm",
+            cssFiles: checkForStylesheet(in: projectPath) ? ["styles.css"] : [],
+            metaTags: [
+                "description": "Built with Raven - SwiftUI to DOM",
+                "generator": "Raven 0.10.0"
+            ],
+            javaScriptKitRuntimeSource: jsKitRuntime,
+            assetInjectionScript: assetInjectionScript
+        )
+
+        let generator = HTMLGenerator()
+        try generator.writeToFile(config: config, path: indexPath)
+    }
+
+    /// Finds the public/ directory in the project (checks lowercase then uppercase).
+    private func resolvePublicDirectory(in projectPath: String) -> String {
+        let fileManager = FileManager.default
+
+        let lowercasePath = (projectPath as NSString).appendingPathComponent("public")
+        if fileManager.fileExists(atPath: lowercasePath) {
+            return lowercasePath
+        }
+
+        let uppercasePath = (projectPath as NSString).appendingPathComponent("Public")
+        if fileManager.fileExists(atPath: uppercasePath) {
+            return uppercasePath
+        }
+
+        return uppercasePath
     }
 
     private func optimizeWasm(at wasmPath: String) throws {
