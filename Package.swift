@@ -54,6 +54,7 @@ let package = Package(
             name: "RavenCore",
             dependencies: [
                 "RavenAssetSupport",
+                "RavenPreviewMacros",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
@@ -110,6 +111,18 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
             ],
             path: "Sources/TipKitMacros"
+        ),
+
+        // SwiftUI Preview compatibility shims (including the `#Preview` macro).
+        .macro(
+            name: "RavenPreviewMacros",
+            dependencies: [
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
+            ],
+            path: "Sources/RavenPreviewMacros"
         ),
 
         // Runtime support library
