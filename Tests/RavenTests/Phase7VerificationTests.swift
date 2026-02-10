@@ -240,7 +240,14 @@ import Foundation
             let filePath = examples.appendingPathComponent(file)
             let content = try String(contentsOf: filePath, encoding: .utf8)
 
-            #expect(content.contains("import Raven"))
+            if file.hasPrefix("TodoApp/") {
+                // TodoApp is our canonical example for "import SwiftUI" (via SPM `moduleAliases`)
+                // so it should not need to import Raven directly.
+                #expect(content.contains("import SwiftUI"))
+                #expect(!content.contains("import Raven"))
+            } else {
+                #expect(content.contains("import Raven"))
+            }
             exampleCount += 1
         }
 

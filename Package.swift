@@ -15,6 +15,13 @@ let package = Package(
             name: "Raven",
             targets: ["Raven"]
         ),
+        // Umbrella module intended for WASI apps:
+        // re-exports Raven + RavenRuntime + Foundation so apps can just `import SwiftUI`
+        // when using SwiftPM `moduleAliases` (and avoid importing RavenRuntime directly).
+        .library(
+            name: "RavenSwiftUI",
+            targets: ["RavenSwiftUI"]
+        ),
         // Runtime support library
         .library(
             name: "RavenRuntime",
@@ -69,6 +76,16 @@ let package = Package(
                 "Views/Layout/DisclosureGroup.css",
                 "Views/Layout/ListFeatures/README.md",
             ]
+        ),
+
+        // SwiftUI umbrella module (no cycles): depends on Raven + RavenRuntime.
+        .target(
+            name: "RavenSwiftUI",
+            dependencies: [
+                "Raven",
+                "RavenRuntime"
+            ],
+            path: "Sources/RavenSwiftUI"
         ),
 
         // Runtime support library
