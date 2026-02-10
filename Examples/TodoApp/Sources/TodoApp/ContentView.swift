@@ -1128,11 +1128,49 @@ struct DisplayTab: View {
                 }
             }
 
-            ImageDemo()
-            ContentUnavailableDemo()
-            ShapesDemo()
+            // ViewBuilder only supports up to 10 direct components per closure.
+            // Group the remaining demos to avoid "extra argument in call".
+            Group {
+                ScrollTargetDemo()
+                ImageDemo()
+                ContentUnavailableDemo()
+                ShapesDemo()
+            }
         }
         .padding(16)
+    }
+}
+
+// MARK: - Scroll Target Demo
+
+@MainActor
+struct ScrollTargetDemo: View {
+    var body: some View {
+        SectionCard(title: "Scroll Targets") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(0..<6) { index in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Card \(index + 1)")
+                                .font(.headline)
+                                .foregroundColor(Color.label)
+
+                            Text("Swipe to snap")
+                                .font(.caption)
+                                .foregroundColor(Color.secondaryLabel)
+                        }
+                        .padding(12)
+                        .frame(width: 180, height: 90)
+                        .background(Color.systemBackground)
+                        .cornerRadius(10)
+                        .scrollTargetLayout()
+                    }
+                }
+                .padding(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+            }
+            .frame(height: 120)
+            .scrollTargetBehavior(.paging)
+        }
     }
 }
 
@@ -2202,9 +2240,31 @@ struct EffectsTab: View {
         VStack(spacing: 16) {
             VisualEffectsDemo()
             TransformDemo()
+            TimelineScheduleDemo()
             EquatableAndModifierDemo()
         }
         .padding(16)
+    }
+}
+
+// MARK: - Timeline Schedule Demo
+
+@MainActor
+private struct TimelineScheduleDemo: View {
+    var body: some View {
+        SectionCard(title: "Timeline Schedule") {
+            TimelineView<AnyView>(AnimationTimelineSchedule()) { (context: TimelineView<AnyView>.Context) in
+                let ticks = Int(context.date.timeIntervalSince1970 * 10)
+                // Type-erase the built content so TimelineView can infer its generic Content type
+                // without needing to name the concrete, modifier-wrapped type.
+                AnyView(
+                    Text("Live ticks: \(ticks)")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                )
+            }
+            .frame(height: 32)
+        }
     }
 }
 

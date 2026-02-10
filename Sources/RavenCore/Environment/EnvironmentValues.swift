@@ -165,6 +165,21 @@ extension EnvironmentValues {
     }
 }
 
+// MARK: - Scroll Target Behavior
+
+/// Environment key for scroll target behavior.
+private struct ScrollTargetBehaviorKey: EnvironmentKey {
+    static let defaultValue: AnyScrollTargetBehavior = AnyScrollTargetBehavior(.automatic)
+}
+
+extension EnvironmentValues {
+    /// The scroll target behavior for snapping scroll views.
+    public var scrollTargetBehavior: AnyScrollTargetBehavior {
+        get { self[ScrollTargetBehaviorKey.self] }
+        set { self[ScrollTargetBehaviorKey.self] = newValue }
+    }
+}
+
 // MARK: - DisplayScale
 
 /// Environment key for display scale.

@@ -147,6 +147,9 @@ public struct ScrollView<Content: View>: View, PrimitiveView, Sendable {
     /// The scrollable content
     let content: Content
 
+    /// Scroll target snapping behavior (from environment)
+    @Environment(\.scrollTargetBehavior) private var scrollTargetBehavior: AnyScrollTargetBehavior
+
     // MARK: - Initializers
 
     /// Creates a scroll view with configurable axes and indicator visibility.
@@ -240,6 +243,14 @@ public struct ScrollView<Content: View>: View, PrimitiveView, Sendable {
 
             // Also set -ms-overflow-style for IE/Edge
             props["-ms-overflow-style"] = .style(name: "-ms-overflow-style", value: "none")
+        }
+
+        // Apply scroll snapping behavior if configured
+        if let snapType = scrollTargetBehavior.scrollSnapType(for: axes) {
+            props["scroll-snap-type"] = .style(name: "scroll-snap-type", value: snapType)
+        }
+        if let snapStop = scrollTargetBehavior.scrollSnapStop {
+            props["scroll-snap-stop"] = .style(name: "scroll-snap-stop", value: snapStop)
         }
 
         // Return element with empty children - the RenderCoordinator will populate them
