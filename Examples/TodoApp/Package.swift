@@ -23,6 +23,11 @@ let package = Package(
                     name: "Raven",
                     package: "Raven",
                     condition: .when(platforms: [.wasi])
+                ),
+                .product(
+                    name: "TipKit",
+                    package: "Raven",
+                    condition: .when(platforms: [.wasi])
                 )
             ],
             path: "Sources/TodoApp",

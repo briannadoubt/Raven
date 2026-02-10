@@ -1,5 +1,6 @@
 import Foundation
 import Raven
+import TipKit
 
 // MARK: - Unique ID Generation
 
@@ -272,6 +273,31 @@ private struct _TodoBoundsAnchorKey: PreferenceKey {
     }
 }
 
+// MARK: - TipKit (Demo)
+
+private struct _WelcomeTip: Tip {
+    // Keep this demo deterministic across reloads (TipKit Parameters persist by default).
+    @Parameter(.transient) static var hasSeen: Bool = false
+
+    var title: Text { Text("Welcome to Raven") }
+
+    var message: Text? {
+        Text("This is a TipKit-style tip rendered via Raven. It is gated by a @Parameter and a #Rule macro.")
+    }
+
+    var actions: [Tips.Action] {
+        Tips.Action(title: "Got it") {
+            Self.hasSeen = true
+        }
+    }
+
+    var rules: [Tips.Rule] {
+        #Rule(Self.$hasSeen) { hasSeen in
+            hasSeen == false
+        }
+    }
+}
+
 @MainActor
 private struct PreferencesTab: View {
     var body: some View {
@@ -351,6 +377,31 @@ private struct PreferencesTab: View {
                                 .padding(8)
                         }
                     }
+                }
+            }
+
+            Divider()
+
+            Text("TipKit demo")
+                .font(.headline)
+
+            VStack(spacing: 10) {
+                Text("Expected: a popover tip appears on the target until you press \"Got it\".")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+
+                HStack(spacing: 12) {
+                    Text("Tip target")
+                        .padding(12)
+                        .background(Color.accent.opacity(0.15))
+                        .cornerRadius(10)
+                        .popoverTip(_WelcomeTip(), arrowEdge: .bottom)
+
+                    Button("Reset tip") {
+                        _WelcomeTip.hasSeen = false
+                        _WelcomeTip().resetEligibility()
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }

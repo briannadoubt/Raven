@@ -68,14 +68,13 @@ extension View {
         onDismiss: (@MainActor @Sendable () -> Void)? = nil,
         @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
     ) -> some View {
-        modifier(
-            PopoverModifier(
-                isPresented: isPresented,
-                attachmentAnchor: attachmentAnchor,
-                arrowEdge: arrowEdge,
-                onDismiss: onDismiss,
-                content: content
-            )
+        _PopoverPresenter(
+            source: self,
+            isPresented: isPresented,
+            attachmentAnchor: attachmentAnchor,
+            arrowEdge: arrowEdge,
+            onDismiss: onDismiss,
+            content: content
         )
     }
 
@@ -146,14 +145,13 @@ extension View {
         onDismiss: (@MainActor @Sendable () -> Void)? = nil,
         @ViewBuilder content: @escaping @MainActor @Sendable (Item) -> Content
     ) -> some View where Item.ID: Sendable {
-        modifier(
-            PopoverItemModifier(
-                item: item,
-                attachmentAnchor: attachmentAnchor,
-                arrowEdge: arrowEdge,
-                onDismiss: onDismiss,
-                content: content
-            )
+        _PopoverItemPresenter(
+            source: self,
+            item: item,
+            attachmentAnchor: attachmentAnchor,
+            arrowEdge: arrowEdge,
+            onDismiss: onDismiss,
+            content: content
         )
     }
 }

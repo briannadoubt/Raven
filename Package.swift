@@ -2,6 +2,7 @@
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
+import CompilerPluginSupport
 
 let package = Package(
     name: "Raven",
@@ -20,6 +21,11 @@ let package = Package(
             name: "RavenRuntime",
             targets: ["RavenRuntime"]
         ),
+        // TipKit compatibility shims (including macros) for Raven.
+        .library(
+            name: "TipKit",
+            targets: ["TipKit"]
+        ),
         // CLI executable
         .executable(
             name: "raven",
@@ -30,7 +36,9 @@ let package = Package(
         // JavaScriptKit for WASM/JavaScript interop
         .package(url: "https://github.com/swiftwasm/JavaScriptKit.git", exact: "0.19.2"),
         // ArgumentParser for CLI
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
+        // SwiftSyntax for macro implementations (used by TipKit shims).
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "602.0.0")
     ],
     targets: [
         // MARK: - Main Library Targets
@@ -79,6 +87,29 @@ let package = Package(
                 "RavenRuntime"
             ],
             path: "Sources/Raven"
+        ),
+
+        // TipKit API shims for Raven (including macros).
+        //
+        // This is a "compat" module that lets Raven apps compile TipKit-style code
+        // when targeting WASM, where the system TipKit framework isn't available.
+        .target(
+            name: "TipKit",
+            dependencies: [
+                "RavenCore",
+                "TipKitMacros"
+            ],
+            path: "Sources/TipKit"
+        ),
+        .macro(
+            name: "TipKitMacros",
+            dependencies: [
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
+            ],
+            path: "Sources/TipKitMacros"
         ),
 
         // Runtime support library
