@@ -183,6 +183,37 @@ extension _OnChangeView: _CoordinatorRenderable {
     }
 }
 
+/// A view wrapper that monitors value changes and runs an action with old/new values.
+public struct _OnChangeOldNewView<Content: View, V: Equatable & Sendable>: View, PrimitiveView, Sendable {
+    let content: Content
+    let value: V
+    let action: @Sendable @MainActor (_ oldValue: V, _ newValue: V) -> Void
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        // No-op wrapper for the non-coordinator path.
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+extension _OnChangeOldNewView: _CoordinatorRenderable {
+    @MainActor private final class _Storage: NSObject {
+        var previousValue: V?
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        // SwiftUI behavior: don't fire on first render.
+        let storage = context.persistentState(create: { _Storage() })
+        let prevValue = storage.previousValue
+        if let prev = prevValue, prev != value {
+            action(prev, value)
+        }
+        storage.previousValue = value
+        return context.renderChild(content)
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -320,6 +351,16 @@ extension View {
         perform action: @escaping @Sendable @MainActor (V) -> Void
     ) -> _OnChangeView<Self, V> {
         _OnChangeView(content: self, value: value, action: action)
+    }
+
+    /// Adds an action to perform when the specified value changes, providing old and new values.
+    ///
+    /// This overload matches SwiftUI's old/new callback shape used by many codebases.
+    @MainActor public func onChange<V: Equatable & Sendable>(
+        of value: V,
+        perform action: @escaping @Sendable @MainActor (_ oldValue: V, _ newValue: V) -> Void
+    ) -> _OnChangeOldNewView<Self, V> {
+        _OnChangeOldNewView(content: self, value: value, action: action)
     }
 
     /// Adds an action to perform when the user submits a value (e.g., pressing

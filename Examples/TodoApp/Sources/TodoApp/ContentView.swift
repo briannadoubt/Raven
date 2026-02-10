@@ -314,23 +314,26 @@ private struct PreferencesTab: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.04))
 
-                    VStack(spacing: 12) {
-                        Text("Target below emits an Anchor<CGRect> preference")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                    GeometryReader { _ in
+                        VStack(spacing: 12) {
+                            Text("Target below emits an Anchor<CGRect> preference (from inside a GeometryReader)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
 
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.accent.opacity(0.18))
-                            .frame(width: 180, height: 80)
-                            .overlay(
-                                Text("Target")
-                                    .font(.caption)
-                            )
-                            .anchorPreference(key: _TodoBoundsAnchorKey.self, value: .bounds) { anchor in
-                                anchor
-                            }
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.accent.opacity(0.18))
+                                .frame(width: 180, height: 80)
+                                .overlay(
+                                    Text("Target")
+                                        .font(.caption)
+                                )
+                                .anchorPreference(key: _TodoBoundsAnchorKey.self, value: .bounds) { anchor in
+                                    anchor
+                                }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(16)
                     }
-                    .padding(16)
                 }
                 .frame(height: 200)
                 .overlayPreferenceValue(_TodoBoundsAnchorKey.self, alignment: .topLeading) { anchor in
