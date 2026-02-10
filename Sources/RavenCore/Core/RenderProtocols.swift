@@ -27,6 +27,12 @@ import JavaScriptKit
     /// Recursively convert a child view into its VNode representation.
     func renderChild(_ view: any View) -> VNode
 
+    /// Recursively convert a child view into its VNode representation while also
+    /// returning the reduced preference values produced by that child subtree.
+    ///
+    /// Used by preference-reading modifiers like `overlayPreferenceValue`.
+    func renderChildWithPreferences(_ view: any View) -> (VNode, PreferenceValues)
+
     /// Register a click/action handler and return its unique ID.
     /// The ID is stable across renders based on position in the view tree.
     func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID
@@ -38,6 +44,12 @@ import JavaScriptKit
     /// Retrieve or create a persistent state object keyed by position in the view tree.
     /// The object survives across re-renders, enabling stateful controllers (e.g. NavigationStackController).
     func persistentState<T: AnyObject>(create: () -> T) -> T
+
+    /// Enqueue a MainActor action to run after the current render pass finishes.
+    ///
+    /// This is used to align callback timing with SwiftUI's update cycle (for
+    /// example, `onPreferenceChange` should not fire re-entrantly while rendering).
+    func enqueuePostRender(_ action: @escaping @Sendable @MainActor () -> Void)
 }
 
 // MARK: - Coordinator Renderable Protocol

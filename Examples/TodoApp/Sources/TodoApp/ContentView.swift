@@ -1,3 +1,4 @@
+import Foundation
 import Raven
 
 // MARK: - Unique ID Generation
@@ -50,6 +51,7 @@ enum Tab: String, Codable, Hashable, Sendable {
     case layout
     case forms
     case effects
+    case preferences
 }
 
 // MARK: - Store
@@ -238,7 +240,121 @@ struct ContentView: View {
             .tabItem { Text("Effects") }
             .tag(Tab.effects)
             .tabPath("/effects")
+
+            // -- Preferences tab --
+            NavigationStack {
+                PreferencesTab()
+                    .navigationTitle("Preferences")
+            }
+            .tabItem { Text("Prefs") }
+            .tag(Tab.preferences)
+            .tabPath("/preferences")
         }
+    }
+}
+
+// MARK: - Preferences Tab (Demo)
+
+private struct _TodoRowCountKey: PreferenceKey {
+    static var defaultValue: Int { 0 }
+    static func reduce(value: inout Int, nextValue: () -> Int) {
+        value += nextValue()
+    }
+}
+
+private struct _TodoBoundsAnchorKey: PreferenceKey {
+    typealias Value = Anchor<RavenCore.CGRect>?
+
+    static var defaultValue: Value { nil }
+    static func reduce(value: inout Value, nextValue: () -> Value) {
+        // Prefer the most recent anchor if multiple descendants emit.
+        value = nextValue() ?? value
+    }
+}
+
+@MainActor
+private struct PreferencesTab: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("PreferenceKey + overlayPreferenceValue demo")
+                .font(.headline)
+
+            VStack(spacing: 8) {
+                ForEach(0..<5, id: \.self) { _ in
+                    Text("Row")
+                        .padding(8)
+                        .background(Color.gray.opacity(0.08))
+                        .preference(key: _TodoRowCountKey.self, value: 1)
+                }
+            }
+            .padding(12)
+            .background(Color.gray.opacity(0.04))
+            .overlayPreferenceValue(_TodoRowCountKey.self, alignment: .topTrailing) { count in
+                Text("count: \(count)")
+                    .font(.caption)
+                    .padding(6)
+                    .background(Color.accent.opacity(0.15))
+            }
+
+            Text("Expected: overlay shows count: 5")
+                .font(.caption)
+                .foregroundColor(.gray)
+
+            Divider()
+
+            Text("AnchorPreference + GeometryReader demo")
+                .font(.headline)
+
+            VStack(spacing: 10) {
+                Text("The red outline should snap to the target after the first layout pass.")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+
+                ZStack {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.04))
+
+                    VStack(spacing: 12) {
+                        Text("Target below emits an Anchor<CGRect> preference")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.accent.opacity(0.18))
+                            .frame(width: 180, height: 80)
+                            .overlay(
+                                Text("Target")
+                                    .font(.caption)
+                            )
+                            .anchorPreference(key: _TodoBoundsAnchorKey.self, value: .bounds) { anchor in
+                                anchor
+                            }
+                    }
+                    .padding(16)
+                }
+                .frame(height: 200)
+                .overlayPreferenceValue(_TodoBoundsAnchorKey.self, alignment: .topLeading) { anchor in
+                    GeometryReader { geo in
+                        let rect = anchor.map { geo[$0] } ?? .zero
+
+                        ZStack(alignment: .topLeading) {
+                            Rectangle()
+                                .stroke(Color.red, lineWidth: 2)
+                                .frame(width: rect.width, height: rect.height)
+                                .offset(x: rect.minX, y: rect.minY)
+
+                            Text("x: \(Int(rect.minX)) y: \(Int(rect.minY))  w: \(Int(rect.width)) h: \(Int(rect.height))")
+                                .font(.caption2)
+                                .padding(6)
+                                .background(Color.white.opacity(0.75))
+                                .cornerRadius(8)
+                                .padding(8)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
     }
 }
 

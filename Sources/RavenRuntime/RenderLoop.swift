@@ -119,6 +119,16 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// Objects survive across re-renders, enabling stateful controllers.
     private var persistentStateStorage: [String: AnyObject] = [:]
 
+    // MARK: - Preferences
+
+    /// Stack of active preference collectors (one per subtree render).
+    private var preferenceCollectorStack: [_PreferenceCollector] = []
+
+    // MARK: - Post-Render Actions
+
+    /// Actions scheduled to run after the current render pass completes.
+    private var postRenderActions: [@Sendable @MainActor () -> Void] = []
+
     // MARK: - Fiber Reconciler
 
     /// Current fiber root (the "current" tree in dual-tree terminology).
@@ -251,6 +261,11 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
     /// Recursively convert a child view into its VNode representation.
     /// Automatically tracks the child index in the path stack for stable IDs.
     public func renderChild(_ view: any View) -> VNode {
+        let (node, _) = renderChildWithPreferences(view)
+        return node
+    }
+
+    public func renderChildWithPreferences(_ view: any View) -> (VNode, PreferenceValues) {
         // Record the child index at the current level
         let childIdx: Int
         if !childCounterStack.isEmpty {
@@ -261,7 +276,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         }
         pathStack.append(String(childIdx))
         defer { pathStack.removeLast() }
-        return convertViewToVNode(view)
+        return renderSubtreeCollectingPreferences(view)
     }
 
     /// Register a click/action handler and return a stable ID.
@@ -285,6 +300,10 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         let obj = create()
         persistentStateStorage[key] = obj
         return obj
+    }
+
+    public func enqueuePostRender(_ action: @escaping @Sendable @MainActor () -> Void) {
+        postRenderActions.append(action)
     }
 
     /// Register an input handler that receives the raw DOM event and return a stable ID.
@@ -526,7 +545,8 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
 
         // -- Convert view to VNode tree --
         // This registers event handlers (populating activeHandlerIDs)
-        let rawRoot = convertViewToVNode(view)
+        postRenderActions.removeAll(keepingCapacity: true)
+        let (rawRoot, _) = renderSubtreeCollectingPreferences(view)
 
         // Assign stable node IDs based on tree position.
         let newRoot = assignStableIDs(rawRoot, path: "root")
@@ -544,6 +564,42 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
             inputEventHandlerRegistry.removeValue(forKey: id)
             renderer.cleanupHandler(id: id)
         }
+
+        // Run deferred actions scheduled during render (e.g. onPreferenceChange).
+        let actions = postRenderActions
+        postRenderActions.removeAll(keepingCapacity: true)
+        for action in actions {
+            action()
+        }
+    }
+
+    // MARK: - Preference Collection
+
+    /// Render a subtree and capture the reduced preferences it emits.
+    ///
+    /// The returned `PreferenceValues` snapshot is also merged into the currently
+    /// active collector (if any), so preferences propagate up the view hierarchy.
+    private func renderSubtreeCollectingPreferences(_ view: any View) -> (VNode, PreferenceValues) {
+        // Push a fresh collector for this subtree.
+        preferenceCollectorStack.append(_PreferenceCollector())
+        _PreferenceContext.currentCollector = preferenceCollectorStack.last
+
+        // Render using the existing conversion pipeline.
+        let node = convertViewToVNode(view)
+
+        // Pop and snapshot.
+        let collector = preferenceCollectorStack.removeLast()
+        let snapshot = collector.snapshot()
+
+        // Restore the parent collector and merge this subtree's preferences into it.
+        if let parent = preferenceCollectorStack.last {
+            parent.merge(snapshot)
+            _PreferenceContext.currentCollector = parent
+        } else {
+            _PreferenceContext.currentCollector = nil
+        }
+
+        return (node, snapshot)
     }
 
     /// Walk a VNode tree and replace every random NodeID with a deterministic
