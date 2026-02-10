@@ -314,7 +314,7 @@ private struct PreferencesTab: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.04))
 
-                    GeometryReader { _ in
+                    GeometryReader { geo in
                         VStack(spacing: 12) {
                             Text("Target below emits an Anchor<CGRect> preference (from inside a GeometryReader)")
                                 .font(.caption)
@@ -331,7 +331,9 @@ private struct PreferencesTab: View {
                                     anchor
                                 }
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // Raven doesn't currently support `frame(maxWidth:maxHeight:)`,
+                        // so explicitly expand to the geometry reader's container size.
+                        .frame(width: geo.size.width, height: geo.size.height)
                         .padding(16)
                     }
                 }
