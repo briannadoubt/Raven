@@ -19,6 +19,11 @@ let package = Package(
             name: "Raven",
             targets: ["SwiftUI", "Accessibility", "TipKit"]
         ),
+        // Optional standalone TipKit shim product for apps that depend on TipKit explicitly.
+        .library(
+            name: "TipKit",
+            targets: ["TipKit"]
+        ),
         // Runtime support library
         .library(
             name: "RavenRuntime",
