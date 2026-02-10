@@ -19,7 +19,7 @@ enum WasmExportPatcher {
         exportNames: [String] = ["main", "__main_argc_argv"],
         verbose: Bool
     ) throws -> PatchResult? {
-        var data = try Data(contentsOf: wasmURL)
+        let data = try Data(contentsOf: wasmURL)
 
         guard data.count >= 8, data.prefix(4) == Data([0x00, 0x61, 0x73, 0x6D]) else {
             return nil
