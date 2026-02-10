@@ -1,6 +1,4 @@
-import Foundation
-import Raven
-import JavaScriptKit
+import SwiftUI
 
 // MARK: - Unique ID Generation
 
@@ -136,9 +134,10 @@ final class ShowcaseStore: Raven.ObservableObject {
             scopedTodos = todos.filter { $0.isCompleted }
         }
 
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = searchText._raven_trimmingWhitespace()
         guard !query.isEmpty else { return scopedTodos }
-        return scopedTodos.filter { $0.text.localizedCaseInsensitiveContains(query) }
+        let q = query.lowercased()
+        return scopedTodos.filter { $0.text.lowercased().contains(q) }
     }
 
     var activeCount: Int {
@@ -147,6 +146,22 @@ final class ShowcaseStore: Raven.ObservableObject {
 
     var completedCount: Int {
         todos.filter { $0.isCompleted }.count
+    }
+}
+
+private extension String {
+    func _raven_trimmingWhitespace() -> String {
+        var start = startIndex
+        while start < endIndex, self[start].isWhitespace {
+            start = index(after: start)
+        }
+
+        var end = endIndex
+        while end > start, self[index(before: end)].isWhitespace {
+            end = index(before: end)
+        }
+
+        return String(self[start..<end])
     }
 }
 
@@ -443,7 +458,7 @@ private struct TodosListColumn: View {
                     get: { Optional(store.filter) },
                     set: { store.filter = $0 ?? .all }
                 ),
-                scopes: [.all, .active, .completed]
+                scopes: [ShowcaseStore.Filter.all, ShowcaseStore.Filter.active, ShowcaseStore.Filter.completed]
             )
             .searchFocused(
                 Binding(
@@ -452,7 +467,7 @@ private struct TodosListColumn: View {
                 )
             )
 
-        let tasked = suggestions.task(id: store.searchText, priority: .utility) {
+        let tasked = suggestions.task(id: store.searchText, priority: TaskPriority.utility) {
             // Phase 1 demo: task(id:) API re-runs as search query changes.
             await Task.yield()
         }
@@ -637,7 +652,7 @@ private struct TodosList: View {
             return false
         }
 
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = text._raven_trimmingWhitespace()
         guard !trimmed.isEmpty else { return false }
 
         store.addTodo(trimmed)
