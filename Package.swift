@@ -68,10 +68,6 @@ let package = Package(
                 "Performance/README.md",
                 "Views/Layout/DisclosureGroup.css",
                 "Views/Layout/ListFeatures/README.md",
-            ],
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport"),
             ]
         ),
 
@@ -84,10 +80,7 @@ let package = Package(
                 .product(name: "JavaScriptEventLoop", package: "JavaScriptKit")
             ],
             path: "Sources/RavenRuntime",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport"),
-            ]
+            swiftSettings: []
         ),
 
         // CLI executable for build tooling
@@ -100,10 +93,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/RavenCLI",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // MARK: - Test Targets
@@ -113,10 +103,7 @@ let package = Package(
             name: "RavenTests",
             dependencies: ["Raven", "RavenAssetSupport"],
             path: "Tests/RavenTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // VirtualDOM-specific tests
@@ -124,10 +111,7 @@ let package = Package(
             name: "VirtualDOMTests",
             dependencies: ["Raven"],
             path: "Tests/VirtualDOMTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // Integration tests
@@ -138,10 +122,7 @@ let package = Package(
                 "RavenRuntime"
             ],
             path: "Tests/IntegrationTests",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         ),
 
         // RavenCLI tests
@@ -152,10 +133,7 @@ let package = Package(
                 "RavenAssetSupport",
             ],
             path: "Tests/RavenCLI",
-            swiftSettings: [
-
-                .enableExperimentalFeature("AccessLevelOnImport")
-            ]
+            swiftSettings: []
         )
     ]
 )
