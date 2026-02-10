@@ -58,6 +58,37 @@ extension _AnchorPreferenceView: _CoordinatorRenderable where A == CGRect {
         // Render content first.
         let node = context.renderChild(content)
 
+        func tagAnchorGroupInFragmentTree(_ node: VNode) -> VNode {
+            // Only recurse through fragments. We intentionally do not recurse into
+            // element children because we want the "top-level element(s)" of the
+            // view output, even if the view output contains nested DOM structure.
+            switch node.type {
+            case .element:
+                var props = node.props
+                props["data-raven-anchor-group"] = .attribute(name: "data-raven-anchor-group", value: anchorID)
+                return VNode(
+                    id: node.id,
+                    type: node.type,
+                    props: props,
+                    children: node.children,
+                    key: node.key,
+                    gestures: node.gestures
+                )
+            case .fragment:
+                let children = node.children.map(tagAnchorGroupInFragmentTree(_:))
+                return VNode(
+                    id: node.id,
+                    type: node.type,
+                    props: node.props,
+                    children: children,
+                    key: node.key,
+                    gestures: node.gestures
+                )
+            default:
+                return node
+            }
+        }
+
         // Attach an identifier to the rendered node without changing layout.
         // - element: add data-raven-anchor-id
         // - fragment: tag each top-level element with data-raven-anchor-group
@@ -79,27 +110,7 @@ extension _AnchorPreferenceView: _CoordinatorRenderable where A == CGRect {
             anchor = Anchor(locator: .single(anchorID))
 
         case .fragment:
-            let children = node.children.map { child in
-                guard case .element = child.type else { return child }
-                var props = child.props
-                props["data-raven-anchor-group"] = .attribute(name: "data-raven-anchor-group", value: anchorID)
-                return VNode(
-                    id: child.id,
-                    type: child.type,
-                    props: props,
-                    children: child.children,
-                    key: child.key,
-                    gestures: child.gestures
-                )
-            }
-            anchoredNode = VNode(
-                id: node.id,
-                type: node.type,
-                props: node.props,
-                children: children,
-                key: node.key,
-                gestures: node.gestures
-            )
+            anchoredNode = tagAnchorGroupInFragmentTree(node)
             anchor = Anchor(locator: .group(anchorID))
 
         default:
@@ -140,6 +151,34 @@ extension GeometryProxy {
     @MainActor
     public subscript(_ anchor: Anchor<CGRect>) -> CGRect {
         #if arch(wasm32)
+        @MainActor
+        func nearlyEqual(_ a: Double, _ b: Double, epsilon: Double = 0.5) -> Bool {
+            abs(a - b) < epsilon
+        }
+
+        @MainActor
+        func nearlyEqualRect(_ a: CGRect, _ b: CGRect, epsilon: Double = 0.5) -> Bool {
+            nearlyEqual(a.minX, b.minX, epsilon: epsilon) &&
+            nearlyEqual(a.minY, b.minY, epsilon: epsilon) &&
+            nearlyEqual(a.width, b.width, epsilon: epsilon) &&
+            nearlyEqual(a.height, b.height, epsilon: epsilon)
+        }
+
+        @MainActor
+        func maybeScheduleAnchorRefresh(locator: Anchor<CGRect>._Locator, rect: CGRect) {
+            // Anchor geometry is resolved against the *committed* DOM. During a
+            // render pass, VNodes are computed before `fiberRender` applies DOM
+            // mutations, so querying now can return the previous frame's
+            // coordinates. To converge, schedule a follow-up render when the
+            // resolved anchor rect changes.
+            if let last = _AnchorResolutionCache.lastRectByLocator[locator],
+               nearlyEqualRect(last, rect) {
+                return
+            }
+            _AnchorResolutionCache.lastRectByLocator[locator] = rect
+            _RenderScheduler.current?.scheduleRender()
+        }
+
         guard let document = JSObject.global.document.object else { return .zero }
         guard let querySelectorFn = document.querySelector.function else { return .zero }
 
@@ -155,12 +194,14 @@ extension GeometryProxy {
             let result = querySelectorFn(this: document, selector)
             guard !result.isNull, let element = result.object else { return .zero }
             let g = rect(for: element)
-            return CGRect(
+            let local = CGRect(
                 x: g.minX - globalSelf.minX,
                 y: g.minY - globalSelf.minY,
                 width: g.width,
                 height: g.height
             )
+            maybeScheduleAnchorRefresh(locator: anchor.locator, rect: local)
+            return local
 
         case .group(let id):
             let selector = "[data-raven-anchor-group=\"\(id)\"]"
@@ -186,15 +227,22 @@ extension GeometryProxy {
             }
 
             guard let g = union else { return .zero }
-            return CGRect(
+            let local = CGRect(
                 x: g.minX - globalSelf.minX,
                 y: g.minY - globalSelf.minY,
                 width: g.width,
                 height: g.height
             )
+            maybeScheduleAnchorRefresh(locator: anchor.locator, rect: local)
+            return local
         }
         #else
         return .zero
         #endif
     }
+}
+
+@MainActor
+private enum _AnchorResolutionCache {
+    static var lastRectByLocator: [Anchor<CGRect>._Locator: CGRect] = [:]
 }
