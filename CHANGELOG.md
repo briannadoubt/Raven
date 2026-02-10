@@ -5,6 +5,24 @@ All notable changes to Raven will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-02-10
+
+### Added
+
+- SwiftUI-like preferences system:
+  - `PreferenceKey`, `PreferenceValues`
+  - `preference(key:value:)`, `transformPreference`, `onPreferenceChange`
+  - `overlayPreferenceValue`, `backgroundPreferenceValue`
+- Anchor preferences (initial support):
+  - `Anchor<CGRect>`
+  - `anchorPreference(key:value:transform:)`
+  - `GeometryProxy` anchor resolution for WASM via DOM measurement
+
+### Notes
+
+- Preference reduction is performed in flattened view-tree order (SwiftUI-like).
+- `onPreferenceChange` is deferred to post-render to avoid re-entrant rendering.
+
 ## [0.7.0] - 2026-02-03 - Phase 13: Gesture System
 
 ### Added

@@ -506,7 +506,7 @@ import Foundation
 
     // MARK: - Version Verification
 
-    @Test func versionIs010() throws {
+    @Test func versionIs011() throws {
         let changelog = getProjectPath().appendingPathComponent("CHANGELOG.md")
         let cliEntrypoint = getProjectPath()
             .appendingPathComponent("Sources")
@@ -517,7 +517,7 @@ import Foundation
         let cliContent = try String(contentsOf: cliEntrypoint, encoding: .utf8)
 
         #expect(changelogContent.contains("[0.1.0]") || changelogContent.contains("[0.7.0]"))
-        #expect(cliContent.contains("version: \"0.10.0\""))
+        #expect(cliContent.contains("version: \"0.11.0\""))
     }
 
     @Test func readmeDoesNotClaim10() throws {
