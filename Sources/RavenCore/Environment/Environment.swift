@@ -21,9 +21,14 @@ import Foundation
 /// Environment values propagate down the view hierarchy, so child views
 /// inherit values from their parent views unless overridden.
 @propertyWrapper
-public struct Environment<Value: Sendable>: @unchecked Sendable {
-    /// The key path to the environment value
-    private let keyPath: KeyPath<EnvironmentValues, Value>
+public struct Environment<Value>: @unchecked Sendable {
+    private enum _Source {
+        case keyPath(KeyPath<EnvironmentValues, Value>)
+        case objectType(ObjectIdentifier)
+    }
+
+    /// The environment source (key path or type-based lookup).
+    private let source: _Source
 
     /// The cached environment values (set by the rendering system)
     private var environmentValues: EnvironmentValues?
@@ -34,18 +39,34 @@ public struct Environment<Value: Sendable>: @unchecked Sendable {
     /// The value is resolved using the key path on the current environment values.
     @MainActor
     public var wrappedValue: Value {
-        guard let environmentValues = environmentValues else {
-            // No injected values: fall back to dynamically-scoped environment.
-            return EnvironmentValues._current[keyPath: keyPath]
+        switch source {
+        case .keyPath(let keyPath):
+            guard let environmentValues = environmentValues else {
+                // No injected values: fall back to dynamically-scoped environment.
+                return EnvironmentValues._current[keyPath: keyPath]
+            }
+            return environmentValues[keyPath: keyPath]
+        case .objectType(let id):
+            guard let obj = EnvironmentValues._currentObjects[id] as? Value else {
+                fatalError("Missing environment object for type \(Value.self). Set it with .environment(\(Value.self).self, ...).")
+            }
+            return obj
         }
-        return environmentValues[keyPath: keyPath]
     }
 
     /// Creates an environment property that reads the value at the specified key path.
     ///
     /// - Parameter keyPath: A key path to a property on `EnvironmentValues`.
     public init(_ keyPath: KeyPath<EnvironmentValues, Value>) {
-        self.keyPath = keyPath
+        self.source = .keyPath(keyPath)
+        self.environmentValues = nil
+    }
+
+    /// Creates an environment property that reads a reference-typed value by its type.
+    ///
+    /// This matches SwiftUI's `@Environment(T.self)` API surface.
+    public init(_ type: Value.Type) where Value: AnyObject {
+        self.source = .objectType(ObjectIdentifier(type))
         self.environmentValues = nil
     }
 

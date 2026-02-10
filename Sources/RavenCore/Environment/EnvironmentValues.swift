@@ -25,6 +25,13 @@ public struct EnvironmentValues: Sendable {
     /// `MainActor`.
     @MainActor public static var _current: EnvironmentValues = EnvironmentValues()
 
+    /// The dynamically-scoped type-based environment values during coordinator rendering.
+    ///
+    /// This supports SwiftUI-style `@Environment(T.self)` for reference-typed values
+    /// (commonly `@Observable` classes). These values are not required to be `Sendable`
+    /// because they are only accessed on the `MainActor`.
+    @MainActor public static var _currentObjects: [ObjectIdentifier: AnyObject] = [:]
+
     /// Internal storage for environment values using type erasure
     internal var storage: [String: any Sendable]
 

@@ -78,6 +78,13 @@ actor WasmCompiler {
             throw CompilationError.wasmFileNotFound(wasmPath.path)
         }
 
+        // Ensure the generated app exports an entrypoint symbol so the browser loader can invoke it.
+        // (SwiftWasm builds frequently omit exporting `main` by default.)
+        _ = try WasmExportPatcher.ensureEntrypointExports(
+            at: wasmPath,
+            verbose: config.verbose
+        )
+
         if config.verbose {
             let fileSize = try? FileManager.default.attributesOfItem(atPath: wasmPath.path)[.size] as? UInt64
             if let size = fileSize {
@@ -227,9 +234,14 @@ actor WasmCompiler {
         // JavaScriptKit requires the WASI reactor ABI execution model
         arguments.append(contentsOf: ["-Xswiftc", "-Xclang-linker", "-Xswiftc", "-mexec-model=reactor"])
 
-        // Export the main entry point so JS can call it after _initialize()
-        arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=main"])
-        arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=__main_argc_argv"])
+        // Do not inject global linker exports by default.
+        // SwiftPM applies `-Xlinker` to all link steps in the dependency graph,
+        // including host-side macro tools. That breaks macro linking during WASM
+        // cross-compilation (e.g. ErrorHandlingMacros-tool on macOS).
+        if ProcessInfo.processInfo.environment["RAVEN_EXPORT_MAIN_SYMBOLS"] == "1" {
+            arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=main"])
+            arguments.append(contentsOf: ["-Xlinker", "--export-if-defined=__main_argc_argv"])
+        }
 
         // Add release configuration if needed
         if config.optimizationLevel != .debug {

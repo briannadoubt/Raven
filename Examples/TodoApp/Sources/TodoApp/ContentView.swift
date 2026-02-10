@@ -1,5 +1,6 @@
 import Foundation
 import Raven
+import TipKit
 
 // MARK: - Unique ID Generation
 
@@ -272,6 +273,31 @@ private struct _TodoBoundsAnchorKey: PreferenceKey {
     }
 }
 
+// MARK: - TipKit (Demo)
+
+private struct _WelcomeTip: Tip {
+    // Keep this demo deterministic across reloads (TipKit Parameters persist by default).
+    @Parameter(.transient) static var hasSeen: Bool = false
+
+    var title: Text { Text("Welcome to Raven") }
+
+    var message: Text? {
+        Text("This is a TipKit-style tip rendered via Raven. It is gated by a @Parameter and a #Rule macro.")
+    }
+
+    var actions: [Tips.Action] {
+        Tips.Action(title: "Got it") {
+            Self.hasSeen = true
+        }
+    }
+
+    var rules: [Tips.Rule] {
+        #Rule(Self.$hasSeen) { hasSeen in
+            hasSeen == false
+        }
+    }
+}
+
 @MainActor
 private struct PreferencesTab: View {
     var body: some View {
@@ -314,23 +340,28 @@ private struct PreferencesTab: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.04))
 
-                    VStack(spacing: 12) {
-                        Text("Target below emits an Anchor<CGRect> preference")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                    GeometryReader { geo in
+                        VStack(spacing: 12) {
+                            Text("Target below emits an Anchor<CGRect> preference (from inside a GeometryReader)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
 
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.accent.opacity(0.18))
-                            .frame(width: 180, height: 80)
-                            .overlay(
-                                Text("Target")
-                                    .font(.caption)
-                            )
-                            .anchorPreference(key: _TodoBoundsAnchorKey.self, value: .bounds) { anchor in
-                                anchor
-                            }
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.accent.opacity(0.18))
+                                .frame(width: 180, height: 80)
+                                .overlay(
+                                    Text("Target")
+                                        .font(.caption)
+                                )
+                                .anchorPreference(key: _TodoBoundsAnchorKey.self, value: .bounds) { anchor in
+                                    anchor
+                                }
+                        }
+                        // Raven doesn't currently support `frame(maxWidth:maxHeight:)`,
+                        // so explicitly expand to the geometry reader's container size.
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .padding(16)
                     }
-                    .padding(16)
                 }
                 .frame(height: 200)
                 .overlayPreferenceValue(_TodoBoundsAnchorKey.self, alignment: .topLeading) { anchor in
@@ -351,6 +382,31 @@ private struct PreferencesTab: View {
                                 .padding(8)
                         }
                     }
+                }
+            }
+
+            Divider()
+
+            Text("TipKit demo")
+                .font(.headline)
+
+            VStack(spacing: 10) {
+                Text("Expected: a popover tip appears on the target until you press \"Got it\".")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+
+                HStack(spacing: 12) {
+                    Text("Tip target")
+                        .padding(12)
+                        .background(Color.accent.opacity(0.15))
+                        .cornerRadius(10)
+                        .popoverTip(_WelcomeTip(), arrowEdge: .bottom)
+
+                    Button("Reset tip") {
+                        _WelcomeTip.hasSeen = false
+                        _WelcomeTip().resetEligibility()
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }

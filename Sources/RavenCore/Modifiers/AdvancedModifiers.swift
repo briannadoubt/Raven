@@ -91,6 +91,26 @@ public struct _BackgroundView<Content: View, Background: View>: View, PrimitiveV
     }
 }
 
+// MARK: - Hidden Modifier
+
+/// A view wrapper that hides its content while preserving layout.
+public struct _HiddenView<Content: View>: View, PrimitiveView, Sendable {
+    let content: Content
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element(
+            "div",
+            props: [
+                // `visibility: hidden` preserves layout, matching SwiftUI's `hidden()`.
+                "visibility": .style(name: "visibility", value: "hidden")
+            ],
+            children: []
+        )
+    }
+}
+
 /// A view wrapper that applies a background color to its content.
 ///
 /// This is a convenience variant that uses a Color as the background.
@@ -339,6 +359,16 @@ extension View {
         _BackgroundView(content: self, background: view, alignment: alignment)
     }
 
+    /// Layers a view behind this view using a view builder.
+    ///
+    /// This overload enables SwiftUI-style `.background { ... }`.
+    @MainActor public func background<V: View>(
+        alignment: ModifierAlignment = .center,
+        @ViewBuilder _ content: () -> V
+    ) -> _BackgroundView<Self, V> {
+        background(content(), alignment: alignment)
+    }
+
     /// Sets the background color of this view.
     ///
     /// This is a convenience method for setting a solid color background.
@@ -439,6 +469,13 @@ extension View {
         _OpacityView(content: self, opacity: value)
     }
 
+    /// Hides this view without removing it from the layout.
+    ///
+    /// This matches SwiftUI's `hidden()` behavior (layout is preserved).
+    @MainActor public func hidden() -> _HiddenView<Self> {
+        _HiddenView(content: self)
+    }
+
     /// Offset this view by the specified amount.
     ///
     /// Use this modifier to shift the view's position without affecting its layout.
@@ -516,6 +553,10 @@ extension _CornerRadiusView: _ModifierRenderable {
 }
 
 extension _OpacityView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _HiddenView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }
 

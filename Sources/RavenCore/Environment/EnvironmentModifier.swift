@@ -48,6 +48,32 @@ public struct _EnvironmentModifierView<Content: View, Value: Sendable>: View, @u
     }
 }
 
+// MARK: - Type-Based Environment Modifier (Observable Objects)
+
+/// A view that applies a type-based environment object to its content.
+public struct _EnvironmentObjectModifierView<Content: View, Object: AnyObject>: View, @unchecked Sendable {
+    let content: Content
+    let value: Object
+
+    public typealias Body = Never
+
+    init(content: Content, value: Object) {
+        self.content = content
+        self.value = value
+    }
+}
+
+extension _EnvironmentObjectModifierView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let prior = EnvironmentValues._currentObjects
+        var modified = prior
+        modified[ObjectIdentifier(Object.self)] = value
+        EnvironmentValues._currentObjects = modified
+        defer { EnvironmentValues._currentObjects = prior }
+        return context.renderChild(content)
+    }
+}
+
 // MARK: - Coordinator Rendering
 
 extension _EnvironmentModifierView: _CoordinatorRenderable {
@@ -98,5 +124,24 @@ extension View {
         _ value: V
     ) -> _EnvironmentModifierView<Self, V> {
         _EnvironmentModifierView(content: self, keyPath: keyPath, value: value)
+    }
+
+    /// Sets a type-based environment object for this view and its descendants.
+    ///
+    /// This supports SwiftUI-style `@Environment(T.self)` lookups.
+    @MainActor
+    public func environment<T: AnyObject>(
+        _ type: T.Type,
+        _ value: T
+    ) -> _EnvironmentObjectModifierView<Self, T> {
+        _EnvironmentObjectModifierView(content: self, value: value)
+    }
+
+    /// Convenience overload matching SwiftUI's `.environment(_ value: some Observable)`.
+    @MainActor
+    public func environment<T: AnyObject>(
+        _ value: T
+    ) -> _EnvironmentObjectModifierView<Self, T> {
+        _EnvironmentObjectModifierView(content: self, value: value)
     }
 }
