@@ -517,7 +517,7 @@ import Foundation
         let cliContent = try String(contentsOf: cliEntrypoint, encoding: .utf8)
 
         #expect(changelogContent.contains("[0.1.0]") || changelogContent.contains("[0.7.0]"))
-        #expect(cliContent.contains("version: \"0.11.0\""))
+        #expect(cliContent.contains("version: \"0.11.1\""))
     }
 
     @Test func readmeDoesNotClaim10() throws {

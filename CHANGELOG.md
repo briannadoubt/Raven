@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `anchorPreference(key:value:transform:)`
   - `GeometryProxy` anchor resolution for WASM via DOM measurement
 
+## [0.11.1] - 2026-02-10
+
+### Fixed
+
+- `anchorPreference` now tags nested fragment descendants when emitting an anchor group (fixes anchors resolving to `.zero` in fragment-of-fragments cases like `ForEach`/tuple output).
+- Anchor geometry now converges after DOM mutations commit by scheduling a follow-up render when resolved anchor rects change (reduces “stuck” stale overlay positions after layout-affecting updates).
+
 ### Notes
 
 - Preference reduction is performed in flattened view-tree order (SwiftUI-like).
