@@ -31,6 +31,11 @@ let package = Package(
                 )
             ],
             path: "Sources/TodoApp",
+            resources: [
+                // Raven's dev server / bundler consumes the processed resources directory.
+                // Declare xcassets so SwiftPM doesn't treat it as an unhandled file.
+                .process("Assets.xcassets")
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("AccessLevelOnImport")
             ],

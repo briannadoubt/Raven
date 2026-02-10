@@ -32,6 +32,132 @@ public enum BounceBehavior: Sendable, Hashable {
     case basedOnSize
 }
 
+// MARK: - Scroll Target Behavior
+
+/// A behavior that controls how scroll views snap to targets.
+public protocol ScrollTargetBehavior: Sendable {
+    /// Internal representation used by Raven for CSS mapping.
+    var _kind: ScrollTargetBehaviorKind { get }
+}
+
+/// High-level scroll target behavior options.
+public enum ScrollTargetBehaviorKind: String, Sendable, Hashable {
+    /// Default browser scrolling behavior (no snapping).
+    case automatic
+    /// Snap strictly to target views.
+    case paging
+    /// Snap gently toward the nearest target view.
+    case viewAligned
+}
+
+/// A type-erased scroll target behavior.
+public struct AnyScrollTargetBehavior: ScrollTargetBehavior, Sendable, Hashable {
+    public let _kind: ScrollTargetBehaviorKind
+
+    public init(_ kind: ScrollTargetBehaviorKind) {
+        self._kind = kind
+    }
+
+    public init<T: ScrollTargetBehavior>(_ behavior: T) {
+        self._kind = behavior._kind
+    }
+
+    internal func scrollSnapType(for axes: Axis.Set) -> String? {
+        let mode: String
+        switch _kind {
+        case .automatic:
+            return nil
+        case .paging:
+            mode = "mandatory"
+        case .viewAligned:
+            mode = "proximity"
+        }
+
+        if axes == [.horizontal, .vertical] {
+            return "both \(mode)"
+        }
+        if axes.contains(.horizontal) {
+            return "x \(mode)"
+        }
+        return "y \(mode)"
+    }
+
+    internal var scrollSnapStop: String? {
+        switch _kind {
+        case .paging:
+            return "always"
+        case .automatic, .viewAligned:
+            return nil
+        }
+    }
+}
+
+/// Default (automatic) scroll target behavior.
+public struct AutomaticScrollTargetBehavior: ScrollTargetBehavior, Sendable, Hashable {
+    public let _kind: ScrollTargetBehaviorKind = .automatic
+
+    public init() {}
+}
+
+/// Paging scroll target behavior that snaps to each target.
+public struct PagingScrollTargetBehavior: ScrollTargetBehavior, Sendable, Hashable {
+    public let _kind: ScrollTargetBehaviorKind = .paging
+
+    public init() {}
+}
+
+/// View-aligned behavior that snaps near the closest target.
+public struct ViewAlignedScrollTargetBehavior: ScrollTargetBehavior, Sendable, Hashable {
+    public let _kind: ScrollTargetBehaviorKind = .viewAligned
+
+    public init() {}
+}
+
+extension ScrollTargetBehavior where Self == AutomaticScrollTargetBehavior {
+    public static var automatic: AutomaticScrollTargetBehavior { AutomaticScrollTargetBehavior() }
+}
+
+extension ScrollTargetBehavior where Self == PagingScrollTargetBehavior {
+    public static var paging: PagingScrollTargetBehavior { PagingScrollTargetBehavior() }
+}
+
+extension ScrollTargetBehavior where Self == ViewAlignedScrollTargetBehavior {
+    public static var viewAligned: ViewAlignedScrollTargetBehavior { ViewAlignedScrollTargetBehavior() }
+}
+
+// MARK: - Scroll Target Layout
+
+/// Alignment for scroll targets within a snapping scroll view.
+public enum ScrollTargetAlignment: String, Sendable, Hashable {
+    case start
+    case center
+    case end
+}
+
+/// A view wrapper that marks its content as a scroll target.
+public struct _ScrollTargetLayoutView<Content: View>: View, PrimitiveView, Sendable {
+    public typealias Body = Never
+
+    let content: Content
+    let alignment: ScrollTargetAlignment
+
+    @MainActor public func toVNode() -> VNode {
+        let props: [String: VProperty] = [
+            "scroll-snap-align": .style(name: "scroll-snap-align", value: alignment.rawValue)
+        ]
+
+        return VNode.element(
+            "div",
+            props: props,
+            children: []
+        )
+    }
+}
+
+extension _ScrollTargetLayoutView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
 // MARK: - ScrollBounceBehavior Modifier
 
 /// A view wrapper that controls scroll bounce behavior.
@@ -221,6 +347,40 @@ extension View {
         axes: Axis.Set = [.vertical]
     ) -> _ScrollBounceBehaviorView<Self> {
         _ScrollBounceBehaviorView(content: self, behavior: behavior, axes: axes)
+    }
+
+    /// Sets how scroll views snap to scroll targets within this view hierarchy.
+    ///
+    /// Apply this to a ScrollView to enable snapping behavior. Pair with
+    /// `.scrollTargetLayout()` on child views that should snap.
+    ///
+    /// Example:
+    /// ```swift
+    /// ScrollView(.horizontal) {
+    ///     HStack {
+    ///         ForEach(0..<5) { _ in
+    ///             CardView()
+    ///                 .scrollTargetLayout()
+    ///         }
+    ///     }
+    /// }
+    /// .scrollTargetBehavior(.paging)
+    /// ```
+    @MainActor public func scrollTargetBehavior<S: ScrollTargetBehavior>(
+        _ behavior: S
+    ) -> _EnvironmentModifierView<Self, AnyScrollTargetBehavior> {
+        environment(\.scrollTargetBehavior, AnyScrollTargetBehavior(behavior))
+    }
+
+    /// Marks this view as a scroll target for snapping behaviors.
+    ///
+    /// Use this with `.scrollTargetBehavior(_:)` on the surrounding scroll view.
+    ///
+    /// - Parameter alignment: The alignment for snapping within the scroll container.
+    @MainActor public func scrollTargetLayout(
+        _ alignment: ScrollTargetAlignment = .start
+    ) -> _ScrollTargetLayoutView<Self> {
+        _ScrollTargetLayoutView(content: self, alignment: alignment)
     }
 
     /// Controls whether scrollable content is clipped to the scroll view's bounds.

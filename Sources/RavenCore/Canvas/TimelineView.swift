@@ -96,6 +96,16 @@ public struct TimelineView<Content: View>: View {
         self.id = UUID()
     }
 
+    /// Creates a timeline view driven by an animation schedule.
+    ///
+    /// This mirrors SwiftUI's `AnimationTimelineSchedule` initializer.
+    public init(
+        _ schedule: AnimationTimelineSchedule,
+        @ViewBuilder content: @escaping @Sendable @MainActor (Context) -> Content
+    ) {
+        self.init(.animation, content: content)
+    }
+
     // MARK: - Timeline Context
 
     /// The context provided to timeline view content.
@@ -365,6 +375,21 @@ public enum TimelineScheduleMode: Sendable {
 
     /// Request entries for low-power mode.
     case lowFrequency
+}
+
+// MARK: - AnimationTimelineSchedule
+
+/// A schedule that updates with animation frames.
+///
+/// This mirrors SwiftUI's `AnimationTimelineSchedule` type while delegating
+/// rendering to Raven's requestAnimationFrame-based loop.
+public struct AnimationTimelineSchedule: TimelineSchedule {
+    public init() {}
+
+    public func entries(from startDate: Date, mode: TimelineScheduleMode) -> [Date] {
+        // Animation timelines use requestAnimationFrame rather than date entries.
+        return []
+    }
 }
 
 // MARK: - Animation Schedule

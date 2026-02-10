@@ -330,6 +330,51 @@ import Testing
         let _ = view
     }
 
+    // MARK: - Scroll Target Behavior Tests
+
+    @MainActor
+    @Test func scrollTargetLayoutVNode() {
+        let view = Text("Content")
+            .scrollTargetLayout()
+        let vnode = view.toVNode()
+
+        if case .element(let tag) = vnode.type {
+            #expect(tag == "div")
+            if case .style(let name, let value) = vnode.props["scroll-snap-align"] {
+                #expect(name == "scroll-snap-align")
+                #expect(value == "start")
+            } else {
+                Issue.record("Expected scroll-snap-align style property")
+            }
+        } else {
+            Issue.record("Expected element VNode")
+        }
+    }
+
+    @MainActor
+    @Test func scrollTargetBehaviorAppliedToScrollView() {
+        let prior = EnvironmentValues._current
+        EnvironmentValues._current = prior.with(storage: prior.storage)
+        EnvironmentValues._current.scrollTargetBehavior = AnyScrollTargetBehavior(.paging)
+        defer { EnvironmentValues._current = prior }
+
+        let vnode = ScrollView { Text("Content") }.toVNode()
+
+        if case .style(let name, let value) = vnode.props["scroll-snap-type"] {
+            #expect(name == "scroll-snap-type")
+            #expect(value == "y mandatory")
+        } else {
+            Issue.record("Expected scroll-snap-type style property")
+        }
+
+        if case .style(let name, let value) = vnode.props["scroll-snap-stop"] {
+            #expect(name == "scroll-snap-stop")
+            #expect(value == "always")
+        } else {
+            Issue.record("Expected scroll-snap-stop style property")
+        }
+    }
+
     // MARK: - Axis Tests
 
     @MainActor
