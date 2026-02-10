@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for Spacer and Divider layout views
 @MainActor

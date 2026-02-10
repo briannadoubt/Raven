@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 import Foundation
 
 /// Phase 7 Verification: Production Readiness for v0.1.0 Release
@@ -240,14 +241,7 @@ import Foundation
             let filePath = examples.appendingPathComponent(file)
             let content = try String(contentsOf: filePath, encoding: .utf8)
 
-            if file.hasPrefix("TodoApp/") {
-                // TodoApp is our canonical example for "import SwiftUI" (via SPM `moduleAliases`)
-                // so it should not need to import Raven directly.
-                #expect(content.contains("import SwiftUI"))
-                #expect(!content.contains("import Raven"))
-            } else {
-                #expect(content.contains("import Raven"))
-            }
+            #expect(content.contains("import Raven"))
             exampleCount += 1
         }
 
@@ -404,7 +398,7 @@ import Foundation
 
         let corePath = getProjectPath()
             .appendingPathComponent("Sources")
-            .appendingPathComponent("Raven")
+            .appendingPathComponent("RavenCore")
             .appendingPathComponent("Core")
 
         for file in coreTypes {
@@ -422,7 +416,7 @@ import Foundation
 
         let virtualDOMPath = getProjectPath()
             .appendingPathComponent("Sources")
-            .appendingPathComponent("Raven")
+            .appendingPathComponent("RavenCore")
             .appendingPathComponent("VirtualDOM")
 
         for file in virtualDOMTypes {
@@ -441,7 +435,7 @@ import Foundation
 
         let statePath = getProjectPath()
             .appendingPathComponent("Sources")
-            .appendingPathComponent("Raven")
+            .appendingPathComponent("RavenCore")
             .appendingPathComponent("State")
 
         for file in stateTypes {
@@ -463,7 +457,7 @@ import Foundation
 
         let primitivesPath = getProjectPath()
             .appendingPathComponent("Sources")
-            .appendingPathComponent("Raven")
+            .appendingPathComponent("RavenCore")
             .appendingPathComponent("Views")
             .appendingPathComponent("Primitives")
 
@@ -489,7 +483,7 @@ import Foundation
 
         let layoutsPath = getProjectPath()
             .appendingPathComponent("Sources")
-            .appendingPathComponent("Raven")
+            .appendingPathComponent("RavenCore")
             .appendingPathComponent("Views")
             .appendingPathComponent("Layout")
 

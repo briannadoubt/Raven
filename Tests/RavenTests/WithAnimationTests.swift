@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for the withAnimation() function and animation context system.
 @Suite("WithAnimation Tests")

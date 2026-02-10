@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for interaction modifiers: .disabled, .onTapGesture, .onAppear, .onDisappear, .onChange
 @MainActor

@@ -1,5 +1,5 @@
 import Foundation
-import Raven
+import RavenCore
 import JavaScriptKit
 
 /// Main actor-isolated coordinator responsible for managing the render loop
@@ -887,7 +887,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
         let clientX = eventObj.clientX.number ?? 0.0
         let clientY = eventObj.clientY.number ?? 0.0
         let timestamp = Date().timeIntervalSince1970
-        let startLocation = Raven.CGPoint(x: clientX, y: clientY)
+        let startLocation = RavenCore.CGPoint(x: clientX, y: clientY)
         let state = DragGestureState(
             startLocation: startLocation,
             startTime: timestamp,
@@ -915,7 +915,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
 
         let clientX = eventObj.clientX.number ?? 0.0
         let clientY = eventObj.clientY.number ?? 0.0
-        let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
+        let currentLocation = RavenCore.CGPoint(x: clientX, y: clientY)
         let timestamp = Date().timeIntervalSince1970
 
         state.addSample(location: currentLocation, time: timestamp)
@@ -1009,7 +1009,7 @@ public final class RenderCoordinator: Sendable, _RenderContext, _StateChangeRece
 
             let clientX = eventObj.clientX.number ?? 0.0
             let clientY = eventObj.clientY.number ?? 0.0
-            let currentLocation = Raven.CGPoint(x: clientX, y: clientY)
+            let currentLocation = RavenCore.CGPoint(x: clientX, y: clientY)
             let timestamp = Date().timeIntervalSince1970
             let velocity = state.calculateVelocity()
             let predictedEndLocation = state.predictEndLocation(from: currentLocation, velocity: velocity)

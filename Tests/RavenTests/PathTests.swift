@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for Path drawing functionality
 @MainActor

@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for visual effect modifiers: blur, brightness, contrast, and saturation
 ///

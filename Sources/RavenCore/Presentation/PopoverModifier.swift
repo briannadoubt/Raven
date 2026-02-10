@@ -30,7 +30,7 @@ import Foundation
 ///
 /// All methods must be called from the main actor.
 @MainActor
-struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier {
+public struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier {
     /// Binding that controls whether the popover is presented
     @Binding var isPresented: Bool
 
@@ -62,7 +62,7 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
     ///   - arrowEdge: The preferred edge for the popover arrow
     ///   - onDismiss: Optional callback when dismissed
     ///   - content: A closure that builds the popover content
-    init(
+    public init(
         isPresented: Binding<Bool>,
         attachmentAnchor: PopoverAttachmentAnchor,
         arrowEdge: Edge,
@@ -78,7 +78,7 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
 
     // MARK: - PresentationModifier Implementation
 
-    func register(with coordinator: PresentationCoordinator) -> UUID? {
+    public func register(with coordinator: PresentationCoordinator) -> UUID? {
         guard isPresented else { return nil }
 
         let handleDismiss: @MainActor @Sendable () -> Void = { [onDismiss, _isPresented] in
@@ -93,11 +93,11 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
         )
     }
 
-    func unregister(id: UUID, from coordinator: PresentationCoordinator) {
+    public func unregister(id: UUID, from coordinator: PresentationCoordinator) {
         coordinator.dismiss(id)
     }
 
-    func shouldUpdate(currentId: UUID?, coordinator: PresentationCoordinator) -> Bool {
+    public func shouldUpdate(currentId: UUID?, coordinator: PresentationCoordinator) -> Bool {
         // Need to register if we should be presented but aren't
         if isPresented && currentId == nil {
             return true
@@ -113,7 +113,7 @@ struct PopoverModifier<PopoverContent: View>: ViewModifier, PresentationModifier
 
     // MARK: - ViewModifier Implementation
 
-    func body(content: Content) -> some View {
+    public func body(content: Content) -> some View {
         content
             .onAppear {
                 updatePresentation()

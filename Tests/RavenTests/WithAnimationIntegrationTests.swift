@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Integration tests demonstrating withAnimation usage patterns.
 ///

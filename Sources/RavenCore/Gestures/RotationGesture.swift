@@ -179,7 +179,7 @@ public struct RotationGesture: Gesture, Sendable {
 /// This structure maintains the state needed to track an active rotation gesture,
 /// including the initial angle between touch points and the current angle.
 @MainActor
-internal struct RotationGestureState: Sendable {
+public struct RotationGestureState: Sendable {
     /// The initial angle between the two touch points, in radians.
     ///
     /// This is calculated when the gesture begins using `atan2(dy, dx)` where
@@ -196,7 +196,7 @@ internal struct RotationGestureState: Sendable {
     /// - Parameters:
     ///   - initialAngle: The starting angle in radians.
     ///   - currentAngle: The current angle in radians (typically same as initial at start).
-    init(initialAngle: Double, currentAngle: Double) {
+    public init(initialAngle: Double, currentAngle: Double) {
         self.initialAngle = initialAngle
         self.currentAngle = currentAngle
     }
@@ -220,7 +220,7 @@ internal struct RotationGestureState: Sendable {
     ///   - y1: The y-coordinate of the first touch point.
     ///   - x2: The x-coordinate of the second touch point.
     ///   - y2: The y-coordinate of the second touch point.
-    mutating func updateAngle(x1: Double, y1: Double, x2: Double, y2: Double) {
+    public mutating func updateAngle(x1: Double, y1: Double, x2: Double, y2: Double) {
         let dx = x2 - x1
         let dy = y2 - y1
         currentAngle = atan2(dy, dx)

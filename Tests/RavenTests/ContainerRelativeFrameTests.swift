@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for container-relative frame modifier functionality.
 ///

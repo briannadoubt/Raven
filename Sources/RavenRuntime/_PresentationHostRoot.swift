@@ -1,5 +1,5 @@
 import Foundation
-import Raven
+import RavenCore
 
 /// Runtime-level root wrapper that mounts Raven presentations into the DOM.
 ///

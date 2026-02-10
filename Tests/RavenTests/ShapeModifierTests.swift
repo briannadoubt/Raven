@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for shape modifiers including StrokeStyle and trim functionality
 @MainActor

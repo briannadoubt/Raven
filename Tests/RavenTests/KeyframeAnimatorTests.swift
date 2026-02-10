@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for the keyframe animator system.
 @Suite("KeyframeAnimator Tests")

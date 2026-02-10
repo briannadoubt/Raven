@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Quick sanity test for presentation infrastructure
 @MainActor

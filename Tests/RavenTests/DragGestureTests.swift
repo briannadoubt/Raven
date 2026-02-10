@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 @testable import Raven
+@testable import RavenCore
 
 // Type aliases to avoid ambiguity with CoreFoundation types
 typealias RPoint = Raven.CGPoint

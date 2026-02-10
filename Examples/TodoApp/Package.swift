@@ -20,16 +20,8 @@ let package = Package(
             name: "TodoApp",
             dependencies: [
                 .product(
-                    name: "RavenSwiftUI",
+                    name: "Raven",
                     package: "Raven",
-                    // Alias the umbrella module to "SwiftUI" for WASI builds, so app
-                    // sources can be:
-                    //   import SwiftUI
-                    // and still get RavenRuntime's default `App.main()` implementation.
-                    // SwiftPM moduleAliases produce `-module-alias <key>=<value>`.
-                    // We want app sources to be able to `import SwiftUI`, backed by the
-                    // actual module `RavenSwiftUI`.
-                    moduleAliases: ["SwiftUI": "RavenSwiftUI"],
                     condition: .when(platforms: [.wasi])
                 )
             ],

@@ -1,5 +1,6 @@
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Comprehensive tests for the confirmation dialog view modifiers.
 ///

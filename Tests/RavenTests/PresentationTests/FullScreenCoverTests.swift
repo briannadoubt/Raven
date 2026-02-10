@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Tests for full-screen cover presentation modifiers.
 ///

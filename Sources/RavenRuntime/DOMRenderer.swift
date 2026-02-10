@@ -1,6 +1,6 @@
 import Foundation
 import JavaScriptKit
-import Raven
+import RavenCore
 
 /// Browser DOM implementation of `PlatformRenderer`.
 ///

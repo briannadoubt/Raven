@@ -224,7 +224,7 @@ public struct MagnificationGesture: Gesture, Sendable {
 /// This structure maintains the state needed to track an active magnification gesture,
 /// including the initial distance between touch points and the current distance.
 @MainActor
-internal struct MagnificationGestureState: Sendable {
+public struct MagnificationGestureState: Sendable {
     /// The initial distance between the two touch points, in points.
     ///
     /// This is calculated when the gesture begins using the Pythagorean theorem:
@@ -245,7 +245,7 @@ internal struct MagnificationGestureState: Sendable {
     ///   - initialDistance: The starting distance between touches.
     ///   - currentDistance: The current distance (typically same as initial at start).
     ///   - minimumScale: The minimum allowed scale value.
-    init(initialDistance: Double, currentDistance: Double, minimumScale: Double) {
+    public init(initialDistance: Double, currentDistance: Double, minimumScale: Double) {
         self.initialDistance = max(1.0, initialDistance) // Prevent division by near-zero
         self.currentDistance = currentDistance
         self.minimumScale = minimumScale
@@ -272,7 +272,7 @@ internal struct MagnificationGestureState: Sendable {
     ///   - y1: The y-coordinate of the first touch point.
     ///   - x2: The x-coordinate of the second touch point.
     ///   - y2: The y-coordinate of the second touch point.
-    mutating func updateDistance(x1: Double, y1: Double, x2: Double, y2: Double) {
+    public mutating func updateDistance(x1: Double, y1: Double, x2: Double, y2: Double) {
         currentDistance = Self.calculateDistance(x1: x1, y1: y1, x2: x2, y2: y2)
     }
 
@@ -286,7 +286,7 @@ internal struct MagnificationGestureState: Sendable {
     ///   - x2: The x-coordinate of the second point.
     ///   - y2: The y-coordinate of the second point.
     /// - Returns: The distance in points.
-    static func calculateDistance(x1: Double, y1: Double, x2: Double, y2: Double) -> Double {
+    public static func calculateDistance(x1: Double, y1: Double, x2: Double, y2: Double) -> Double {
         let dx = x2 - x1
         let dy = y2 - y1
         return sqrt(dx * dx + dy * dy)

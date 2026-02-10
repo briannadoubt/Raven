@@ -236,21 +236,21 @@ public struct LongPressGesture: Gesture, Sendable {
 /// including the start position, timing information, and whether the gesture has
 /// completed successfully.
 @MainActor
-internal struct LongPressGestureState: Sendable {
+public struct LongPressGestureState: Sendable {
     /// The starting point of the gesture in client coordinates.
-    var startPoint: CGPoint
+    public var startPoint: CGPoint
 
     /// The time when the gesture started, as a Unix timestamp in seconds.
-    var startTime: Double
+    public var startTime: Double
 
     /// The minimum duration required for gesture success, in seconds.
-    let minimumDuration: Double
+    public let minimumDuration: Double
 
     /// The maximum allowed movement distance in points.
-    let maximumDistance: Double
+    public let maximumDistance: Double
 
     /// Whether the gesture has completed successfully.
-    var hasCompleted: Bool
+    public var hasCompleted: Bool
 
     /// Creates a new gesture state with the specified parameters.
     ///
@@ -259,7 +259,7 @@ internal struct LongPressGestureState: Sendable {
     ///   - startTime: The time when the gesture began.
     ///   - minimumDuration: The minimum hold duration.
     ///   - maximumDistance: The maximum movement threshold.
-    init(
+    public init(
         startPoint: CGPoint,
         startTime: Double,
         minimumDuration: Double,
@@ -280,7 +280,7 @@ internal struct LongPressGestureState: Sendable {
     ///
     /// - Parameter currentPoint: The current pointer position.
     /// - Returns: `true` if the gesture should cancel, `false` otherwise.
-    func shouldCancel(at currentPoint: CGPoint) -> Bool {
+    public func shouldCancel(at currentPoint: CGPoint) -> Bool {
         let dx = currentPoint.x - startPoint.x
         let dy = currentPoint.y - startPoint.y
         let distance = sqrt(dx * dx + dy * dy)
@@ -291,7 +291,7 @@ internal struct LongPressGestureState: Sendable {
     ///
     /// - Parameter currentTime: The current time as a Unix timestamp in seconds.
     /// - Returns: `true` if the minimum duration has been met, `false` otherwise.
-    func hasMetDuration(at currentTime: Double) -> Bool {
+    public func hasMetDuration(at currentTime: Double) -> Bool {
         return currentTime - startTime >= minimumDuration
     }
 }

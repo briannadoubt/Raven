@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import Raven
+@testable import RavenCore
 
 /// Additional test coverage for edge cases and untested code paths
 /// Targets VNode, View rendering, modifiers, and error handling

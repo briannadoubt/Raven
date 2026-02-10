@@ -410,7 +410,7 @@ extension RangeReplaceableCollection where Self: MutableCollection {
     /// - Parameters:
     ///   - source: The indices of elements to move.
     ///   - destination: The destination index.
-    mutating func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+    public mutating func move(fromOffsets source: IndexSet, toOffset destination: Int) {
         let items = source.sorted().map { self[self.index(self.startIndex, offsetBy: $0)] }
 
         // Remove from source
