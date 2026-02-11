@@ -75,12 +75,10 @@ public struct _BackgroundView<Content: View, Background: View>: View, PrimitiveV
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Use a grid-based approach to layer content over background
+        // Layer background absolutely so it does not participate in layout sizing.
         let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue)
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative")
         ]
 
         return VNode.element(
@@ -144,12 +142,10 @@ public struct _OverlayView<Content: View, Overlay: View>: View, PrimitiveView, S
     public typealias Body = Never
 
     @MainActor public func toVNode() -> VNode {
-        // Use a grid-based approach to layer overlay on content
+        // Layer overlay absolutely so it does not participate in layout sizing.
         let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue)
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative")
         ]
 
         return VNode.element(
@@ -579,15 +575,17 @@ extension _BackgroundView: _CoordinatorRenderable {
         let bgNode = context.renderChild(background)
         let contentNode = context.renderChild(content)
         guard case .element(let tag) = wrapperNode.type else { return contentNode }
-        // Background goes behind content, both in same grid cell
+        // Background goes behind content without affecting layout.
         let bgWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+            "position": .style(name: "position", value: "absolute"),
+            "top": .style(name: "top", value: "0"),
+            "right": .style(name: "right", value: "0"),
+            "bottom": .style(name: "bottom", value: "0"),
+            "left": .style(name: "left", value: "0"),
+            "display": .style(name: "display", value: "grid"),
+            "place-items": .style(name: "place-items", value: alignment.cssValue),
         ], children: [bgNode])
-        let contentWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
-        ], children: [contentNode])
+        let contentWrapper = VNode.element("div", props: [:], children: [contentNode])
         return VNode(
             id: wrapperNode.id,
             type: .element(tag: tag),
@@ -605,14 +603,16 @@ extension _OverlayView: _CoordinatorRenderable {
         let contentNode = context.renderChild(content)
         let overlayNode = context.renderChild(overlay)
         guard case .element(let tag) = wrapperNode.type else { return contentNode }
-        // Content goes behind overlay, both in same grid cell
-        let contentWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
-        ], children: [contentNode])
+        // Overlay sits above content without affecting layout.
+        let contentWrapper = VNode.element("div", props: [:], children: [contentNode])
         let overlayWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+            "position": .style(name: "position", value: "absolute"),
+            "top": .style(name: "top", value: "0"),
+            "right": .style(name: "right", value: "0"),
+            "bottom": .style(name: "bottom", value: "0"),
+            "left": .style(name: "left", value: "0"),
+            "display": .style(name: "display", value: "grid"),
+            "place-items": .style(name: "place-items", value: alignment.cssValue),
         ], children: [overlayNode])
         return VNode(
             id: wrapperNode.id,

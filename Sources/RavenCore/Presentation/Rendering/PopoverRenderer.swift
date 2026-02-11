@@ -54,6 +54,14 @@ public struct PopoverRenderer: Sendable {
     /// Default popover width (pixels)
     private static let defaultWidth: Double = 320
 
+    private static let sourceIDMetadataKey = "ravenPopoverSourceID"
+    private static let sourceIDAttribute = "data-raven-popover-source-id"
+    private static let anchorKindAttribute = "data-raven-popover-anchor-kind"
+    private static let anchorXAttribute = "data-raven-popover-anchor-x"
+    private static let anchorYAttribute = "data-raven-popover-anchor-y"
+    private static let anchorWidthAttribute = "data-raven-popover-anchor-width"
+    private static let anchorHeightAttribute = "data-raven-popover-anchor-height"
+
     // MARK: - Public Methods
 
     /// Renders a popover presentation entry as a VNode.
@@ -99,12 +107,16 @@ public struct PopoverRenderer: Sendable {
             name: "data-raven-presentation-id",
             value: entry.id.uuidString
         )
+        if let sourceID = entry.metadata[sourceIDMetadataKey] as? String {
+            props[sourceIDAttribute] = .attribute(name: sourceIDAttribute, value: sourceID)
+        }
 
         // Store anchor and edge in metadata for post-render positioning
         props["data-popover-metadata"] = .attribute(
             name: "data-popover-metadata",
             value: "{\"edge\":\"\(edge.rawValue)\"}"
         )
+        applyAnchorAttributes(for: anchor, to: &props)
 
         return DialogRenderer.createDialog(
             type: "popover",
@@ -177,6 +189,75 @@ public struct PopoverRenderer: Sendable {
 
     // MARK: - Positioning
 
+    /// Calculates and applies positioning for an already-mounted popover dialog element.
+    public static func positionPopoverElement(_ popoverElement: JSObject) {
+        let bridge = DOMBridge.shared
+
+        let edge = Edge(rawValue: popoverElement.getAttribute?("data-edge").string ?? "") ?? .top
+        guard let anchorBounds = resolvedAnchorBounds(for: popoverElement) else {
+            positionAtCenter(popoverElement)
+            return
+        }
+
+        let popoverWidth = popoverElement.offsetWidth.number ?? defaultWidth
+        let popoverHeight = popoverElement.offsetHeight.number ?? 200
+        let viewportWidth = JSObject.global.window.innerWidth.number ?? 1024
+        let viewportHeight = JSObject.global.window.innerHeight.number ?? 768
+
+        var position = calculatePosition(
+            anchorBounds: anchorBounds,
+            popoverSize: (popoverWidth, popoverHeight),
+            viewportSize: (viewportWidth, viewportHeight),
+            edge: edge
+        )
+
+        let fitsInViewport = checkFitsInViewport(
+            position: position,
+            size: (popoverWidth, popoverHeight),
+            viewportSize: (viewportWidth, viewportHeight)
+        )
+
+        var finalEdge = edge
+        if !fitsInViewport {
+            let oppositeEdge = edge.opposite
+            let alternatePosition = calculatePosition(
+                anchorBounds: anchorBounds,
+                popoverSize: (popoverWidth, popoverHeight),
+                viewportSize: (viewportWidth, viewportHeight),
+                edge: oppositeEdge
+            )
+            let fitsOpposite = checkFitsInViewport(
+                position: alternatePosition,
+                size: (popoverWidth, popoverHeight),
+                viewportSize: (viewportWidth, viewportHeight)
+            )
+            if fitsOpposite {
+                position = alternatePosition
+                finalEdge = oppositeEdge
+            }
+        }
+
+        position = constrainToViewport(
+            position: position,
+            size: (popoverWidth, popoverHeight),
+            viewportSize: (viewportWidth, viewportHeight)
+        )
+
+        bridge.setStyle(element: popoverElement, name: "left", value: "\(position.x)px")
+        bridge.setStyle(element: popoverElement, name: "top", value: "\(position.y)px")
+
+        if finalEdge != edge {
+            updateArrowEdge(popoverElement, edge: finalEdge)
+        }
+
+        positionArrow(
+            popoverElement: popoverElement,
+            anchorBounds: anchorBounds,
+            popoverPosition: position,
+            edge: finalEdge
+        )
+    }
+
     /// Calculates and applies positioning for a popover element.
     ///
     /// This method should be called after the popover is rendered to the DOM
@@ -196,84 +277,9 @@ public struct PopoverRenderer: Sendable {
         guard let popoverElement = bridge.getNode(id: nodeId) else {
             return
         }
-
-        // Get anchor bounds
-        guard let anchorBounds = getAnchorBounds(anchor) else {
-            // Fallback to center of viewport
-            positionAtCenter(popoverElement)
-            return
-        }
-
-        // Get popover dimensions
-        let popoverWidth = popoverElement.offsetWidth.number ?? defaultWidth
-        let popoverHeight = popoverElement.offsetHeight.number ?? 200
-
-        // Get viewport dimensions
-        let viewportWidth = JSObject.global.window.innerWidth.number ?? 1024
-        let viewportHeight = JSObject.global.window.innerHeight.number ?? 768
-
-        // Calculate position for preferred edge
-        var position = calculatePosition(
-            anchorBounds: anchorBounds,
-            popoverSize: (popoverWidth, popoverHeight),
-            viewportSize: (viewportWidth, viewportHeight),
-            edge: preferredEdge
-        )
-
-        // Check if we need to flip to fit in viewport
-        let fitsInViewport = checkFitsInViewport(
-            position: position,
-            size: (popoverWidth, popoverHeight),
-            viewportSize: (viewportWidth, viewportHeight)
-        )
-
-        var finalEdge = preferredEdge
-
-        if !fitsInViewport {
-            // Try opposite edge
-            let oppositeEdge = preferredEdge.opposite
-            let alternatePosition = calculatePosition(
-                anchorBounds: anchorBounds,
-                popoverSize: (popoverWidth, popoverHeight),
-                viewportSize: (viewportWidth, viewportHeight),
-                edge: oppositeEdge
-            )
-
-            let fitsOpposite = checkFitsInViewport(
-                position: alternatePosition,
-                size: (popoverWidth, popoverHeight),
-                viewportSize: (viewportWidth, viewportHeight)
-            )
-
-            if fitsOpposite {
-                position = alternatePosition
-                finalEdge = oppositeEdge
-            }
-        }
-
-        // Constrain position to viewport
-        position = constrainToViewport(
-            position: position,
-            size: (popoverWidth, popoverHeight),
-            viewportSize: (viewportWidth, viewportHeight)
-        )
-
-        // Apply position
-        bridge.setStyle(element: popoverElement, name: "left", value: "\(position.x)px")
-        bridge.setStyle(element: popoverElement, name: "top", value: "\(position.y)px")
-
-        // Update arrow if edge changed
-        if finalEdge != preferredEdge {
-            updateArrowEdge(popoverElement, edge: finalEdge)
-        }
-
-        // Position arrow to point at anchor center
-        positionArrow(
-            popoverElement: popoverElement,
-            anchorBounds: anchorBounds,
-            popoverPosition: position,
-            edge: finalEdge
-        )
+        applyAnchorAttributes(for: anchor, to: popoverElement)
+        bridge.setAttribute(element: popoverElement, name: "data-edge", value: preferredEdge.rawValue)
+        positionPopoverElement(popoverElement)
     }
 
     /// Gets the bounding rectangle for an anchor.
@@ -283,21 +289,104 @@ public struct PopoverRenderer: Sendable {
     private static func getAnchorBounds(
         _ anchor: PopoverAttachmentAnchor
     ) -> CGRect? {
-        // In a complete implementation, this would:
-        // 1. For .source - get bounds of the source view element
-        // 2. For .rect - use the provided rect
-        // 3. For .point - create a small rect at the point
+        switch anchor {
+        case .rect(.bounds):
+            return nil
+        case .rect(.rect(let rect)):
+            return CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.size.width, height: rect.size.height)
+        case .point(let point):
+            return CGRect(x: point.x, y: point.y, width: 0, height: 0)
+        }
+    }
 
-        // Placeholder: return center of viewport
-        let viewportWidth = JSObject.global.window.innerWidth.number ?? 1024
-        let viewportHeight = JSObject.global.window.innerHeight.number ?? 768
+    private static func resolvedAnchorBounds(for popoverElement: JSObject) -> CGRect? {
+        guard let sourceID = popoverElement.getAttribute?(sourceIDAttribute).string,
+              let document = JSObject.global.document.object,
+              let sourceElement = document.querySelector?("[\(sourceIDAttribute)=\"\(sourceID)\"]").object
+        else {
+            return nil
+        }
+
+        var sourceRect = boundingRect(of: sourceElement)
+        if sourceRect.width <= 1 || sourceRect.height <= 1 {
+            if let child = sourceElement.firstElementChild.object {
+                sourceRect = boundingRect(of: child)
+            }
+        }
+
+        let anchorKind = popoverElement.getAttribute?(anchorKindAttribute).string ?? "rect-bounds"
+        switch anchorKind {
+        case "rect":
+            let x = Double(popoverElement.getAttribute?(anchorXAttribute).string ?? "") ?? 0
+            let y = Double(popoverElement.getAttribute?(anchorYAttribute).string ?? "") ?? 0
+            let width = Double(popoverElement.getAttribute?(anchorWidthAttribute).string ?? "") ?? sourceRect.width
+            let height = Double(popoverElement.getAttribute?(anchorHeightAttribute).string ?? "") ?? sourceRect.height
+            return CGRect(
+                x: sourceRect.minX + x,
+                y: sourceRect.minY + y,
+                width: width,
+                height: height
+            )
+        case "point":
+            let ux = Double(popoverElement.getAttribute?(anchorXAttribute).string ?? "") ?? 0.5
+            let uy = Double(popoverElement.getAttribute?(anchorYAttribute).string ?? "") ?? 0.5
+            return CGRect(
+                x: sourceRect.minX + (sourceRect.width * ux),
+                y: sourceRect.minY + (sourceRect.height * uy),
+                width: 1,
+                height: 1
+            )
+        default:
+            return sourceRect
+        }
+    }
+
+    private static func boundingRect(of element: JSObject) -> CGRect {
+        guard let rectObject = element.getBoundingClientRect?().object else {
+            return CGRect(x: 0, y: 0, width: 0, height: 0)
+        }
 
         return CGRect(
-            x: viewportWidth / 2,
-            y: viewportHeight / 2,
-            width: 1,
-            height: 1
+            x: rectObject.left.number ?? 0,
+            y: rectObject.top.number ?? 0,
+            width: rectObject.width.number ?? 0,
+            height: rectObject.height.number ?? 0
         )
+    }
+
+    private static func applyAnchorAttributes(for anchor: PopoverAttachmentAnchor, to props: inout [String: VProperty]) {
+        switch anchor {
+        case .rect(.bounds):
+            props[anchorKindAttribute] = .attribute(name: anchorKindAttribute, value: "rect-bounds")
+        case .rect(.rect(let rect)):
+            props[anchorKindAttribute] = .attribute(name: anchorKindAttribute, value: "rect")
+            props[anchorXAttribute] = .attribute(name: anchorXAttribute, value: String(rect.origin.x))
+            props[anchorYAttribute] = .attribute(name: anchorYAttribute, value: String(rect.origin.y))
+            props[anchorWidthAttribute] = .attribute(name: anchorWidthAttribute, value: String(rect.size.width))
+            props[anchorHeightAttribute] = .attribute(name: anchorHeightAttribute, value: String(rect.size.height))
+        case .point(let point):
+            props[anchorKindAttribute] = .attribute(name: anchorKindAttribute, value: "point")
+            props[anchorXAttribute] = .attribute(name: anchorXAttribute, value: String(point.x))
+            props[anchorYAttribute] = .attribute(name: anchorYAttribute, value: String(point.y))
+        }
+    }
+
+    private static func applyAnchorAttributes(for anchor: PopoverAttachmentAnchor, to element: JSObject) {
+        let bridge = DOMBridge.shared
+        switch anchor {
+        case .rect(.bounds):
+            bridge.setAttribute(element: element, name: anchorKindAttribute, value: "rect-bounds")
+        case .rect(.rect(let rect)):
+            bridge.setAttribute(element: element, name: anchorKindAttribute, value: "rect")
+            bridge.setAttribute(element: element, name: anchorXAttribute, value: String(rect.origin.x))
+            bridge.setAttribute(element: element, name: anchorYAttribute, value: String(rect.origin.y))
+            bridge.setAttribute(element: element, name: anchorWidthAttribute, value: String(rect.size.width))
+            bridge.setAttribute(element: element, name: anchorHeightAttribute, value: String(rect.size.height))
+        case .point(let point):
+            bridge.setAttribute(element: element, name: anchorKindAttribute, value: "point")
+            bridge.setAttribute(element: element, name: anchorXAttribute, value: String(point.x))
+            bridge.setAttribute(element: element, name: anchorYAttribute, value: String(point.y))
+        }
     }
 
     /// Calculates the position for a popover given an anchor and edge.

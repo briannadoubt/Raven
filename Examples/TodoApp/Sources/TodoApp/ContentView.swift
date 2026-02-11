@@ -1094,38 +1094,47 @@ struct LabeledContentDemo: View {
 // MARK: - Commands Demo
 
 @MainActor
+final class CommandsDemoStore: SwiftUI.ObservableObject {
+    @SwiftUI.Published var lastCommand: String = "None"
+
+    init() {
+        setupPublished()
+    }
+}
+
+@MainActor
 struct CommandsDemo: View {
-    @State private var lastCommand: String = "None"
+    @StateObject private var store = CommandsDemoStore()
 
     var body: some View {
         SectionCard(title: "Commands") {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Last command: \(lastCommand)")
+                Text("Last command: \(store.lastCommand)")
                     .font(.caption)
                     .foregroundColor(Color.secondaryLabel)
 
                 CommandMenu("File") {
                     CommandGroup(after: .newItem) {
-                        Button("New Note") { lastCommand = "New Note" }
-                        Button("New Todo List") { lastCommand = "New Todo List" }
+                        Button("New Note") { store.lastCommand = "New Note" }
+                        Button("New Todo List") { store.lastCommand = "New Todo List" }
                     }
 
                     CommandGroup(before: .saveItem) {
-                        Button("Open...") { lastCommand = "Open" }
-                        Button("Import") { lastCommand = "Import" }
+                        Button("Open...") { store.lastCommand = "Open" }
+                        Button("Import") { store.lastCommand = "Import" }
                     }
                 }
 
                 CommandMenu(Text("Edit")) {
                     CommandGroup(replacing: .undoRedo) {
-                        Button("Undo") { lastCommand = "Undo" }
-                        Button("Redo") { lastCommand = "Redo" }
+                        Button("Undo") { store.lastCommand = "Undo" }
+                        Button("Redo") { store.lastCommand = "Redo" }
                     }
 
                     CommandGroup(after: .textEditing) {
-                        Button("Cut") { lastCommand = "Cut" }
-                        Button("Copy") { lastCommand = "Copy" }
-                        Button("Paste") { lastCommand = "Paste" }
+                        Button("Cut") { store.lastCommand = "Cut" }
+                        Button("Copy") { store.lastCommand = "Copy" }
+                        Button("Paste") { store.lastCommand = "Paste" }
                     }
                 }
             }

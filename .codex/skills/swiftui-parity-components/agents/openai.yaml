@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwiftUI Parity Components"
+  short_description: "Add SwiftUI parity components with browser checks."
+  default_prompt: "Use $swiftui-parity-components to find missing SwiftUI components, implement them in Raven, validate them in TodoApp (light and dark mode), and prepare a branch and PR."

@@ -141,38 +141,38 @@ public enum CommandGroupPlacement: Sendable, Hashable {
 public struct CommandMenu<Content: View>: View, Commands, Sendable {
 
     private let label: Text
-    private let content: Content
+    private let contentBuilder: @MainActor @Sendable () -> Content
 
     @MainActor public init(
         _ title: LocalizedStringResource,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
     ) {
         self.label = Text(title.stringValue)
-        self.content = content()
+        self.contentBuilder = content
     }
 
     @MainActor public init(
         _ titleKey: LocalizedStringKey,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
     ) {
         self.label = Text(titleKey)
-        self.content = content()
+        self.contentBuilder = content
     }
 
     @MainActor public init(
         _ title: Text,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
     ) {
         self.label = title
-        self.content = content()
+        self.contentBuilder = content
     }
 
     @MainActor public init<S: StringProtocol>(
         _ title: S,
-        @ViewBuilder content: () -> Content
+        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
     ) {
         self.label = Text(String(title))
-        self.content = content()
+        self.contentBuilder = content
     }
 
     @MainActor public var body: some View {
@@ -181,7 +181,7 @@ public struct CommandMenu<Content: View>: View, Commands, Sendable {
                 .font(.headline)
                 .foregroundColor(Color.label)
 
-            content
+            contentBuilder()
         }
         .padding(10)
         .background(Color.systemBackground)
@@ -201,33 +201,33 @@ public struct CommandGroup<Content: View>: View, Commands, Sendable {
 
     private let placement: CommandGroupPlacement
     private let operation: Operation
-    private let content: Content
+    private let contentBuilder: @MainActor @Sendable () -> Content
 
     @MainActor public init(
         after placement: CommandGroupPlacement,
-        @ViewBuilder addition: () -> Content
+        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
     ) {
         self.placement = placement
         self.operation = .after
-        self.content = addition()
+        self.contentBuilder = addition
     }
 
     @MainActor public init(
         before placement: CommandGroupPlacement,
-        @ViewBuilder addition: () -> Content
+        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
     ) {
         self.placement = placement
         self.operation = .before
-        self.content = addition()
+        self.contentBuilder = addition
     }
 
     @MainActor public init(
         replacing placement: CommandGroupPlacement,
-        @ViewBuilder addition: () -> Content
+        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
     ) {
         self.placement = placement
         self.operation = .replacing
-        self.content = addition()
+        self.contentBuilder = addition
     }
 
     @MainActor public var body: some View {
@@ -236,7 +236,7 @@ public struct CommandGroup<Content: View>: View, Commands, Sendable {
                 .font(.caption)
                 .foregroundColor(Color.secondaryLabel)
 
-            content
+            contentBuilder()
         }
         .padding(8)
         .background(Color.secondarySystemBackground)

@@ -1,6 +1,18 @@
 import Foundation
 import JavaScriptKit
 
+@MainActor
+private func _ravenNextRuntimeID(prefix: String) -> String {
+    #if arch(wasm32)
+    let global = JSObject.global
+    let next = (global.__RAVEN_RUNTIME_ID_COUNTER.number ?? 0) + 1
+    global.__RAVEN_RUNTIME_ID_COUNTER = .number(next)
+    return "\(prefix)-\(Int(next))"
+    #else
+    return "\(prefix)-\(UUID().uuidString)"
+    #endif
+}
+
 // MARK: - Geometry Types
 
 /// A structure that contains a width and a height value.
@@ -317,7 +329,7 @@ internal struct _GeometryReaderContainer<Content: View>: View, PrimitiveView, Se
 /// 3. Attaches a ResizeObserver (when available) to keep measurements current
 @MainActor
 internal final class GeometryReaderController: @unchecked Sendable {
-    let id: String = UUID().uuidString
+    let id: String = _ravenNextRuntimeID(prefix: "geometry")
 
     private(set) var proxy: GeometryProxy = GeometryProxy(size: .zero, localFrame: .zero, globalFrame: .zero)
 
@@ -328,6 +340,7 @@ internal final class GeometryReaderController: @unchecked Sendable {
     private var resizeObserver: JSObject?
     private var resizeObserverClosure: JSClosure?
     private var observedElement: JSObject?
+    private var lastRenderScheduleTimeMS: Double = 0
 
     func startIfNeeded() {
         guard !didStart else { return }
@@ -384,12 +397,26 @@ internal final class GeometryReaderController: @unchecked Sendable {
         let oldSize = proxy.size
         let newSize = newProxy.size
 
-        func nearlyEqual(_ a: Double, _ b: Double, epsilon: Double = 0.5) -> Bool {
+        func nearlyEqual(_ a: Double, _ b: Double, epsilon: Double = 1.5) -> Bool {
             abs(a - b) < epsilon
         }
 
         // Only re-render when geometry materially changes; otherwise we'd RAF-loop forever.
         if !nearlyEqual(oldSize.width, newSize.width) || !nearlyEqual(oldSize.height, newSize.height) {
+            let widthDelta = abs(oldSize.width - newSize.width)
+            let heightDelta = abs(oldSize.height - newSize.height)
+            let nowMS = Date().timeIntervalSince1970 * 1000
+            let recentlyScheduled = (nowMS - lastRenderScheduleTimeMS) < 120
+            // Self-referential layout loops often drift in small steps (e.g. +32px/frame).
+            // Treat those as oscillation and suppress extra re-renders.
+            let likelyOscillation = widthDelta < 64 && heightDelta < 64
+
+            if recentlyScheduled && likelyOscillation {
+                proxy = newProxy
+                return
+            }
+
+            lastRenderScheduleTimeMS = nowMS
             proxy = newProxy
             renderScheduler?.scheduleRender()
         } else {
@@ -482,12 +509,27 @@ extension _GeometryReaderContainer: _CoordinatorRenderable {
 
         let childView = content(controller.proxy)
         let contentNode = context.renderChild(childView)
-        let children: [VNode]
+        let contentChildren: [VNode]
         if case .fragment = contentNode.type {
-            children = contentNode.children
+            contentChildren = contentNode.children
         } else {
-            children = [contentNode]
+            contentChildren = [contentNode]
         }
-        return VNode.element("div", props: mergedProps, children: children)
+
+        // GeometryReader content should not determine the GeometryReader's own size.
+        // It is laid out inside the measured container's bounds.
+        let contentWrapper = VNode.element(
+            "div",
+            props: [
+                "position": .style(name: "position", value: "absolute"),
+                "top": .style(name: "top", value: "0"),
+                "right": .style(name: "right", value: "0"),
+                "bottom": .style(name: "bottom", value: "0"),
+                "left": .style(name: "left", value: "0"),
+            ],
+            children: contentChildren
+        )
+
+        return VNode.element("div", props: mergedProps, children: [contentWrapper])
     }
 }

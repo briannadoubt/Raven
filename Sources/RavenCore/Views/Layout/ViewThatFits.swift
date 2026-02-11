@@ -1,6 +1,18 @@
 import Foundation
 import JavaScriptKit
 
+@MainActor
+private func _ravenNextRuntimeID(prefix: String) -> String {
+    #if arch(wasm32)
+    let global = JSObject.global
+    let next = (global.__RAVEN_RUNTIME_ID_COUNTER.number ?? 0) + 1
+    global.__RAVEN_RUNTIME_ID_COUNTER = .number(next)
+    return "\(prefix)-\(Int(next))"
+    #else
+    return "\(prefix)-\(UUID().uuidString)"
+    #endif
+}
+
 /// A container view that selects the first child view that fits within the available space.
 ///
 /// `ViewThatFits` enables responsive design by automatically choosing between multiple
@@ -255,7 +267,7 @@ public struct ViewThatFits<Content: View>: View, PrimitiveView, Sendable {
 
 @MainActor
 internal final class ViewThatFitsController: @unchecked Sendable {
-    let id: String = UUID().uuidString
+    let id: String = _ravenNextRuntimeID(prefix: "vtf")
 
     private(set) var selectedIndex: Int = 0
 

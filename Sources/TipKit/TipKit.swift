@@ -509,6 +509,7 @@ private struct _TipCardView: View {
                     Text("x")
                 }
                 .buttonStyle(.borderless)
+                .foregroundColor(Color.white.opacity(0.8))
             }
             if let message = tip.message {
                 message
@@ -524,14 +525,16 @@ private struct _TipCardView: View {
                         }) {
                             action.label()
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
                     }
                 }
             }
         }
+        .foregroundColor(.white)
         .padding(12)
         .background(Color(red: 0.12, green: 0.12, blue: 0.14, opacity: 0.96))
         .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.28), radius: 10, x: 0, y: 6)
     }
 }
 
