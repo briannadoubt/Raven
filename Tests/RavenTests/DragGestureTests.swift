@@ -1,12 +1,12 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 // Type aliases to avoid ambiguity with CoreFoundation types
-typealias RPoint = Raven.CGPoint
-typealias RSize = Raven.CGSize
-typealias RRect = Raven.CGRect
+typealias RPoint = SwiftUI.CGPoint
+typealias RSize = SwiftUI.CGSize
+typealias RRect = SwiftUI.CGRect
 
 /// Comprehensive test suite for DragGesture.
 ///

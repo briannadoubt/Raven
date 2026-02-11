@@ -48,7 +48,7 @@ The Performance module provides detailed insights into rendering performance, in
 ### Basic Profiling Session
 
 ```swift
-import Raven
+import SwiftUI
 
 // Get shared profiler instance
 let profiler = RenderProfiler.shared

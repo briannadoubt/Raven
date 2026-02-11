@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Comprehensive tests for the PresentationCoordinator and related types.

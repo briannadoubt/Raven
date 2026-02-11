@@ -1,4 +1,4 @@
-import Raven
+import SwiftUI
 
 /// Interactive animation examples demonstrating Raven's animation capabilities
 @main

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Tests for the gesture recognition state machine.
@@ -64,7 +64,7 @@ import Testing
     // MARK: - DragGestureState Tests
 
     @Test func dragGestureStateInitialization() {
-        let startLocation = Raven.CGPoint(x: 100, y: 200)
+        let startLocation = SwiftUI.CGPoint(x: 100, y: 200)
         let startTime = Date().timeIntervalSince1970
         let minimumDistance = 10.0
 
@@ -83,7 +83,7 @@ import Testing
     }
 
     @Test func dragGestureStateMinimumDistanceThreshold() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         let state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -91,24 +91,24 @@ import Testing
         )
 
         // Test point within minimum distance (should not exceed)
-        let nearPoint = Raven.CGPoint(x: 5, y: 5)
+        let nearPoint = SwiftUI.CGPoint(x: 5, y: 5)
         let distanceToNear = sqrt(5*5 + 5*5) // ~7.07
         #expect(distanceToNear < 10.0)
         #expect(!state.hasExceededMinimumDistance(to: nearPoint))
 
         // Test point exactly at minimum distance
-        let exactPoint = Raven.CGPoint(x: 0, y: 10)
+        let exactPoint = SwiftUI.CGPoint(x: 0, y: 10)
         #expect(state.hasExceededMinimumDistance(to: exactPoint))
 
         // Test point beyond minimum distance (should exceed)
-        let farPoint = Raven.CGPoint(x: 10, y: 10)
+        let farPoint = SwiftUI.CGPoint(x: 10, y: 10)
         let distanceToFar = sqrt(10*10 + 10*10) // ~14.14
         #expect(distanceToFar > 10.0)
         #expect(state.hasExceededMinimumDistance(to: farPoint))
     }
 
     @Test func dragGestureStateAddSample() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -118,10 +118,10 @@ import Testing
         #expect(state.positionSamples.count == 1)
 
         // Add samples
-        state.addSample(location: Raven.CGPoint(x: 10, y: 10), time: 0.1)
+        state.addSample(location: SwiftUI.CGPoint(x: 10, y: 10), time: 0.1)
         #expect(state.positionSamples.count == 2)
 
-        state.addSample(location: Raven.CGPoint(x: 20, y: 20), time: 0.2)
+        state.addSample(location: SwiftUI.CGPoint(x: 20, y: 20), time: 0.2)
         // The rolling velocity window is 100ms, so the initial 0.0 sample is evicted.
         #expect(state.positionSamples.count == 2)
 
@@ -130,7 +130,7 @@ import Testing
     }
 
     @Test func dragGestureStateVelocityCalculation() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -138,7 +138,7 @@ import Testing
         )
 
         // Add sample that moves 100 points in 0.1 seconds
-        state.addSample(location: Raven.CGPoint(x: 100, y: 100), time: 0.1)
+        state.addSample(location: SwiftUI.CGPoint(x: 100, y: 100), time: 0.1)
 
         let velocity = state.calculateVelocity()
 
@@ -148,7 +148,7 @@ import Testing
     }
 
     @Test func dragGestureStateVelocityWithMultipleSamples() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -156,10 +156,10 @@ import Testing
         )
 
         // Add multiple samples
-        state.addSample(location: Raven.CGPoint(x: 25, y: 25), time: 0.025)
-        state.addSample(location: Raven.CGPoint(x: 50, y: 50), time: 0.05)
-        state.addSample(location: Raven.CGPoint(x: 75, y: 75), time: 0.075)
-        state.addSample(location: Raven.CGPoint(x: 100, y: 100), time: 0.1)
+        state.addSample(location: SwiftUI.CGPoint(x: 25, y: 25), time: 0.025)
+        state.addSample(location: SwiftUI.CGPoint(x: 50, y: 50), time: 0.05)
+        state.addSample(location: SwiftUI.CGPoint(x: 75, y: 75), time: 0.075)
+        state.addSample(location: SwiftUI.CGPoint(x: 100, y: 100), time: 0.1)
 
         let velocity = state.calculateVelocity()
 
@@ -169,7 +169,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionStateTransitions() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -193,7 +193,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionFromPossibleToCancelled() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -207,7 +207,7 @@ import Testing
     }
 
     @Test func dragGestureStateRecognitionFromPossibleToFailed() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -221,7 +221,7 @@ import Testing
     }
 
     @Test func dragGestureStateDeprecatedIsRecognizedGetter() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: Date().timeIntervalSince1970,
@@ -254,7 +254,7 @@ import Testing
     }
 
     @Test func dragGestureStateSampleWindowManagement() {
-        let startLocation = Raven.CGPoint(x: 0, y: 0)
+        let startLocation = SwiftUI.CGPoint(x: 0, y: 0)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -265,7 +265,7 @@ import Testing
         for i in 1...20 {
             let time = Double(i) * 0.01 // 10ms intervals
             state.addSample(
-                location: Raven.CGPoint(x: Double(i) * 5, y: Double(i) * 5),
+                location: SwiftUI.CGPoint(x: Double(i) * 5, y: Double(i) * 5),
                 time: time
             )
         }
@@ -279,7 +279,7 @@ import Testing
 
     @Test func dragGestureStateRealisticDragScenario() {
         // Simulate a realistic drag gesture
-        let startLocation = Raven.CGPoint(x: 100, y: 100)
+        let startLocation = SwiftUI.CGPoint(x: 100, y: 100)
         var state = DragGestureState(
             startLocation: startLocation,
             startTime: 0.0,
@@ -290,19 +290,19 @@ import Testing
         #expect(state.recognitionState == .possible)
 
         // Small movements shouldn't exceed threshold
-        state.addSample(location: Raven.CGPoint(x: 102, y: 103), time: 0.016)
-        #expect(!state.hasExceededMinimumDistance(to: Raven.CGPoint(x: 102, y: 103)))
+        state.addSample(location: SwiftUI.CGPoint(x: 102, y: 103), time: 0.016)
+        #expect(!state.hasExceededMinimumDistance(to: SwiftUI.CGPoint(x: 102, y: 103)))
 
         // Larger movement exceeds threshold
-        state.addSample(location: Raven.CGPoint(x: 115, y: 115), time: 0.032)
-        #expect(state.hasExceededMinimumDistance(to: Raven.CGPoint(x: 115, y: 115)))
+        state.addSample(location: SwiftUI.CGPoint(x: 115, y: 115), time: 0.032)
+        #expect(state.hasExceededMinimumDistance(to: SwiftUI.CGPoint(x: 115, y: 115)))
 
         // Would transition to .began in actual implementation
         state.recognitionState = .began
         #expect(state.recognitionState == .began)
 
         // Continue dragging
-        state.addSample(location: Raven.CGPoint(x: 130, y: 130), time: 0.048)
+        state.addSample(location: SwiftUI.CGPoint(x: 130, y: 130), time: 0.048)
         state.recognitionState = .changed
         #expect(state.recognitionState == .changed)
 

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 
 // MARK: - Stable NodeID Tests
 

@@ -1,5 +1,5 @@
 import Foundation
-import Raven
+import SwiftUI
 import TipKit
 
 // MARK: - Unique ID Generation
@@ -59,24 +59,24 @@ enum Tab: String, Codable, Hashable, Sendable {
 
 /// Central store managing all showcase state including todos and form controls
 @MainActor
-final class ShowcaseStore: Raven.ObservableObject {
+final class ShowcaseStore: SwiftUI.ObservableObject {
     // -- Tab state --
     @AppStorage("TodoApp.selectedTab") var selectedTab: Tab = .todos
 
     // -- Todo state --
-    @Raven.Published var todos: [TodoItem] = []
+    @SwiftUI.Published var todos: [TodoItem] = []
 
-    @Raven.Published var filter: Filter = .all
-    @Raven.Published var searchText: String = ""
-    @Raven.Published var isSearchFocused: Bool = false
-    @Raven.Published var isDropTargeted: Bool = false
-    @Raven.Published var isImportPresented: Bool = false
-    @Raven.Published var lastImportedFilesSummary: String = ""
-    @Raven.Published var selectedTodoId: UUID? = nil
-    @Raven.Published var todosSplitVisibility: NavigationSplitViewVisibility = .all
-    @Raven.Published var todoSidebarPath: NavigationPath = NavigationPath()
-    @Raven.Published var todoListPath: NavigationPath = NavigationPath()
-    @Raven.Published var todoDetailPath: NavigationPath = NavigationPath()
+    @SwiftUI.Published var filter: Filter = .all
+    @SwiftUI.Published var searchText: String = ""
+    @SwiftUI.Published var isSearchFocused: Bool = false
+    @SwiftUI.Published var isDropTargeted: Bool = false
+    @SwiftUI.Published var isImportPresented: Bool = false
+    @SwiftUI.Published var lastImportedFilesSummary: String = ""
+    @SwiftUI.Published var selectedTodoId: UUID? = nil
+    @SwiftUI.Published var todosSplitVisibility: NavigationSplitViewVisibility = .all
+    @SwiftUI.Published var todoSidebarPath: NavigationPath = NavigationPath()
+    @SwiftUI.Published var todoListPath: NavigationPath = NavigationPath()
+    @SwiftUI.Published var todoDetailPath: NavigationPath = NavigationPath()
 
     enum Filter: String, CaseIterable, Sendable {
         case all = "All"
@@ -85,15 +85,15 @@ final class ShowcaseStore: Raven.ObservableObject {
     }
 
     // -- Controls state --
-    @Raven.Published var toggleValue: Bool = false
-    @Raven.Published var sliderValue: Double = 50.0
-    @Raven.Published var stepperValue: Int = 0
-    @Raven.Published var secureText: String = ""
-    @Raven.Published var progressValue: Double = 0.65
-    @Raven.Published var pickerSelection: String = "option1"
-    @Raven.Published var disclosureExpanded: Bool = false
-    @Raven.Published var colorPickerValue: Color = .blue
-    @Raven.Published var datePickerValue: Date = Date()
+    @SwiftUI.Published var toggleValue: Bool = false
+    @SwiftUI.Published var sliderValue: Double = 50.0
+    @SwiftUI.Published var stepperValue: Int = 0
+    @SwiftUI.Published var secureText: String = ""
+    @SwiftUI.Published var progressValue: Double = 0.65
+    @SwiftUI.Published var pickerSelection: String = "option1"
+    @SwiftUI.Published var disclosureExpanded: Bool = false
+    @SwiftUI.Published var colorPickerValue: Color = .blue
+    @SwiftUI.Published var datePickerValue: Date = Date()
     init() {
         setupPublished()
 
@@ -282,7 +282,7 @@ private struct _WelcomeTip: Tip {
     var title: Text { Text("Welcome to Raven") }
 
     var message: Text? {
-        Text("This is a TipKit-style tip rendered via Raven. It is gated by a @Parameter and a #Rule macro.")
+        Text("This is a TipKit-style tip rendered via SwiftUI. It is gated by a @Parameter and a #Rule macro.")
     }
 
     var actions: [Tips.Action] {
@@ -2087,7 +2087,7 @@ struct FormattedInputDemo: View {
                 NumberFormatField("Completion %", value: Binding(
                     get: { percentageValue },
                     set: { percentageValue = $0 }
-                ), formatter: Raven.NumberFormatter.percentage, range: 0...100)
+                ), formatter: SwiftUI.NumberFormatter.percentage, range: 0...100)
 
                 PhoneNumberField("Phone", text: Binding(
                     get: { phoneNumberValue },

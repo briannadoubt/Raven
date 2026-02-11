@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Additional test coverage for edge cases and untested code paths

@@ -1,5 +1,5 @@
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Simplified verification tests for @Observable and @Bindable

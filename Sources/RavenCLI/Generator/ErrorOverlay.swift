@@ -174,7 +174,7 @@ public struct ErrorOverlay: Sendable {
                             </p>
                             <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
                                 <li>Check syntax errors in your Swift code</li>
-                                <li>Verify all imports are correct (e.g., <code style="background: #333; padding: 2px 6px; border-radius: 3px;">import Raven</code>)</li>
+                                <li>Verify all imports are correct (e.g., <code style="background: #333; padding: 2px 6px; border-radius: 3px;">import SwiftUI</code>)</li>
                                 <li>Ensure View protocol requirements are met</li>
                                 <li>Check that async/await is used correctly</li>
                             </ul>

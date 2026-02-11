@@ -1,5 +1,5 @@
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Tests for PopoverAttachmentAnchor and its nested types.
@@ -26,7 +26,7 @@ import Testing
     }
 
     @Test func rectCustomAnchor() {
-        let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let rect = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
 
         switch anchor {
@@ -96,7 +96,7 @@ import Testing
     }
 
     @Test func rectCustomEquality() {
-        let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let rect = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor1 = PopoverAttachmentAnchor.rect(.rect(rect))
         let anchor2 = PopoverAttachmentAnchor.rect(.rect(rect))
 
@@ -104,8 +104,8 @@ import Testing
     }
 
     @Test func rectCustomInequality() {
-        let rect1 = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
-        let rect2 = Raven.CGRect(x: 15, y: 25, width: 100, height: 50)
+        let rect1 = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let rect2 = SwiftUI.CGRect(x: 15, y: 25, width: 100, height: 50)
         let anchor1 = PopoverAttachmentAnchor.rect(.rect(rect1))
         let anchor2 = PopoverAttachmentAnchor.rect(.rect(rect2))
 
@@ -179,7 +179,7 @@ import Testing
     }
 
     @Test func nestedAnchorRect() {
-        let rect = Raven.CGRect(x: 5, y: 10, width: 50, height: 25)
+        let rect = SwiftUI.CGRect(x: 5, y: 10, width: 50, height: 25)
         let anchor = PopoverAttachmentAnchor.Anchor.rect(rect)
 
         switch anchor {
@@ -215,7 +215,7 @@ import Testing
     }
 
     @Test func rectCustomDescription() {
-        let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let rect = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
         let description = anchor.description
 
@@ -239,7 +239,7 @@ import Testing
     }
 
     @Test func nestedAnchorRectDescription() {
-        let rect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let rect = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
         let anchor = PopoverAttachmentAnchor.Anchor.rect(rect)
         let description = anchor.description
 
@@ -301,9 +301,9 @@ import Testing
     }
 
     @Test func cgRectCustomValues() {
-        let customRect = Raven.CGRect(
-            origin: Raven.CGPoint(x: 100, y: 200),
-            size: Raven.CGSize(width: 300, height: 400)
+        let customRect = SwiftUI.CGRect(
+            origin: SwiftUI.CGPoint(x: 100, y: 200),
+            size: SwiftUI.CGSize(width: 300, height: 400)
         )
         let anchor = PopoverAttachmentAnchor.rect(.rect(customRect))
 
@@ -321,7 +321,7 @@ import Testing
     // MARK: - Edge Case Tests
 
     @Test func negativeCoordinates() {
-        let rect = Raven.CGRect(x: -10, y: -20, width: 50, height: 60)
+        let rect = SwiftUI.CGRect(x: -10, y: -20, width: 50, height: 60)
         let anchor = PopoverAttachmentAnchor.rect(.rect(rect))
 
         switch anchor {

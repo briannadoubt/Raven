@@ -36,7 +36,7 @@ Real-time performance metrics overlay that displays in the top-right corner of y
 #### Usage
 
 ```swift
-import Raven
+import SwiftUI
 
 // Toggle overlay programmatically
 DebugOverlay.shared.show()
@@ -182,7 +182,7 @@ struct ExpensiveView: View {
 The debug overlay integrates seamlessly with the performance profiler:
 
 ```swift
-import Raven
+import SwiftUI
 
 @MainActor
 class AppCoordinator {

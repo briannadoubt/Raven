@@ -208,7 +208,7 @@ Open `Sources/MyFirstApp/App.swift` and replace the content with:
 
 ```swift
 import Foundation
-import Raven
+import SwiftUI
 
 /// Main application view - a simple counter example
 @MainActor
@@ -252,7 +252,7 @@ Open `Sources/MyFirstApp/main.swift` and uncomment the Raven code:
 ```swift
 import Foundation
 import JavaScriptKit
-import Raven
+import SwiftUI
 import RavenRuntime
 
 @MainActor
@@ -922,7 +922,7 @@ MyProject/
 
 ```swift
 import Foundation          // Swift standard library
-import Raven              // Views, State, etc.
+import SwiftUI              // Views, State, etc.
 import RavenRuntime       // RenderCoordinator
 import JavaScriptKit      // DOM interop
 ```

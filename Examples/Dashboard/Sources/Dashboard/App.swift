@@ -1,9 +1,9 @@
 import Foundation
-import Raven
+import SwiftUI
 
 // Import Raven's ObservableObject explicitly to avoid ambiguity with Foundation
-typealias ObservableObject = Raven.ObservableObject
-typealias Published = Raven.Published
+typealias ObservableObject = SwiftUI.ObservableObject
+typealias Published = SwiftUI.Published
 
 // MARK: - Dashboard Store
 

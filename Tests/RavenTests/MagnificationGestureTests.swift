@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Comprehensive test suite for MagnificationGesture.
@@ -51,7 +51,7 @@ struct MagnificationGestureTests {
         let gesture = MagnificationGesture()
 
         // Verify Value type matches Raven's CGFloat (alias-safe across platforms)
-        #expect(MagnificationGesture.Value.self == Raven.CGFloat.self)
+        #expect(MagnificationGesture.Value.self == SwiftUI.CGFloat.self)
 
         // Verify Body type is Never (primitive gesture)
         #expect(MagnificationGesture.Body.self == Never.self)

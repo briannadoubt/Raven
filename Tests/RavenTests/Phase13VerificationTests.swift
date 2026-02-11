@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Phase 13 Verification Tests
@@ -234,9 +234,9 @@ struct Phase13VerificationTests {
 
     @Test("Drag gesture value structure")
     @MainActor func dragGestureValue() {
-        let startLocation = Raven.CGPoint(x: 10, y: 20)
-        let currentLocation = Raven.CGPoint(x: 50, y: 80)
-        let velocity = Raven.CGSize(width: 100, height: 200)
+        let startLocation = SwiftUI.CGPoint(x: 10, y: 20)
+        let currentLocation = SwiftUI.CGPoint(x: 50, y: 80)
+        let velocity = SwiftUI.CGSize(width: 100, height: 200)
 
         let value = DragGesture.Value(
             location: currentLocation,
@@ -334,9 +334,9 @@ struct Phase13VerificationTests {
 
     @Test("GestureState with default value")
     @MainActor func gestureStateDefault() {
-        @GestureState var dragOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var dragOffset = SwiftUI.CGSize(width: 0, height: 0)
 
-        #expect(dragOffset == Raven.CGSize(width: 0, height: 0))
+        #expect(dragOffset == SwiftUI.CGSize(width: 0, height: 0))
     }
 
     @Test("GestureState with custom initial value")
@@ -348,7 +348,7 @@ struct Phase13VerificationTests {
 
     @Test("GestureState updating with drag")
     @MainActor func gestureStateUpdating() {
-        @GestureState var dragOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var dragOffset = SwiftUI.CGSize(width: 0, height: 0)
 
         let view = Circle()
             .offset(x: dragOffset.width, y: dragOffset.height)
@@ -376,7 +376,7 @@ struct Phase13VerificationTests {
 
     @Test("GestureState with multiple properties")
     @MainActor func gestureStateMultiple() {
-        @GestureState var gestureOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var gestureOffset = SwiftUI.CGSize(width: 0, height: 0)
         @GestureState var isDragging = false
 
         let view = Rectangle()
@@ -673,8 +673,8 @@ struct Phase13VerificationTests {
 
     @Test("Draggable card with snap back")
     @MainActor func draggableCard() {
-        @GestureState var dragOffset = Raven.CGSize(width: 0, height: 0)
-        @State var permanentOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var dragOffset = SwiftUI.CGSize(width: 0, height: 0)
+        @State var permanentOffset = SwiftUI.CGSize(width: 0, height: 0)
 
         let view = RoundedRectangle(cornerRadius: 20)
             .fill(Color.blue)
@@ -756,7 +756,7 @@ struct Phase13VerificationTests {
 
     @Test("Long press then drag reorder")
     @MainActor func longPressDragReorder() {
-        @GestureState var dragOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var dragOffset = SwiftUI.CGSize(width: 0, height: 0)
         @State var isLongPressing = false
 
         let view = RoundedRectangle(cornerRadius: 10)
@@ -852,7 +852,7 @@ struct Phase13VerificationTests {
 
     @Test("Gesture with Phase 10 shapes")
     @MainActor func gestureWithShapes() {
-        @GestureState var dragOffset = Raven.CGSize(width: 0, height: 0)
+        @GestureState var dragOffset = SwiftUI.CGSize(width: 0, height: 0)
 
         let view = RoundedRectangle(cornerRadius: 20)
             .fill(Color.blue)

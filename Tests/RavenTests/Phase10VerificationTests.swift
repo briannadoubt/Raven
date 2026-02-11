@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Phase 10 Verification Tests
@@ -139,9 +139,9 @@ struct Phase10VerificationTests {
     // MARK: - Custom Path Shapes
 
     struct StarShape: Shape {
-        func path(in rect: Raven.CGRect) -> Path {
+        func path(in rect: SwiftUI.CGRect) -> Path {
             var path = Path()
-            let center = Raven.CGPoint(x: rect.midX, y: rect.midY)
+            let center = SwiftUI.CGPoint(x: rect.midX, y: rect.midY)
             let radius = min(rect.width, rect.height) / 2
             let innerRadius = radius * 0.4
             let points = 5
@@ -153,9 +153,9 @@ struct Phase10VerificationTests {
                 let y = center.y + r * sin(angle)
 
                 if i == 0 {
-                    path.move(to: Raven.CGPoint(x: x, y: y))
+                    path.move(to: SwiftUI.CGPoint(x: x, y: y))
                 } else {
-                    path.addLine(to: Raven.CGPoint(x: x, y: y))
+                    path.addLine(to: SwiftUI.CGPoint(x: x, y: y))
                 }
             }
             path.closeSubpath()
@@ -188,11 +188,11 @@ struct Phase10VerificationTests {
     }
 
     struct TriangleShape: Shape {
-        func path(in rect: Raven.CGRect) -> Path {
+        func path(in rect: SwiftUI.CGRect) -> Path {
             var path = Path()
-            path.move(to: Raven.CGPoint(x: rect.midX, y: rect.minY))
-            path.addLine(to: Raven.CGPoint(x: rect.maxX, y: rect.maxY))
-            path.addLine(to: Raven.CGPoint(x: rect.minX, y: rect.maxY))
+            path.move(to: SwiftUI.CGPoint(x: rect.midX, y: rect.minY))
+            path.addLine(to: SwiftUI.CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: SwiftUI.CGPoint(x: rect.minX, y: rect.maxY))
             path.closeSubpath()
             return path
         }
@@ -531,7 +531,7 @@ struct Phase10VerificationTests {
         var path = Path()
         path.addRect(CGRect(x: 0, y: 0, width: 50, height: 50))
 
-        let transform = Raven.CGAffineTransform(scaleX: 2, y: 2)
+        let transform = SwiftUI.CGAffineTransform(scaleX: 2, y: 2)
 
         let transformedPath = path.applying(transform)
 

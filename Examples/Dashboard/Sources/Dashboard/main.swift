@@ -1,5 +1,5 @@
 import Foundation
-import Raven
+import SwiftUI
 import RavenRuntime
 
 /// Entry point for the Dashboard app

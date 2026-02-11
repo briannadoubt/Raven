@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Comprehensive test suite for TapGesture and SpatialTapGesture.
@@ -155,7 +155,7 @@ struct TapGestureTests {
         let gesture = SpatialTapGesture()
 
         // Verify Value type matches Raven's CGPoint (avoids Foundation/CoreGraphics collisions)
-        #expect(SpatialTapGesture.Value.self == Raven.CGPoint.self)
+        #expect(SpatialTapGesture.Value.self == SwiftUI.CGPoint.self)
 
         // Verify Body type is Never (primitive gesture)
         #expect(SpatialTapGesture.Body.self == Never.self)
@@ -195,7 +195,7 @@ struct TapGestureTests {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
 
         // Element bounds at (100, 100) with size 200x200
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Click at viewport coordinates (150, 150)
         let location = gesture.extractLocation(
@@ -213,7 +213,7 @@ struct TapGestureTests {
     func testSpatialTapGestureGlobalCoordinates() {
         let gesture = SpatialTapGesture(coordinateSpace: .global)
 
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Click at viewport coordinates (250, 300)
         let location = gesture.extractLocation(
@@ -231,8 +231,8 @@ struct TapGestureTests {
     func testSpatialTapGestureNamedCoordinates() {
         let gesture = SpatialTapGesture(coordinateSpace: .named("container"))
 
-        let elementBounds = Raven.CGRect(x: 200, y: 200, width: 100, height: 100)
-        let ancestorBounds = Raven.CGRect(x: 50, y: 50, width: 400, height: 400)
+        let elementBounds = SwiftUI.CGRect(x: 200, y: 200, width: 100, height: 100)
+        let ancestorBounds = SwiftUI.CGRect(x: 50, y: 50, width: 400, height: 400)
 
         // Click at viewport coordinates (225, 275)
         let location = gesture.extractLocation(
@@ -251,7 +251,7 @@ struct TapGestureTests {
     func testSpatialTapGestureNamedCoordinatesFallback() {
         let gesture = SpatialTapGesture(coordinateSpace: .named("missing"))
 
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Click at viewport coordinates (150, 200)
         // No ancestor bounds provided - should fallback to global
@@ -269,7 +269,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture handles top-left corner tap")
     func testSpatialTapGestureTopLeftCorner() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Tap exactly at element's top-left corner
         let location = gesture.extractLocation(
@@ -285,7 +285,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture handles bottom-right corner tap")
     func testSpatialTapGestureBottomRightCorner() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Tap at element's bottom-right corner (300, 300)
         let location = gesture.extractLocation(
@@ -301,7 +301,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture handles center tap")
     func testSpatialTapGestureCenter() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 200, height: 200)
 
         // Tap at element's center (200, 200)
         let location = gesture.extractLocation(
@@ -317,7 +317,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture handles fractional coordinates")
     func testSpatialTapGestureFractionalCoordinates() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: 50.5, y: 75.25, width: 100, height: 100)
+        let elementBounds = SwiftUI.CGRect(x: 50.5, y: 75.25, width: 100, height: 100)
 
         // Tap at fractional coordinates
         let location = gesture.extractLocation(
@@ -367,7 +367,7 @@ struct TapGestureTests {
     @Test("CGPoint extraction handles zero-sized elements")
     func testCGPointExtractionZeroSizedElement() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: 100, y: 100, width: 0, height: 0)
+        let elementBounds = SwiftUI.CGRect(x: 100, y: 100, width: 0, height: 0)
 
         let location = gesture.extractLocation(
             clientX: 100,
@@ -382,7 +382,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture with very large coordinates")
     func testSpatialTapGestureLargeCoordinates() {
         let gesture = SpatialTapGesture(coordinateSpace: .global)
-        let elementBounds = Raven.CGRect(x: 0, y: 0, width: 100, height: 100)
+        let elementBounds = SwiftUI.CGRect(x: 0, y: 0, width: 100, height: 100)
 
         let location = gesture.extractLocation(
             clientX: 10000,
@@ -397,7 +397,7 @@ struct TapGestureTests {
     @Test("SpatialTapGesture with negative element bounds")
     func testSpatialTapGestureNegativeBounds() {
         let gesture = SpatialTapGesture(coordinateSpace: .local)
-        let elementBounds = Raven.CGRect(x: -100, y: -100, width: 200, height: 200)
+        let elementBounds = SwiftUI.CGRect(x: -100, y: -100, width: 200, height: 200)
 
         let location = gesture.extractLocation(
             clientX: 0,

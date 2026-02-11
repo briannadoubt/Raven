@@ -23,8 +23,7 @@ let package = Package(
         .executableTarget(
             name: "FormControls",
             dependencies: [
-                .product(name: "Raven", package: "Raven"),
-                .product(name: "RavenRuntime", package: "Raven")
+                .product(name: "Raven", package: "Raven")
             ],
             path: "Sources/FormControls",
             swiftSettings: [

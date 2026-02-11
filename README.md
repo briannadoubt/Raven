@@ -53,7 +53,7 @@ Add Raven as a Swift Package dependency in Xcode or via `Package.swift`.
 ## Example Code
 
 ```swift
-import Raven
+import SwiftUI
 
 @MainActor
 struct HelloView: View {

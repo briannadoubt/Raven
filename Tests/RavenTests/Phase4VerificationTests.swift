@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Comprehensive Phase 4 verification tests that validate the multi-screen app with rich UI works.
@@ -20,11 +20,11 @@ import Testing
     // MARK: - Test 1: GeometryReader Tests
 
     @Test func geometryProxySize() async throws {
-        let size = Raven.CGSize(width: 320, height: 480)
+        let size = SwiftUI.CGSize(width: 320, height: 480)
         let geometry = GeometryProxy(
             size: size,
-            localFrame: Raven.CGRect(x: 0, y: 0, width: 320, height: 480),
-            globalFrame: Raven.CGRect(x: 10, y: 20, width: 320, height: 480)
+            localFrame: SwiftUI.CGRect(x: 0, y: 0, width: 320, height: 480),
+            globalFrame: SwiftUI.CGRect(x: 10, y: 20, width: 320, height: 480)
         )
 
         #expect(geometry.size.width == 320)
@@ -33,9 +33,9 @@ import Testing
 
     @Test func geometryProxyLocalFrame() async throws {
         let geometry = GeometryProxy(
-            size: Raven.CGSize(width: 100, height: 200),
-            localFrame: Raven.CGRect(x: 0, y: 0, width: 100, height: 200),
-            globalFrame: Raven.CGRect(x: 50, y: 75, width: 100, height: 200)
+            size: SwiftUI.CGSize(width: 100, height: 200),
+            localFrame: SwiftUI.CGRect(x: 0, y: 0, width: 100, height: 200),
+            globalFrame: SwiftUI.CGRect(x: 50, y: 75, width: 100, height: 200)
         )
 
         let localFrame = geometry.frame(in: .local)
@@ -47,9 +47,9 @@ import Testing
 
     @Test func geometryProxyGlobalFrame() async throws {
         let geometry = GeometryProxy(
-            size: Raven.CGSize(width: 100, height: 200),
-            localFrame: Raven.CGRect(x: 0, y: 0, width: 100, height: 200),
-            globalFrame: Raven.CGRect(x: 50, y: 75, width: 100, height: 200)
+            size: SwiftUI.CGSize(width: 100, height: 200),
+            localFrame: SwiftUI.CGRect(x: 0, y: 0, width: 100, height: 200),
+            globalFrame: SwiftUI.CGRect(x: 50, y: 75, width: 100, height: 200)
         )
 
         let globalFrame = geometry.frame(in: .global)
@@ -687,9 +687,9 @@ import Testing
             let imageName: String
         }
 
-        class PhotoGalleryStore: Raven.ObservableObject {
-            @Raven.Published var photos: [Photo] = []
-            @Raven.Published var selectedPhoto: Photo?
+        class PhotoGalleryStore: SwiftUI.ObservableObject {
+            @SwiftUI.Published var photos: [Photo] = []
+            @SwiftUI.Published var selectedPhoto: Photo?
 
             init() {
                 setupPublished()
@@ -730,8 +730,8 @@ import Testing
             let title: String
         }
 
-        class PhotoStore: Raven.ObservableObject {
-            @Raven.Published var photos: [Photo] = []
+        class PhotoStore: SwiftUI.ObservableObject {
+            @SwiftUI.Published var photos: [Photo] = []
 
             init() {
                 setupPublished()
@@ -739,7 +739,7 @@ import Testing
         }
 
         struct HomeView: View {
-            @Raven.StateObject var store = PhotoStore()
+            @SwiftUI.StateObject var store = PhotoStore()
 
             var body: some View {
                 NavigationView {
@@ -773,8 +773,8 @@ import Testing
             var fontSize: Double
         }
 
-        class SettingsStore: Raven.ObservableObject {
-            @Raven.Published var settings = Settings(
+        class SettingsStore: SwiftUI.ObservableObject {
+            @SwiftUI.Published var settings = Settings(
                 notificationsEnabled: true,
                 theme: "light",
                 fontSize: 16
@@ -786,7 +786,7 @@ import Testing
         }
 
         struct SettingsView: View {
-            @Raven.StateObject var store = SettingsStore()
+            @SwiftUI.StateObject var store = SettingsStore()
 
             var body: some View {
                 NavigationView {
@@ -823,9 +823,9 @@ import Testing
             let description: String
         }
 
-        class AppState: Raven.ObservableObject {
-            @Raven.Published var photos: [Photo] = []
-            @Raven.Published var selectedCategory: String = "All"
+        class AppState: SwiftUI.ObservableObject {
+            @SwiftUI.Published var photos: [Photo] = []
+            @SwiftUI.Published var selectedCategory: String = "All"
 
             init() {
                 setupPublished()
@@ -869,7 +869,7 @@ import Testing
 
         @MainActor
         struct PhotoGridView: View {
-            @Raven.ObservedObject var appState: AppState
+            @SwiftUI.ObservedObject var appState: AppState
 
             var body: some View {
                 LazyVGrid(
@@ -899,7 +899,7 @@ import Testing
         }
 
         struct MainApp: View {
-            @Raven.StateObject var appState = AppState()
+            @SwiftUI.StateObject var appState = AppState()
 
             var body: some View {
                 NavigationView {
@@ -961,9 +961,9 @@ import Testing
             var isActive: Bool
         }
 
-        class CompleteStore: Raven.ObservableObject {
-            @Raven.Published var items: [Item] = []
-            @Raven.Published var searchText: String = ""
+        class CompleteStore: SwiftUI.ObservableObject {
+            @SwiftUI.Published var items: [Item] = []
+            @SwiftUI.Published var searchText: String = ""
 
             init() {
                 setupPublished()
@@ -1008,7 +1008,7 @@ import Testing
         }
 
         struct CompleteApp: View {
-            @Raven.StateObject var store = CompleteStore()
+            @SwiftUI.StateObject var store = CompleteStore()
 
             var body: some View {
                 NavigationView {

@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 // MARK: - Gesture Modifier Tests

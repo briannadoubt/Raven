@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Comprehensive tests for PopoverModifier and PopoverItemModifier.
@@ -258,7 +258,7 @@ import Testing
     @Test func popoverWithCustomRectAnchor() {
         let coordinator = PresentationCoordinator()
         var isPresented = true
-        let customRect = Raven.CGRect(x: 10, y: 20, width: 100, height: 50)
+        let customRect = SwiftUI.CGRect(x: 10, y: 20, width: 100, height: 50)
 
         let modifier = PopoverModifier(
             isPresented: Binding(

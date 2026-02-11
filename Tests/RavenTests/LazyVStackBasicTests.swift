@@ -1,5 +1,5 @@
 import Testing
-@testable import Raven
+@testable import SwiftUI
 @testable import RavenCore
 
 /// Basic tests for LazyVStack to verify it compiles and creates VNodes correctly.
