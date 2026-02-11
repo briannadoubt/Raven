@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-11T17:00:58.723039+00:00`
+Generated: `2026-02-11T18:39:50.421585+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,29 +10,27 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1510**
-- Missing in Raven: **3059**
-- Name-based coverage: **33.05%**
+- Matched by Raven: **1540**
+- Missing in Raven: **3029**
+- Name-based coverage: **33.71%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 343 | 0 | 1238 |
+| `Constructor` | 335 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1041 | 0 | 1366 |
+| `Func` | 1028 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 48 | 0 | 66 |
-| `Struct` | 323 | 0 | 484 |
+| `Protocol` | 47 | 0 | 66 |
+| `Struct` | 318 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 896 | 0 | 964 |
+| `Var` | 893 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
-- `CommandGroup` (Struct, owner: `SwiftUI`)
-- `CommandMenu` (Struct, owner: `SwiftUI`)
 - `DocumentLaunchView` (Struct, owner: `SwiftUI`)
 - `NewDocumentButton` (Struct, owner: `SwiftUI`)
 - `SubscriptionView` (Struct, owner: `SwiftUI`)
@@ -477,9 +475,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `Body`)
 - `body` (owner: `Button`)
 - `body` (owner: `ColorPicker`)
-- `body` (owner: `CommandGroup`)
-- `body` (owner: `CommandMenu`)
-- `body` (owner: `Commands`)
 - `body` (owner: `Content`)
 - `body` (owner: `ControlGroup`)
 - `body` (owner: `ControlWidget`)
@@ -543,6 +538,9 @@ Target: `arm64-apple-ios26.2`
 - `boldText` (owner: `AccessibilitySystemRotor`)
 - `borderlessButton` (owner: `MenuStyle`)
 - `bottomBar` (owner: `TabBarPlacement`)
+- `bottomBar` (owner: `ToolbarItemPlacement`)
+- `bottomBar` (owner: `ToolbarPlacement`)
+- `browser` (owner: `ToolbarRole`)
 
 ## Operator-Like API Gap Summary
 
