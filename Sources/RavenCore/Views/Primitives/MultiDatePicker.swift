@@ -172,11 +172,15 @@ public struct MultiDatePicker: View, Sendable {
 
     @MainActor
     private func toggleWorkingDate() {
-        let candidate = normalizedComponents(from: workingDate)
+        let candidateDate = normalizedDate(from: workingDate)
+        let candidate = normalizedComponents(from: candidateDate)
         var current = selection.wrappedValue
         if current.contains(candidate) {
             current.remove(candidate)
         } else {
+            guard bounds.contains(candidateDate) else {
+                return
+            }
             current.insert(candidate)
         }
         selection.wrappedValue = current
@@ -199,6 +203,13 @@ public struct MultiDatePicker: View, Sendable {
         components.calendar = nil
         components.timeZone = nil
         return components
+    }
+
+    @MainActor
+    private func normalizedDate(from date: Date) -> Date {
+        let calendar = Calendar(identifier: .gregorian)
+        let components = normalizedComponents(from: date)
+        return calendar.date(from: components) ?? date
     }
 
     @MainActor
@@ -236,4 +247,19 @@ private enum _Bounds: Sendable {
     case closed(ClosedRange<Date>)
     case from(Date)
     case through(Date)
+}
+
+private extension _Bounds {
+    func contains(_ date: Date) -> Bool {
+        switch self {
+        case .unbounded:
+            return true
+        case .closed(let range):
+            return range.contains(date)
+        case .from(let start):
+            return date >= start
+        case .through(let end):
+            return date <= end
+        }
+    }
 }
