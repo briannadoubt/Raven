@@ -1,6 +1,30 @@
 import ArgumentParser
 import Foundation
 
+enum BrowserTabURLMatcher {
+    static func normalize(_ rawURL: String) -> String {
+        guard rawURL.count > 1, rawURL.hasSuffix("/") else {
+            return rawURL
+        }
+        return String(rawURL.dropLast())
+    }
+
+    static func matches(candidateURL: String?, targetURL: String) -> Bool {
+        guard let candidateURL else {
+            return false
+        }
+
+        let normalizedTarget = normalize(targetURL)
+        let normalizedCandidate = normalize(candidateURL)
+
+        if normalizedCandidate == normalizedTarget {
+            return true
+        }
+
+        return normalizedCandidate.hasPrefix(normalizedTarget + "/")
+    }
+}
+
 struct DevCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "dev",
@@ -417,6 +441,13 @@ struct DevCommand: AsyncParsableCommand {
 
     private func openBrowser(url: String) {
         #if os(macOS)
+        if focusExistingBrowserTab(url: url) {
+            if verbose {
+                print("  Reused existing browser tab for \(url)")
+            }
+            return
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         process.arguments = [url]
@@ -428,6 +459,109 @@ struct DevCommand: AsyncParsableCommand {
         try? process.run()
         #endif
     }
+
+    #if os(macOS)
+    private func focusExistingBrowserTab(url: String) -> Bool {
+        let normalizedURL = BrowserTabURLMatcher.normalize(url)
+        let script = """
+        on run argv
+            if (count of argv) is 0 then return "not-found"
+            set targetURL to item 1 of argv
+
+            set chromiumBrowsers to {"Google Chrome", "Google Chrome Canary", "Chromium", "Microsoft Edge", "Brave Browser", "Arc"}
+            repeat with browserName in chromiumBrowsers
+                try
+                    if application browserName is running then
+                        tell application browserName
+                            repeat with w from 1 to count of windows
+                                set tabCount to count of tabs of window w
+                                repeat with t from 1 to tabCount
+                                    set tabURL to URL of tab t of window w
+                                    if my urlMatches(tabURL, targetURL) then
+                                        set active tab index of window w to t
+                                        set index of window w to 1
+                                        activate
+                                        return "reused"
+                                    end if
+                                end repeat
+                            end repeat
+                        end tell
+                    end if
+                end try
+            end repeat
+
+            try
+                if application "Safari" is running then
+                    tell application "Safari"
+                        repeat with w from 1 to count of windows
+                            set tabCount to count of tabs of window w
+                            repeat with t from 1 to tabCount
+                                set tabURL to URL of tab t of window w
+                                if my urlMatches(tabURL, targetURL) then
+                                    set current tab of window w to tab t of window w
+                                    set index of window w to 1
+                                    activate
+                                    return "reused"
+                                end if
+                            end repeat
+                        end repeat
+                    end tell
+                end if
+            end try
+
+            return "not-found"
+        end run
+
+        on normalizeURL(rawURL)
+            set rawText to rawURL as text
+            if rawText ends with "/" then
+                return text 1 thru -2 of rawText
+            end if
+            return rawText
+        end normalizeURL
+
+        on urlMatches(candidateURL, normalizedTarget)
+            if candidateURL is missing value then return false
+            set normalizedCandidate to my normalizeURL(candidateURL as text)
+            if normalizedCandidate is normalizedTarget then return true
+            if normalizedCandidate starts with (normalizedTarget & "/") then return true
+            return false
+        end urlMatches
+        """
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-", normalizedURL]
+
+        let inputPipe = Pipe()
+        let outputPipe = Pipe()
+        process.standardInput = inputPipe
+        process.standardOutput = outputPipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+
+        if let scriptData = script.data(using: .utf8) {
+            inputPipe.fileHandleForWriting.write(scriptData)
+        }
+        try? inputPipe.fileHandleForWriting.close()
+
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            return false
+        }
+
+        let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: outputData, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return output == "reused"
+    }
+    #endif
 
 }
 
