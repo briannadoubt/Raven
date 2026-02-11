@@ -1,6 +1,18 @@
 import Foundation
 import JavaScriptKit
 
+@MainActor
+private func _ravenNextRuntimeID(prefix: String) -> String {
+    #if arch(wasm32)
+    let global = JSObject.global
+    let next = (global.__RAVEN_RUNTIME_ID_COUNTER.number ?? 0) + 1
+    global.__RAVEN_RUNTIME_ID_COUNTER = .number(next)
+    return "\(prefix)-\(Int(next))"
+    #else
+    return "\(prefix)-\(UUID().uuidString)"
+    #endif
+}
+
 /// An opaque reference to the geometry of a view.
 ///
 /// Raven models `Anchor` similarly to SwiftUI's anchor preferences: an `Anchor`
@@ -46,7 +58,7 @@ public struct _AnchorPreferenceView<Content: View, K: PreferenceKey, A: Sendable
 
 @MainActor
 private final class _AnchorPreferenceID: @unchecked Sendable {
-    let id: String = UUID().uuidString
+    let id: String = _ravenNextRuntimeID(prefix: "anchor")
     init() {}
 }
 
@@ -171,12 +183,20 @@ extension GeometryProxy {
             // mutations, so querying now can return the previous frame's
             // coordinates. To converge, schedule a follow-up render when the
             // resolved anchor rect changes.
-            if let last = _AnchorResolutionCache.lastRectByLocator[locator],
-               nearlyEqualRect(last, rect) {
-                return
+            if let last = _AnchorResolutionCache.lastRectByLocator[locator] {
+                if nearlyEqualRect(last, rect) {
+                    return
+                }
             }
             _AnchorResolutionCache.lastRectByLocator[locator] = rect
-            _RenderScheduler.current?.scheduleRender()
+
+            // Avoid self-sustaining render loops from live anchor reads.
+            // We only request convergence when the anchor has no meaningful size yet.
+            // Once a non-zero rect is available, consumers can read it directly
+            // without forcing another full render cycle.
+            if rect.width <= 0.5 || rect.height <= 0.5 {
+                _RenderScheduler.current?.scheduleRender()
+            }
         }
 
         guard let document = JSObject.global.document.object else { return .zero }

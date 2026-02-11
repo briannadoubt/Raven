@@ -100,12 +100,10 @@ public struct _OverlayPreferenceValueView<Content: View, K: PreferenceKey, Overl
     let transform: @Sendable @MainActor (K.Value) -> Overlay
 
     @MainActor public func toVNode() -> VNode {
-        // Same wrapper strategy as `_OverlayView`.
+        // Overlay should not affect the base view's proposed size.
         let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue),
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative"),
         ]
         return VNode.element("div", props: props, children: [])
     }
@@ -120,14 +118,16 @@ extension _OverlayPreferenceValueView: _CoordinatorRenderable {
 
         guard case .element(let tag) = wrapperNode.type else { return contentNode }
 
-        let contentWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
-        ], children: [contentNode])
+        let contentWrapper = VNode.element("div", props: [:], children: [contentNode])
 
         let overlayWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+            "position": .style(name: "position", value: "absolute"),
+            "top": .style(name: "top", value: "0"),
+            "right": .style(name: "right", value: "0"),
+            "bottom": .style(name: "bottom", value: "0"),
+            "left": .style(name: "left", value: "0"),
+            "display": .style(name: "display", value: "grid"),
+            "place-items": .style(name: "place-items", value: alignment.cssValue),
         ], children: [overlayNode])
 
         return VNode(
@@ -148,12 +148,10 @@ public struct _BackgroundPreferenceValueView<Content: View, K: PreferenceKey, Ba
     let transform: @Sendable @MainActor (K.Value) -> Background
 
     @MainActor public func toVNode() -> VNode {
-        // Same wrapper strategy as `_BackgroundView`.
+        // Background should not affect the base view's proposed size.
         let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue),
+            "display": .style(name: "display", value: "block"),
+            "position": .style(name: "position", value: "relative"),
         ]
         return VNode.element("div", props: props, children: [])
     }
@@ -169,14 +167,16 @@ extension _BackgroundPreferenceValueView: _CoordinatorRenderable {
         guard case .element(let tag) = wrapperNode.type else { return contentNode }
 
         let bgWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
+            "position": .style(name: "position", value: "absolute"),
+            "top": .style(name: "top", value: "0"),
+            "right": .style(name: "right", value: "0"),
+            "bottom": .style(name: "bottom", value: "0"),
+            "left": .style(name: "left", value: "0"),
+            "display": .style(name: "display", value: "grid"),
+            "place-items": .style(name: "place-items", value: alignment.cssValue),
         ], children: [backgroundNode])
 
-        let contentWrapper = VNode.element("div", props: [
-            "grid-row": .style(name: "grid-row", value: "1 / -1"),
-            "grid-column": .style(name: "grid-column", value: "1 / -1"),
-        ], children: [contentNode])
+        let contentWrapper = VNode.element("div", props: [:], children: [contentNode])
 
         return VNode(
             id: wrapperNode.id,
