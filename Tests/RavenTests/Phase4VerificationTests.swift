@@ -450,8 +450,8 @@ import Testing
         let vnode = view.toVNode()
 
         #expect(vnode.isElement(tag: "div"))
-        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
-        #expect(vnode.props["place-items"] != nil)
+        #expect(vnode.props["display"] == .style(name: "display", value: "block"))
+        #expect(vnode.props["position"] == .style(name: "position", value: "relative"))
     }
 
     @Test func backgroundColorModifier() async throws {
@@ -471,7 +471,8 @@ import Testing
         let vnode = view.toVNode()
 
         #expect(vnode.isElement(tag: "div"))
-        #expect(vnode.props["display"] == .style(name: "display", value: "grid"))
+        #expect(vnode.props["display"] == .style(name: "display", value: "block"))
+        #expect(vnode.props["position"] == .style(name: "position", value: "relative"))
     }
 
     @Test func shadowModifier() async throws {
