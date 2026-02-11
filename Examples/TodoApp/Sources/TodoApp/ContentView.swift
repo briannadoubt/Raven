@@ -94,6 +94,9 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var disclosureExpanded: Bool = false
     @SwiftUI.Published var colorPickerValue: Color = .blue
     @SwiftUI.Published var datePickerValue: Date = Date()
+    @SwiftUI.Published var selectedDates: Set<DateComponents> = []
+    @SwiftUI.Published var pastedClipboardText: String = "Nothing pasted yet."
+    @SwiftUI.Published var renamedCollectionName: String = "Sprint Backlog"
     init() {
         setupPublished()
 
@@ -1766,7 +1769,7 @@ struct FormsTab: View {
     var body: some View {
         VStack(spacing: 16) {
             FormsCoreDemos(store: store)
-            FormsExtraDemos()
+            FormsExtraDemos(store: store)
         }
         .padding(16)
     }
@@ -1792,13 +1795,92 @@ struct FormsCoreDemos: View {
 
 @MainActor
 struct FormsExtraDemos: View {
+    let store: ShowcaseStore
+
     var body: some View {
         VStack(spacing: 16) {
+            MultiDatePickerDemo(store: store)
+            PasteButtonDemo(store: store)
+            RenameButtonDemo(store: store)
             EditButtonDemo()
             LabelDemo()
             AsyncImageDemo()
             TextEditorDemo()
             FormattedInputDemo()
+        }
+    }
+}
+
+// MARK: - MultiDatePicker Demo
+
+@MainActor
+struct MultiDatePickerDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "MultiDatePicker") {
+            VStack(spacing: 8) {
+                MultiDatePicker("Milestones", selection: Binding(
+                    get: { store.selectedDates },
+                    set: { store.selectedDates = $0 }
+                ))
+
+                Text("Selected dates: \(store.selectedDates.count)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - PasteButton Demo
+
+@MainActor
+struct PasteButtonDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "PasteButton") {
+            VStack(spacing: 8) {
+                PasteButton(supportedContentTypes: [.plainText]) { values in
+                    if let first = values.first, !first.isEmpty {
+                        store.pastedClipboardText = first
+                    } else {
+                        store.pastedClipboardText = "(Clipboard was empty)"
+                    }
+                } label: {
+                    Text("Paste from Clipboard")
+                }
+
+                Text("Last paste: \(store.pastedClipboardText)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - RenameButton Demo
+
+@MainActor
+struct RenameButtonDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "RenameButton") {
+            VStack(spacing: 8) {
+                RenameButton("Rename") {
+                    if store.renamedCollectionName == "Sprint Backlog" {
+                        store.renamedCollectionName = "Sprint Backlog (Renamed)"
+                    } else {
+                        store.renamedCollectionName = "Sprint Backlog"
+                    }
+                }
+
+                Text("Name: \(store.renamedCollectionName)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
         }
     }
 }
