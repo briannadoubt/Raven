@@ -1022,6 +1022,7 @@ struct ControlsTab: View {
             ColorPickerDemo(store: store)
             DatePickerDemo(store: store)
             LabeledContentDemo()
+            SwiftUIParityComponentsDemo()
         }
         .padding(16)
     }
@@ -1086,6 +1087,79 @@ struct LabeledContentDemo: View {
                 LabeledContent("Version", value: "0.1.0")
                 LabeledContent("Platform", value: "WebAssembly")
                 LabeledContent("Language", value: "Swift 6.2")
+            }
+        }
+    }
+}
+
+// MARK: - SwiftUI Parity Components Demo
+
+@MainActor
+struct SwiftUIParityComponentsDemo: View {
+    @State private var createdDocumentCount: Int = 0
+    @State private var selectedSubscriptionTier: String = "None"
+
+    var body: some View {
+        SectionCard(title: "New SwiftUI Parity Components") {
+            VStack(spacing: 12) {
+                DocumentLaunchView {
+                    VStack(spacing: 8) {
+                        Text("DocumentLaunchView")
+                            .font(.headline)
+                        Text("Use this container to present document launch flows.")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                            .textSelection(.enabled)
+
+                        NewDocumentButton("Create Demo Document") {
+                            createdDocumentCount += 1
+                        }
+                    }
+                }
+
+                Text("Documents created: \(createdDocumentCount)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                SubscriptionView {
+                    VStack(spacing: 8) {
+                        Text("SubscriptionView")
+                            .font(.headline)
+                        Text("Showcase for premium plan messaging.")
+                            .font(.caption)
+                            .foregroundColor(Color.secondaryLabel)
+                            .textSelection(.enabled)
+
+                        HStack(spacing: 8) {
+                            Button("Free") { selectedSubscriptionTier = "Free" }
+                            Button("Pro") { selectedSubscriptionTier = "Pro" }
+                            Button("Ultra") { selectedSubscriptionTier = "Ultra" }
+                        }
+                    }
+                }
+
+                Text("Selected tier: \(selectedSubscriptionTier)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                ScrollViewReader { proxy in
+                    VStack(spacing: 8) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(1..<8) { index in
+                                    Text("Card \(index)")
+                                        .padding(8)
+                                        .background(Color.secondarySystemBackground)
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }
+
+                        Button("Scroll to Card 6 (compat)") {
+                            proxy.scrollTo(6)
+                        }
+                    }
+                }
             }
         }
     }

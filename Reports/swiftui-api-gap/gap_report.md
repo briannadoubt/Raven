@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-11T09:59:44.956556+00:00`
+Generated: `2026-02-11T10:39:48.510306+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,32 +10,29 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1510**
-- Missing in Raven: **3059**
-- Name-based coverage: **33.05%**
+- Matched by Raven: **1587**
+- Missing in Raven: **2982**
+- Name-based coverage: **34.73%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 343 | 0 | 1238 |
+| `Constructor` | 277 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1041 | 0 | 1366 |
+| `Func` | 1039 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 48 | 0 | 66 |
-| `Struct` | 323 | 0 | 484 |
+| `Struct` | 317 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 896 | 0 | 964 |
+| `Var` | 893 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
 - `CommandGroup` (Struct, owner: `SwiftUI`)
 - `CommandMenu` (Struct, owner: `SwiftUI`)
-- `DocumentLaunchView` (Struct, owner: `SwiftUI`)
-- `NewDocumentButton` (Struct, owner: `SwiftUI`)
-- `SubscriptionView` (Struct, owner: `SwiftUI`)
 - `UIView` (Class, owner: `SwiftUI`)
 
 ## Missing High-Signal Types (first 200)
@@ -492,7 +489,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `DisclosureGroup`)
 - `body` (owner: `DocumentGroup`)
 - `body` (owner: `DocumentGroupLaunchScene`)
-- `body` (owner: `DocumentLaunchView`)
 - `body` (owner: `EditableCollectionContent`)
 - `body` (owner: `Form`)
 - `body` (owner: `Gauge`)
@@ -510,14 +506,12 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `Menu`)
 - `body` (owner: `NavigationLink`)
 - `body` (owner: `NavigationStack`)
-- `body` (owner: `NewDocumentButton`)
 - `body` (owner: `OnInsertTableRowModifier`)
 - `body` (owner: `Optional`)
 - `body` (owner: `Picker`)
 - `body(content:context:)` (owner: `PreviewModifier`)
 - `body` (owner: `ProgressView`)
 - `body` (owner: `ScrollView`)
-- `body` (owner: `ScrollViewReader`)
 - `body` (owner: `SecureField`)
 - `body` (owner: `SidebarCommands`)
 - `body` (owner: `Slider`)
@@ -543,6 +537,9 @@ Target: `arm64-apple-ios26.2`
 - `boldText` (owner: `AccessibilitySystemRotor`)
 - `borderlessButton` (owner: `MenuStyle`)
 - `bottomBar` (owner: `TabBarPlacement`)
+- `bottomBar` (owner: `ToolbarItemPlacement`)
+- `bottomBar` (owner: `ToolbarPlacement`)
+- `browser` (owner: `ToolbarRole`)
 
 ## Operator-Like API Gap Summary
 
