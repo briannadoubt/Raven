@@ -40,38 +40,22 @@ public struct CommandsBuilder: Sendable {
 
 // MARK: - Commands Protocol
 
-/// A type that represents a group of commands.
-@MainActor public protocol Commands: Sendable {
-    associatedtype Body: Commands
-    @CommandsBuilder var body: Body { get }
-}
-
-/// Default body for leaf command types.
-extension Commands where Body == _EmptyCommands {
-    @MainActor public var body: _EmptyCommands {
-        _EmptyCommands()
-    }
-}
+/// A marker protocol for command groups used by ``CommandsBuilder``.
+@MainActor public protocol Commands: Sendable {}
 
 // MARK: - Empty Commands
 
 public struct EmptyCommands: Commands, Sendable {
-    public typealias Body = _EmptyCommands
-
     @MainActor public init() {}
 }
 
 public struct _EmptyCommands: Commands, Sendable {
-    public typealias Body = _EmptyCommands
-
     @MainActor public init() {}
 }
 
 // MARK: - Tuple/Optional/Conditional
 
 public struct TupleCommands<Content: Sendable>: Commands {
-    public typealias Body = _EmptyCommands
-
     let content: Content
 
     init(_ content: Content) {
@@ -80,8 +64,6 @@ public struct TupleCommands<Content: Sendable>: Commands {
 }
 
 public struct OptionalCommands<Content: Commands>: Commands {
-    public typealias Body = _EmptyCommands
-
     let content: Content?
 
     init(_ content: Content?) {
@@ -90,8 +72,6 @@ public struct OptionalCommands<Content: Commands>: Commands {
 }
 
 public struct ConditionalCommands<TrueContent: Commands, FalseContent: Commands>: Commands {
-    public typealias Body = _EmptyCommands
-
     let trueContent: TrueContent?
     let falseContent: FalseContent?
     let condition: Bool
@@ -154,29 +134,11 @@ public enum CommandGroupPlacement: Sendable, Hashable {
         }
     }
 
-    public static let appInfo: CommandGroupPlacement = .appInfo
-    public static let appSettings: CommandGroupPlacement = .appSettings
-    public static let appTermination: CommandGroupPlacement = .appTermination
-    public static let appVisibility: CommandGroupPlacement = .appVisibility
-    public static let help: CommandGroupPlacement = .help
-    public static let importExport: CommandGroupPlacement = .importExport
-    public static let newItem: CommandGroupPlacement = .newItem
-    public static let pasteboard: CommandGroupPlacement = .pasteboard
-    public static let printItem: CommandGroupPlacement = .printItem
-    public static let saveItem: CommandGroupPlacement = .saveItem
-    public static let sidebar: CommandGroupPlacement = .sidebar
-    public static let systemServices: CommandGroupPlacement = .systemServices
-    public static let textEditing: CommandGroupPlacement = .textEditing
-    public static let textFormatting: CommandGroupPlacement = .textFormatting
-    public static let toolbar: CommandGroupPlacement = .toolbar
-    public static let undoRedo: CommandGroupPlacement = .undoRedo
-    public static let windowArrangement: CommandGroupPlacement = .windowArrangement
-    public static let windowSize: CommandGroupPlacement = .windowSize
 }
 
 // MARK: - CommandMenu
 
-public struct CommandMenu<Content: View>: View, Sendable {
+public struct CommandMenu<Content: View>: View, Commands, Sendable {
 
     private let label: Text
     private let content: Content
@@ -229,7 +191,7 @@ public struct CommandMenu<Content: View>: View, Sendable {
 
 // MARK: - CommandGroup
 
-public struct CommandGroup<Content: View>: View, Sendable {
+public struct CommandGroup<Content: View>: View, Commands, Sendable {
 
     private enum Operation: String, Sendable {
         case before = "Before"
