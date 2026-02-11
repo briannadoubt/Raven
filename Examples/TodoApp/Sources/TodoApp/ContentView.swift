@@ -1091,6 +1091,48 @@ struct LabeledContentDemo: View {
     }
 }
 
+// MARK: - Commands Demo
+
+@MainActor
+struct CommandsDemo: View {
+    @State private var lastCommand: String = "None"
+
+    var body: some View {
+        SectionCard(title: "Commands") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Last command: \(lastCommand)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                CommandMenu("File") {
+                    CommandGroup(after: .newItem) {
+                        Button("New Note") { lastCommand = "New Note" }
+                        Button("New Todo List") { lastCommand = "New Todo List" }
+                    }
+
+                    CommandGroup(before: .saveItem) {
+                        Button("Open...") { lastCommand = "Open" }
+                        Button("Import") { lastCommand = "Import" }
+                    }
+                }
+
+                CommandMenu(Text("Edit")) {
+                    CommandGroup(replacing: .undoRedo) {
+                        Button("Undo") { lastCommand = "Undo" }
+                        Button("Redo") { lastCommand = "Redo" }
+                    }
+
+                    CommandGroup(after: .textEditing) {
+                        Button("Cut") { lastCommand = "Cut" }
+                        Button("Copy") { lastCommand = "Copy" }
+                        Button("Paste") { lastCommand = "Paste" }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Display Tab
 
 @MainActor
@@ -1195,6 +1237,7 @@ struct DisplayTab: View {
                 ImageDemo()
                 ContentUnavailableDemo()
                 ShapesDemo()
+                CommandsDemo()
             }
         }
         .padding(16)
