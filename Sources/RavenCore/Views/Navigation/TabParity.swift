@@ -51,6 +51,14 @@ extension Tab: _AnyTabConfigurable {
     }
 }
 
+extension Tab: TabConfigurable {
+    @MainActor
+    func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)? {
+        let item = TabItem(id: UUID().uuidString, label: label, badge: nil)
+        return (tabItem: item, badge: nil, content: AnyView(content))
+    }
+}
+
 extension Tab where TabLabel == Text {
     @MainActor
     public init(

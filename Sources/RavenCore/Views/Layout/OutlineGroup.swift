@@ -57,10 +57,10 @@ where Element: Sendable, ID: Hashable & Sendable, Content: View {
     @MainActor var body: some View {
         let children = element[keyPath: childrenKeyPath.keyPath] ?? []
 
-        VStack(alignment: .leading, spacing: 6) {
+        if children.isEmpty {
             rowContent(element)
-
-            if !children.isEmpty {
+        } else {
+            DisclosureGroup {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(children, id: idKeyPath.keyPath) { child in
                         OutlineGroupNode(
@@ -72,6 +72,8 @@ where Element: Sendable, ID: Hashable & Sendable, Content: View {
                     }
                 }
                 .padding(EdgeInsets(top: 0, leading: 14, bottom: 0, trailing: 0))
+            } label: {
+                rowContent(element)
             }
         }
     }
