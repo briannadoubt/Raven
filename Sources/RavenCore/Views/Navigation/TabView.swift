@@ -496,9 +496,17 @@ extension TabViewContainer: _CoordinatorRenderable {
 
         // 2. Build tabs array from extracted children
         var tabs: [ExtractedTab<SelectionValue>] = []
-        for (index, child) in childViews.enumerated() {
-            let tab = extractTab(from: child, index: index)
-            tabs.append(tab)
+        for child in childViews {
+            if let section = child as? any _TabSectionContentProvider {
+                let sectionTabs = section._extractSectionTabs()
+                for sectionChild in sectionTabs {
+                    let tab = extractTab(from: sectionChild, index: tabs.count)
+                    tabs.append(tab)
+                }
+            } else {
+                let tab = extractTab(from: child, index: tabs.count)
+                tabs.append(tab)
+            }
         }
 
         guard !tabs.isEmpty else {
@@ -758,6 +766,18 @@ extension TabViewContainer: _CoordinatorRenderable {
         // When the user writes .tag(0).tabPath("/home"), the outer view is
         // TabPathModifier<TaggedView<Int>> — we need to look inside for the TaggedView.
         let innerChild: any View = (child as? any _TabPathContentProvider)?.tabPathInnerContent ?? child
+
+        // Case 0: SwiftUI-style Tab wrapper that directly provides tag + label + content.
+        if let explicitTab = innerChild as? any _AnyTabConfigurable {
+            let config = explicitTab._extractTabConfiguration(as: SelectionValue.self)
+            return ExtractedTab<SelectionValue>(
+                tagValue: config.tagValue,
+                tabItem: config.tabItem,
+                badge: config.badge,
+                path: path,
+                content: config.content
+            )
+        }
 
         // Case 1: TaggedView — extract tag value and check for inner TabConfigurable
         // Must check before TabConfigurable since TaggedView also conforms to TabConfigurable

@@ -249,6 +249,20 @@ protocol _TabPathContentProvider {
     var tabPathInnerContent: any View { get }
 }
 
+/// Protocol for tab wrapper views that can provide a concrete tab configuration.
+@MainActor
+protocol _AnyTabConfigurable {
+    func _extractTabConfiguration<SelectionValue: Hashable & Sendable>(
+        as: SelectionValue.Type
+    ) -> (tagValue: SelectionValue?, tabItem: TabItem, badge: String?, content: AnyView)
+}
+
+/// Protocol for wrappers that group multiple tab declarations.
+@MainActor
+protocol _TabSectionContentProvider {
+    func _extractSectionTabs() -> [any View]
+}
+
 // MARK: - TabItemModifier Conformance
 
 extension TabItemModifier: TabConfigurable {
@@ -315,6 +329,28 @@ extension BadgeModifier: TabConfigurable {
     }
 }
 
+extension BadgeModifier: _AnyTabConfigurable {
+    @MainActor
+    func _extractTabConfiguration<SelectionValue: Hashable & Sendable>(
+        as: SelectionValue.Type
+    ) -> (tagValue: SelectionValue?, tabItem: TabItem, badge: String?, content: AnyView) {
+        if let explicitTab = content as? any _AnyTabConfigurable {
+            var config = explicitTab._extractTabConfiguration(as: SelectionValue.self)
+            config.badge = badge
+            return config
+        }
+
+        if let configurable = content as? any TabConfigurable,
+           var config = configurable.extractTabConfiguration() {
+            config.badge = badge
+            return (tagValue: nil, tabItem: config.tabItem, badge: config.badge, content: config.content)
+        }
+
+        let fallbackItem = TabItem(id: UUID().uuidString, label: Text("Tab"), badge: nil)
+        return (tagValue: nil, tabItem: fallbackItem, badge: badge, content: AnyView(content))
+    }
+}
+
 extension BadgeModifier: TabPathConfigurable {
     @MainActor func extractTabPath() -> String? {
         (content as? any TabPathConfigurable)?.extractTabPath()
@@ -345,6 +381,24 @@ extension TabPathModifier: TabPathConfigurable {
 extension TabPathModifier: TabConfigurable {
     @MainActor func extractTabConfiguration() -> (tabItem: TabItem, badge: String?, content: AnyView)? {
         (content as? any TabConfigurable)?.extractTabConfiguration()
+    }
+}
+
+extension TabPathModifier: _AnyTabConfigurable {
+    @MainActor
+    func _extractTabConfiguration<SelectionValue: Hashable & Sendable>(
+        as: SelectionValue.Type
+    ) -> (tagValue: SelectionValue?, tabItem: TabItem, badge: String?, content: AnyView) {
+        if let explicitTab = content as? any _AnyTabConfigurable {
+            return explicitTab._extractTabConfiguration(as: SelectionValue.self)
+        }
+
+        if let config = (content as? any TabConfigurable)?.extractTabConfiguration() {
+            return (tagValue: nil, tabItem: config.tabItem, badge: config.badge, content: config.content)
+        }
+
+        let fallbackItem = TabItem(id: UUID().uuidString, label: Text("Tab"), badge: nil)
+        return (tagValue: nil, tabItem: fallbackItem, badge: nil, content: AnyView(content))
     }
 }
 

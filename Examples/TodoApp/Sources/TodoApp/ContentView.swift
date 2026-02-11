@@ -97,6 +97,7 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var selectedDates: Set<DateComponents> = []
     @SwiftUI.Published var pastedClipboardText: String = "Nothing pasted yet."
     @SwiftUI.Published var renamedCollectionName: String = "Sprint Backlog"
+    @SwiftUI.Published var parityTabSelection: Int = 0
     init() {
         setupPublished()
 
@@ -1799,6 +1800,7 @@ struct FormsExtraDemos: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            ParityAdditionsDemo(store: store)
             MultiDatePickerDemo(store: store)
             PasteButtonDemo(store: store)
             RenameButtonDemo(store: store)
@@ -1807,6 +1809,102 @@ struct FormsExtraDemos: View {
             AsyncImageDemo()
             TextEditorDemo()
             FormattedInputDemo()
+        }
+    }
+}
+
+// MARK: - Parity Additions Demo
+
+private struct ParityTreeNode: Identifiable, Sendable {
+    let id: String
+    let title: String
+    let children: [ParityTreeNode]?
+}
+
+@MainActor
+struct ParityAdditionsDemo: View {
+    let store: ShowcaseStore
+    @State private var parityMessage = "No action yet."
+    @State private var submitText = ""
+
+    private let outlineNodes: [ParityTreeNode] = [
+        ParityTreeNode(
+            id: "design",
+            title: "Design",
+            children: [
+                ParityTreeNode(id: "tokens", title: "Token audit", children: nil),
+                ParityTreeNode(id: "icons", title: "Icon cleanup", children: nil),
+            ]
+        ),
+        ParityTreeNode(
+            id: "engine",
+            title: "Engine",
+            children: [
+                ParityTreeNode(id: "renderer", title: "Renderer polish", children: nil),
+                ParityTreeNode(id: "routing", title: "Routing tests", children: nil),
+            ]
+        ),
+    ]
+
+    var body: some View {
+        SectionCard(title: "SwiftUI Parity Additions") {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    DefaultButtonLabel()
+                    DefaultDateProgressLabel()
+                    DefaultShareLinkLabel()
+                    DefaultTabLabel()
+                }
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+                TextField("SubmitLabel demo (press Return)", text: $submitText)
+                    .submitLabel(.search)
+                    .onSubmit {
+                        parityMessage = submitText.isEmpty
+                            ? "Submitted an empty query."
+                            : "Submitted query: \(submitText)"
+                    }
+
+                Text("Right-click this target for ContextMenu")
+                    .padding(10)
+                    .background(Color.secondarySystemBackground)
+                    .cornerRadius(8)
+                    .contextMenu {
+                        Button("Pin") { parityMessage = "Context menu: Pin" }
+                        Button("Archive") { parityMessage = "Context menu: Archive" }
+                    }
+
+                ToolbarTitleMenu {
+                    Button("Refresh") { parityMessage = "ToolbarTitleMenu: Refresh" }
+                    Button("Rename") { parityMessage = "ToolbarTitleMenu: Rename" }
+                }
+
+                OutlineGroup(outlineNodes, children: \.children) { node in
+                    Text(node.title)
+                }
+
+                TabView(selection: Binding(
+                    get: { store.parityTabSelection },
+                    set: { store.parityTabSelection = $0 }
+                )) {
+                    SwiftUI.Tab("Alpha", systemImage: "1.circle", value: 0) {
+                        Text("Tab API content: Alpha")
+                            .padding(8)
+                    }
+                    SwiftUI.TabSection("Project") {
+                        SwiftUI.Tab("Beta", systemImage: "2.circle", value: 1) {
+                            Text("TabSection content: Beta")
+                                .padding(8)
+                        }
+                    }
+                }
+                .frame(height: 110)
+
+                Text(parityMessage)
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
         }
     }
 }

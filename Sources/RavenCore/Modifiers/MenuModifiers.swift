@@ -1,4 +1,5 @@
 import Foundation
+import JavaScriptKit
 
 // MARK: - Menu Styles
 
@@ -207,6 +208,140 @@ extension EnvironmentValues {
     }
 }
 
+// MARK: - Context Menu
+
+/// A reusable context-menu content container.
+///
+/// SwiftUI exposes `ContextMenu` as a concrete type; Raven maps it to a standard
+/// menu presentation so it can render in web builds.
+@MainActor
+public struct ContextMenu<MenuItems: View>: View, Sendable {
+    private let menuItems: MenuItems
+
+    public init(@ViewBuilder menuItems: () -> MenuItems) {
+        self.menuItems = menuItems()
+    }
+
+    public var body: some View {
+        Menu("Context Menu") {
+            menuItems
+        }
+    }
+}
+
+/// Internal wrapper that attaches context-menu behavior to content.
+public struct _ContextMenuView<Content: View, MenuItems: View>: View, PrimitiveView, Sendable {
+    let content: Content
+    let menuItems: MenuItems
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+}
+
+extension _ContextMenuView: _CoordinatorRenderable {
+    @MainActor private final class _ContextMenuState: NSObject {
+        let menuID = "raven-context-menu-\(UUID().uuidString)"
+        let overlayID = "raven-context-overlay-\(UUID().uuidString)"
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let state = context.persistentState(create: { _ContextMenuState() })
+
+        let openHandlerID = context.registerInputHandler { event in
+            _ = event.object?.preventDefault?()
+
+            let x = event.object?.clientX.number ?? 0
+            let y = event.object?.clientY.number ?? 0
+            let left = "\(x)px"
+            let top = "\(y)px"
+
+            let document = JSObject.global.document
+
+            if let menu = document.getElementById(state.menuID).object {
+                _ = menu.style.setProperty("display", "block")
+                _ = menu.style.setProperty("left", left)
+                _ = menu.style.setProperty("top", top)
+            }
+
+            if let overlay = document.getElementById(state.overlayID).object {
+                _ = overlay.style.setProperty("display", "block")
+            }
+        }
+
+        let closeHandlerID = context.registerClickHandler {
+            let document = JSObject.global.document
+
+            if let menu = document.getElementById(state.menuID).object {
+                _ = menu.style.setProperty("display", "none")
+            }
+
+            if let overlay = document.getElementById(state.overlayID).object {
+                _ = overlay.style.setProperty("display", "none")
+            }
+        }
+
+        let contentNode = context.renderChild(content)
+        let menuItemsNode = context.renderChild(menuItems)
+
+        let menuChildren: [VNode]
+        if case .fragment = menuItemsNode.type {
+            menuChildren = menuItemsNode.children
+        } else {
+            menuChildren = [menuItemsNode]
+        }
+
+        let overlay = VNode.element(
+            "div",
+            props: [
+                "id": .attribute(name: "id", value: state.overlayID),
+                "class": .attribute(name: "class", value: "raven-context-menu-overlay"),
+                "onClick": .eventHandler(event: "click", handlerID: closeHandlerID),
+                "display": .style(name: "display", value: "none"),
+                "position": .style(name: "position", value: "fixed"),
+                "inset": .style(name: "inset", value: "0"),
+                "z-index": .style(name: "z-index", value: "998"),
+            ],
+            children: []
+        )
+
+        let menu = VNode.element(
+            "div",
+            props: [
+                "id": .attribute(name: "id", value: state.menuID),
+                "class": .attribute(name: "class", value: "raven-context-menu"),
+                "role": .attribute(name: "role", value: "menu"),
+                "onClick": .eventHandler(event: "click", handlerID: closeHandlerID),
+                "display": .style(name: "display", value: "none"),
+                "position": .style(name: "position", value: "fixed"),
+                "min-width": .style(name: "min-width", value: "180px"),
+                "background-color": .style(name: "background-color", value: "var(--system-control-background)"),
+                "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
+                "border-radius": .style(name: "border-radius", value: "8px"),
+                "box-shadow": .style(name: "box-shadow", value: "0 10px 30px rgba(0,0,0,0.2)"),
+                "padding": .style(name: "padding", value: "6px"),
+                "z-index": .style(name: "z-index", value: "999"),
+            ],
+            children: menuChildren
+        )
+
+        return VNode.element(
+            "div",
+            props: [
+                "class": .attribute(name: "class", value: "raven-context-menu-host"),
+                "onContextmenu": .eventHandler(event: "contextmenu", handlerID: openHandlerID),
+            ],
+            children: [contentNode, overlay, menu]
+        )
+    }
+}
+
+extension _ContextMenuView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
 // MARK: - Context Menu Modifier
 
 extension View {
@@ -252,18 +387,6 @@ extension View {
     @MainActor public func contextMenu<MenuItems: View>(
         @ViewBuilder menuItems: () -> MenuItems
     ) -> some View {
-        modifier(ContextMenuModifier(menuItems: menuItems()))
-    }
-}
-
-/// A modifier that adds a context menu to a view.
-private struct ContextMenuModifier<MenuItems: View>: ViewModifier {
-    let menuItems: MenuItems
-
-    @MainActor func body(content: Content) -> some View {
-        // For now, this is a simplified implementation
-        // Full implementation would attach context menu handlers to the content
-        // and render a menu on right-click/long-press
-        content
+        _ContextMenuView(content: self, menuItems: menuItems())
     }
 }
