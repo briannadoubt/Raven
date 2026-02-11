@@ -249,6 +249,20 @@ protocol _TabPathContentProvider {
     var tabPathInnerContent: any View { get }
 }
 
+/// Protocol for tab wrapper views that can provide a concrete tab configuration.
+@MainActor
+protocol _AnyTabConfigurable {
+    func _extractTabConfiguration<SelectionValue: Hashable & Sendable>(
+        as: SelectionValue.Type
+    ) -> (tagValue: SelectionValue?, tabItem: TabItem, badge: String?, content: AnyView)
+}
+
+/// Protocol for wrappers that group multiple tab declarations.
+@MainActor
+protocol _TabSectionContentProvider {
+    func _extractSectionTabs() -> [any View]
+}
+
 // MARK: - TabItemModifier Conformance
 
 extension TabItemModifier: TabConfigurable {

@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-11T09:04:13.535899+00:00`
+Generated: `2026-02-11T09:59:44.956556+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,42 +10,32 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1417**
-- Missing in Raven: **3152**
-- Name-based coverage: **31.01%**
+- Matched by Raven: **1510**
+- Missing in Raven: **3059**
+- Name-based coverage: **33.05%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 418 | 0 | 1238 |
+| `Constructor` | 343 | 0 | 1238 |
 | `Enum` | 31 | 0 | 43 |
-| `Func` | 1043 | 0 | 1366 |
+| `Func` | 1041 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 48 | 0 | 66 |
-| `Struct` | 333 | 0 | 484 |
+| `Struct` | 323 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 902 | 0 | 964 |
+| `Var` | 896 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
 - `CommandGroup` (Struct, owner: `SwiftUI`)
 - `CommandMenu` (Struct, owner: `SwiftUI`)
-- `ContextMenu` (Struct, owner: `SwiftUI`)
-- `DefaultButtonLabel` (Struct, owner: `SwiftUI`)
-- `DefaultDateProgressLabel` (Struct, owner: `SwiftUI`)
-- `DefaultShareLinkLabel` (Struct, owner: `SwiftUI`)
-- `DefaultTabLabel` (Struct, owner: `SwiftUI`)
 - `DocumentLaunchView` (Struct, owner: `SwiftUI`)
 - `NewDocumentButton` (Struct, owner: `SwiftUI`)
-- `OutlineGroup` (Struct, owner: `SwiftUI`)
-- `SubmitLabel` (Struct, owner: `SwiftUI`)
 - `SubscriptionView` (Struct, owner: `SwiftUI`)
-- `Tab` (Struct, owner: `SwiftUI`)
-- `TabSection` (Struct, owner: `SwiftUI`)
-- `ToolbarTitleMenu` (Struct, owner: `SwiftUI`)
 - `UIView` (Class, owner: `SwiftUI`)
 
 ## Missing High-Signal Types (first 200)
@@ -496,11 +486,7 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `ControlWidgetConfiguration`)
 - `body` (owner: `ControlWidgetTemplate`)
 - `body` (owner: `DatePicker`)
-- `body` (owner: `DefaultButtonLabel`)
-- `body` (owner: `DefaultDateProgressLabel`)
 - `body` (owner: `DefaultDocumentGroupLaunchActions`)
-- `body` (owner: `DefaultShareLinkLabel`)
-- `body` (owner: `DefaultTabLabel`)
 - `body` (owner: `DefaultToolbarItem`)
 - `body` (owner: `Description`)
 - `body` (owner: `DisclosureGroup`)
@@ -527,7 +513,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `NewDocumentButton`)
 - `body` (owner: `OnInsertTableRowModifier`)
 - `body` (owner: `Optional`)
-- `body` (owner: `OutlineGroup`)
 - `body` (owner: `Picker`)
 - `body(content:context:)` (owner: `PreviewModifier`)
 - `body` (owner: `ProgressView`)
@@ -541,7 +526,6 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `SliderTickContentForEach`)
 - `body` (owner: `Stepper`)
 - `body(content:phase:)` (owner: `SymbolEffectTransition`)
-- `body` (owner: `Tab`)
 - `body` (owner: `TextEditingCommands`)
 - `body` (owner: `TextEditor`)
 - `body` (owner: `TextField`)
@@ -553,6 +537,12 @@ Target: `arm64-apple-ios26.2`
 - `body` (owner: `UIViewControllerRepresentable`)
 - `body` (owner: `UIViewRepresentable`)
 - `body` (owner: `Widget`)
+- `body` (owner: `WidgetBundle`)
+- `body` (owner: `WidgetConfiguration`)
+- `body` (owner: `WindowGroup`)
+- `boldText` (owner: `AccessibilitySystemRotor`)
+- `borderlessButton` (owner: `MenuStyle`)
+- `bottomBar` (owner: `TabBarPlacement`)
 
 ## Operator-Like API Gap Summary
 

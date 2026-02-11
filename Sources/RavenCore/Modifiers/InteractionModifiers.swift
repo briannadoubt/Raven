@@ -121,6 +121,36 @@ public struct _OnSubmitView<Content: View>: View, PrimitiveView, Sendable {
     }
 }
 
+// MARK: - SubmitLabel Modifier
+
+/// Preferred return-key intent for submit-capable controls.
+public enum SubmitLabel: String, Sendable, Hashable, CaseIterable {
+    case `return`
+    case done
+    case go
+    case send
+    case join
+    case route
+    case search
+    case `continue`
+    case next
+}
+
+/// A view wrapper that records submit-label intent for descendant controls.
+public struct _SubmitLabelView<Content: View>: View, PrimitiveView, Sendable {
+    let content: Content
+    let label: SubmitLabel
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        let props: [String: VProperty] = [
+            "data-submit-label": .attribute(name: "data-submit-label", value: label.rawValue)
+        ]
+        return VNode.element("div", props: props, children: [])
+    }
+}
+
 // MARK: - OnChange Modifier
 
 /// A storage structure for onChange callbacks.
@@ -373,6 +403,11 @@ extension View {
     ) -> _OnSubmitView<Self> {
         _OnSubmitView(content: self, action: action)
     }
+
+    /// Sets the preferred submit intent for controls inside this view hierarchy.
+    @MainActor public func submitLabel(_ label: SubmitLabel) -> _SubmitLabelView<Self> {
+        _SubmitLabelView(content: self, label: label)
+    }
 }
 
 // MARK: - Modifier Renderable Conformances
@@ -459,5 +494,9 @@ extension _OnChangeView: _ModifierRenderable {
 }
 
 extension _OnSubmitView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _SubmitLabelView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }
