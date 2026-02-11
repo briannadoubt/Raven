@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 from collections import Counter
+from collections import deque
 from datetime import datetime, timezone
 from typing import Any
 
@@ -164,6 +165,107 @@ def load_swiftui_symbols(swiftui_json: pathlib.Path) -> list[SwiftUISymbol]:
     return sorted(symbols.values(), key=lambda s: (s.decl_kind, s.name, s.usr))
 
 
+def extract_manifest_call_bodies(manifest: str, call_name: str) -> list[str]:
+    pattern = re.compile(rf"\.{re.escape(call_name)}\s*\(")
+    bodies: list[str] = []
+
+    for match in pattern.finditer(manifest):
+        open_paren = manifest.find("(", match.start())
+        if open_paren == -1:
+            continue
+
+        depth = 1
+        i = open_paren + 1
+        in_string = False
+        escaping = False
+        while i < len(manifest):
+            ch = manifest[i]
+            if in_string:
+                if escaping:
+                    escaping = False
+                elif ch == "\\":
+                    escaping = True
+                elif ch == '"':
+                    in_string = False
+            else:
+                if ch == '"':
+                    in_string = True
+                elif ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                    if depth == 0:
+                        bodies.append(manifest[open_paren + 1 : i])
+                        break
+            i += 1
+
+    return bodies
+
+
+def parse_target_manifest(repo_root: pathlib.Path) -> dict[str, dict[str, Any]]:
+    package_swift = repo_root / "Package.swift"
+    if not package_swift.exists():
+        return {}
+
+    manifest = package_swift.read_text(encoding="utf-8")
+    entries: dict[str, dict[str, Any]] = {}
+    call_kinds = ("target", "executableTarget", "testTarget", "macro")
+
+    for kind in call_kinds:
+        for body in extract_manifest_call_bodies(manifest, kind):
+            name_match = re.search(r'\bname\s*:\s*"([^"]+)"', body)
+            if not name_match:
+                continue
+            name = name_match.group(1)
+
+            path_match = re.search(r'\bpath\s*:\s*"([^"]+)"', body)
+            path = path_match.group(1) if path_match else f"Sources/{name}"
+
+            deps: list[str] = []
+            deps_match = re.search(r"\bdependencies\s*:\s*\[(.*?)\]", body, flags=re.DOTALL)
+            if deps_match:
+                deps = re.findall(r'"([^"]+)"', deps_match.group(1))
+
+            entries[name] = {
+                "kind": kind,
+                "path": path,
+                "dependencies": deps,
+            }
+
+    return entries
+
+
+def discover_scannable_target_names(repo_root: pathlib.Path, targets: dict[str, dict[str, Any]]) -> list[str]:
+    package_swift = repo_root / "Package.swift"
+    if not package_swift.exists():
+        return sorted(name for name, meta in targets.items() if meta["kind"] == "target")
+
+    manifest = package_swift.read_text(encoding="utf-8")
+    initial: list[str] = []
+    for body in extract_manifest_call_bodies(manifest, "library"):
+        target_list_match = re.search(r"\btargets\s*:\s*\[(.*?)\]", body, flags=re.DOTALL)
+        if not target_list_match:
+            continue
+        initial.extend(re.findall(r'"([^"]+)"', target_list_match.group(1)))
+
+    if not initial:
+        return sorted(name for name, meta in targets.items() if meta["kind"] == "target")
+
+    included: set[str] = set()
+    queue: deque[str] = deque(initial)
+    while queue:
+        name = queue.popleft()
+        meta = targets.get(name)
+        if not meta or meta["kind"] != "target" or name in included:
+            continue
+        included.add(name)
+        for dep in meta["dependencies"]:
+            if dep in targets and targets[dep]["kind"] == "target":
+                queue.append(dep)
+
+    return sorted(included)
+
+
 def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
     public_type_pat = re.compile(r"\bpublic\s+(?:final\s+)?(?:struct|class|enum|protocol|actor|typealias)\s+([A-Za-z_][A-Za-z0-9_]*)")
     type_or_extension_pat = re.compile(r"\b(?:public\s+)?(?:final\s+)?(?:struct|class|enum|protocol|actor|extension)\s+([A-Za-z_][A-Za-z0-9_]*)")
@@ -186,8 +288,26 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
             return ""
         return ".".join(name for name, _ in stack)
 
-    source_dir = root / "Sources" / "Raven"
-    for swift_file in sorted(source_dir.rglob("*.swift")):
+    targets = parse_target_manifest(root)
+    target_names = discover_scannable_target_names(root, targets)
+    source_roots = [root / targets[name]["path"] for name in target_names if name in targets]
+    source_roots = sorted(path for path in source_roots if path.exists())
+
+    if not source_roots:
+        fallback = root / "Sources" / "RavenCore"
+        if fallback.exists():
+            source_roots = [fallback]
+
+    swift_files: list[pathlib.Path] = []
+    seen_files: set[pathlib.Path] = set()
+    for source_root in source_roots:
+        for swift_file in source_root.rglob("*.swift"):
+            resolved = swift_file.resolve()
+            if resolved not in seen_files:
+                seen_files.add(resolved)
+                swift_files.append(swift_file)
+
+    for swift_file in sorted(swift_files):
         text = swift_file.read_text(encoding="utf-8")
         lines = text.splitlines()
 
@@ -260,6 +380,9 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
                 qualified_var_names.add(qualified_member(owner or "GLOBAL", "subscript"))
 
     return {
+        "scanned_targets": target_names,
+        "source_roots": [str(path.relative_to(root)) for path in source_roots],
+        "swift_file_count": len(swift_files),
         "type_names": sorted(type_names),
         "qualified_type_names": sorted(qualified_type_names),
         "func_names": sorted(func_names),
@@ -287,6 +410,60 @@ def should_allow_name_only_fallback(sym: SwiftUISymbol, owner: str) -> bool:
     """Allow name-only fallback only for global-ish APIs, not all member APIs."""
     global_owners = {"", "GLOBAL", "SwiftUI", sym.module_name}
     return owner in global_owners
+
+
+def is_component_candidate_type(sym: SwiftUISymbol, owner: str) -> bool:
+    """Heuristic filter for top-level SwiftUI component-like types."""
+    if sym.decl_kind not in {"Struct", "Class", "Protocol"}:
+        return False
+    if owner not in {"SwiftUI", sym.module_name}:
+        return False
+    if not sym.name or not sym.name[0].isupper() or sym.name.startswith("_"):
+        return False
+
+    suffixes = (
+        "View",
+        "Button",
+        "Picker",
+        "Field",
+        "Editor",
+        "Stack",
+        "Grid",
+        "List",
+        "Form",
+        "Section",
+        "Group",
+        "Link",
+        "Toggle",
+        "Slider",
+        "Gauge",
+        "Divider",
+        "Label",
+        "Menu",
+        "Sheet",
+        "Alert",
+        "Dialog",
+        "Popover",
+        "Tab",
+        "Navigation",
+        "ScrollView",
+        "Table",
+    )
+    exact = {
+        "Text",
+        "Image",
+        "Color",
+        "Spacer",
+        "Canvas",
+        "AnyView",
+        "EmptyView",
+        "ForEach",
+        "Group",
+        "Section",
+        "TimelineView",
+        "GeometryReader",
+    }
+    return sym.name in exact or sym.name.endswith(suffixes)
 
 
 def match_symbol(sym: SwiftUISymbol, raven: dict[str, Any]) -> bool | None:
@@ -400,6 +577,27 @@ def build_report(
             operator_like.append(s)
     missing_apis_actionable.sort(key=lambda x: (x["name"], x["owner"], x["printed_name"]))
 
+    missing_components: list[dict[str, str]] = []
+    component_seen: set[tuple[str, str, str]] = set()
+    for s in missing:
+        owner = owner_context(s)
+        if not is_component_candidate_type(s, owner):
+            continue
+        key = (s.name, s.decl_kind, owner)
+        if key in component_seen:
+            continue
+        component_seen.add(key)
+        missing_components.append(
+            {
+                "name": s.name,
+                "printed_name": s.printed_name,
+                "decl_kind": s.decl_kind,
+                "owner": owner,
+                "usr": s.usr,
+            }
+        )
+    missing_components.sort(key=lambda x: (x["name"], x["owner"], x["decl_kind"]))
+
     op_counts = Counter(s.printed_name for s in operator_like)
     operator_like_top = [
         {"signature": sig, "count": count}
@@ -428,6 +626,7 @@ def build_report(
             "by_decl_kind_skipped": dict(sorted(by_kind_skipped.items())),
         },
         "missing": {
+            "components_high_signal": missing_components,
             "types_high_signal": missing_types,
             "apis_high_signal": missing_apis_actionable,
             "operator_like": {
@@ -451,6 +650,7 @@ def build_report(
 
 def write_markdown(report: dict[str, Any], out_path: pathlib.Path) -> None:
     summary = report["summary"]
+    missing_components = report["missing"]["components_high_signal"]
     missing_types = report["missing"]["types_high_signal"]
     missing_apis = report["missing"]["apis_high_signal"]
     operator_like = report["missing"]["operator_like"]
@@ -482,6 +682,12 @@ def write_markdown(report: dict[str, Any], out_path: pathlib.Path) -> None:
         miss = summary["by_decl_kind_missing"].get(kind, 0)
         skipped = summary["by_decl_kind_skipped"].get(kind, 0)
         lines.append(f"| `{kind}` | {miss} | {skipped} | {total} |")
+
+    lines.append("")
+    lines.append("## Missing High-Signal UI Components (first 200)")
+    lines.append("")
+    for item in missing_components[:200]:
+        lines.append(f"- `{item['name']}` ({item['decl_kind']}, owner: `{item['owner']}`)")
 
     lines.append("")
     lines.append("## Missing High-Signal Types (first 200)")
@@ -565,7 +771,7 @@ def main() -> int:
 
     raven_payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "source": "Sources/Raven/**/*.swift",
+        "source": "Library products + transitive target dependencies",
         **raven_inventory,
     }
 
