@@ -43,6 +43,24 @@ import Testing
         )
     }
 
+    @Test func queryOnRootMatchesBaseURL() {
+        #expect(
+            BrowserTabURLMatcher.matches(
+                candidateURL: "http://localhost:3000?filter=done",
+                targetURL: "http://localhost:3000"
+            )
+        )
+    }
+
+    @Test func fragmentOnRootMatchesBaseURL() {
+        #expect(
+            BrowserTabURLMatcher.matches(
+                candidateURL: "http://localhost:3000#state",
+                targetURL: "http://localhost:3000"
+            )
+        )
+    }
+
     @Test func differentHostDoesNotMatch() {
         #expect(
             !BrowserTabURLMatcher.matches(

@@ -21,7 +21,15 @@ enum BrowserTabURLMatcher {
             return true
         }
 
-        return normalizedCandidate.hasPrefix(normalizedTarget + "/")
+        if normalizedCandidate.hasPrefix(normalizedTarget + "/") {
+            return true
+        }
+
+        if normalizedCandidate.hasPrefix(normalizedTarget + "?") {
+            return true
+        }
+
+        return normalizedCandidate.hasPrefix(normalizedTarget + "#")
     }
 }
 
@@ -525,6 +533,8 @@ struct DevCommand: AsyncParsableCommand {
             set normalizedCandidate to my normalizeURL(candidateURL as text)
             if normalizedCandidate is normalizedTarget then return true
             if normalizedCandidate starts with (normalizedTarget & "/") then return true
+            if normalizedCandidate starts with (normalizedTarget & "?") then return true
+            if normalizedCandidate starts with (normalizedTarget & "#") then return true
             return false
         end urlMatches
         """
