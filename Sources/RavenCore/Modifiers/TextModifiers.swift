@@ -45,6 +45,17 @@ public enum TruncationMode: Sendable, Hashable {
     case middle
 }
 
+// MARK: - Text Selection
+
+/// Controls whether text in a view hierarchy can be selected.
+public enum TextSelection: Sendable, Hashable {
+    /// Enables text selection.
+    case enabled
+
+    /// Disables text selection.
+    case disabled
+}
+
 // MARK: - Line Limit Modifier
 
 /// A view wrapper that limits the number of lines for text.
@@ -139,6 +150,34 @@ public struct _TruncationModeView<Content: View>: View, PrimitiveView, Sendable 
     }
 }
 
+/// A view wrapper that controls browser text selection behavior.
+public struct _TextSelectionView<Content: View>: View, PrimitiveView, Sendable {
+    let content: Content
+    let selection: TextSelection
+
+    public typealias Body = Never
+
+    @MainActor public func toVNode() -> VNode {
+        let userSelectValue = switch selection {
+        case .enabled:
+            "text"
+        case .disabled:
+            "none"
+        }
+
+        let props: [String: VProperty] = [
+            "user-select": .style(name: "user-select", value: userSelectValue),
+            "-webkit-user-select": .style(name: "-webkit-user-select", value: userSelectValue),
+            "data-text-selection": .attribute(
+                name: "data-text-selection",
+                value: selection == .enabled ? "enabled" : "disabled"
+            ),
+        ]
+
+        return VNode.element("div", props: props, children: [])
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -191,6 +230,14 @@ extension View {
     @MainActor public func truncationMode(_ mode: TruncationMode) -> _TruncationModeView<Self> {
         _TruncationModeView(content: self, mode: mode)
     }
+
+    /// Controls whether text can be selected by the user.
+    ///
+    /// - Parameter selection: Selection behavior for text in this view hierarchy.
+    /// - Returns: A view with the specified text selection behavior.
+    @MainActor public func textSelection(_ selection: TextSelection) -> _TextSelectionView<Self> {
+        _TextSelectionView(content: self, selection: selection)
+    }
 }
 
 // MARK: - Modifier Renderable Conformances
@@ -204,5 +251,9 @@ extension _MultilineTextAlignmentView: _ModifierRenderable {
 }
 
 extension _TruncationModeView: _ModifierRenderable {
+    public var _modifiedContent: Content { content }
+}
+
+extension _TextSelectionView: _ModifierRenderable {
     public var _modifiedContent: Content { content }
 }

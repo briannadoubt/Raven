@@ -290,8 +290,14 @@ public final class DOMRenderer: PlatformRenderer, Sendable {
             guard isRavenDialog else { return }
 
             // Avoid exceptions by only calling showModal() once.
-            if element.open.boolean == true { return }
-            DialogRenderer.showDialog(element)
+            if element.open.boolean != true {
+                DialogRenderer.showDialog(element)
+            }
+
+            // Popovers need post-mount geometry to anchor to their source.
+            if (element.getAttribute?("class").string ?? "").contains("raven-popover") {
+                PopoverRenderer.positionPopoverElement(element)
+            }
         }
 
         maybeShow(root)

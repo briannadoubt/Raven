@@ -1,4 +1,16 @@
 import Foundation
+import JavaScriptKit
+
+private func _ravenNextPopoverSourceID() -> String {
+    #if arch(wasm32)
+    let global = JSObject.global
+    let next = (global.__RAVEN_POPOVER_SOURCE_ID_COUNTER.number ?? 0) + 1
+    global.__RAVEN_POPOVER_SOURCE_ID_COUNTER = .number(next)
+    return "popover-source-\(Int(next))"
+    #else
+    return UUID().uuidString
+    #endif
+}
 
 /// A View-based implementation of popover presentation.
 ///
@@ -13,6 +25,7 @@ struct _PopoverPresenter<Source: View, PopoverContent: View>: View, PrimitiveVie
     private final class State: @unchecked Sendable {
         var isVisible: Bool = false
         var presentationId: UUID?
+        let sourceID: String = _ravenNextPopoverSourceID()
     }
 
     let source: Source
@@ -58,7 +71,10 @@ extension _PopoverPresenter: _CoordinatorRenderable {
             state.presentationId = coordinator.present(
                 type: .popover(anchor: attachmentAnchor, edge: arrowEdge),
                 content: AnyView(popoverContent()),
-                onDismiss: handleDismiss
+                onDismiss: handleDismiss,
+                metadata: [
+                    "ravenPopoverSourceID": state.sourceID
+                ]
             )
         }
 
@@ -81,7 +97,10 @@ extension _PopoverPresenter: _CoordinatorRenderable {
             }
         }
 
-        return context.renderChild(source)
+        return sourceMarkerVNode(
+            sourceID: state.sourceID,
+            child: context.renderChild(source)
+        )
     }
 }
 
@@ -93,6 +112,7 @@ struct _PopoverItemPresenter<Source: View, Item: Identifiable & Sendable, Popove
         var isVisible: Bool = false
         var presentationId: UUID?
         var currentItemId: Item.ID?
+        let sourceID: String = _ravenNextPopoverSourceID()
     }
 
     let source: Source
@@ -143,7 +163,10 @@ extension _PopoverItemPresenter: _CoordinatorRenderable {
             state.presentationId = coordinator.present(
                 type: .popover(anchor: attachmentAnchor, edge: arrowEdge),
                 content: AnyView(popoverContent(item)),
-                onDismiss: handleDismiss
+                onDismiss: handleDismiss,
+                metadata: [
+                    "ravenPopoverSourceID": state.sourceID
+                ]
             )
             state.currentItemId = item.id
         }
@@ -162,6 +185,24 @@ extension _PopoverItemPresenter: _CoordinatorRenderable {
             context.enqueuePostRender { dismissIfNeeded() }
         }
 
-        return context.renderChild(source)
+        return sourceMarkerVNode(
+            sourceID: state.sourceID,
+            child: context.renderChild(source)
+        )
     }
+}
+
+@MainActor
+private func sourceMarkerVNode(sourceID: String, child: VNode) -> VNode {
+    VNode.element(
+        "span",
+        props: [
+            "data-raven-popover-source-id": .attribute(
+                name: "data-raven-popover-source-id",
+                value: sourceID
+            ),
+            "style_display": .style(name: "display", value: "contents")
+        ],
+        children: [child]
+    )
 }
