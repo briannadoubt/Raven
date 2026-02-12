@@ -80,6 +80,15 @@ public struct SliderTickBuilder: Sendable {
         ConditionalContent(falseContent: component)
     }
 
+    @MainActor public static func buildExpression(_ expression: SliderTick) -> SliderTick {
+        expression
+    }
+
+    @available(
+        *,
+        unavailable,
+        message: "Slider tick builders only support SliderTick entries. Wrap values with SliderTick(...)."
+    )
     @MainActor public static func buildExpression<Content: View>(_ expression: Content) -> Content {
         expression
     }
