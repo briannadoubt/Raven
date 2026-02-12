@@ -1825,6 +1825,7 @@ struct FormsExtraDemos: View {
             VStack(spacing: 16) {
                 PR27ParityCoverageDemo()
                 ParityAdditionsDemo(store: store)
+                ContainerStyleParityDemo()
                 CommandProbeDemo(store: store)
                 MultiDatePickerDemo(store: store)
                 PasteButtonDemo(store: store)
@@ -1971,6 +1972,69 @@ struct ParityAdditionsDemo: View {
 }
 
 // MARK: - MultiDatePicker Demo
+
+@MainActor
+struct ContainerStyleParityDemo: View {
+    private let tableRows = [
+        TableRowData(id: 101, task: "Spec review", owner: "Avery", status: "Ready"),
+        TableRowData(id: 102, task: "Implementation", owner: "Riley", status: "In Progress"),
+    ]
+
+    var body: some View {
+        SectionCard(title: "Container Style APIs") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Verifies newly added style APIs compile and render in TodoApp.")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                Form {
+                    Section(header: "automatic") {
+                        Text("formStyle(.automatic)")
+                    }
+                }
+                .formStyle(.automatic)
+
+                Form {
+                    Section(header: "grouped") {
+                        Text("formStyle(.grouped)")
+                    }
+                }
+                .formStyle(.grouped)
+
+                Form {
+                    Section(header: "columns") {
+                        Text("formStyle(.columns)")
+                    }
+                }
+                .formStyle(.columns)
+
+                DisclosureGroup("Details") {
+                    Text("disclosureGroupStyle(.automatic)")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+                .disclosureGroupStyle(.automatic)
+
+                LabeledContent("Build", value: "green")
+                    .labeledContentStyle(.automatic)
+
+                Table(tableRows) {
+                    TableColumn("Task", value: \TableRowData.task)
+                    TableColumn("Owner", value: \TableRowData.owner)
+                }
+                .tableStyle(.automatic)
+                .frame(height: 92)
+
+                Table(tableRows) {
+                    TableColumn("Task", value: \TableRowData.task)
+                    TableColumn("Status", value: \TableRowData.status)
+                }
+                .tableStyle(.inset)
+                .frame(height: 92)
+            }
+        }
+    }
+}
 
 @MainActor
 struct MultiDatePickerDemo: View {
