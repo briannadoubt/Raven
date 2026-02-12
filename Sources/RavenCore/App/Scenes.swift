@@ -61,6 +61,27 @@ public struct DocumentGroup<Document, Content: View>: Scene {
     public init() {}
 }
 
+/// A scene that presents document launch affordances before opening a document.
+///
+/// Raven currently models this scene as a placeholder for SwiftUI API parity.
+public struct DocumentGroupLaunchScene<Content: View>: Scene {
+    public typealias Body = _EmptyScene
+
+    let content: @MainActor @Sendable () -> Content
+
+    /// Creates a launch scene with custom actions/content.
+    public init(@ViewBuilder content: @escaping @MainActor @Sendable () -> Content) {
+        self.content = content
+    }
+}
+
+extension DocumentGroupLaunchScene where Content == DefaultDocumentGroupLaunchActions {
+    /// Creates a launch scene using default document launch actions.
+    public init() {
+        self.content = { DefaultDocumentGroupLaunchActions() }
+    }
+}
+
 // MARK: - EmptyScene
 
 /// A scene with no content.

@@ -44,3 +44,16 @@ public struct _DefaultDocumentLaunchContent: View, Sendable {
         }
     }
 }
+
+/// Default actions for document launch surfaces.
+///
+/// Mirrors SwiftUI's companion type for document launch scenes.
+@MainActor
+public struct DefaultDocumentGroupLaunchActions: View, Sendable {
+    public init() {}
+
+    public var body: some View {
+        NewDocumentButton(action: {})
+            .buttonStyle(.borderedProminent)
+    }
+}
