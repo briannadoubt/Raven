@@ -1188,16 +1188,23 @@ struct DisplayTab: View {
                 }
             }
 
-            // ViewBuilder only supports up to 10 direct components per closure.
-            // Group the remaining demos to avoid "extra argument in call".
-            Group {
-                ScrollTargetDemo()
-                ImageDemo()
-                ContentUnavailableDemo()
-                ShapesDemo()
-            }
+            // Keep additional demos in a dedicated subview so they stay stacked
+            // vertically while avoiding the ViewBuilder direct-child limit.
+            DisplayTabAdditionalDemos()
         }
         .padding(16)
+    }
+}
+
+@MainActor
+private struct DisplayTabAdditionalDemos: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ScrollTargetDemo()
+            ImageDemo()
+            ContentUnavailableDemo()
+            ShapesDemo()
+        }
     }
 }
 
@@ -1207,29 +1214,35 @@ struct DisplayTab: View {
 struct ScrollTargetDemo: View {
     var body: some View {
         SectionCard(title: "Scroll Targets") {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(0..<6) { index in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Card \(index + 1)")
-                                .font(.headline)
-                                .foregroundColor(Color.label)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Drag horizontally; cards snap to positions.")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
 
-                            Text("Swipe to snap")
-                                .font(.caption)
-                                .foregroundColor(Color.secondaryLabel)
+                ScrollView(.horizontal, showsIndicators: true) {
+                    HStack(spacing: 12) {
+                        ForEach(0..<10) { index in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Card \(index + 1)")
+                                    .font(.headline)
+                                    .foregroundColor(Color.label)
+
+                                Text("Swipe to snap")
+                                    .font(.caption)
+                                    .foregroundColor(Color.secondaryLabel)
+                            }
+                            .padding(12)
+                            .frame(width: 220, height: 90)
+                            .background(Color.systemBackground)
+                            .cornerRadius(10)
+                            .scrollTargetLayout()
                         }
-                        .padding(12)
-                        .frame(width: 180, height: 90)
-                        .background(Color.systemBackground)
-                        .cornerRadius(10)
-                        .scrollTargetLayout()
                     }
+                    .padding(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
                 }
-                .padding(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+                .frame(width: 620, height: 120)
+                .scrollTargetBehavior(.paging)
             }
-            .frame(height: 120)
-            .scrollTargetBehavior(.paging)
         }
     }
 }

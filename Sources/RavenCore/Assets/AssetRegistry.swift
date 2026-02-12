@@ -16,15 +16,11 @@ enum AssetRegistry {
     }
 
     #if arch(wasm32)
-    private static var manifestObject: JSObject?
-    #endif
-
-    #if arch(wasm32)
     private static func loadManifestIfNeeded() -> JSObject? {
-        if let manifestObject { return manifestObject }
-        guard let obj = JSObject.global.__ravenAssetManifest.object else { return nil }
-        manifestObject = obj
-        return obj
+        // In dev mode the asset manifest can be replaced between rebuilds while
+        // the WASM process stays alive. Always read the latest global manifest
+        // to avoid stale hashed URLs for images/symbolsets.
+        JSObject.global.__ravenAssetManifest.object
     }
     #endif
 

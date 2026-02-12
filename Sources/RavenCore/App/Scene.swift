@@ -64,6 +64,12 @@ internal struct ModifiedScene<Base: Scene, Modifier: SceneModifier>: Scene {
     }
 }
 
+extension ModifiedScene: _SceneContentExtractable where Base: _SceneContentExtractable {
+    @MainActor func _extractRootView() -> AnyView {
+        base._extractRootView()
+    }
+}
+
 internal struct CommandsSceneModifier<C: Commands>: SceneModifier {
     let commands: C
 
