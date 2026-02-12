@@ -125,6 +125,7 @@ public struct Button<Label: View>: View, PrimitiveView, Sendable {
 
     @Environment(\.buttonStyle) private var buttonStyle
     @Environment(\.primitiveButtonStyle) private var primitiveButtonStyle
+    @Environment(\.buttonBorderShape) private var buttonBorderShape
 
     /// The action to perform when the button is clicked
     private let action: @Sendable @MainActor () -> Void
@@ -426,12 +427,12 @@ extension Button: _CoordinatorRenderable {
         if primitiveButtonStyle is BorderedButtonStyle {
             props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
             props["padding"] = .style(name: "padding", value: "8px 12px")
-            props["border-radius"] = .style(name: "border-radius", value: "8px")
+            props["border-radius"] = .style(name: "border-radius", value: buttonBorderShape.cssBorderRadius)
             props["background"] = .style(name: "background", value: "var(--system-control-background)")
         } else if primitiveButtonStyle is BorderedProminentButtonStyle {
             props["border"] = .style(name: "border", value: "1px solid var(--system-accent)")
             props["padding"] = .style(name: "padding", value: "8px 12px")
-            props["border-radius"] = .style(name: "border-radius", value: "8px")
+            props["border-radius"] = .style(name: "border-radius", value: buttonBorderShape.cssBorderRadius)
             props["background"] = .style(name: "background", value: "var(--system-accent)")
             props["color"] = .style(name: "color", value: "white")
         } else if primitiveButtonStyle is BorderlessButtonStyle {
