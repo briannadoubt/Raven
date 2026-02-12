@@ -43,3 +43,40 @@ extension Scene where Body == _EmptyScene {
         _EmptyScene()
     }
 }
+
+// MARK: - Scene Modifiers
+
+internal protocol SceneModifier: Sendable {
+    func apply<S: Scene>(to scene: S)
+}
+
+internal struct ModifiedScene<Base: Scene, Modifier: SceneModifier>: Scene {
+    let base: Base
+    let modifier: Modifier
+
+    init(base: Base, modifier: Modifier) {
+        self.base = base
+        self.modifier = modifier
+    }
+
+    @MainActor var body: Base.Body {
+        base.body
+    }
+}
+
+internal struct CommandsSceneModifier<C: Commands>: SceneModifier {
+    let commands: C
+
+    func apply<S: Scene>(to scene: S) {
+        // Command routing/rendering is platform-dependent and currently a no-op.
+    }
+}
+
+extension Scene {
+    /// Installs scene-level command declarations.
+    ///
+    /// This mirrors SwiftUI's `.commands { ... }` surface in `App.body`.
+    @MainActor public func commands<C: Commands>(@CommandsBuilder _ content: () -> C) -> some Scene {
+        ModifiedScene(base: self, modifier: CommandsSceneModifier(commands: content()))
+    }
+}

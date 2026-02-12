@@ -96,6 +96,13 @@ extension App {
     public func onOpenURL(perform: @escaping @Sendable (URL) -> Void) -> some App {
         ModifiedApp(base: self, modifier: OnOpenURLAppModifier(action: perform))
     }
+
+    /// Installs app-level command declarations.
+    ///
+    /// This mirrors SwiftUI's `.commands { ... }` surface.
+    @MainActor public func commands<C: Commands>(@CommandsBuilder _ content: () -> C) -> some App {
+        ModifiedApp(base: self, modifier: CommandsAppModifier(commands: content()))
+    }
 }
 
 // MARK: - App Modifiers
@@ -143,5 +150,14 @@ internal struct OnOpenURLAppModifier: AppModifier {
     func apply<A: App>(to app: A) {
         // Implementation would register URL handler
         // This is a placeholder for the infrastructure
+    }
+}
+
+/// Modifier for app-level commands.
+internal struct CommandsAppModifier<C: Commands>: AppModifier {
+    let commands: C
+
+    func apply<A: App>(to app: A) {
+        // Command routing/rendering is platform-dependent and currently a no-op.
     }
 }

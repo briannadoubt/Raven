@@ -1091,57 +1091,6 @@ struct LabeledContentDemo: View {
     }
 }
 
-// MARK: - Commands Demo
-
-@MainActor
-final class CommandsDemoStore: SwiftUI.ObservableObject {
-    @SwiftUI.Published var lastCommand: String = "None"
-
-    init() {
-        setupPublished()
-    }
-}
-
-@MainActor
-struct CommandsDemo: View {
-    @StateObject private var store = CommandsDemoStore()
-
-    var body: some View {
-        SectionCard(title: "Commands") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Last command: \(store.lastCommand)")
-                    .font(.caption)
-                    .foregroundColor(Color.secondaryLabel)
-
-                CommandMenu("File") {
-                    CommandGroup(after: .newItem) {
-                        Button("New Note") { store.lastCommand = "New Note" }
-                        Button("New Todo List") { store.lastCommand = "New Todo List" }
-                    }
-
-                    CommandGroup(before: .saveItem) {
-                        Button("Open...") { store.lastCommand = "Open" }
-                        Button("Import") { store.lastCommand = "Import" }
-                    }
-                }
-
-                CommandMenu(Text("Edit")) {
-                    CommandGroup(replacing: .undoRedo) {
-                        Button("Undo") { store.lastCommand = "Undo" }
-                        Button("Redo") { store.lastCommand = "Redo" }
-                    }
-
-                    CommandGroup(after: .textEditing) {
-                        Button("Cut") { store.lastCommand = "Cut" }
-                        Button("Copy") { store.lastCommand = "Copy" }
-                        Button("Paste") { store.lastCommand = "Paste" }
-                    }
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Display Tab
 
 @MainActor
@@ -1246,7 +1195,6 @@ struct DisplayTab: View {
                 ImageDemo()
                 ContentUnavailableDemo()
                 ShapesDemo()
-                CommandsDemo()
             }
         }
         .padding(16)

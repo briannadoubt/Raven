@@ -133,113 +133,88 @@ public enum CommandGroupPlacement: Sendable, Hashable {
         case .windowSize: return "Window Size"
         }
     }
-
 }
 
 // MARK: - CommandMenu
 
-public struct CommandMenu<Content: View>: View, Commands, Sendable {
-
-    private let label: Text
-    private let contentBuilder: @MainActor @Sendable () -> Content
+public struct CommandMenu<Content: Commands>: Commands {
+    private let title: Text
+    private let content: Content
 
     @MainActor public init(
         _ title: LocalizedStringResource,
-        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder content: @MainActor () -> Content
     ) {
-        self.label = Text(title.stringValue)
-        self.contentBuilder = content
+        self.title = Text(title.stringValue)
+        self.content = content()
     }
 
     @MainActor public init(
         _ titleKey: LocalizedStringKey,
-        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder content: @MainActor () -> Content
     ) {
-        self.label = Text(titleKey)
-        self.contentBuilder = content
+        self.title = Text(titleKey)
+        self.content = content()
     }
 
     @MainActor public init(
         _ title: Text,
-        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder content: @MainActor () -> Content
     ) {
-        self.label = title
-        self.contentBuilder = content
+        self.title = title
+        self.content = content()
     }
 
     @MainActor public init<S: StringProtocol>(
         _ title: S,
-        @ViewBuilder content: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder content: @MainActor () -> Content
     ) {
-        self.label = Text(String(title))
-        self.contentBuilder = content
-    }
-
-    @MainActor public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            label
-                .font(.headline)
-                .foregroundColor(Color.label)
-
-            contentBuilder()
-        }
-        .padding(10)
-        .background(Color.systemBackground)
-        .cornerRadius(10)
+        self.title = Text(String(title))
+        self.content = content()
     }
 }
 
 // MARK: - CommandGroup
 
-public struct CommandGroup<Content: View>: View, Commands, Sendable {
-
-    private enum Operation: String, Sendable {
-        case before = "Before"
-        case after = "After"
-        case replacing = "Replacing"
-    }
-
+public struct CommandGroup<Content: Commands>: Commands {
     private let placement: CommandGroupPlacement
-    private let operation: Operation
-    private let contentBuilder: @MainActor @Sendable () -> Content
+    private let operation: CommandGroupOperation
+    private let content: Content
+
+    private enum CommandGroupOperation: Sendable {
+        case before
+        case after
+        case replacing
+    }
 
     @MainActor public init(
         after placement: CommandGroupPlacement,
-        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder addition: @MainActor () -> Content
     ) {
         self.placement = placement
         self.operation = .after
-        self.contentBuilder = addition
+        self.content = addition()
     }
 
     @MainActor public init(
         before placement: CommandGroupPlacement,
-        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder addition: @MainActor () -> Content
     ) {
         self.placement = placement
         self.operation = .before
-        self.contentBuilder = addition
+        self.content = addition()
     }
 
     @MainActor public init(
         replacing placement: CommandGroupPlacement,
-        @ViewBuilder addition: @escaping @MainActor @Sendable () -> Content
+        @CommandsBuilder addition: @MainActor () -> Content
     ) {
         self.placement = placement
         self.operation = .replacing
-        self.contentBuilder = addition
-    }
-
-    @MainActor public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(operation.rawValue) \(placement.displayName)")
-                .font(.caption)
-                .foregroundColor(Color.secondaryLabel)
-
-            contentBuilder()
-        }
-        .padding(8)
-        .background(Color.secondarySystemBackground)
-        .cornerRadius(8)
+        self.content = addition()
     }
 }
+
+// MARK: - Command-Compatible Primitives
+
+extension Button: Commands {}
