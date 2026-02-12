@@ -78,6 +78,42 @@ internal struct CommandsSceneModifier<C: Commands>: SceneModifier {
     }
 }
 
+@MainActor
+internal protocol _SceneCommandShortcutProvider {
+    func _sceneCommandShortcuts() -> [CommandShortcutBinding]
+}
+
+extension WindowGroup: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        []
+    }
+}
+
+extension CommandsSceneModifier: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: commands)
+    }
+}
+
+extension ModifiedScene: _SceneCommandShortcutProvider where Base: _SceneCommandShortcutProvider, Modifier: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        var bindings = base._sceneCommandShortcuts()
+        bindings.append(contentsOf: modifier._sceneCommandShortcuts())
+        return bindings
+    }
+}
+
+@MainActor
+public func _extractSceneCommandShortcuts<S: Scene>(from scene: S) -> [CommandShortcutBinding] {
+    if let provider = scene as? any _SceneCommandShortcutProvider {
+        return provider._sceneCommandShortcuts()
+    }
+    if S.Body.self != Never.self {
+        return _extractSceneCommandShortcuts(from: scene.body)
+    }
+    return []
+}
+
 extension Scene {
     /// Installs scene-level command declarations.
     ///

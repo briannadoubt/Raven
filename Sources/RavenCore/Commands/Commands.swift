@@ -1,5 +1,23 @@
 import Foundation
 
+/// A resolved keyboard shortcut/action pair extracted from `.commands { ... }`.
+@MainActor
+public struct CommandShortcutBinding: Sendable {
+    public let key: KeyEquivalent
+    public let modifiers: KeyboardModifiers
+    public let action: @Sendable @MainActor () -> Void
+
+    public init(
+        key: KeyEquivalent,
+        modifiers: KeyboardModifiers,
+        action: @escaping @Sendable @MainActor () -> Void
+    ) {
+        self.key = key
+        self.modifiers = modifiers
+        self.action = action
+    }
+}
+
 // MARK: - Commands Builder
 
 /// A result builder that creates command groups from multi-statement closures.
@@ -218,3 +236,98 @@ public struct CommandGroup<Content: Commands>: Commands {
 // MARK: - Command-Compatible Primitives
 
 extension Button: Commands {}
+
+// MARK: - Command Keyboard Shortcut Extraction
+
+@MainActor
+public protocol _CommandShortcutExtractable {
+    func _extractCommandShortcuts() -> [CommandShortcutBinding]
+}
+
+/// A command wrapper that annotates a command button with a keyboard shortcut.
+public struct _CommandShortcutButton<Label: View>: Commands, _CommandShortcutExtractable {
+    let button: Button<Label>
+    let shortcut: KeyboardShortcut
+
+    @MainActor
+    init(button: Button<Label>, shortcut: KeyboardShortcut) {
+        self.button = button
+        self.shortcut = shortcut
+    }
+
+    @MainActor
+    public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        [
+            CommandShortcutBinding(
+                key: shortcut.key,
+                modifiers: shortcut.modifiers,
+                action: button.actionClosure
+            ),
+        ]
+    }
+}
+
+extension Button {
+    /// Assigns a keyboard shortcut to a command button.
+    ///
+    /// This mirrors SwiftUI command usage where `Button` entries inside
+    /// `.commands { ... }` can declare key equivalents.
+    @MainActor
+    public func keyboardShortcut(
+        _ key: KeyEquivalent,
+        modifiers: KeyboardModifiers = [.command]
+    ) -> some Commands {
+        _CommandShortcutButton(button: self, shortcut: KeyboardShortcut(key, modifiers: modifiers))
+    }
+}
+
+extension CommandMenu: _CommandShortcutExtractable where Content: Commands {
+    @MainActor public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: content)
+    }
+}
+
+extension CommandGroup: _CommandShortcutExtractable where Content: Commands {
+    @MainActor public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: content)
+    }
+}
+
+extension OptionalCommands: _CommandShortcutExtractable where Content: Commands {
+    @MainActor public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        guard let content else { return [] }
+        return _resolveCommandShortcuts(from: content)
+    }
+}
+
+extension ConditionalCommands: _CommandShortcutExtractable where TrueContent: Commands, FalseContent: Commands {
+    @MainActor public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        if condition, let trueContent {
+            return _resolveCommandShortcuts(from: trueContent)
+        }
+        if let falseContent {
+            return _resolveCommandShortcuts(from: falseContent)
+        }
+        return []
+    }
+}
+
+extension TupleCommands: _CommandShortcutExtractable {
+    @MainActor public func _extractCommandShortcuts() -> [CommandShortcutBinding] {
+        var bindings: [CommandShortcutBinding] = []
+        let mirror = Mirror(reflecting: content)
+        for child in mirror.children {
+            guard let command = child.value as? any Commands else { continue }
+            bindings.append(contentsOf: _resolveCommandShortcuts(from: command))
+        }
+        return bindings
+    }
+}
+
+@MainActor
+public func _resolveCommandShortcuts(from commands: any Commands) -> [CommandShortcutBinding] {
+    if let extractable = commands as? any _CommandShortcutExtractable {
+        return extractable._extractCommandShortcuts()
+    }
+    return []
+}

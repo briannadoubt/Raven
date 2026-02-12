@@ -98,6 +98,9 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var pastedClipboardText: String = "Nothing pasted yet."
     @SwiftUI.Published var renamedCollectionName: String = "Sprint Backlog"
     @SwiftUI.Published var parityTabSelection: Int = 0
+    @SwiftUI.Published var commandProbeCount: Int = 0
+    @SwiftUI.Published var commandProbeLastAction: String = "No command invoked yet."
+    @SwiftUI.Published var commandProbeMessage: String = "Waiting for command action."
     init() {
         setupPublished()
 
@@ -154,6 +157,12 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     var completedCount: Int {
         todos.filter { $0.isCompleted }.count
     }
+
+    func runCommandProbe(_ actionName: String) {
+        commandProbeCount += 1
+        commandProbeLastAction = actionName
+        commandProbeMessage = "Executed \(actionName) (#\(commandProbeCount))"
+    }
 }
 
 private extension String {
@@ -186,7 +195,7 @@ private extension String {
 /// Browser back/forward crosses both tab boundaries and navigation stack depth.
 @MainActor
 struct ContentView: View {
-    @StateObject var store = ShowcaseStore()
+    @ObservedObject var store: ShowcaseStore
 
     @State private var newTodoText = ""
 
@@ -1814,6 +1823,7 @@ struct FormsExtraDemos: View {
     var body: some View {
         VStack(spacing: 16) {
             ParityAdditionsDemo(store: store)
+            CommandProbeDemo(store: store)
             MultiDatePickerDemo(store: store)
             PasteButtonDemo(store: store)
             RenameButtonDemo(store: store)
@@ -1822,6 +1832,38 @@ struct FormsExtraDemos: View {
             AsyncImageDemo()
             TextEditorDemo()
             FormattedInputDemo()
+        }
+    }
+}
+
+@MainActor
+struct CommandProbeDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "Commands Probe") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(store.commandProbeMessage)
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                Text("Last action: \(store.commandProbeLastAction)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                Text("Count: \(store.commandProbeCount)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                HStack(spacing: 8) {
+                    Button("Run New Note Action") {
+                        store.runCommandProbe("File > New Note")
+                    }
+                    Button("Run Undo Action") {
+                        store.runCommandProbe("Edit > Undo")
+                    }
+                }
+            }
         }
     }
 }

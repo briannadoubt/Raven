@@ -161,3 +161,30 @@ internal struct CommandsAppModifier<C: Commands>: AppModifier {
         // Command routing/rendering is platform-dependent and currently a no-op.
     }
 }
+
+@MainActor
+internal protocol _AppCommandShortcutProvider {
+    func _appCommandShortcuts() -> [CommandShortcutBinding]
+}
+
+extension CommandsAppModifier: _AppCommandShortcutProvider {
+    @MainActor func _appCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: commands)
+    }
+}
+
+extension ModifiedApp: _AppCommandShortcutProvider where Base: _AppCommandShortcutProvider, Modifier: _AppCommandShortcutProvider {
+    @MainActor func _appCommandShortcuts() -> [CommandShortcutBinding] {
+        var bindings = base._appCommandShortcuts()
+        bindings.append(contentsOf: modifier._appCommandShortcuts())
+        return bindings
+    }
+}
+
+@MainActor
+public func _extractAppCommandShortcuts<A: App>(from app: A) -> [CommandShortcutBinding] {
+    if let provider = app as? any _AppCommandShortcutProvider {
+        return provider._appCommandShortcuts()
+    }
+    return []
+}
