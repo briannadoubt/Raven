@@ -187,7 +187,7 @@ extension View {
         preview: @escaping @Sendable @MainActor () -> Preview
     ) -> some View {
         _ = data
-        _ = preview()
+        _ = preview
         return _ModifierMetadataView(content: self, properties: ["data-on-drag-preview": "true"])
     }
 
@@ -314,13 +314,12 @@ extension View {
         element: Element,
         _ update: @escaping @Sendable @MainActor (inout Element) -> Void
     ) -> some View {
-        var mutable = element
-        update(&mutable)
+        _ = update
         return _ModifierMetadataView(
             content: self,
             properties: [
                 "data-user-activity-type": activityType,
-                "data-user-activity-element": String(describing: mutable),
+                "data-user-activity-element": String(describing: element),
             ]
         )
     }
@@ -330,7 +329,7 @@ extension View {
         isActive: Bool,
         _ update: @escaping @Sendable @MainActor () -> Void
     ) -> some View {
-        if isActive { update() }
+        _ = update
         return _ModifierMetadataView(
             content: self,
             properties: [
