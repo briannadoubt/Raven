@@ -29,6 +29,8 @@ public struct SecureField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
+    @Environment(\.textInputAutocapitalization) private var textInputAutocapitalization
+    @Environment(\.keyboardType) private var keyboardType
 
     /// The placeholder text to display when the field is empty
     private let placeholder: String
@@ -133,7 +135,7 @@ public struct SecureField: View, PrimitiveView, Sendable {
         let placeholderText = prompt?.textContent ?? placeholder
 
         // Create properties for the input element
-        let props: [String: VProperty] = [
+        var props: [String: VProperty] = [
             // Input type - password for secure entry
             "type": .attribute(name: "type", value: "password"),
 
@@ -152,6 +154,16 @@ public struct SecureField: View, PrimitiveView, Sendable {
             "border-radius": .style(name: "border-radius", value: "4px"),
             "font-size": .style(name: "font-size", value: "14px"),
         ]
+        if let disabled = autocorrectionDisabled {
+            props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
+            props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
+        }
 
         return VNode.element(
             "input",
@@ -199,6 +211,12 @@ extension SecureField: _CoordinatorRenderable {
         if let disabled = autocorrectionDisabled {
             props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
             props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
         }
         return VNode.element("input", props: props, children: [])
     }

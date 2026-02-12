@@ -27,6 +27,8 @@ public struct TextField: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
     @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
+    @Environment(\.textInputAutocapitalization) private var textInputAutocapitalization
+    @Environment(\.keyboardType) private var keyboardType
 
     /// The placeholder text to display when the field is empty
     private let placeholder: String
@@ -129,11 +131,12 @@ public struct TextField: View, PrimitiveView, Sendable {
         // Generate a unique ID for the input event handler
         let handlerID = UUID()
         let placeholderText = prompt?.textContent ?? placeholder
+        let inputType = keyboardType?.htmlInputType ?? "text"
 
         // Create properties for the input element
         var props: [String: VProperty] = [
             // Input type
-            "type": .attribute(name: "type", value: "text"),
+            "type": .attribute(name: "type", value: inputType),
 
             // Placeholder text
             "placeholder": .attribute(name: "placeholder", value: placeholderText),
@@ -163,6 +166,16 @@ public struct TextField: View, PrimitiveView, Sendable {
 
         // Mark as textbox role for clarity
         props["role"] = .attribute(name: "role", value: "textbox")
+        if let disabled = autocorrectionDisabled {
+            props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
+            props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
+        }
 
         return VNode.element(
             "input",
@@ -201,6 +214,10 @@ public struct TextField: View, PrimitiveView, Sendable {
 /// ```
 public struct TextEditor: View, PrimitiveView, Sendable {
     public typealias Body = Never
+
+    @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
+    @Environment(\.textInputAutocapitalization) private var textInputAutocapitalization
+    @Environment(\.keyboardType) private var keyboardType
 
     /// Two-way binding to the text value
     private let text: Binding<String>
@@ -254,6 +271,16 @@ public struct TextEditor: View, PrimitiveView, Sendable {
         // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
         props["role"] = .attribute(name: "role", value: "textbox")
         props["aria-multiline"] = .attribute(name: "aria-multiline", value: "true")
+        if let disabled = autocorrectionDisabled {
+            props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
+            props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
+        }
 
         // Create a text node with the current value
         let textNode = VNode.text(text.wrappedValue)
@@ -279,32 +306,39 @@ extension TextField: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
         let binding = text
         let placeholderText = prompt?.textContent ?? placeholder
+        let inputType = keyboardType?.htmlInputType ?? "text"
         let handlerID = context.registerInputHandler { event in
             if let newValue = event.target.value.string {
                 binding.wrappedValue = newValue
             }
         }
 
-	        var props: [String: VProperty] = [
-	            "type": .attribute(name: "type", value: "text"),
-	            "placeholder": .attribute(name: "placeholder", value: placeholderText),
-	            "value": .attribute(name: "value", value: binding.wrappedValue),
-	            "onInput": .eventHandler(event: "input", handlerID: handlerID),
-	            // Match SwiftUI's typical layout behavior: text fields are flexible, expand to fill
-	            // available horizontal space, and should be allowed to shrink so sibling views
-	            // (like trailing buttons) are not clipped in an `HStack`.
-	            "flex": .style(name: "flex", value: "1 1 0%"),
-	            "min-width": .style(name: "min-width", value: "0"),
-	            "padding": .style(name: "padding", value: "8px"),
-	            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
-	            "border-radius": .style(name: "border-radius", value: "4px"),
-	            "font-size": .style(name: "font-size", value: "14px"),
-	            "width": .style(name: "width", value: "100%"),
-	            "box-sizing": .style(name: "box-sizing", value: "border-box"),
-	        ]
+        var props: [String: VProperty] = [
+            "type": .attribute(name: "type", value: inputType),
+            "placeholder": .attribute(name: "placeholder", value: placeholderText),
+            "value": .attribute(name: "value", value: binding.wrappedValue),
+            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+            // Match SwiftUI's typical layout behavior: text fields are flexible, expand to fill
+            // available horizontal space, and should be allowed to shrink so sibling views
+            // (like trailing buttons) are not clipped in an `HStack`.
+            "flex": .style(name: "flex", value: "1 1 0%"),
+            "min-width": .style(name: "min-width", value: "0"),
+            "padding": .style(name: "padding", value: "8px"),
+            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
+            "border-radius": .style(name: "border-radius", value: "4px"),
+            "font-size": .style(name: "font-size", value: "14px"),
+            "width": .style(name: "width", value: "100%"),
+            "box-sizing": .style(name: "box-sizing", value: "border-box"),
+        ]
         if let disabled = autocorrectionDisabled {
             props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
             props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
         }
         props["aria-label"] = .attribute(name: "aria-label", value: placeholder)
         props["role"] = .attribute(name: "role", value: "textbox")
