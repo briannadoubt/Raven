@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-12T07:41:30.920416+00:00`
+Generated: `2026-02-12T18:19:46.657761+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1880**
-- Missing in Raven: **2689**
-- Name-based coverage: **41.15%**
+- Matched by Raven: **1919**
+- Missing in Raven: **2650**
+- Name-based coverage: **42.0%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 229 | 0 | 1238 |
+| `Constructor` | 223 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 818 | 0 | 1366 |
+| `Func` | 807 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 46 | 0 | 66 |
-| `Struct` | 298 | 0 | 484 |
+| `Protocol` | 42 | 0 | 66 |
+| `Struct` | 287 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 892 | 0 | 964 |
+| `Var` | 885 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -72,13 +72,9 @@ Target: `arm64-apple-ios26.2`
 - `AttributedTextFormatting` (Enum, owner: `SwiftUI`)
 - `AttributedTextSelection` (Struct, owner: `SwiftUI`)
 - `Attributes` (Struct, owner: `AttributedTextSelection`)
-- `AutomaticDisclosureGroupStyle` (Struct, owner: `SwiftUI`)
-- `AutomaticFormStyle` (Struct, owner: `SwiftUI`)
 - `AutomaticHoverEffect` (Struct, owner: `SwiftUI`)
-- `AutomaticLabeledContentStyle` (Struct, owner: `SwiftUI`)
 - `AutomaticNavigationTransition` (Struct, owner: `SwiftUI`)
 - `AutomaticPresentationSizing` (Struct, owner: `SwiftUI`)
-- `AutomaticTableStyle` (Struct, owner: `SwiftUI`)
 - `AutomaticTextEditorStyle` (Struct, owner: `SwiftUI`)
 - `BackgroundDisplayMode` (Struct, owner: `PageIndexViewStyle`)
 - `BackgroundTask` (Struct, owner: `SwiftUI`)
@@ -235,6 +231,10 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `Table`)
 - `Body` (TypeAlias, owner: `TextEditingCommands`)
 - `Body` (TypeAlias, owner: `TextEditor`)
+- `Body` (TypeAlias, owner: `TextField`)
+- `Body` (TypeAlias, owner: `TextFormattingCommands`)
+- `Body` (TypeAlias, owner: `TimelineView`)
+- `Body` (TypeAlias, owner: `Title`)
 
 ## Missing High-Signal Named APIs (first 300)
 
@@ -309,15 +309,12 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `CustomHoverEffect`)
 - `automatic` (owner: `DefaultFocusEvaluationPriority`)
 - `automatic` (owner: `DialogSeverity`)
-- `automatic` (owner: `DisclosureGroupStyle`)
 - `automatic` (owner: `FocusInteractions`)
-- `automatic` (owner: `FormStyle`)
 - `automatic` (owner: `GaugeStyle`)
 - `automatic` (owner: `GroupBoxStyle`)
 - `automatic` (owner: `HoverEffect`)
 - `automatic` (owner: `IndexDisplayMode`)
 - `automatic` (owner: `LabelStyle`)
-- `automatic` (owner: `LabeledContentStyle`)
 - `automatic` (owner: `LimitBehavior`)
 - `automatic` (owner: `ListStyle`)
 - `automatic` (owner: `Localization`)
@@ -353,7 +350,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `TabPlacement`)
 - `automatic` (owner: `TabSearchActivation`)
 - `automatic` (owner: `TableColumnAlignment`)
-- `automatic` (owner: `TableStyle`)
 - `automatic` (owner: `TextEditorStyle`)
 - `automatic` (owner: `TextFieldStyle`)
 - `automatic` (owner: `TextInputDictationBehavior`)
@@ -538,6 +534,10 @@ Target: `arm64-apple-ios26.2`
 - `buildIf(_:)` (owner: `CommandsBuilder`)
 - `buildIf(_:)` (owner: `SliderTickBuilder`)
 - `buildIf(_:)` (owner: `TabContentBuilder`)
+- `buildIf(_:)` (owner: `TableColumnBuilder`)
+- `buildIf(_:)` (owner: `TableRowBuilder`)
+- `buildIf(_:)` (owner: `ToolbarContentBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `CommandsBuilder`)
 
 ## Operator-Like API Gap Summary
 
