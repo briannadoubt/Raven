@@ -153,8 +153,10 @@ public final class AppRuntime: Sendable {
         .raven-progress-bar::-moz-progress-bar { background-color: var(--system-accent); border-radius: 4px; transition: width 0.3s ease; }
         .raven-progress-container { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
         @keyframes raven-spinner-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: var(--system-fill); border-radius: 3px; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--system-accent); cursor: pointer; border: 2px solid var(--system-control-background); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; background: transparent; border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: var(--system-fill); border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; margin-top: -7px; border-radius: 50%; background: var(--system-accent); cursor: pointer; border: 2px solid var(--system-control-background); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        input[type="range"]::-moz-range-track { height: 6px; background: var(--system-fill); border-radius: 3px; }
         input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--system-accent); cursor: pointer; border: 2px solid var(--system-control-background); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         """
 

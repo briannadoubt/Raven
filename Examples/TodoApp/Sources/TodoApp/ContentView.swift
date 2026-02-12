@@ -978,14 +978,32 @@ struct ControlsTab: View {
             // Slider section
             SectionCard(title: "Slider") {
                 VStack(spacing: 8) {
+                    let sliderWidth = 260.0
+                    let thumbDiameter = 28.0
+                    let labelWidth = 72.0
+                    let normalized = max(0.0, min(1.0, store.sliderValue / 100.0))
+                    let thumbCenterX = normalized * (sliderWidth - thumbDiameter) + (thumbDiameter / 2.0)
+                    let centeredOffset = thumbCenterX - (sliderWidth / 2.0)
+                    let maxOffset = (sliderWidth - labelWidth) / 2.0
+                    let labelOffset = min(max(centeredOffset, -maxOffset), maxOffset)
+
                     Slider(value: Binding(
                         get: { store.sliderValue },
                         set: { store.sliderValue = $0 }
-                    ), in: 0...100, step: 1)
+                    ), in: 0...100, step: 1) {
+                        SliderTick(0, label: "Min")
+                        SliderTick(25)
+                        SliderTick(50, label: "Mid")
+                        SliderTick(75)
+                        SliderTick(100, label: "Max")
+                    }
+                    .frame(width: sliderWidth)
 
                     Text("Value: \(Int(store.sliderValue))")
                         .font(.caption)
                         .foregroundColor(Color.secondaryLabel)
+                        .frame(width: labelWidth)
+                        .offset(x: labelOffset)
                 }
             }
 
