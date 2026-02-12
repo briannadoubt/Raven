@@ -1822,16 +1822,22 @@ struct FormsExtraDemos: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            ParityAdditionsDemo(store: store)
-            CommandProbeDemo(store: store)
-            MultiDatePickerDemo(store: store)
-            PasteButtonDemo(store: store)
-            RenameButtonDemo(store: store)
-            EditButtonDemo()
-            LabelDemo()
-            AsyncImageDemo()
-            TextEditorDemo()
-            FormattedInputDemo()
+            VStack(spacing: 16) {
+                PR27ParityCoverageDemo()
+                ParityAdditionsDemo(store: store)
+                CommandProbeDemo(store: store)
+                MultiDatePickerDemo(store: store)
+                PasteButtonDemo(store: store)
+                RenameButtonDemo(store: store)
+            }
+
+            VStack(spacing: 16) {
+                EditButtonDemo()
+                LabelDemo()
+                AsyncImageDemo()
+                TextEditorDemo()
+                FormattedInputDemo()
+            }
         }
     }
 }

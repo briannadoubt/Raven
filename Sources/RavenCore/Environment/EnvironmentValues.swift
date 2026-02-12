@@ -235,6 +235,16 @@ private struct AutocorrectionDisabledKey: EnvironmentKey {
     static let defaultValue: Bool? = nil
 }
 
+/// Environment key for text input autocapitalization behavior.
+private struct TextInputAutocapitalizationKey: EnvironmentKey {
+    static let defaultValue: TextInputAutocapitalization? = nil
+}
+
+/// Environment key for text input keyboard type behavior.
+private struct KeyboardTypeKey: EnvironmentKey {
+    static let defaultValue: KeyboardType? = nil
+}
+
 extension EnvironmentValues {
     /// Whether text inputs should disable autocorrection.
     ///
@@ -249,5 +259,20 @@ extension EnvironmentValues {
     public var disableAutocorrection: Bool? {
         get { autocorrectionDisabled }
         set { autocorrectionDisabled = newValue }
+    }
+
+    /// Preferred autocapitalization mode for text inputs.
+    ///
+    /// When set, Raven renders text inputs with the corresponding
+    /// browser `autocapitalize` attribute.
+    public var textInputAutocapitalization: TextInputAutocapitalization? {
+        get { self[TextInputAutocapitalizationKey.self] }
+        set { self[TextInputAutocapitalizationKey.self] = newValue }
+    }
+
+    /// Preferred software keyboard style for text inputs.
+    public var keyboardType: KeyboardType? {
+        get { self[KeyboardTypeKey.self] }
+        set { self[KeyboardTypeKey.self] = newValue }
     }
 }
