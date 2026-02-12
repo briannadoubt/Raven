@@ -234,3 +234,21 @@ public struct LocalizedStringKey: Sendable, ExpressibleByStringLiteral {
         self.stringValue = value
     }
 }
+
+// MARK: - LocalizedStringResource
+
+/// A lightweight localized string resource placeholder.
+///
+/// SwiftUI's `LocalizedStringResource` carries localization table metadata.
+/// Raven stores the raw string for now and defers localization integration.
+public struct LocalizedStringResource: Sendable, ExpressibleByStringLiteral, Hashable {
+    internal let stringValue: String
+
+    public init(_ value: String) {
+        self.stringValue = value
+    }
+
+    public init(stringLiteral value: String) {
+        self.stringValue = value
+    }
+}

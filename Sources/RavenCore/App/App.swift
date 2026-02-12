@@ -96,6 +96,13 @@ extension App {
     public func onOpenURL(perform: @escaping @Sendable (URL) -> Void) -> some App {
         ModifiedApp(base: self, modifier: OnOpenURLAppModifier(action: perform))
     }
+
+    /// Installs app-level command declarations.
+    ///
+    /// This mirrors SwiftUI's `.commands { ... }` surface.
+    @MainActor public func commands<C: Commands>(@CommandsBuilder _ content: () -> C) -> some App {
+        ModifiedApp(base: self, modifier: CommandsAppModifier(commands: content()))
+    }
 }
 
 // MARK: - App Modifiers
@@ -144,4 +151,40 @@ internal struct OnOpenURLAppModifier: AppModifier {
         // Implementation would register URL handler
         // This is a placeholder for the infrastructure
     }
+}
+
+/// Modifier for app-level commands.
+internal struct CommandsAppModifier<C: Commands>: AppModifier {
+    let commands: C
+
+    func apply<A: App>(to app: A) {
+        // Command routing/rendering is platform-dependent and currently a no-op.
+    }
+}
+
+@MainActor
+internal protocol _AppCommandShortcutProvider {
+    func _appCommandShortcuts() -> [CommandShortcutBinding]
+}
+
+extension CommandsAppModifier: _AppCommandShortcutProvider {
+    @MainActor func _appCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: commands)
+    }
+}
+
+extension ModifiedApp: _AppCommandShortcutProvider where Base: _AppCommandShortcutProvider, Modifier: _AppCommandShortcutProvider {
+    @MainActor func _appCommandShortcuts() -> [CommandShortcutBinding] {
+        var bindings = base._appCommandShortcuts()
+        bindings.append(contentsOf: modifier._appCommandShortcuts())
+        return bindings
+    }
+}
+
+@MainActor
+public func _extractAppCommandShortcuts<A: App>(from app: A) -> [CommandShortcutBinding] {
+    if let provider = app as? any _AppCommandShortcutProvider {
+        return provider._appCommandShortcuts()
+    }
+    return []
 }

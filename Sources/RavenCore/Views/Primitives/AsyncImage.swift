@@ -286,44 +286,10 @@ private struct AsyncImageRenderer<Content: View>: View, PrimitiveView {
             // No URL provided, render empty phase
             return renderView(content(.empty))
         }
-
-        // Create an img element with event handlers
-        // The browser will handle the actual loading
-        let urlString = url.absoluteString
-
-        // We'll use a wrapper div to manage the loading state
-        // The image will be hidden until loaded via CSS
-        var imgProps: [String: VProperty] = [
-            "src": .attribute(name: "src", value: urlString),
-            "loading": .attribute(name: "loading", value: "lazy"),
-            "class": .attribute(name: "class", value: "raven-async-image"),
-            "style": .attribute(name: "style", value: "display: none;"),
-            "data-scale": .attribute(name: "data-scale", value: String(scale))
-        ]
-
-        // Add alt text for accessibility
-        imgProps["alt"] = .attribute(name: "alt", value: "")
-
-        let imgElement = VNode.element(
-            "img",
-            props: imgProps,
-            children: []
-        )
-
-        // Create a placeholder element
-        let placeholderElement = renderView(content(.empty))
-
-        // Wrap in a container that manages visibility
-        let containerProps: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "raven-async-image-container"),
-            "data-url": .attribute(name: "data-url", value: urlString)
-        ]
-
-        return VNode.element(
-            "div",
-            props: containerProps,
-            children: [placeholderElement, imgElement]
-        )
+        // Render the success phase as an URL-backed `Image`.
+        // This keeps API behavior useful in browser builds while we don't yet
+        // model DOM load/error events back into Swift phase updates.
+        return renderView(content(.success(Image.url(url.absoluteString))))
     }
 }
 

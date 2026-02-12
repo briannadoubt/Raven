@@ -141,9 +141,9 @@ struct NavigationSplitViewContainer: View, PrimitiveView, Sendable {
             "flex": .style(name: "flex", value: "\(flex) 1 0%"),
             "min-width": .style(name: "min-width", value: "\(minWidth)px"),
             "padding": .style(name: "padding", value: "12px"),
-            "border": .style(name: "border", value: "1px solid rgba(0, 0, 0, 0.08)"),
+            "border": .style(name: "border", value: "1px solid var(--system-separator, #c6c6c8)"),
             "border-radius": .style(name: "border-radius", value: "8px"),
-            "background": .style(name: "background", value: "rgba(255, 255, 255, 0.6)"),
+            "background": .style(name: "background", value: "var(--system-secondary-background, #f2f2f7)"),
             "overflow": .style(name: "overflow", value: "auto")
         ]
     }

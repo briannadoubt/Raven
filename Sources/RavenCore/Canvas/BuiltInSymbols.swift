@@ -146,6 +146,20 @@ struct BuiltInSymbols {
                 pathData: "M 0.5 0.1 L 0.5 0.9 M 0.5 0.9 L 0.3 0.7 M 0.5 0.9 L 0.7 0.7"
             ),
 
+            // Arrow down in circle
+            Symbol(
+                name: "arrow.down.circle",
+                category: Symbol.Category.arrows,
+                pathData: "M 0.5 0.05 A 0.45 0.45 0 1 1 0.5 0.95 A 0.45 0.45 0 1 1 0.5 0.05 Z M 0.5 0.28 L 0.5 0.7 M 0.5 0.7 L 0.34 0.54 M 0.5 0.7 L 0.66 0.54"
+            ),
+
+            // Arrow down in circle filled
+            Symbol(
+                name: "arrow.down.circle.fill",
+                category: Symbol.Category.arrows,
+                pathData: "M 0.5 0.05 A 0.45 0.45 0 1 1 0.5 0.95 A 0.45 0.45 0 1 1 0.5 0.05 Z M 0.5 0.28 L 0.5 0.7 M 0.5 0.7 L 0.34 0.54 M 0.5 0.7 L 0.66 0.54"
+            ),
+
             // Arrow left
             Symbol(
                 name: "arrow.left",
@@ -681,6 +695,8 @@ struct BuiltInSymbols {
             // Arrows
             "arrow.up": "arrow.up",
             "arrow.down": "arrow.down",
+            "arrow.down.circle": "arrow.down.circle",
+            "arrow.down.circle.fill": "arrow.down.circle.fill",
             "arrow.left": "arrow.left",
             "arrow.right": "arrow.right",
             "arrow.clockwise": "arrow.clockwise",

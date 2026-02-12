@@ -60,6 +60,8 @@ public final class AppRuntime: Sendable {
 
         // Extract root view from app's scene hierarchy
         let rootView = extractRootView(from: app.body)
+        var commandShortcuts = _extractSceneCommandShortcuts(from: app.body)
+        commandShortcuts.append(contentsOf: _extractAppCommandShortcuts(from: app))
         // Ensure Raven presentations (sheet/alert/actionSheet/etc.) actually render.
         let wrappedRootView = AnyView(_PresentationHostRoot { rootView })
 
@@ -79,6 +81,9 @@ public final class AppRuntime: Sendable {
 
         // Set the root container in the coordinator
         coordinator.setRootContainer(rootContainer)
+
+        // Wire command key equivalents declared via `.commands { ... }`.
+        setupCommandShortcutHandling(commandShortcuts)
 
         // Render the root view (now synchronous!)
         coordinator.render(view: wrappedRootView)
@@ -184,6 +189,47 @@ public final class AppRuntime: Sendable {
 
         // Fallback: empty view
         return AnyView(EmptyView())
+    }
+
+    /// Installs a global keydown listener that dispatches scene command shortcuts.
+    private func setupCommandShortcutHandling(_ bindings: [CommandShortcutBinding]) {
+        guard !bindings.isEmpty else { return }
+        guard let document = JSObject.global.document.object else { return }
+        let handlerID = UUID()
+        DOMBridge.shared.addGestureEventListener(
+            element: document,
+            event: "keydown",
+            handlerID: handlerID
+        ) { eventValue in
+            guard let event = eventValue.object else { return }
+            let eventKey = (event.key.string ?? "").lowercased()
+            let hasCommand = event.metaKey.boolean ?? false
+            let hasShift = event.shiftKey.boolean ?? false
+            let hasOption = event.altKey.boolean ?? false
+            let hasControl = event.ctrlKey.boolean ?? false
+
+            for binding in bindings {
+                let bindingKey = binding.key.character.lowercased()
+                let wantsCommand = binding.modifiers.contains(.command)
+                let wantsShift = binding.modifiers.contains(.shift)
+                let wantsOption = binding.modifiers.contains(.option)
+                let wantsControl = binding.modifiers.contains(.control)
+
+                guard eventKey == bindingKey,
+                      hasCommand == wantsCommand,
+                      hasShift == wantsShift,
+                      hasOption == wantsOption,
+                      hasControl == wantsControl
+                else {
+                    continue
+                }
+
+                binding.action()
+                _ = event.preventDefault?()
+                _ = event.stopPropagation?()
+                break
+            }
+        }
     }
 
     /// Gets or creates the root DOM container element.

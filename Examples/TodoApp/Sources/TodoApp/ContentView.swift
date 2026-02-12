@@ -98,6 +98,9 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var pastedClipboardText: String = "Nothing pasted yet."
     @SwiftUI.Published var renamedCollectionName: String = "Sprint Backlog"
     @SwiftUI.Published var parityTabSelection: Int = 0
+    @SwiftUI.Published var commandProbeCount: Int = 0
+    @SwiftUI.Published var commandProbeLastAction: String = "No command invoked yet."
+    @SwiftUI.Published var commandProbeMessage: String = "Waiting for command action."
     init() {
         setupPublished()
 
@@ -154,6 +157,12 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     var completedCount: Int {
         todos.filter { $0.isCompleted }.count
     }
+
+    func runCommandProbe(_ actionName: String) {
+        commandProbeCount += 1
+        commandProbeLastAction = actionName
+        commandProbeMessage = "Executed \(actionName) (#\(commandProbeCount))"
+    }
 }
 
 private extension String {
@@ -186,7 +195,7 @@ private extension String {
 /// Browser back/forward crosses both tab boundaries and navigation stack depth.
 @MainActor
 struct ContentView: View {
-    @StateObject var store = ShowcaseStore()
+    @ObservedObject var store: ShowcaseStore
 
     @State private var newTodoText = ""
 
@@ -1022,7 +1031,6 @@ struct ControlsTab: View {
             ColorPickerDemo(store: store)
             DatePickerDemo(store: store)
             LabeledContentDemo()
-            SwiftUIParityComponentsDemo()
         }
         .padding(16)
     }
@@ -1087,79 +1095,6 @@ struct LabeledContentDemo: View {
                 LabeledContent("Version", value: "0.1.0")
                 LabeledContent("Platform", value: "WebAssembly")
                 LabeledContent("Language", value: "Swift 6.2")
-            }
-        }
-    }
-}
-
-// MARK: - SwiftUI Parity Components Demo
-
-@MainActor
-struct SwiftUIParityComponentsDemo: View {
-    @State private var createdDocumentCount: Int = 0
-    @State private var selectedSubscriptionTier: String = "None"
-
-    var body: some View {
-        SectionCard(title: "New SwiftUI Parity Components") {
-            VStack(spacing: 12) {
-                DocumentLaunchView {
-                    VStack(spacing: 8) {
-                        Text("DocumentLaunchView")
-                            .font(.headline)
-                        Text("Use this container to present document launch flows.")
-                            .font(.caption)
-                            .foregroundColor(Color.secondaryLabel)
-                            .textSelection(.enabled)
-
-                        NewDocumentButton("Create Demo Document") {
-                            createdDocumentCount += 1
-                        }
-                    }
-                }
-
-                Text("Documents created: \(createdDocumentCount)")
-                    .font(.caption)
-                    .foregroundColor(Color.secondaryLabel)
-
-                SubscriptionView {
-                    VStack(spacing: 8) {
-                        Text("SubscriptionView")
-                            .font(.headline)
-                        Text("Showcase for premium plan messaging.")
-                            .font(.caption)
-                            .foregroundColor(Color.secondaryLabel)
-                            .textSelection(.enabled)
-
-                        HStack(spacing: 8) {
-                            Button("Free") { selectedSubscriptionTier = "Free" }
-                            Button("Pro") { selectedSubscriptionTier = "Pro" }
-                            Button("Ultra") { selectedSubscriptionTier = "Ultra" }
-                        }
-                    }
-                }
-
-                Text("Selected tier: \(selectedSubscriptionTier)")
-                    .font(.caption)
-                    .foregroundColor(Color.secondaryLabel)
-
-                ScrollViewReader { proxy in
-                    VStack(spacing: 8) {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(1..<8) { index in
-                                    Text("Card \(index)")
-                                        .padding(8)
-                                        .background(Color.secondarySystemBackground)
-                                        .cornerRadius(8)
-                                }
-                            }
-                        }
-
-                        Button("Scroll to Card 6 (compat)") {
-                            proxy.scrollTo(6)
-                        }
-                    }
-                }
             }
         }
     }
@@ -1262,16 +1197,23 @@ struct DisplayTab: View {
                 }
             }
 
-            // ViewBuilder only supports up to 10 direct components per closure.
-            // Group the remaining demos to avoid "extra argument in call".
-            Group {
-                ScrollTargetDemo()
-                ImageDemo()
-                ContentUnavailableDemo()
-                ShapesDemo()
-            }
+            // Keep additional demos in a dedicated subview so they stay stacked
+            // vertically while avoiding the ViewBuilder direct-child limit.
+            DisplayTabAdditionalDemos()
         }
         .padding(16)
+    }
+}
+
+@MainActor
+private struct DisplayTabAdditionalDemos: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ScrollTargetDemo()
+            ImageDemo()
+            ContentUnavailableDemo()
+            ShapesDemo()
+        }
     }
 }
 
@@ -1281,29 +1223,35 @@ struct DisplayTab: View {
 struct ScrollTargetDemo: View {
     var body: some View {
         SectionCard(title: "Scroll Targets") {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(0..<6) { index in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Card \(index + 1)")
-                                .font(.headline)
-                                .foregroundColor(Color.label)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Drag horizontally; cards snap to positions.")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
 
-                            Text("Swipe to snap")
-                                .font(.caption)
-                                .foregroundColor(Color.secondaryLabel)
+                ScrollView(.horizontal, showsIndicators: true) {
+                    HStack(spacing: 12) {
+                        ForEach(0..<10) { index in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Card \(index + 1)")
+                                    .font(.headline)
+                                    .foregroundColor(Color.label)
+
+                                Text("Swipe to snap")
+                                    .font(.caption)
+                                    .foregroundColor(Color.secondaryLabel)
+                            }
+                            .padding(12)
+                            .frame(width: 220, height: 90)
+                            .background(Color.systemBackground)
+                            .cornerRadius(10)
+                            .scrollTargetLayout()
                         }
-                        .padding(12)
-                        .frame(width: 180, height: 90)
-                        .background(Color.systemBackground)
-                        .cornerRadius(10)
-                        .scrollTargetLayout()
                     }
+                    .padding(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
                 }
-                .padding(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+                .frame(width: 620, height: 120)
+                .scrollTargetBehavior(.paging)
             }
-            .frame(height: 120)
-            .scrollTargetBehavior(.paging)
         }
     }
 }
@@ -1875,6 +1823,7 @@ struct FormsExtraDemos: View {
     var body: some View {
         VStack(spacing: 16) {
             ParityAdditionsDemo(store: store)
+            CommandProbeDemo(store: store)
             MultiDatePickerDemo(store: store)
             PasteButtonDemo(store: store)
             RenameButtonDemo(store: store)
@@ -1883,6 +1832,38 @@ struct FormsExtraDemos: View {
             AsyncImageDemo()
             TextEditorDemo()
             FormattedInputDemo()
+        }
+    }
+}
+
+@MainActor
+struct CommandProbeDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "Commands Probe") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(store.commandProbeMessage)
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                Text("Last action: \(store.commandProbeLastAction)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                Text("Count: \(store.commandProbeCount)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                HStack(spacing: 8) {
+                    Button("Run New Note Action") {
+                        store.runCommandProbe("File > New Note")
+                    }
+                    Button("Run Undo Action") {
+                        store.runCommandProbe("Edit > Undo")
+                    }
+                }
+            }
         }
     }
 }

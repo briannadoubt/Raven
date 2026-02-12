@@ -43,3 +43,82 @@ extension Scene where Body == _EmptyScene {
         _EmptyScene()
     }
 }
+
+// MARK: - Scene Modifiers
+
+internal protocol SceneModifier: Sendable {
+    func apply<S: Scene>(to scene: S)
+}
+
+internal struct ModifiedScene<Base: Scene, Modifier: SceneModifier>: Scene {
+    let base: Base
+    let modifier: Modifier
+
+    init(base: Base, modifier: Modifier) {
+        self.base = base
+        self.modifier = modifier
+    }
+
+    @MainActor var body: Base.Body {
+        base.body
+    }
+}
+
+extension ModifiedScene: _SceneContentExtractable where Base: _SceneContentExtractable {
+    @MainActor func _extractRootView() -> AnyView {
+        base._extractRootView()
+    }
+}
+
+internal struct CommandsSceneModifier<C: Commands>: SceneModifier {
+    let commands: C
+
+    func apply<S: Scene>(to scene: S) {
+        // Command routing/rendering is platform-dependent and currently a no-op.
+    }
+}
+
+@MainActor
+internal protocol _SceneCommandShortcutProvider {
+    func _sceneCommandShortcuts() -> [CommandShortcutBinding]
+}
+
+extension WindowGroup: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        []
+    }
+}
+
+extension CommandsSceneModifier: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        _resolveCommandShortcuts(from: commands)
+    }
+}
+
+extension ModifiedScene: _SceneCommandShortcutProvider where Base: _SceneCommandShortcutProvider, Modifier: _SceneCommandShortcutProvider {
+    @MainActor func _sceneCommandShortcuts() -> [CommandShortcutBinding] {
+        var bindings = base._sceneCommandShortcuts()
+        bindings.append(contentsOf: modifier._sceneCommandShortcuts())
+        return bindings
+    }
+}
+
+@MainActor
+public func _extractSceneCommandShortcuts<S: Scene>(from scene: S) -> [CommandShortcutBinding] {
+    if let provider = scene as? any _SceneCommandShortcutProvider {
+        return provider._sceneCommandShortcuts()
+    }
+    if S.Body.self != Never.self {
+        return _extractSceneCommandShortcuts(from: scene.body)
+    }
+    return []
+}
+
+extension Scene {
+    /// Installs scene-level command declarations.
+    ///
+    /// This mirrors SwiftUI's `.commands { ... }` surface in `App.body`.
+    @MainActor public func commands<C: Commands>(@CommandsBuilder _ content: () -> C) -> some Scene {
+        ModifiedScene(base: self, modifier: CommandsSceneModifier(commands: content()))
+    }
+}
