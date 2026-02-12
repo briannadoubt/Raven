@@ -408,3 +408,52 @@ extension EmptyView: _CoordinatorRenderable {
         return VNode.fragment(children: [])
     }
 }
+
+// MARK: - PrimitiveView fallback support
+
+// `AnyView.toVNode()` can render through `renderView(...)`, which does not have
+// a coordinator context. These `@ViewBuilder` containers therefore need direct
+// `PrimitiveView` support in addition to `_CoordinatorRenderable`.
+extension EmptyView: PrimitiveView {
+    @MainActor public func toVNode() -> VNode {
+        VNode.fragment(children: [])
+    }
+}
+
+extension TupleView: PrimitiveView {
+    @MainActor public func toVNode() -> VNode {
+        let children = _extractChildren().map { child in
+            AnyView(child).toVNode()
+        }
+        return VNode.fragment(children: children)
+    }
+}
+
+extension ConditionalContent: PrimitiveView {
+    @MainActor public func toVNode() -> VNode {
+        switch storage {
+        case .trueContent(let content):
+            return renderView(content)
+        case .falseContent(let content):
+            return renderView(content)
+        }
+    }
+}
+
+extension OptionalContent: PrimitiveView {
+    @MainActor public func toVNode() -> VNode {
+        guard let content else {
+            return VNode.fragment(children: [])
+        }
+        return renderView(content)
+    }
+}
+
+extension ForEachView: PrimitiveView {
+    @MainActor public func toVNode() -> VNode {
+        let children = views.map { view in
+            renderView(view)
+        }
+        return VNode.fragment(children: children)
+    }
+}

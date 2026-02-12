@@ -1,3 +1,6 @@
+import Foundation
+import JavaScriptKit
+
 // MARK: - AnyView
 
 /// A type-erased view.
@@ -121,6 +124,37 @@ public struct AnyView: View, PrimitiveView, Sendable {
     }
 }
 
+@MainActor
+private final class _StaticRenderContext: _RenderContext {
+    static let shared = _StaticRenderContext()
+
+    private init() {}
+
+    func renderChild(_ view: any View) -> VNode {
+        _openExistential(view, do: renderView)
+    }
+
+    func renderChildWithPreferences(_ view: any View) -> (VNode, PreferenceValues) {
+        (renderChild(view), PreferenceValues())
+    }
+
+    func registerClickHandler(_ action: @escaping @Sendable @MainActor () -> Void) -> UUID {
+        UUID()
+    }
+
+    func registerInputHandler(_ handler: @escaping @Sendable @MainActor (JSValue) -> Void) -> UUID {
+        UUID()
+    }
+
+    func persistentState<T: AnyObject>(create: () -> T) -> T {
+        create()
+    }
+
+    func enqueuePostRender(_ action: @escaping @Sendable @MainActor () -> Void) {
+        action()
+    }
+}
+
 // MARK: - Recursive View Rendering
 
 /// Recursively renders a view to a VNode.
@@ -135,6 +169,12 @@ public struct AnyView: View, PrimitiveView, Sendable {
 @MainActor internal func renderView<V: View>(_ view: V) -> VNode {
     // Check if this is a primitive view (Body == Never)
     if V.Body.self == Never.self {
+        // Coordinator-renderable primitives (e.g. ModifiedContent, ConditionalContent)
+        // need a render context even outside RenderLoop's coordinator path.
+        if let renderable = view as? any _CoordinatorRenderable {
+            return renderable._render(with: _StaticRenderContext.shared)
+        }
+
         // Try to cast to PrimitiveView and call toVNode()
         if let primitive = view as? any PrimitiveView {
             return primitive.toVNode()
@@ -151,4 +191,3 @@ public struct AnyView: View, PrimitiveView, Sendable {
         return renderView(body)
     }
 }
-
