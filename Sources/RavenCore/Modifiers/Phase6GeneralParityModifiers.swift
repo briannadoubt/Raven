@@ -71,29 +71,6 @@ extension _ModifierMetadataView: _ModifierRenderable {
 }
 
 extension View {
-    @MainActor public func navigationBarItems<Leading: View>(
-        leading: Leading
-    ) -> some View {
-        _ = leading
-        return _ModifierMetadataView(content: self, properties: ["data-navigation-bar-leading": "true"])
-    }
-
-    @MainActor public func navigationBarItems<Trailing: View>(
-        trailing: Trailing
-    ) -> some View {
-        _ = trailing
-        return _ModifierMetadataView(content: self, properties: ["data-navigation-bar-trailing": "true"])
-    }
-
-    @MainActor public func navigationBarItems<Leading: View, Trailing: View>(
-        leading: Leading,
-        trailing: Trailing
-    ) -> some View {
-        _ = leading
-        _ = trailing
-        return _ModifierMetadataView(content: self, properties: ["data-navigation-bar-leading-trailing": "true"])
-    }
-
     @MainActor public func sensoryFeedback<Trigger: Equatable & Sendable>(
         _ feedback: SensoryFeedback,
         trigger: Trigger

@@ -1,6 +1,43 @@
 import Foundation
 import JavaScriptKit
 
+/// Centralized host-callback scheduling for async/sync work.
+///
+/// This isolates environment-specific behavior (browser/WASM vs native runtimes)
+/// so higher-level APIs can adopt new runtime integrations in one place.
+@MainActor
+public enum AsyncHostBridge {
+    /// Returns whether host callbacks can reliably launch suspending MainActor tasks.
+    ///
+    /// On current Swift/WASM toolchains this is still evolving, so this remains
+    /// `false` until runtime support is proven stable.
+    public static var supportsSuspendingMainActorTasksFromHostCallbacks: Bool {
+        #if arch(wasm32)
+        return false
+        #else
+        return true
+        #endif
+    }
+
+    /// Execute synchronous MainActor work from a host callback.
+    @inline(__always)
+    public static func run(_ operation: @escaping @Sendable @MainActor () -> Void) {
+        MainActor.assumeIsolated {
+            operation()
+        }
+    }
+
+    /// Execute async MainActor work from a host callback.
+    ///
+    /// This remains best-effort on current wasm toolchains and is intentionally
+    /// centralized so new runtime integration can be adopted in one place.
+    public static func runAsync(_ operation: @escaping @Sendable @MainActor () async -> Void) {
+        Task.detached {
+            await operation()
+        }
+    }
+}
+
 /// Bridge for DOM manipulation and JavaScript interop
 ///
 /// All DOM operations must run on the MainActor since JSObject is not Sendable
@@ -269,7 +306,7 @@ public final class DOMBridge {
             guard let handler = self.eventHandlers[handlerID] else {
                 return .undefined
             }
-            handler()
+            AsyncHostBridge.run(handler)
             return .undefined
         }
 
@@ -345,8 +382,9 @@ public final class DOMBridge {
             }
 
             let event = args[0]
-            // Call handler synchronously - Task{} doesn't execute in WASM event loop
-            handler(event)
+            AsyncHostBridge.run {
+                handler(event)
+            }
 
             return .undefined
         }

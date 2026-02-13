@@ -102,6 +102,8 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var commandProbeCount: Int = 0
     @SwiftUI.Published var commandProbeLastAction: String = "No command invoked yet."
     @SwiftUI.Published var commandProbeMessage: String = "Waiting for command action."
+    @SwiftUI.Published var refreshCounter: Int = 0
+    @SwiftUI.Published var lastRefreshAt: String = "Never"
     init() {
         setupPublished()
 
@@ -215,6 +217,22 @@ struct ContentView: View {
             NavigationStack {
                 ControlsTab(store: store)
                     .navigationTitle("Controls")
+                    .navigationBarItems(NavigationBarItem(placement: .leading) {
+                        Button("Reset") {
+                            store.sliderValue = 50
+                            store.stepperValue = 0
+                            store.progressValue = 0.65
+                            store.refreshCounter = 0
+                            store.lastRefreshAt = "Never"
+                        }
+                    })
+                    .navigationBarItems(NavigationBarItem(placement: .trailing) {
+                        Button("Bump") {
+                            store.sliderValue = store.sliderValue >= 95 ? 0 : store.sliderValue + 5
+                            store.stepperValue = store.stepperValue >= 10 ? -10 : store.stepperValue + 1
+                            store.progressValue = store.progressValue >= 0.95 ? 0.05 : store.progressValue + 0.1
+                        }
+                    })
             }
             .tabItem { Text("Controls") }
             .tag(Tab.controls)
@@ -1050,6 +1068,7 @@ struct ControlsTab: View {
             ColorPickerDemo(store: store)
             DatePickerDemo(store: store)
             LabeledContentDemo()
+            RefreshableDemo(store: store)
         }
         .padding(16)
     }
@@ -1115,6 +1134,61 @@ struct LabeledContentDemo: View {
                 LabeledContent("Platform", value: "WebAssembly")
                 LabeledContent("Language", value: "Swift 6.2")
             }
+        }
+    }
+}
+
+// MARK: - Refreshable Demo
+
+@MainActor
+struct RefreshableDemo: View {
+    let store: ShowcaseStore
+
+    var body: some View {
+        SectionCard(title: "Refreshable + RefreshAction") {
+            RefreshableDemoContent(
+                store: store
+            )
+            .environment(\.refresh, RefreshAction {
+                performRefresh()
+            })
+        }
+    }
+
+    private func performRefresh() {
+        store.refreshCounter += 1
+        store.lastRefreshAt = "Refreshed #\(store.refreshCounter)"
+    }
+}
+
+@MainActor
+private struct RefreshableDemoContent: View {
+    @Environment(\.refresh) private var refresh
+    let store: ShowcaseStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Count: \(store.refreshCounter)")
+            Text("Last refresh: \(store.lastRefreshAt)")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            HStack(spacing: 8) {
+                Button("Manual Refresh") {
+                    store.refreshCounter += 1
+                    store.lastRefreshAt = "Manual trigger #\(store.refreshCounter)"
+                    refresh?()
+                }
+                .disabled(refresh == nil)
+
+                Text(refresh == nil ? "Unavailable" : "Available")
+                    .font(.caption)
+                    .foregroundColor(refresh == nil ? .secondaryLabel : .green)
+            }
+
+            Text("Use the button to trigger environment-driven refresh.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
         }
     }
 }

@@ -65,196 +65,101 @@ extension View {
 
 // MARK: - Refreshable Modifier
 
-/// Internal modifier that implements pull-to-refresh behavior.
-///
-/// This modifier handles:
-/// - Touch tracking for pull gestures
-/// - Elastic scroll behavior during pull
-/// - Refresh indicator display and animation
-/// - Async action execution
-/// - Automatic scroll restoration after refresh
+/// Internal modifier that injects refresh behavior into the environment.
 @MainActor
 struct _RefreshableModifier: ViewModifier, Sendable {
     let action: @Sendable @MainActor () async -> Void
+    @Environment(\.refreshConfiguration) private var configuration
 
     @State private var pullOffset: CGFloat = 0
     @State private var isRefreshing = false
-    @State private var isPulling = false
     @State private var refreshState: RefreshState = .idle
 
     @MainActor
     func body(content: Content) -> some View {
-        ZStack(alignment: .top) {
-            // Refresh indicator
-            refreshIndicator
-                .offset(y: pullOffset - 60)
-                .opacity(refreshIndicatorOpacity)
-
-            // Main content
-            content
-                .offset(y: refreshContentOffset)
-                .gesture(pullGesture)
-        }
+        content
+        .offset(y: contentOffset)
+        .gesture(pullGesture)
+        .environment(\.refresh, RefreshAction {
+            await performRefreshIfNeeded()
+        })
+        .environment(
+            \.refreshProgress,
+            RefreshProgress(
+                isRefreshing: isRefreshing,
+                pullProgress: isRefreshing ? 1 : normalizedPullProgress
+            )
+        )
     }
 
-    /// The refresh indicator view
-    @ViewBuilder
-    private var refreshIndicator: some View {
-        HStack(spacing: 8) {
-            if isRefreshing {
-                ProgressView()
-            } else {
-                Image(systemName: refreshIconName)
-                    .rotationEffect(Angle(degrees: refreshIconRotation))
-            }
-            if refreshState != .idle {
-                Text(refreshStateText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .frame(height: 60)
+    private var normalizedPullProgress: Double {
+        guard configuration.triggerDistance > 0 else { return 0 }
+        let progress = pullOffset / configuration.triggerDistance
+        return min(max(Double(progress), 0), 1)
     }
 
-    /// Opacity for the refresh indicator
-    private var refreshIndicatorOpacity: Double {
+    private var contentOffset: CGFloat {
         if isRefreshing {
-            return 1
-        } else if isPulling {
-            return min(pullOffset / refreshTriggerDistance, 1.0)
-        } else {
-            return 0
+            return min(configuration.triggerDistance * 0.5, 50)
         }
+        return pullOffset
     }
 
-    /// Offset for the content during refresh
-    private var refreshContentOffset: CGFloat {
-        if isRefreshing {
-            return 60 // Height of refresh indicator
-        } else if isPulling {
-            return pullOffset
-        } else {
-            return 0
-        }
-    }
-
-    /// Icon name for the refresh indicator
-    private var refreshIconName: String {
-        switch refreshState {
-        case .idle, .pulling:
-            return "arrow.down"
-        case .triggered:
-            return "arrow.down"
-        case .refreshing:
-            return "arrow.clockwise"
-        }
-    }
-
-    /// Rotation for the refresh icon
-    private var refreshIconRotation: Double {
-        if refreshState == .triggered {
-            return 180
-        } else if isPulling {
-            return min(pullOffset / refreshTriggerDistance, 1.0) * 180
-        } else {
-            return 0
-        }
-    }
-
-    /// Text for the refresh state
-    private var refreshStateText: String {
-        switch refreshState {
-        case .idle:
-            return ""
-        case .pulling:
-            return "Pull to refresh"
-        case .triggered:
-            return "Release to refresh"
-        case .refreshing:
-            return "Refreshing..."
-        }
-    }
-
-    /// Distance to pull before triggering refresh
-    private var refreshTriggerDistance: CGFloat {
-        80
-    }
-
-    /// The drag gesture for pull-to-refresh
     private var pullGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged(handlePullChanged)
-            .onEnded(handlePullEnded)
-    }
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                guard !isRefreshing else { return }
 
-    /// Handles pull gesture changes
-    private func handlePullChanged(_ value: DragGesture.Value) {
-        // Only allow pulling down when at the top of the scroll view
-        // In a real implementation, this would check scroll position
-        let translation = value.translation.height
+                let verticalPull = max(value.translation.height, 0)
+                if verticalPull <= 0 {
+                    pullOffset = 0
+                    refreshState = .idle
+                    return
+                }
 
-        guard translation > 0 else {
-            pullOffset = 0
-            isPulling = false
-            return
-        }
+                let resistance = max(configuration.resistance, 1)
+                let limitedPull = verticalPull / resistance
+                let maxPull = configuration.triggerDistance * 1.5
 
-        isPulling = true
-
-        // Apply elastic resistance
-        let resistance: CGFloat = 2.5
-        pullOffset = translation / resistance
-
-        // Update refresh state
-        if pullOffset >= refreshTriggerDistance {
-            if refreshState != .triggered {
-                refreshState = .triggered
-                // Haptic feedback would go here
+                pullOffset = min(limitedPull, maxPull)
+                refreshState = pullOffset >= configuration.triggerDistance ? .triggered : .pulling
             }
-        } else {
-            refreshState = .pulling
-        }
-    }
+            .onEnded { _ in
+                guard !isRefreshing else { return }
 
-    /// Handles pull gesture end
-    private func handlePullEnded(_ value: DragGesture.Value) {
-        isPulling = false
-
-        if pullOffset >= refreshTriggerDistance && !isRefreshing {
-            // Trigger refresh
-            triggerRefresh()
-        } else {
-            // Snap back
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                let shouldRefresh = refreshState == .triggered
                 pullOffset = 0
                 refreshState = .idle
+
+                guard shouldRefresh else { return }
+                AsyncHostBridge.runAsync {
+                    await performRefreshIfNeeded()
+                }
             }
-        }
     }
 
-    /// Triggers the refresh action
-    private func triggerRefresh() {
+    /// Triggers the refresh action if one is not already in progress.
+    private func performRefreshIfNeeded() async {
+        guard !isRefreshing else { return }
+
+        let refreshStart = Date()
+
         isRefreshing = true
         refreshState = .refreshing
 
-        // Animate to refreshing position
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            pullOffset = refreshTriggerDistance
-        }
-
         // Execute the async refresh action
-        Task {
-            await action()
+        await action()
 
-            // Animation for completion
-            await MainActor.run {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    pullOffset = 0
-                    isRefreshing = false
-                    refreshState = .idle
-                }
-            }
+        // Keep spinner visible for a minimum duration to avoid visual flicker.
+        let elapsed = Date().timeIntervalSince(refreshStart)
+        if elapsed < configuration.minimumRefreshDuration {
+            let remaining = configuration.minimumRefreshDuration - elapsed
+            try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
         }
+
+        isRefreshing = false
+        refreshState = .idle
+        pullOffset = 0
     }
 }
 
@@ -277,9 +182,48 @@ enum RefreshState: Sendable {
 
 // MARK: - Refresh Environment
 
+/// An action that refreshes the current view's data.
+///
+/// Retrieve this from the environment with `@Environment(\.refresh)` and invoke
+/// it with `await refresh?()` to trigger the same logic as `.refreshable`.
+@MainActor
+public struct RefreshAction: Sendable {
+    private let action: @Sendable @MainActor () async -> Void
+    private let syncAction: (@Sendable @MainActor () -> Void)?
+
+    public init(_ action: @escaping @Sendable @MainActor () async -> Void) {
+        self.action = action
+        self.syncAction = nil
+    }
+
+    public init(_ action: @escaping @Sendable @MainActor () -> Void) {
+        self.action = {
+            action()
+        }
+        self.syncAction = action
+    }
+
+    /// Executes refresh from synchronous contexts (for example, button handlers).
+    ///
+    /// SwiftUI requires `Task { await refresh?() }` from sync handlers. On current
+    /// Swift/WASM toolchains, nested `Task {}` from DOM callbacks can be unreliable,
+    /// so Raven provides this overload as a compatibility bridge.
+    public func callAsFunction() {
+        if let syncAction {
+            AsyncHostBridge.run(syncAction)
+            return
+        }
+        AsyncHostBridge.runAsync(action)
+    }
+
+    public func callAsFunction() async {
+        await action()
+    }
+}
+
 /// Environment key for refresh action.
 private struct RefreshActionKey: EnvironmentKey {
-    static let defaultValue: (@Sendable @MainActor () async -> Void)? = nil
+    static let defaultValue: RefreshAction? = nil
 }
 
 extension EnvironmentValues {
@@ -295,7 +239,7 @@ extension EnvironmentValues {
     ///     // Refresh is available
     /// }
     /// ```
-    public var refresh: (@Sendable @MainActor () async -> Void)? {
+    public var refresh: RefreshAction? {
         get { self[RefreshActionKey.self] }
         set { self[RefreshActionKey.self] = newValue }
     }
