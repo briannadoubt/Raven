@@ -32,6 +32,23 @@ API_DECL_KINDS = {"Func", "Var", "Subscript", "Constructor", "Macro"}
 TARGET_DECL_KINDS = TYPE_DECL_KINDS | API_DECL_KINDS
 SCORABLE_DECL_KINDS = TARGET_DECL_KINDS
 
+NOISE_TYPEALIASES = {
+    "Body",
+    "AnimatableData",
+    "ArrayLiteralElement",
+    "RawValue",
+    "Element",
+    "Iterator",
+    "AllCases",
+}
+
+NOISE_MEMBERS = {
+    "body",
+    "hash",
+    "hashValue",
+    "rawValue",
+}
+
 
 @dataclasses.dataclass(frozen=True)
 class SwiftUISymbol:
@@ -58,6 +75,20 @@ def is_named_api(sym: SwiftUISymbol) -> bool:
 
 def qualified_member(owner: str, member: str) -> str:
     return f"{owner}.{member}" if owner else member
+
+
+def is_actionable_symbol(sym: SwiftUISymbol) -> bool:
+    """Exclude known noisy protocol/synthesis symbols from parity scoring."""
+    if sym.decl_kind not in SCORABLE_DECL_KINDS:
+        return False
+    if sym.decl_kind == "TypeAlias" and sym.name in NOISE_TYPEALIASES:
+        return False
+    if sym.decl_kind in {"Func", "Var"} and sym.name in NOISE_MEMBERS:
+        return False
+    # Operator-like overloads are rarely actionable in parity planning.
+    if sym.decl_kind == "Func" and not is_named_api(sym):
+        return False
+    return True
 
 
 def run(cmd: list[str], cwd: pathlib.Path | None = None) -> str:
@@ -467,7 +498,7 @@ def is_component_candidate_type(sym: SwiftUISymbol, owner: str) -> bool:
 
 
 def match_symbol(sym: SwiftUISymbol, raven: dict[str, Any]) -> bool | None:
-    if sym.decl_kind not in SCORABLE_DECL_KINDS:
+    if not is_actionable_symbol(sym):
         return None
     owner = owner_context(sym)
     if sym.decl_kind in TYPE_DECL_KINDS:
