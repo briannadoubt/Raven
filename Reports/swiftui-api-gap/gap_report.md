@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T07:49:36.405769+00:00`
+Generated: `2026-02-13T08:33:50.824203+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,9 +10,9 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **2048**
-- Missing in Raven: **2521**
-- Name-based coverage: **44.82%**
+- Matched by Raven: **2096**
+- Missing in Raven: **2473**
+- Name-based coverage: **45.87%**
 
 ### Missing by Declaration Kind
 
@@ -21,10 +21,10 @@ Target: `arm64-apple-ios26.2`
 | `Class` | 5 | 0 | 5 |
 | `Constructor` | 191 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 773 | 0 | 1366 |
+| `Func` | 727 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 36 | 0 | 66 |
-| `Struct` | 251 | 0 | 484 |
+| `Struct` | 249 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
 | `Var` | 864 | 0 | 964 |
@@ -461,26 +461,6 @@ Target: `arm64-apple-ios26.2`
 - `buildBlock(_:_:_:_:_:_:_:_:)` (owner: `TabContentBuilder`)
 - `buildBlock(_:_:_:_:_:_:_:_:_:)` (owner: `TabContentBuilder`)
 - `buildBlock(_:_:_:_:_:_:_:_:_:_:)` (owner: `TabContentBuilder`)
-- `buildBlock(_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:_:)` (owner: `TableColumnBuilder`)
-- `buildBlock(_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:)` (owner: `TableRowBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:_:)` (owner: `TableRowBuilder`)
 - `buildBlock(_:)` (owner: `ToolbarContentBuilder`)
 - `buildBlock(_:_:)` (owner: `ToolbarContentBuilder`)
 - `buildBlock(_:_:_:)` (owner: `ToolbarContentBuilder`)
@@ -495,10 +475,6 @@ Target: `arm64-apple-ios26.2`
 - `buildBlock(_:)` (owner: `WidgetBundleBuilder`)
 - `buildEither(first:)` (owner: `TabContentBuilder`)
 - `buildEither(second:)` (owner: `TabContentBuilder`)
-- `buildEither(first:)` (owner: `TableColumnBuilder`)
-- `buildEither(second:)` (owner: `TableColumnBuilder`)
-- `buildEither(first:)` (owner: `TableRowBuilder`)
-- `buildEither(second:)` (owner: `TableRowBuilder`)
 - `buildEither(first:)` (owner: `ToolbarContentBuilder`)
 - `buildEither(second:)` (owner: `ToolbarContentBuilder`)
 - `buildExpression(_:)` (owner: `AccessibilityRotorContentBuilder`)
@@ -507,20 +483,15 @@ Target: `arm64-apple-ios26.2`
 - `buildExpression(_:)` (owner: `ControlWidgetTemplateBuilder`)
 - `buildExpression(_:)` (owner: `SceneBuilder`)
 - `buildExpression(_:)` (owner: `TabContentBuilder`)
-- `buildExpression(_:)` (owner: `TableColumnBuilder`)
-- `buildExpression(_:)` (owner: `TableRowBuilder`)
 - `buildExpression(_:)` (owner: `ToolbarContentBuilder`)
 - `buildExpression(_:)` (owner: `WidgetBundleBuilder`)
 - `buildIf(_:)` (owner: `AccessibilityRotorContentBuilder`)
 - `buildIf(_:)` (owner: `CommandsBuilder`)
 - `buildIf(_:)` (owner: `TabContentBuilder`)
-- `buildIf(_:)` (owner: `TableColumnBuilder`)
-- `buildIf(_:)` (owner: `TableRowBuilder`)
 - `buildIf(_:)` (owner: `ToolbarContentBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `CommandsBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `SceneBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `TabContentBuilder`)
-- `buildLimitedAvailability(_:)` (owner: `TableColumnBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `ToolbarContentBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `WidgetBundleBuilder`)
 - `buildOptional(_:)` (owner: `WidgetBundleBuilder`)
@@ -538,6 +509,35 @@ Target: `arm64-apple-ios26.2`
 - `callAsFunction(value:)` (owner: `DismissWindowAction`)
 - `callAsFunction(id:)` (owner: `OpenWindowAction`)
 - `callAsFunction(id:value:)` (owner: `OpenWindowAction`)
+- `callAsFunction(value:)` (owner: `OpenWindowAction`)
+- `callAsFunction()` (owner: `RefreshAction`)
+- `cancel(_:)` (owner: `Button`)
+- `cancel(_:action:)` (owner: `Button`)
+- `cancel` (owner: `ButtonRole`)
+- `cancel` (owner: `Set`)
+- `cancelAction` (owner: `KeyboardShortcut`)
+- `cancellationAction` (owner: `ToolbarItemPlacement`)
+- `capsule` (owner: `ButtonBorderShape`)
+- `center` (owner: `TableColumnAlignment`)
+- `centered` (owner: `Threshold`)
+- `character` (owner: `KeyEquivalent`)
+- `characters` (owner: `KeyPress`)
+- `characters` (owner: `TextInputAutocapitalization`)
+- `childForHomeIndicatorAutoHidden` (owner: `UIHostingController`)
+- `childForScreenEdgesDeferringSystemGestures` (owner: `UIHostingController`)
+- `childForStatusBarHidden` (owner: `UIHostingController`)
+- `childForStatusBarStyle` (owner: `UIHostingController`)
+- `circle` (owner: `ButtonBorderShape`)
+- `clear` (owner: `KeyEquivalent`)
+- `clipShape(_:)` (owner: `MatchedTransitionSourceConfiguration`)
+- `close` (owner: `ButtonRole`)
+- `codable` (owner: `NavigationPath`)
+- `columns` (owner: `NavigationViewStyle`)
+- `combine` (owner: `AccessibilityChildBehavior`)
+- `commandsRemoved()` (owner: `Scene`)
+- `commandsReplaced(content:)` (owner: `Scene`)
+- `compact` (owner: `ListSectionSpacing`)
+- `complete` (owner: `WritingToolsBehavior`)
 
 ## Operator-Like API Gap Summary
 
