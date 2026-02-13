@@ -1569,11 +1569,14 @@ struct LayoutAdvancedDemos: View {
             LazyVStackDemo()
             LazyHStackDemo()
             LazyHGridDemo()
+            FlowLayoutDemo()
             GeometryReaderDemo()
             ViewThatFitsDemo()
             NavigationSplitViewDemo()
             NavigationViewDemo()
+#if !arch(wasm32)
             TableDemo(store: store)
+#endif
         }
     }
 }
@@ -1756,6 +1759,30 @@ struct ModifierShowcase: View {
                     .cornerRadius(20)
             }
         }
+    }
+}
+
+@MainActor
+struct FlowLayoutDemo: View {
+    var body: some View {
+        SectionCard(title: "FlowLayout (Layout Protocol)") {
+            FlowLayout(itemSpacing: 8, lineSpacing: 8) {
+                chip("SwiftUI")
+                chip("Raven")
+                chip("WebAssembly")
+                chip("Layout")
+                chip("Flow")
+                chip("Prototype")
+            }
+        }
+    }
+
+    private func chip(_ text: String) -> some View {
+        Text(text)
+            .padding(8)
+            .background(Color.accent.opacity(0.15))
+            .foregroundColor(Color.accent)
+            .cornerRadius(6)
     }
 }
 
@@ -3012,6 +3039,11 @@ struct TableDemo: View {
         TableRowData(id: 2, task: "Write docs", owner: "Sam", status: "Done"),
         TableRowData(id: 3, task: "Polish UI", owner: "Jordan", status: "Todo")
     ]
+
+    @MainActor
+    init(store: ShowcaseStore) {
+        self.store = store
+    }
 
     var body: some View {
         SectionCard(title: "Table") {

@@ -14,6 +14,12 @@ public enum VerticalAlignment: Sendable, Hashable {
     /// Align views to their bottom edges.
     case bottom
 
+    /// Align views to the first text baseline.
+    case firstTextBaseline
+
+    /// Align views to the last text baseline.
+    case lastTextBaseline
+
     /// Convert to CSS align-items value for flexbox.
     public var cssValue: String {
         switch self {
@@ -23,6 +29,8 @@ public enum VerticalAlignment: Sendable, Hashable {
             return "center"
         case .bottom:
             return "flex-end"
+        case .firstTextBaseline, .lastTextBaseline:
+            return "baseline"
         }
     }
 }

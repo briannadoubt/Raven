@@ -146,6 +146,8 @@ public struct _ContainerRelativeFrameView<Content: View>: View, PrimitiveView, S
                 alignItems = "center"
             case .bottom:
                 alignItems = "flex-end"
+            case .firstTextBaseline, .lastTextBaseline:
+                alignItems = "baseline"
             }
             props["align-items"] = .style(name: "align-items", value: alignItems)
         }

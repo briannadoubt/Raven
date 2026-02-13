@@ -299,6 +299,7 @@ internal final class ViewThatFitsController: @unchecked Sendable {
     }
 
     func scheduleMeasure(force: Bool) {
+        #if arch(wasm32)
         // If we're already observing and this isn't a forced re-measure, do nothing.
         if !force, observedContainer != nil, resizeObserver != nil { return }
 
@@ -318,6 +319,9 @@ internal final class ViewThatFitsController: @unchecked Sendable {
         } else if let setTimeout = JSObject.global.setTimeout.function {
             _ = setTimeout(closure, 0)
         }
+        #else
+        _ = force
+        #endif
     }
 
     private func measureAndObserveIfNeeded() {
