@@ -23,6 +23,7 @@ import Foundation
 public struct NavigationView<Content: View>: View, Sendable {
     /// The root content of the navigation view
     private let content: Content
+    @Environment(\.navigationViewStyle) private var style
 
     // MARK: - Initializers
 
@@ -52,7 +53,7 @@ public struct NavigationView<Content: View>: View, Sendable {
         // For Phase 4, we create a simple container structure
         // The actual navigation logic will be handled by the environment
         // and rendering system
-        NavigationContainer(content: content)
+        NavigationContainer(content: content, styleVariant: style._variant)
     }
 }
 
@@ -68,6 +69,7 @@ private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable
 
     /// The content to display in the navigation view
     let content: Content
+    let styleVariant: _NavigationViewStyleVariant
 
     /// Converts this container to a virtual DOM node.
     ///
@@ -85,7 +87,20 @@ private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable
 
         // Create the main navigation container with proper ARIA landmark
         var props: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "raven-navigation-view")
+            "class": .attribute(
+                name: "class",
+                value: "raven-navigation-view raven-navigation-view--\(styleVariant.rawValue)"
+            ),
+            "data-navigation-view-style": .attribute(
+                name: "data-navigation-view-style",
+                value: styleVariant.rawValue
+            ),
+            "display": .style(name: "display", value: "flex"),
+            "flex-direction": .style(name: "flex-direction", value: "column"),
+            "border": .style(name: "border", value: "1px solid var(--system-separator)"),
+            "border-radius": .style(name: "border-radius", value: styleMetrics.containerCornerRadius),
+            "overflow": .style(name: "overflow", value: "hidden"),
+            "background": .style(name: "background", value: "var(--system-secondary-background)")
         ]
 
         // Add ARIA attributes for navigation landmark (WCAG 2.1 requirement)
@@ -110,7 +125,14 @@ private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable
     @MainActor
     private func createNavigationBar() -> VNode {
         let props: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "raven-navigation-bar")
+            "class": .attribute(name: "class", value: "raven-navigation-bar"),
+            "display": .style(name: "display", value: "flex"),
+            "align-items": .style(name: "align-items", value: "center"),
+            "gap": .style(name: "gap", value: "8px"),
+            "min-height": .style(name: "min-height", value: styleMetrics.navBarMinHeight),
+            "padding": .style(name: "padding", value: styleMetrics.navBarPadding),
+            "border-bottom": .style(name: "border-bottom", value: styleMetrics.navBarBorder),
+            "background": .style(name: "background", value: styleMetrics.navBarBackground)
         ]
 
         // Create back button (will be controlled by navigation state)
@@ -164,9 +186,13 @@ private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable
     ///
     /// - Returns: A VNode for the content area.
     @MainActor
-    private func createContentArea() -> VNode {
+    private func createContentArea(children: [VNode] = []) -> VNode {
         var props: [String: VProperty] = [
-            "class": .attribute(name: "class", value: "raven-navigation-content")
+            "class": .attribute(name: "class", value: "raven-navigation-content"),
+            "padding": .style(name: "padding", value: styleMetrics.contentPadding),
+            "background": .style(name: "background", value: "var(--system-background)"),
+            "min-height": .style(name: "min-height", value: "0"),
+            "flex": .style(name: "flex", value: "1")
         ]
 
         // Add ARIA attributes for main landmark (WCAG 2.1 requirement)
@@ -178,8 +204,90 @@ private struct NavigationContainer<Content: View>: View, PrimitiveView, Sendable
         return VNode.element(
             "main",
             props: props,
-            children: []
+            children: children
         )
+    }
+
+    private var styleMetrics: _NavigationViewStyleMetrics {
+        _NavigationViewStyleMetrics(variant: styleVariant)
+    }
+}
+
+extension NavigationContainer: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let contentNode = context.renderChild(content)
+        let renderedChildren: [VNode]
+
+        if case .fragment = contentNode.type {
+            renderedChildren = contentNode.children
+        } else {
+            renderedChildren = [contentNode]
+        }
+
+        return VNode.element(
+            "nav",
+            props: [
+                "class": .attribute(
+                    name: "class",
+                    value: "raven-navigation-view raven-navigation-view--\(styleVariant.rawValue)"
+                ),
+                "data-navigation-view-style": .attribute(
+                    name: "data-navigation-view-style",
+                    value: styleVariant.rawValue
+                ),
+                "role": .attribute(name: "role", value: "navigation"),
+                "aria-label": .attribute(name: "aria-label", value: "Main navigation"),
+                "display": .style(name: "display", value: "flex"),
+                "flex-direction": .style(name: "flex-direction", value: "column"),
+                "border": .style(name: "border", value: "1px solid var(--system-separator)"),
+                "border-radius": .style(name: "border-radius", value: styleMetrics.containerCornerRadius),
+                "overflow": .style(name: "overflow", value: "hidden"),
+                "background": .style(name: "background", value: "var(--system-secondary-background)")
+            ],
+            children: [createNavigationBar(), createContentArea(children: renderedChildren)]
+        )
+    }
+}
+
+private struct _NavigationViewStyleMetrics: Sendable {
+    let navBarPadding: String
+    let navBarMinHeight: String
+    let navBarBorder: String
+    let navBarBackground: String
+    let contentPadding: String
+    let containerCornerRadius: String
+
+    init(variant: _NavigationViewStyleVariant) {
+        switch variant {
+        case .automatic, .default:
+            navBarPadding = "10px 12px"
+            navBarMinHeight = "44px"
+            navBarBorder = "1px solid var(--system-separator)"
+            navBarBackground = "var(--system-secondary-background)"
+            contentPadding = "12px"
+            containerCornerRadius = "10px"
+        case .stack:
+            navBarPadding = "12px 14px"
+            navBarMinHeight = "50px"
+            navBarBorder = "1px solid var(--system-separator)"
+            navBarBackground = "var(--system-background)"
+            contentPadding = "14px"
+            containerCornerRadius = "12px"
+        case .doubleColumn:
+            navBarPadding = "8px 12px"
+            navBarMinHeight = "40px"
+            navBarBorder = "1px dashed var(--system-separator)"
+            navBarBackground = "var(--system-tertiary-background)"
+            contentPadding = "10px"
+            containerCornerRadius = "8px"
+        case .columns:
+            navBarPadding = "8px 12px"
+            navBarMinHeight = "40px"
+            navBarBorder = "1px solid var(--system-separator)"
+            navBarBackground = "var(--system-tertiary-background)"
+            contentPadding = "10px"
+            containerCornerRadius = "8px"
+        }
     }
 }
 

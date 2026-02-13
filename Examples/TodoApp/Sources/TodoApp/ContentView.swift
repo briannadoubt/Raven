@@ -1498,6 +1498,7 @@ struct LayoutAdvancedDemos: View {
             GeometryReaderDemo()
             ViewThatFitsDemo()
             NavigationSplitViewDemo()
+            NavigationViewDemo()
             TableDemo(store: store)
         }
     }
@@ -2872,8 +2873,36 @@ extension NavigationSplitViewVisibility {
 struct NavigationViewDemo: View {
     var body: some View {
         SectionCard(title: "NavigationView") {
+            VStack(spacing: 10) {
+                navigationPreview(
+                    title: "default",
+                    style: .default
+                )
+                navigationPreview(
+                    title: "stack",
+                    style: .stack
+                )
+                navigationPreview(
+                    title: "doubleColumn",
+                    style: .doubleColumn
+                )
+                navigationPreview(
+                    title: "columns",
+                    style: .columns
+                )
+            }
+        }
+    }
+
+    @MainActor
+    private func navigationPreview(title: String, style: some NavigationViewStyle) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
             NavigationView {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Legacy navigation container")
                         .font(.caption)
                         .foregroundColor(Color.secondaryLabel)
@@ -2883,6 +2912,7 @@ struct NavigationViewDemo: View {
                     }
                 }
             }
+            .navigationViewStyle(style)
             .frame(height: 120)
             .background(Color.secondarySystemBackground)
             .cornerRadius(6)
