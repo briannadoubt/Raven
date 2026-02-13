@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T06:47:46.057647+00:00`
+Generated: `2026-02-13T07:05:21.354774+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **2012**
-- Missing in Raven: **2557**
-- Name-based coverage: **44.04%**
+- Matched by Raven: **2032**
+- Missing in Raven: **2537**
+- Name-based coverage: **44.47%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 202 | 0 | 1238 |
+| `Constructor` | 196 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 777 | 0 | 1366 |
+| `Func` | 776 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 37 | 0 | 66 |
-| `Struct` | 262 | 0 | 484 |
+| `Protocol` | 36 | 0 | 66 |
+| `Struct` | 256 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 873 | 0 | 964 |
+| `Var` | 867 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -314,7 +314,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `HoverEffect`)
 - `automatic` (owner: `IndexDisplayMode`)
 - `automatic` (owner: `LimitBehavior`)
-- `automatic` (owner: `ListStyle`)
 - `automatic` (owner: `Localization`)
 - `automatic` (owner: `MenuActionDismissBehavior`)
 - `automatic` (owner: `MenuOrder`)
@@ -538,6 +537,7 @@ Target: `arm64-apple-ios26.2`
 - `callAsFunction(id:value:)` (owner: `DismissWindowAction`)
 - `callAsFunction(value:)` (owner: `DismissWindowAction`)
 - `callAsFunction(id:)` (owner: `OpenWindowAction`)
+- `callAsFunction(id:value:)` (owner: `OpenWindowAction`)
 
 ## Operator-Like API Gap Summary
 
