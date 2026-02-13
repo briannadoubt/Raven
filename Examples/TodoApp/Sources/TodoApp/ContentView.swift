@@ -1064,6 +1064,7 @@ struct ControlsTab: View {
             ColorPickerDemo(store: store)
             DatePickerDemo(store: store)
             LabeledContentDemo()
+            RefreshableDemo()
         }
         .padding(16)
     }
@@ -1129,6 +1130,68 @@ struct LabeledContentDemo: View {
                 LabeledContent("Platform", value: "WebAssembly")
                 LabeledContent("Language", value: "Swift 6.2")
             }
+        }
+    }
+}
+
+// MARK: - Refreshable Demo
+
+@MainActor
+struct RefreshableDemo: View {
+    @State private var refreshCounter: Int = 0
+    @State private var lastRefreshAt: String = "Never"
+
+    var body: some View {
+        SectionCard(title: "Refreshable + RefreshAction") {
+            RefreshableDemoContent(
+                refreshCounter: $refreshCounter,
+                lastRefreshAt: $lastRefreshAt
+            )
+            .environment(\.refresh, RefreshAction {
+                await performRefresh()
+            })
+            .refreshable {
+                await performRefresh()
+            }
+        }
+    }
+
+    private func performRefresh() async {
+        refreshCounter += 1
+        lastRefreshAt = "Updated #\(refreshCounter)"
+    }
+}
+
+@MainActor
+private struct RefreshableDemoContent: View {
+    @Environment(\.refresh) private var refresh
+    @Binding var refreshCounter: Int
+    @Binding var lastRefreshAt: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Count: \(refreshCounter)")
+            Text("Last refresh: \(lastRefreshAt)")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            HStack(spacing: 8) {
+                Button("Manual Refresh") {
+                    guard let refresh else { return }
+                    Task {
+                        await refresh()
+                    }
+                }
+                .disabled(refresh == nil)
+
+                Text(refresh == nil ? "Unavailable" : "Available")
+                    .font(.caption)
+                    .foregroundColor(refresh == nil ? .secondaryLabel : .green)
+            }
+
+            Text("Use the button to trigger environment-driven refresh.")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
         }
     }
 }

@@ -194,6 +194,29 @@ import Testing
         #expect(completed)
     }
 
+    @Test func refreshActionCallAsFunction() async {
+        var invoked = false
+        let action = RefreshAction {
+            invoked = true
+        }
+
+        await action()
+        #expect(invoked)
+    }
+
+    @Test func refreshEnvironmentType() async {
+        @MainActor
+        struct RefreshEnvView: View {
+            @Environment(\.refresh) var refresh
+            var body: some View {
+                Text(refresh == nil ? "Unavailable" : "Available")
+            }
+        }
+
+        let view = RefreshEnvView()
+        _ = view // Compile test only
+    }
+
     @Test func refreshConfiguration() {
         let config = RefreshConfiguration(
             triggerDistance: 100,
