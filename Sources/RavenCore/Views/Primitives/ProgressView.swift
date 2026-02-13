@@ -135,6 +135,8 @@ import Foundation
 public struct ProgressView: View, PrimitiveView, Sendable {
     public typealias Body = Never
 
+    @Environment(\.progressViewStyle) private var progressViewStyle
+
     /// The current value of the progress (nil for indeterminate)
     private let value: Double?
 
@@ -207,6 +209,17 @@ public struct ProgressView: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A div or progress element VNode depending on the mode.
     @MainActor public func toVNode() -> VNode {
+        if progressViewStyle is CircularProgressViewStyle {
+            return createIndeterminateProgressView(label: label)
+        }
+
+        if progressViewStyle is LinearProgressViewStyle {
+            if let value = value {
+                return createDeterminateProgressView(value: value, total: total, label: label)
+            }
+            return createLinearIndeterminateProgressView(label: label)
+        }
+
         if let value = value {
             // Determinate mode: use progress element
             return createDeterminateProgressView(value: value, total: total, label: label)
@@ -308,6 +321,33 @@ public struct ProgressView: View, PrimitiveView, Sendable {
         }
 
         return spinnerElement
+    }
+
+    /// Creates a linear indeterminate progress bar.
+    private func createLinearIndeterminateProgressView(label: String?) -> VNode {
+        let barProps: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-progress-bar"),
+            "style": .attribute(name: "style", value: "width: 100%;")
+        ]
+
+        let progressElement = VNode.element(
+            "progress",
+            props: barProps,
+            children: []
+        )
+
+        if let label = label {
+            let containerProps: [String: VProperty] = [
+                "class": .attribute(name: "class", value: "raven-progress-container")
+            ]
+            return VNode.element(
+                "div",
+                props: containerProps,
+                children: [VNode.text(label), progressElement]
+            )
+        }
+
+        return progressElement
     }
 }
 

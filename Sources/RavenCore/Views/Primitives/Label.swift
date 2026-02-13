@@ -144,6 +144,9 @@ public struct Label<Title: View, Icon: View>: View, Sendable {
     /// The icon content of the label
     private let icon: Icon
 
+    @Environment(\.labelStyle) private var labelStyle
+    @Environment(\.labelVisibility) private var labelVisibility
+
     // MARK: - Initializers
 
     /// Creates a label with custom title and icon views.
@@ -186,9 +189,15 @@ public struct Label<Title: View, Icon: View>: View, Sendable {
     /// The label arranges its icon and title horizontally using an `HStack`
     /// with default spacing for a clean, consistent appearance.
     @ViewBuilder @MainActor public var body: some View {
-        HStack(spacing: 8) {
+        if labelVisibility == .hidden || labelStyle is IconOnlyLabelStyle {
             icon
+        } else if labelStyle is TitleOnlyLabelStyle {
             title
+        } else {
+            HStack(spacing: 8) {
+                icon
+                title
+            }
         }
     }
 }

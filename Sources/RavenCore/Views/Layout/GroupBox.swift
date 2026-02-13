@@ -93,6 +93,8 @@ public struct GroupBox<Label: View, Content: View>: View, PrimitiveView, Sendabl
     /// Flag indicating if a label is present
     private let hasLabel: Bool
 
+    @Environment(\.groupBoxStyle) private var groupBoxStyle
+
     // MARK: - Initializers
 
     /// Creates a group box with content and a custom label.
@@ -234,8 +236,10 @@ extension GroupBox: _CoordinatorRenderable {
         }
 
         // Create the fieldset properties
+        let styleVariant = groupBoxStyle is DefaultGroupBoxStyle ? "default" : "automatic"
         let fieldsetProps: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-groupbox"),
+            "data-groupbox-style": .attribute(name: "data-groupbox-style", value: styleVariant),
             "display": .style(name: "display", value: "flex"),
             "flex-direction": .style(name: "flex-direction", value: "column"),
             "gap": .style(name: "gap", value: "8px"),

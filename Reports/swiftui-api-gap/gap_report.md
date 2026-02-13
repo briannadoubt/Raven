@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T03:42:50.874996+00:00`
+Generated: `2026-02-13T06:22:30.648173+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1969**
-- Missing in Raven: **2600**
-- Name-based coverage: **43.09%**
+- Matched by Raven: **2012**
+- Missing in Raven: **2557**
+- Name-based coverage: **44.04%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 212 | 0 | 1238 |
+| `Constructor` | 202 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 788 | 0 | 1366 |
+| `Func` | 777 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 40 | 0 | 66 |
-| `Struct` | 273 | 0 | 484 |
+| `Protocol` | 37 | 0 | 66 |
+| `Struct` | 262 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 881 | 0 | 964 |
+| `Var` | 873 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -311,10 +311,8 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `DialogSeverity`)
 - `automatic` (owner: `FocusInteractions`)
 - `automatic` (owner: `GaugeStyle`)
-- `automatic` (owner: `GroupBoxStyle`)
 - `automatic` (owner: `HoverEffect`)
 - `automatic` (owner: `IndexDisplayMode`)
-- `automatic` (owner: `LabelStyle`)
 - `automatic` (owner: `LimitBehavior`)
 - `automatic` (owner: `ListStyle`)
 - `automatic` (owner: `Localization`)
@@ -332,7 +330,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `PresentationContentInteraction`)
 - `automatic` (owner: `PresentationSizing`)
 - `automatic` (owner: `PrimitiveButtonStyle`)
-- `automatic` (owner: `ProgressViewStyle`)
 - `automatic` (owner: `SceneRestorationBehavior`)
 - `automatic` (owner: `ScrollBounceBehavior`)
 - `automatic` (owner: `ScrollDismissesKeyboardMode`)
@@ -538,6 +535,9 @@ Target: `arm64-apple-ios26.2`
 - `callAsFunction()` (owner: `DismissSearchAction`)
 - `callAsFunction()` (owner: `DismissWindowAction`)
 - `callAsFunction(id:)` (owner: `DismissWindowAction`)
+- `callAsFunction(id:value:)` (owner: `DismissWindowAction`)
+- `callAsFunction(value:)` (owner: `DismissWindowAction`)
+- `callAsFunction(id:)` (owner: `OpenWindowAction`)
 
 ## Operator-Like API Gap Summary
 
