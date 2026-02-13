@@ -94,6 +94,7 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var disclosureExpanded: Bool = false
     @SwiftUI.Published var colorPickerValue: Color = .blue
     @SwiftUI.Published var datePickerValue: Date = Date()
+    @SwiftUI.Published var layoutTableShowsOwnerColumn: Bool = true
     @SwiftUI.Published var selectedDates: Set<DateComponents> = []
     @SwiftUI.Published var pastedClipboardText: String = "Nothing pasted yet."
     @SwiftUI.Published var renamedCollectionName: String = "Sprint Backlog"
@@ -230,7 +231,7 @@ struct ContentView: View {
 
             // -- Layout tab --
             NavigationStack {
-                LayoutTab()
+                LayoutTab(store: store)
                     .navigationTitle("Layout")
             }
             .tabItem { Text("Layout") }
@@ -1458,10 +1459,12 @@ struct ShapesDemo: View {
 
 @MainActor
 struct LayoutTab: View {
+    @ObservedObject var store: ShowcaseStore
+
     var body: some View {
         VStack(spacing: 16) {
             LayoutBasicDemos()
-            LayoutAdvancedDemos()
+            LayoutAdvancedDemos(store: store)
         }
         .padding(16)
     }
@@ -1483,6 +1486,8 @@ struct LayoutBasicDemos: View {
 
 @MainActor
 struct LayoutAdvancedDemos: View {
+    @ObservedObject var store: ShowcaseStore
+
     var body: some View {
         VStack(spacing: 16) {
             GridDemo()
@@ -1493,7 +1498,7 @@ struct LayoutAdvancedDemos: View {
             GeometryReaderDemo()
             ViewThatFitsDemo()
             NavigationSplitViewDemo()
-            TableDemo()
+            TableDemo(store: store)
         }
     }
 }
@@ -2896,6 +2901,8 @@ struct TableRowData: Identifiable, Sendable {
 
 @MainActor
 struct TableDemo: View {
+    @ObservedObject var store: ShowcaseStore
+
     private let rows = [
         TableRowData(id: 1, task: "Ship release", owner: "Alex", status: "In Progress"),
         TableRowData(id: 2, task: "Write docs", owner: "Sam", status: "Done"),
@@ -2904,12 +2911,27 @@ struct TableDemo: View {
 
     var body: some View {
         SectionCard(title: "Table") {
-            Table(rows) {
-                TableColumn("Task", value: \TableRowData.task)
-                TableColumn("Owner", value: \TableRowData.owner)
-                TableColumn("Status", value: \TableRowData.status)
+            Button(store.layoutTableShowsOwnerColumn ? "Hide Owner Column" : "Show Owner Column") {
+                store.layoutTableShowsOwnerColumn.toggle()
             }
-            .frame(height: 160)
+
+            Text("TableColumnBuilder conditional columns")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            table(includeOwner: store.layoutTableShowsOwnerColumn)
+                .frame(height: 160)
+        }
+    }
+
+    @MainActor
+    private func table(includeOwner: Bool) -> some View {
+        Table(rows) {
+            TableColumn("Task", value: \TableRowData.task)
+            if includeOwner {
+                TableColumn("Owner", value: \TableRowData.owner)
+            }
+            TableColumn("Status", value: \TableRowData.status)
         }
     }
 }

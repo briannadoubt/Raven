@@ -144,7 +144,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     ///   - columns: A view builder that creates the table columns.
     @MainActor public init(
         _ data: [RowValue],
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) {
         self.data = data
         self.columns = columns()
@@ -163,7 +163,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     @MainActor public init(
         _ data: [RowValue],
         selection: Binding<RowValue.ID?>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) {
         self.data = data
         self.columns = columns()
@@ -182,7 +182,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
     @MainActor public init(
         _ data: [RowValue],
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) {
         self.data = data
         self.columns = columns()
@@ -203,7 +203,7 @@ where RowValue: Identifiable & Sendable, RowValue.ID: Sendable, Columns: View
         _ data: [RowValue],
         selection: Binding<RowValue.ID?>,
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) {
         self.data = data
         self.columns = columns()
@@ -725,7 +725,7 @@ extension Table {
     @MainActor public init(
         _ data: [RowValue],
         selection: Binding<Set<RowValue.ID>>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where RowValue.ID: Hashable {
         self.data = data
         self.columns = columns()
@@ -749,7 +749,7 @@ extension Table {
         _ data: [RowValue],
         selection: Binding<Set<RowValue.ID>>,
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where RowValue.ID: Hashable {
         self.data = data
         self.columns = columns()
@@ -770,7 +770,7 @@ extension Table {
     ///   - columns: A view builder that creates the table columns.
     @MainActor public init<Data: RandomAccessCollection>(
         _ data: Data,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where Data.Element == RowValue {
         self.data = Array(data)
         self.columns = columns()
@@ -789,7 +789,7 @@ extension Table {
     @MainActor public init<Data: RandomAccessCollection>(
         _ data: Data,
         selection: Binding<RowValue.ID?>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where Data.Element == RowValue {
         self.data = Array(data)
         self.columns = columns()
@@ -808,7 +808,7 @@ extension Table {
     @MainActor public init<Data: RandomAccessCollection>(
         _ data: Data,
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where Data.Element == RowValue {
         self.data = Array(data)
         self.columns = columns()
@@ -829,7 +829,7 @@ extension Table {
         _ data: Data,
         selection: Binding<RowValue.ID?>,
         sortOrder: Binding<[SortDescriptor<RowValue>]>,
-        @ViewBuilder columns: () -> Columns
+        @TableColumnBuilder columns: () -> Columns
     ) where Data.Element == RowValue {
         self.data = Array(data)
         self.columns = columns()
