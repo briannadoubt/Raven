@@ -84,6 +84,12 @@ public struct SliderTickBuilder: Sendable {
         expression
     }
 
+    @MainActor public static func buildExpression<Data: RandomAccessCollection, ID: Hashable>(
+        _ expression: ForEach<Data, ID, SliderTick>
+    ) -> ForEach<Data, ID, SliderTick> {
+        expression
+    }
+
     @available(
         *,
         unavailable,
