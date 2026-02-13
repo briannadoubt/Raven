@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-12T18:19:46.657761+00:00`
+Generated: `2026-02-13T01:41:14.758760+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,21 +10,21 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1919**
-- Missing in Raven: **2650**
-- Name-based coverage: **42.0%**
+- Matched by Raven: **1948**
+- Missing in Raven: **2621**
+- Name-based coverage: **42.64%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 223 | 0 | 1238 |
+| `Constructor` | 217 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 807 | 0 | 1366 |
+| `Func` | 792 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 42 | 0 | 66 |
-| `Struct` | 287 | 0 | 484 |
+| `Struct` | 279 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
 | `Var` | 885 | 0 | 964 |
@@ -456,17 +456,6 @@ Target: `arm64-apple-ios26.2`
 - `buildBlock(_:)` (owner: `AccessibilityRotorContentBuilder`)
 - `buildBlock(_:)` (owner: `ControlWidgetConfigurationBuilder`)
 - `buildBlock(_:)` (owner: `ControlWidgetTemplateBuilder`)
-- `buildBlock()` (owner: `SliderTickBuilder`)
-- `buildBlock(_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:)` (owner: `SliderTickBuilder`)
-- `buildBlock(_:_:_:_:_:_:_:_:_:_:)` (owner: `SliderTickBuilder`)
 - `buildBlock(_:)` (owner: `TabContentBuilder`)
 - `buildBlock(_:_:)` (owner: `TabContentBuilder`)
 - `buildBlock(_:_:_:)` (owner: `TabContentBuilder`)
@@ -509,8 +498,6 @@ Target: `arm64-apple-ios26.2`
 - `buildBlock(_:_:_:_:_:_:_:_:_:_:)` (owner: `ToolbarContentBuilder`)
 - `buildBlock()` (owner: `WidgetBundleBuilder`)
 - `buildBlock(_:)` (owner: `WidgetBundleBuilder`)
-- `buildEither(first:)` (owner: `SliderTickBuilder`)
-- `buildEither(second:)` (owner: `SliderTickBuilder`)
 - `buildEither(first:)` (owner: `TabContentBuilder`)
 - `buildEither(second:)` (owner: `TabContentBuilder`)
 - `buildEither(first:)` (owner: `TableColumnBuilder`)
@@ -524,7 +511,6 @@ Target: `arm64-apple-ios26.2`
 - `buildExpression(_:)` (owner: `ControlWidgetConfigurationBuilder`)
 - `buildExpression(_:)` (owner: `ControlWidgetTemplateBuilder`)
 - `buildExpression(_:)` (owner: `SceneBuilder`)
-- `buildExpression(_:)` (owner: `SliderTickBuilder`)
 - `buildExpression(_:)` (owner: `TabContentBuilder`)
 - `buildExpression(_:)` (owner: `TableColumnBuilder`)
 - `buildExpression(_:)` (owner: `TableRowBuilder`)
@@ -532,12 +518,26 @@ Target: `arm64-apple-ios26.2`
 - `buildExpression(_:)` (owner: `WidgetBundleBuilder`)
 - `buildIf(_:)` (owner: `AccessibilityRotorContentBuilder`)
 - `buildIf(_:)` (owner: `CommandsBuilder`)
-- `buildIf(_:)` (owner: `SliderTickBuilder`)
 - `buildIf(_:)` (owner: `TabContentBuilder`)
 - `buildIf(_:)` (owner: `TableColumnBuilder`)
 - `buildIf(_:)` (owner: `TableRowBuilder`)
 - `buildIf(_:)` (owner: `ToolbarContentBuilder`)
 - `buildLimitedAvailability(_:)` (owner: `CommandsBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `SceneBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `TabContentBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `TableColumnBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `ToolbarContentBuilder`)
+- `buildLimitedAvailability(_:)` (owner: `WidgetBundleBuilder`)
+- `buildOptional(_:)` (owner: `WidgetBundleBuilder`)
+- `button` (owner: `PressFeedback`)
+- `button` (owner: `ToggleStyle`)
+- `buttonBorder` (owner: `Shape`)
+- `buttonIconOnly` (owner: `PressFeedback`)
+- `buttonRepeatBehavior` (owner: `EnvironmentValues`)
+- `cadence` (owner: `Context`)
+- `callAsFunction()` (owner: `DismissAction`)
+- `callAsFunction()` (owner: `DismissSearchAction`)
+- `callAsFunction()` (owner: `DismissWindowAction`)
 
 ## Operator-Like API Gap Summary
 

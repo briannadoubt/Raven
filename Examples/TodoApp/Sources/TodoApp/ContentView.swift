@@ -1934,6 +1934,10 @@ struct ParityAdditionsDemo: View {
                     DefaultDateProgressLabel()
                     DefaultShareLinkLabel()
                     DefaultTabLabel()
+                    CurrentValueLabel()
+                    MinimumValueLabel()
+                    MaximumValueLabel()
+                    MarkedValueLabel()
                 }
                 .font(.caption)
                 .foregroundColor(Color.secondaryLabel)
@@ -1959,6 +1963,20 @@ struct ParityAdditionsDemo: View {
                     Button("Refresh") { parityMessage = "ToolbarTitleMenu: Refresh" }
                     Button("Rename") { parityMessage = "ToolbarTitleMenu: Rename" }
                 }
+
+                Text("ToolbarSpacer API active (check nav bar items)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Text("Parity")
+                                .font(.caption)
+                        }
+                        ToolbarSpacer()
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Sync") { parityMessage = "Toolbar Spacer: Sync tapped" }
+                        }
+                    }
 
                 OutlineGroup(outlineNodes, children: \.children) { node in
                     Text(node.title)

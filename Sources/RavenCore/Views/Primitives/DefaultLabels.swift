@@ -29,3 +29,43 @@ public struct DefaultShareLinkLabel: View, Sendable {
         Label("Share", systemImage: "square.and.arrow.up")
     }
 }
+
+/// Default current-value label used by SwiftUI gauge/progress style APIs.
+@MainActor
+public struct CurrentValueLabel: View, Sendable {
+    public init() {}
+
+    public var body: some View {
+        Text("Current")
+    }
+}
+
+/// Default minimum-value label used by SwiftUI gauge/progress style APIs.
+@MainActor
+public struct MinimumValueLabel: View, Sendable {
+    public init() {}
+
+    public var body: some View {
+        Text("Min")
+    }
+}
+
+/// Default maximum-value label used by SwiftUI gauge/progress style APIs.
+@MainActor
+public struct MaximumValueLabel: View, Sendable {
+    public init() {}
+
+    public var body: some View {
+        Text("Max")
+    }
+}
+
+/// Default marked-value label used by SwiftUI slider/gauge style APIs.
+@MainActor
+public struct MarkedValueLabel: View, Sendable {
+    public init() {}
+
+    public var body: some View {
+        Text("Marked")
+    }
+}

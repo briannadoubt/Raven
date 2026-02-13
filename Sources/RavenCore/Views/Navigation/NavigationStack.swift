@@ -247,6 +247,15 @@ public struct NavigationStack<Data: Sendable, Root: View>: View, PrimitiveView {
 
 extension NavigationStack: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        func isAutomaticToolbarSpacer(_ item: ToolbarItemInfo) -> Bool {
+            guard item.placement == .automatic else { return false }
+            guard let property = item.node.props["data-raven-toolbar-spacer"] else { return false }
+            if case .attribute(name: _, value: let value) = property {
+                return value == "true"
+            }
+            return false
+        }
+
         // 1. Get or create a persistent NavigationStackController for this position
         let controller = context.persistentState(create: { NavigationStackController() })
 
@@ -399,8 +408,21 @@ extension NavigationStack: _CoordinatorRenderable {
             // Principal section: title or principal toolbar item
             var principalContent: VNode
             let principalItem = controller.toolbarItems.first(where: { $0.placement == .principal })
+            let automaticSpacerNodes = controller.toolbarItems
+                .filter { isAutomaticToolbarSpacer($0) }
+                .map(\.node)
             if let principalItem = principalItem {
                 principalContent = principalItem.node
+            } else if !automaticSpacerNodes.isEmpty {
+                principalContent = VNode.element(
+                    "div",
+                    props: [
+                        "display": .style(name: "display", value: "flex"),
+                        "align-items": .style(name: "align-items", value: "center"),
+                        "width": .style(name: "width", value: "100%"),
+                    ],
+                    children: automaticSpacerNodes
+                )
             } else if isLargeTitle {
                 // In large title mode, the compact bar principal is empty (title goes in large row)
                 principalContent = VNode.element("span", props: [:], children: [])
@@ -432,10 +454,10 @@ extension NavigationStack: _CoordinatorRenderable {
             )
             compactBarChildren.append(principalSection)
 
-            // Trailing section: trailing toolbar items + automatic items
+            // Trailing section: trailing toolbar items + non-spacer automatic items
             var trailingChildren: [VNode] = []
             for item in controller.toolbarItems
-                where item.placement == .navigationBarTrailing || item.placement == .automatic {
+                where item.placement == .navigationBarTrailing || (item.placement == .automatic && !isAutomaticToolbarSpacer(item)) {
                 trailingChildren.append(item.node)
             }
 

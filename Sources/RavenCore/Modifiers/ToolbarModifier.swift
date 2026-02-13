@@ -29,6 +29,15 @@ public enum ToolbarItemPlacement: Sendable, Hashable {
     case cancellationAction
 }
 
+/// Defines how a `ToolbarSpacer` consumes space in toolbar layouts.
+public enum ToolbarSpacerSizing: Sendable, Hashable {
+    /// Expands to consume available toolbar space.
+    case automatic
+
+    /// Uses a fixed-size spacer segment.
+    case fixed
+}
+
 // MARK: - ToolbarItem
 
 /// A single item that can be placed in a toolbar.
@@ -96,6 +105,51 @@ public struct ToolbarItemGroup<Content: View>: Sendable {
     ) {
         self.placement = placement
         self.content = content()
+    }
+}
+
+/// Inserts flexible or fixed spacing between toolbar items.
+public struct ToolbarSpacer: Sendable {
+    public let sizing: ToolbarSpacerSizing
+    public let placement: ToolbarItemPlacement
+
+    /// Creates a toolbar spacer.
+    ///
+    /// - Parameters:
+    ///   - sizing: Whether spacer should be flexible (`.automatic`) or fixed.
+    ///   - placement: Placement bucket for this spacer.
+    @MainActor public init(
+        _ sizing: ToolbarSpacerSizing = .automatic,
+        placement: ToolbarItemPlacement = .automatic
+    ) {
+        self.sizing = sizing
+        self.placement = placement
+    }
+}
+
+/// Internal rendered spacer view used by `ToolbarSpacer`.
+private struct _ToolbarSpacerView: View, PrimitiveView, Sendable {
+    typealias Body = Never
+
+    let sizing: ToolbarSpacerSizing
+
+    @MainActor func toVNode() -> VNode {
+        var props: [String: VProperty] = [
+            "class": .attribute(name: "class", value: "raven-toolbar-spacer"),
+            "data-raven-toolbar-spacer": .attribute(name: "data-raven-toolbar-spacer", value: "true"),
+        ]
+
+        switch sizing {
+        case .automatic:
+            props["flex-grow"] = .style(name: "flex-grow", value: "1")
+            props["flex-basis"] = .style(name: "flex-basis", value: "0")
+            props["min-width"] = .style(name: "min-width", value: "8px")
+        case .fixed:
+            props["width"] = .style(name: "width", value: "16px")
+            props["flex"] = .style(name: "flex", value: "0 0 16px")
+        }
+
+        return VNode.element("div", props: props, children: [])
     }
 }
 
@@ -232,6 +286,20 @@ public struct _AnyToolbarItem: Sendable {
         self.placement = item.placement
         self.content = AnyView(item.content)
     }
+
+    /// Creates a type-erased toolbar item from a `ToolbarItemGroup`.
+    @MainActor
+    public init<C: View>(_ item: ToolbarItemGroup<C>) {
+        self.placement = item.placement
+        self.content = AnyView(item.content)
+    }
+
+    /// Creates a type-erased toolbar item from a `ToolbarSpacer`.
+    @MainActor
+    public init(_ spacer: ToolbarSpacer) {
+        self.placement = spacer.placement
+        self.content = AnyView(_ToolbarSpacerView(sizing: spacer.sizing))
+    }
 }
 
 // MARK: - Toolbar Content Builder
@@ -239,6 +307,22 @@ public struct _AnyToolbarItem: Sendable {
 /// Result builder for creating arrays of type-erased toolbar items.
 @resultBuilder
 public struct _ToolbarContentBuilder {
+    @MainActor public static func buildExpression(_ expression: _AnyToolbarItem) -> [_AnyToolbarItem] {
+        [expression]
+    }
+
+    @MainActor public static func buildExpression<C: View>(_ expression: ToolbarItem<C>) -> [_AnyToolbarItem] {
+        [_AnyToolbarItem(expression)]
+    }
+
+    @MainActor public static func buildExpression<C: View>(_ expression: ToolbarItemGroup<C>) -> [_AnyToolbarItem] {
+        [_AnyToolbarItem(expression)]
+    }
+
+    @MainActor public static func buildExpression(_ expression: ToolbarSpacer) -> [_AnyToolbarItem] {
+        [_AnyToolbarItem(expression)]
+    }
+
     public static func buildBlock(_ components: _AnyToolbarItem...) -> [_AnyToolbarItem] {
         components
     }
@@ -256,6 +340,14 @@ public struct _ToolbarContentBuilder {
     }
 
     public static func buildEither(second component: [_AnyToolbarItem]) -> [_AnyToolbarItem] {
+        component
+    }
+
+    public static func buildArray(_ components: [[_AnyToolbarItem]]) -> [_AnyToolbarItem] {
+        components.flatMap { $0 }
+    }
+
+    public static func buildLimitedAvailability(_ component: [_AnyToolbarItem]) -> [_AnyToolbarItem] {
         component
     }
 }
