@@ -446,6 +446,7 @@ final class _LayoutRenderController: @unchecked Sendable {
     }
 
     func scheduleMeasure(force: Bool = false) {
+        #if arch(wasm32)
         if !force, hasValidPlacement { return }
         guard rafClosure == nil else { return }
 
@@ -462,6 +463,9 @@ final class _LayoutRenderController: @unchecked Sendable {
         } else if let setTimeout = JSObject.global.setTimeout.function {
             _ = setTimeout(closure, 0)
         }
+        #else
+        _ = force
+        #endif
     }
 
     private func measureAndPlaceIfPossible() {

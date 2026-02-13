@@ -349,6 +349,7 @@ internal final class GeometryReaderController: @unchecked Sendable {
     }
 
     func scheduleMeasure() {
+        #if arch(wasm32)
         // If we're already observing the element for size changes, don't keep scheduling
         // RAF measurements on every render pass.
         if observedElement != nil, resizeObserver != nil {
@@ -372,6 +373,7 @@ internal final class GeometryReaderController: @unchecked Sendable {
         } else if let setTimeout = JSObject.global.setTimeout.function {
             _ = setTimeout(closure, 0)
         }
+        #endif
     }
 
     private func measureAndObserveIfNeeded() {
