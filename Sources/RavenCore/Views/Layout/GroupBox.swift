@@ -216,6 +216,11 @@ extension GroupBox where Label == Text {
 
 extension GroupBox: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        if !(groupBoxStyle is AutomaticGroupBoxStyle || groupBoxStyle is DefaultGroupBoxStyle) {
+            let styled = groupBoxStyle._makeBodyAny(configuration: _styleConfiguration)
+            return context.renderChild(styled)
+        }
+
         var children: [VNode] = []
 
         // Render label as legend if present
@@ -253,6 +258,14 @@ extension GroupBox: _CoordinatorRenderable {
             "fieldset",
             props: fieldsetProps,
             children: children
+        )
+    }
+
+    @MainActor
+    private var _styleConfiguration: GroupBoxStyleConfiguration {
+        GroupBoxStyleConfiguration(
+            label: label.map { AnyView($0) },
+            content: AnyView(content)
         )
     }
 }

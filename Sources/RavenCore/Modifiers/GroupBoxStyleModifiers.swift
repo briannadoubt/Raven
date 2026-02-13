@@ -9,6 +9,12 @@ public protocol GroupBoxStyle: Sendable {
     typealias Configuration = GroupBoxStyleConfiguration
 }
 
+extension GroupBoxStyle {
+    @MainActor func _makeBodyAny(configuration: Configuration) -> AnyView {
+        AnyView(makeBody(configuration: configuration))
+    }
+}
+
 /// The properties of a group box for style configuration.
 public struct GroupBoxStyleConfiguration: Sendable {
     public let label: AnyView?

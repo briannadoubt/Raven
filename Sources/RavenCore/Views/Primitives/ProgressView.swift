@@ -209,6 +209,24 @@ public struct ProgressView: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A div or progress element VNode depending on the mode.
     @MainActor public func toVNode() -> VNode {
+        if _usesCustomProgressStyle {
+            let styled = progressViewStyle._makeBodyAny(configuration: _styleConfiguration)
+            return styled.toVNode()
+        }
+
+        return _renderBuiltInProgressBody()
+    }
+
+    @MainActor
+    private var _usesCustomProgressStyle: Bool {
+        !(progressViewStyle is AutomaticProgressViewStyle
+            || progressViewStyle is DefaultProgressViewStyle
+            || progressViewStyle is CircularProgressViewStyle
+            || progressViewStyle is LinearProgressViewStyle)
+    }
+
+    @MainActor
+    private func _renderBuiltInProgressBody() -> VNode {
         if progressViewStyle is CircularProgressViewStyle {
             return createIndeterminateProgressView(label: label)
         }
@@ -221,12 +239,19 @@ public struct ProgressView: View, PrimitiveView, Sendable {
         }
 
         if let value = value {
-            // Determinate mode: use progress element
             return createDeterminateProgressView(value: value, total: total, label: label)
-        } else {
-            // Indeterminate mode: use spinner
-            return createIndeterminateProgressView(label: label)
         }
+
+        return createIndeterminateProgressView(label: label)
+    }
+
+    @MainActor
+    private var _styleConfiguration: ProgressViewStyleConfiguration {
+        ProgressViewStyleConfiguration(
+            label: label.map { AnyView(Text($0)) },
+            value: value,
+            total: total
+        )
     }
 
     // MARK: - Private Helpers
@@ -348,6 +373,16 @@ public struct ProgressView: View, PrimitiveView, Sendable {
         }
 
         return progressElement
+    }
+}
+
+extension ProgressView: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        if _usesCustomProgressStyle {
+            let styled = progressViewStyle._makeBodyAny(configuration: _styleConfiguration)
+            return context.renderChild(styled)
+        }
+        return _renderBuiltInProgressBody()
     }
 }
 

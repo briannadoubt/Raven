@@ -189,15 +189,15 @@ public struct Label<Title: View, Icon: View>: View, Sendable {
     /// The label arranges its icon and title horizontally using an `HStack`
     /// with default spacing for a clean, consistent appearance.
     @ViewBuilder @MainActor public var body: some View {
-        if labelVisibility == .hidden || labelStyle is IconOnlyLabelStyle {
+        if labelVisibility == .hidden {
             icon
-        } else if labelStyle is TitleOnlyLabelStyle {
-            title
         } else {
-            HStack(spacing: 8) {
-                icon
-                title
-            }
+            labelStyle._makeBodyAny(
+                configuration: LabelStyleConfiguration(
+                    title: AnyView(title),
+                    icon: AnyView(icon)
+                )
+            )
         }
     }
 }

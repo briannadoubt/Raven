@@ -9,6 +9,12 @@ public protocol LabelStyle: Sendable {
     typealias Configuration = LabelStyleConfiguration
 }
 
+extension LabelStyle {
+    @MainActor func _makeBodyAny(configuration: Configuration) -> AnyView {
+        AnyView(makeBody(configuration: configuration))
+    }
+}
+
 /// The properties of a label for style configuration.
 public struct LabelStyleConfiguration: Sendable {
     public let title: AnyView

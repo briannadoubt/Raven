@@ -9,6 +9,12 @@ public protocol ProgressViewStyle: Sendable {
     typealias Configuration = ProgressViewStyleConfiguration
 }
 
+extension ProgressViewStyle {
+    @MainActor func _makeBodyAny(configuration: Configuration) -> AnyView {
+        AnyView(makeBody(configuration: configuration))
+    }
+}
+
 /// The properties of a progress view for style configuration.
 public struct ProgressViewStyleConfiguration: Sendable {
     public let label: AnyView?
