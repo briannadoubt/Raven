@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T10:10:38.342670+00:00`
+Generated: `2026-02-13T22:59:51.884097+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,9 +10,9 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **2111**
-- Missing in Raven: **2458**
-- Name-based coverage: **46.2%**
+- Matched by Raven: **2116**
+- Missing in Raven: **2453**
+- Name-based coverage: **46.31%**
 
 ### Missing by Declaration Kind
 
@@ -21,10 +21,10 @@ Target: `arm64-apple-ios26.2`
 | `Class` | 5 | 0 | 5 |
 | `Constructor` | 188 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 725 | 0 | 1366 |
+| `Func` | 724 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 35 | 0 | 66 |
-| `Struct` | 243 | 0 | 484 |
+| `Struct` | 239 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
 | `Var` | 861 | 0 | 964 |
@@ -48,8 +48,6 @@ Target: `arm64-apple-ios26.2`
 - `AccessoryCircularGaugeStyle` (Struct, owner: `SwiftUI`)
 - `AccessoryLinearCapacityGaugeStyle` (Struct, owner: `SwiftUI`)
 - `AccessoryLinearGaugeStyle` (Struct, owner: `SwiftUI`)
-- `Actions` (Struct, owner: `SearchUnavailableContent`)
-- `Actions` (Struct, owner: `SectionConfiguration`)
 - `AllCases` (TypeAlias, owner: `InterfaceOrientation`)
 - `AnimatableData` (TypeAlias, owner: `ButtonBorderShape`)
 - `AnimatableData` (TypeAlias, owner: `GridLayout`)
@@ -235,6 +233,8 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `TimelineView`)
 - `Body` (TypeAlias, owner: `Title`)
 - `Body` (TypeAlias, owner: `TitleAndIconLabelStyle`)
+- `Body` (TypeAlias, owner: `TitleOnlyLabelStyle`)
+- `Body` (TypeAlias, owner: `Toggle`)
 
 ## Missing High-Signal Named APIs (first 300)
 

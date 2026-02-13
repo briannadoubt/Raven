@@ -1448,11 +1448,24 @@ struct ImageDemo: View {
 struct ContentUnavailableDemo: View {
     var body: some View {
         SectionCard(title: "ContentUnavailableView") {
-            ContentUnavailableView(
-                "No Results",
-                systemImage: "magnifyingglass",
-                description: Text("Try a different search term")
-            )
+            VStack(spacing: 12) {
+                ContentUnavailableView(
+                    "No Results",
+                    systemImage: "magnifyingglass",
+                    description: Text("Try a different search term")
+                )
+
+                ContentUnavailableView.search(text: "raven wasm")
+
+                SearchUnavailableContent(
+                    text: "component parity",
+                    description: .init("Try simplifying filters or checking spelling.")
+                ) {
+                    Button("Clear filters") {}
+                }
+            }
+            .padding(8)
+            .accessibilityIdentifier("content-unavailable-demo")
         }
     }
 }

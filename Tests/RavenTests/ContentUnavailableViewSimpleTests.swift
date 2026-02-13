@@ -33,6 +33,23 @@ import Testing
         #expect(view != nil)
     }
 
+    @Test func searchVariantWithQueryExists() throws {
+        let view = ContentUnavailableView.search(text: "raven")
+
+        #expect(view != nil)
+    }
+
+    @Test func searchUnavailableContentWithCustomDescriptionAndActions() throws {
+        let view = SearchUnavailableContent(
+            text: "wasm",
+            description: .init("Try searching for a different runtime term.")
+        ) {
+            Button("Clear Search") {}
+        }
+
+        #expect(view != nil)
+    }
+
     @Test func fullInitializer() throws {
         let view = ContentUnavailableView(
             "No Items",
