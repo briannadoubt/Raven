@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T06:22:30.648173+00:00`
+Generated: `2026-02-13T06:47:46.057647+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
