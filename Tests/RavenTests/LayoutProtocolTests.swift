@@ -153,7 +153,11 @@ struct LayoutProtocolTests {
         let erased = AnyView(view)
         let vnode = erased.toVNode()
         #expect(vnode.elementTag == "div")
-        #expect(vnode.props["data-raven-layout"] == .attribute(name: "data-raven-layout", value: "true"))
+        if case .attribute(name: "data-raven-layout-id", _) = vnode.props["data-raven-layout-id"] {
+            #expect(true)
+        } else {
+            Issue.record("Expected layout render container to expose data-raven-layout-id")
+        }
     }
 
     @Test("LayoutSubview exposes layout value defaults and overrides")

@@ -58,19 +58,19 @@ public struct FlowLayout: Layout {
         guard !subviews.isEmpty else { return }
 
         let maxWidth = proposal.width ?? bounds.width
-        var x = bounds.minX
         var y = bounds.minY
+        var lineWidth: Double = 0
         var lineHeight: Double = 0
 
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
-            let nextX = x == bounds.minX ? x + size.width : x + resolvedItemSpacing + size.width
-
-            if nextX - bounds.minX > maxWidth, x > bounds.minX {
-                x = bounds.minX
+            let candidateWidth = lineWidth == 0 ? size.width : lineWidth + resolvedItemSpacing + size.width
+            if candidateWidth > maxWidth, lineWidth > 0 {
                 y += lineHeight + resolvedLineSpacing
+                lineWidth = 0
                 lineHeight = 0
             }
+            let x = bounds.minX + (lineWidth == 0 ? 0 : lineWidth + resolvedItemSpacing)
 
             subview.place(
                 at: CGPoint(x: x, y: y),
@@ -78,7 +78,7 @@ public struct FlowLayout: Layout {
                 proposal: ProposedViewSize(width: size.width, height: size.height)
             )
 
-            x += size.width + resolvedItemSpacing
+            lineWidth = lineWidth == 0 ? size.width : lineWidth + resolvedItemSpacing + size.width
             lineHeight = max(lineHeight, size.height)
         }
     }
