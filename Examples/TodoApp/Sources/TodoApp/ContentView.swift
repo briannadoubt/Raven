@@ -215,6 +215,20 @@ struct ContentView: View {
             NavigationStack {
                 ControlsTab(store: store)
                     .navigationTitle("Controls")
+                    .navigationBarItems(NavigationBarItem(placement: .leading) {
+                        Button("Reset") {
+                            store.sliderValue = 50
+                            store.stepperValue = 0
+                            store.progressValue = 0.65
+                        }
+                    })
+                    .navigationBarItems(NavigationBarItem(placement: .trailing) {
+                        Button("Bump") {
+                            store.sliderValue = store.sliderValue >= 95 ? 0 : store.sliderValue + 5
+                            store.stepperValue = store.stepperValue >= 10 ? -10 : store.stepperValue + 1
+                            store.progressValue = store.progressValue >= 0.95 ? 0.05 : store.progressValue + 0.1
+                        }
+                    })
             }
             .tabItem { Text("Controls") }
             .tag(Tab.controls)
