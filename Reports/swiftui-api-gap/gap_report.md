@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T01:41:14.758760+00:00`
+Generated: `2026-02-13T03:42:50.874996+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **1948**
-- Missing in Raven: **2621**
-- Name-based coverage: **42.64%**
+- Matched by Raven: **1969**
+- Missing in Raven: **2600**
+- Name-based coverage: **43.09%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 217 | 0 | 1238 |
+| `Constructor` | 212 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 792 | 0 | 1366 |
+| `Func` | 788 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 42 | 0 | 66 |
-| `Struct` | 279 | 0 | 484 |
+| `Protocol` | 40 | 0 | 66 |
+| `Struct` | 273 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 885 | 0 | 964 |
+| `Var` | 881 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -75,7 +75,6 @@ Target: `arm64-apple-ios26.2`
 - `AutomaticHoverEffect` (Struct, owner: `SwiftUI`)
 - `AutomaticNavigationTransition` (Struct, owner: `SwiftUI`)
 - `AutomaticPresentationSizing` (Struct, owner: `SwiftUI`)
-- `AutomaticTextEditorStyle` (Struct, owner: `SwiftUI`)
 - `BackgroundDisplayMode` (Struct, owner: `PageIndexViewStyle`)
 - `BackgroundTask` (Struct, owner: `SwiftUI`)
 - `Body` (TypeAlias, owner: `AccessibilityAttachmentModifier`)
@@ -235,6 +234,7 @@ Target: `arm64-apple-ios26.2`
 - `Body` (TypeAlias, owner: `TextFormattingCommands`)
 - `Body` (TypeAlias, owner: `TimelineView`)
 - `Body` (TypeAlias, owner: `Title`)
+- `Body` (TypeAlias, owner: `TitleAndIconLabelStyle`)
 
 ## Missing High-Signal Named APIs (first 300)
 
@@ -350,7 +350,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `TabPlacement`)
 - `automatic` (owner: `TabSearchActivation`)
 - `automatic` (owner: `TableColumnAlignment`)
-- `automatic` (owner: `TextEditorStyle`)
 - `automatic` (owner: `TextFieldStyle`)
 - `automatic` (owner: `TextInputDictationBehavior`)
 - `automatic` (owner: `ToggleStyle`)
@@ -538,6 +537,7 @@ Target: `arm64-apple-ios26.2`
 - `callAsFunction()` (owner: `DismissAction`)
 - `callAsFunction()` (owner: `DismissSearchAction`)
 - `callAsFunction()` (owner: `DismissWindowAction`)
+- `callAsFunction(id:)` (owner: `DismissWindowAction`)
 
 ## Operator-Like API Gap Summary
 

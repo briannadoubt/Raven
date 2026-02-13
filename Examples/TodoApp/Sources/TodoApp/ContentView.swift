@@ -1488,6 +1488,7 @@ struct LayoutAdvancedDemos: View {
             GridDemo()
             LazyVGridDemo()
             LazyVStackDemo()
+            LazyHStackDemo()
             LazyHGridDemo()
             GeometryReaderDemo()
             ViewThatFitsDemo()
@@ -1785,6 +1786,27 @@ struct LazyVStackDemo: View {
     }
 }
 
+// MARK: - LazyHStack Demo
+
+@MainActor
+struct LazyHStackDemo: View {
+    var body: some View {
+        SectionCard(title: "LazyHStack") {
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .center, spacing: 8) {
+                    ForEach(1...10, id: \.self) { index in
+                        Text("Card \(index)")
+                            .padding(8)
+                            .background(Color.orange.opacity(0.2))
+                            .cornerRadius(4)
+                    }
+                }
+            }
+            .frame(height: 80)
+        }
+    }
+}
+
 // MARK: - GeometryReader Demo
 
 @MainActor
@@ -1855,6 +1877,7 @@ struct FormsExtraDemos: View {
                 LabelDemo()
                 AsyncImageDemo()
                 TextEditorDemo()
+                TextInputStyleParityDemo()
                 FormattedInputDemo()
             }
         }
@@ -2402,6 +2425,39 @@ struct TextEditorDemo: View {
                 .frame(height: 110)
 
                 Text("Characters: \(notesText.count)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+        }
+    }
+}
+
+// MARK: - Text Input Style Parity Demo
+
+@MainActor
+struct TextInputStyleParityDemo: View {
+    @State private var defaultFieldText = "Default style"
+    @State private var plainFieldText = "Plain style"
+    @State private var roundedFieldText = "Rounded style"
+    @State private var editorText = "PlainTextEditorStyle demo"
+
+    var body: some View {
+        SectionCard(title: "Text Input Styles") {
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("DefaultTextFieldStyle", text: $defaultFieldText)
+                    .textFieldStyle(.default)
+
+                TextField("PlainTextFieldStyle", text: $plainFieldText)
+                    .textFieldStyle(.plain)
+
+                TextField("RoundedBorderTextFieldStyle", text: $roundedFieldText)
+                    .textFieldStyle(.roundedBorder)
+
+                TextEditor(text: $editorText)
+                    .textEditorStyle(.plain)
+                    .frame(height: 72)
+
+                Text("Supports .default, .plain, .roundedBorder, and textEditorStyle(.plain)")
                     .font(.caption)
                     .foregroundColor(Color.secondaryLabel)
             }

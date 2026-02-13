@@ -29,6 +29,7 @@ public struct TextField: View, PrimitiveView, Sendable {
     @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
     @Environment(\.textInputAutocapitalization) private var textInputAutocapitalization
     @Environment(\.keyboardType) private var keyboardType
+    @Environment(\.textFieldStyle) private var textFieldStyle
 
     /// The placeholder text to display when the field is empty
     private let placeholder: String
@@ -146,19 +147,10 @@ public struct TextField: View, PrimitiveView, Sendable {
 
             // Input event handler for two-way binding
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
-
-            // Default styling
-            // Flex behavior: in SwiftUI, TextField typically expands to fill available space
-            // in horizontal stacks, and should be allowed to shrink when space is tight.
-            // `min-width: 0` fixes classic flexbox clipping issues where siblings (like
-            // a trailing Button) get squeezed and clipped instead of the text field.
-            "flex": .style(name: "flex", value: "1 1 0%"),
-            "min-width": .style(name: "min-width", value: "0"),
-            "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
-            "border-radius": .style(name: "border-radius", value: "4px"),
-            "font-size": .style(name: "font-size", value: "14px"),
         ]
+
+        applyTextFieldLayoutStyles(to: &props)
+        applyTextFieldAppearanceStyles(to: &props)
 
         // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
         // Use placeholder as aria-label if no explicit label is provided
@@ -193,6 +185,40 @@ public struct TextField: View, PrimitiveView, Sendable {
     @MainActor public var textBinding: Binding<String> {
         text
     }
+
+    @MainActor private func applyTextFieldLayoutStyles(to props: inout [String: VProperty]) {
+        // Match SwiftUI's typical layout behavior: text fields are flexible,
+        // expand to fill available horizontal space, and can shrink in tight layouts.
+        props["flex"] = .style(name: "flex", value: "1 1 0%")
+        props["min-width"] = .style(name: "min-width", value: "0")
+        props["width"] = .style(name: "width", value: "100%")
+        props["box-sizing"] = .style(name: "box-sizing", value: "border-box")
+        props["font-size"] = .style(name: "font-size", value: "14px")
+    }
+
+    @MainActor private func applyTextFieldAppearanceStyles(to props: inout [String: VProperty]) {
+        if textFieldStyle is PlainTextFieldStyle {
+            props["padding"] = .style(name: "padding", value: "4px 0")
+            props["border"] = .style(name: "border", value: "none")
+            props["border-radius"] = .style(name: "border-radius", value: "0")
+            props["background"] = .style(name: "background", value: "transparent")
+            return
+        }
+
+        if textFieldStyle is RoundedBorderTextFieldStyle {
+            props["padding"] = .style(name: "padding", value: "8px 10px")
+            props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
+            props["border-radius"] = .style(name: "border-radius", value: "999px")
+            props["background"] = .style(name: "background", value: "var(--system-background)")
+            return
+        }
+
+        // DefaultTextFieldStyle
+        props["padding"] = .style(name: "padding", value: "8px")
+        props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
+        props["border-radius"] = .style(name: "border-radius", value: "4px")
+        props["background"] = .style(name: "background", value: "var(--system-background)")
+    }
 }
 
 // MARK: - Multi-line Text Field
@@ -218,6 +244,7 @@ public struct TextEditor: View, PrimitiveView, Sendable {
     @Environment(\.autocorrectionDisabled) private var autocorrectionDisabled
     @Environment(\.textInputAutocapitalization) private var textInputAutocapitalization
     @Environment(\.keyboardType) private var keyboardType
+    @Environment(\.textEditorStyle) private var textEditorStyle
 
     /// Two-way binding to the text value
     private let text: Binding<String>
@@ -257,16 +284,8 @@ public struct TextEditor: View, PrimitiveView, Sendable {
         var props: [String: VProperty] = [
             // Input event handler for two-way binding
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
-
-            // Default styling
-            "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
-            "border-radius": .style(name: "border-radius", value: "4px"),
-            "font-size": .style(name: "font-size", value: "14px"),
-            "font-family": .style(name: "font-family", value: "inherit"),
-            "resize": .style(name: "resize", value: "vertical"),
-            "min-height": .style(name: "min-height", value: "100px"),
         ]
+        applyTextEditorStyle(to: &props)
 
         // ARIA attributes for accessibility (WCAG 2.1 AA compliance)
         props["role"] = .attribute(name: "role", value: "textbox")
@@ -298,6 +317,29 @@ public struct TextEditor: View, PrimitiveView, Sendable {
     @MainActor public var textBinding: Binding<String> {
         text
     }
+
+    @MainActor private func applyTextEditorStyle(to props: inout [String: VProperty]) {
+        props["font-size"] = .style(name: "font-size", value: "14px")
+        props["font-family"] = .style(name: "font-family", value: "inherit")
+        props["resize"] = .style(name: "resize", value: "vertical")
+        props["min-height"] = .style(name: "min-height", value: "100px")
+        props["width"] = .style(name: "width", value: "100%")
+        props["box-sizing"] = .style(name: "box-sizing", value: "border-box")
+
+        if textEditorStyle is PlainTextEditorStyle {
+            props["padding"] = .style(name: "padding", value: "4px 0")
+            props["border"] = .style(name: "border", value: "none")
+            props["border-radius"] = .style(name: "border-radius", value: "0")
+            props["background"] = .style(name: "background", value: "transparent")
+            return
+        }
+
+        // AutomaticTextEditorStyle
+        props["padding"] = .style(name: "padding", value: "8px")
+        props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
+        props["border-radius"] = .style(name: "border-radius", value: "4px")
+        props["background"] = .style(name: "background", value: "var(--system-background)")
+    }
 }
 
 // MARK: - Coordinator Renderable
@@ -318,18 +360,9 @@ extension TextField: _CoordinatorRenderable {
             "placeholder": .attribute(name: "placeholder", value: placeholderText),
             "value": .attribute(name: "value", value: binding.wrappedValue),
             "onInput": .eventHandler(event: "input", handlerID: handlerID),
-            // Match SwiftUI's typical layout behavior: text fields are flexible, expand to fill
-            // available horizontal space, and should be allowed to shrink so sibling views
-            // (like trailing buttons) are not clipped in an `HStack`.
-            "flex": .style(name: "flex", value: "1 1 0%"),
-            "min-width": .style(name: "min-width", value: "0"),
-            "padding": .style(name: "padding", value: "8px"),
-            "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
-            "border-radius": .style(name: "border-radius", value: "4px"),
-            "font-size": .style(name: "font-size", value: "14px"),
-            "width": .style(name: "width", value: "100%"),
-            "box-sizing": .style(name: "box-sizing", value: "border-box"),
         ]
+        applyTextFieldLayoutStyles(to: &props)
+        applyTextFieldAppearanceStyles(to: &props)
         if let disabled = autocorrectionDisabled {
             props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
             props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
@@ -343,5 +376,36 @@ extension TextField: _CoordinatorRenderable {
         props["aria-label"] = .attribute(name: "aria-label", value: placeholder)
         props["role"] = .attribute(name: "role", value: "textbox")
         return VNode.element("input", props: props, children: [])
+    }
+}
+
+extension TextEditor: _CoordinatorRenderable {
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        let binding = text
+        let handlerID = context.registerInputHandler { event in
+            if let newValue = event.target.value.string {
+                binding.wrappedValue = newValue
+            }
+        }
+
+        var props: [String: VProperty] = [
+            "onInput": .eventHandler(event: "input", handlerID: handlerID),
+        ]
+        applyTextEditorStyle(to: &props)
+
+        props["role"] = .attribute(name: "role", value: "textbox")
+        props["aria-multiline"] = .attribute(name: "aria-multiline", value: "true")
+        if let disabled = autocorrectionDisabled {
+            props["autocorrect"] = .attribute(name: "autocorrect", value: disabled ? "off" : "on")
+            props["spellcheck"] = .attribute(name: "spellcheck", value: disabled ? "false" : "true")
+        }
+        if let autocapitalization = textInputAutocapitalization {
+            props["autocapitalize"] = .attribute(name: "autocapitalize", value: autocapitalization.rawValue)
+        }
+        if let inputMode = keyboardType?.htmlInputMode {
+            props["inputmode"] = .attribute(name: "inputmode", value: inputMode)
+        }
+
+        return VNode.element("textarea", props: props, children: [VNode.text(binding.wrappedValue)])
     }
 }
