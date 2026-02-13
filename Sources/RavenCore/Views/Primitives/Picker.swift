@@ -205,7 +205,11 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
         // Branch on the picker style type
         switch pickerStyle {
         case is MenuPickerStyle:
-            return renderMenuPickerStyle()
+            return renderMenuPickerStyle(styleName: "menu")
+        case is DefaultPickerStyle:
+            return renderMenuPickerStyle(styleName: "default")
+        case is NavigationLinkPickerStyle:
+            return renderMenuPickerStyle(styleName: "navigationLink")
         case is InlinePickerStyle:
             return renderInlinePickerStyle()
         case is SegmentedPickerStyle:
@@ -214,7 +218,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
             return renderWheelPickerStyle()
         default:
             // Fallback to menu style for unknown styles
-            return renderMenuPickerStyle()
+            return renderMenuPickerStyle(styleName: "automatic")
         }
     }
 
@@ -229,7 +233,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
     /// to the binding, which can cause the view to re-render.
     ///
     /// - Returns: A VNode configured as a select element with event handlers.
-    @MainActor private func renderMenuPickerStyle() -> VNode {
+    @MainActor private func renderMenuPickerStyle(styleName: String) -> VNode {
         // Generate a unique ID for the change event handler
         let handlerID = UUID()
 
@@ -262,6 +266,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
         let props: [String: VProperty] = [
             // Accessibility label
             "aria-label": .attribute(name: "aria-label", value: label),
+            "data-picker-style": .attribute(name: "data-picker-style", value: styleName),
 
             // Change event handler for two-way data binding
             "onChange": .eventHandler(event: "change", handlerID: handlerID),
@@ -628,6 +633,7 @@ public struct Picker<Selection: Hashable, Content: View>: View, PrimitiveView, S
 extension Picker: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
         let opts = self.options
+        let styleName = _resolvedStyleName()
 
         // Register input handler for selection changes
         let handlerID = context.registerInputHandler { event in
@@ -655,6 +661,7 @@ extension Picker: _CoordinatorRenderable {
         // Create select element
         let selectProps: [String: VProperty] = [
             "aria-label": .attribute(name: "aria-label", value: label),
+            "data-picker-style": .attribute(name: "data-picker-style", value: styleName),
             "onChange": .eventHandler(event: "change", handlerID: handlerID),
             "padding": .style(name: "padding", value: "8px"),
             "border": .style(name: "border", value: "1px solid var(--system-control-border)"),
@@ -673,11 +680,22 @@ extension Picker: _CoordinatorRenderable {
 
         let containerProps: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-picker"),
+            "data-picker-style": .attribute(name: "data-picker-style", value: styleName),
             "display": .style(name: "display", value: "flex"),
             "align-items": .style(name: "align-items", value: "center"),
             "gap": .style(name: "gap", value: "8px"),
         ]
 
         return VNode.element("div", props: containerProps, children: [labelNode, selectNode])
+    }
+
+    @MainActor private func _resolvedStyleName() -> String {
+        if pickerStyle is NavigationLinkPickerStyle { return "navigationLink" }
+        if pickerStyle is DefaultPickerStyle { return "default" }
+        if pickerStyle is MenuPickerStyle { return "menu" }
+        if pickerStyle is InlinePickerStyle { return "inline" }
+        if pickerStyle is SegmentedPickerStyle { return "segmented" }
+        if pickerStyle is WheelPickerStyle { return "wheel" }
+        return "automatic"
     }
 }

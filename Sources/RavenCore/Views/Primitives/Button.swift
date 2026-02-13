@@ -349,6 +349,18 @@ public struct BorderlessButtonStyle: PrimitiveButtonStyle {
     }
 }
 
+/// A plain primitive button style.
+///
+/// SwiftUI exposes this as `.buttonStyle(.plain)`. In Raven this keeps the
+/// button visually unstyled so surrounding view modifiers control appearance.
+public struct PlainButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
 extension PrimitiveButtonStyle where Self == BorderedButtonStyle {
     /// A bordered button style.
     public static var bordered: BorderedButtonStyle {
@@ -370,6 +382,13 @@ extension PrimitiveButtonStyle where Self == BorderlessButtonStyle {
     }
 }
 
+extension PrimitiveButtonStyle where Self == PlainButtonStyle {
+    /// A plain button style.
+    public static var plain: PlainButtonStyle {
+        PlainButtonStyle()
+    }
+}
+
 private struct ButtonStyleEnvironmentKey: EnvironmentKey {
     static let defaultValue: any ButtonStyle = DefaultButtonStyle()
 }
@@ -377,7 +396,7 @@ private struct ButtonStyleEnvironmentKey: EnvironmentKey {
 private struct PrimitiveButtonStyleEnvironmentKey: EnvironmentKey {
     // SwiftUI's default button appearance is effectively "plain"; opting into
     // bordered styles should be explicit via `.buttonStyle(...)`.
-    static let defaultValue: any PrimitiveButtonStyle = BorderlessButtonStyle()
+    static let defaultValue: any PrimitiveButtonStyle = PlainButtonStyle()
 }
 
 extension EnvironmentValues {
@@ -424,21 +443,28 @@ extension Button: _CoordinatorRenderable {
             "cursor": .style(name: "cursor", value: "pointer"),
             "text-align": .style(name: "text-align", value: "inherit"),
         ]
+        var styleName = "plain"
         if primitiveButtonStyle is BorderedButtonStyle {
+            styleName = "bordered"
             props["border"] = .style(name: "border", value: "1px solid var(--system-control-border)")
             props["padding"] = .style(name: "padding", value: "8px 12px")
             props["border-radius"] = .style(name: "border-radius", value: buttonBorderShape.cssBorderRadius)
             props["background"] = .style(name: "background", value: "var(--system-control-background)")
         } else if primitiveButtonStyle is BorderedProminentButtonStyle {
+            styleName = "borderedProminent"
             props["border"] = .style(name: "border", value: "1px solid var(--system-accent)")
             props["padding"] = .style(name: "padding", value: "8px 12px")
             props["border-radius"] = .style(name: "border-radius", value: buttonBorderShape.cssBorderRadius)
             props["background"] = .style(name: "background", value: "var(--system-accent)")
             props["color"] = .style(name: "color", value: "white")
         } else if primitiveButtonStyle is BorderlessButtonStyle {
+            styleName = "borderless"
             // Keep the reset styles above. Visual styling should come from modifiers
             // like `.padding()`, `.background()`, `.foregroundColor()`, etc.
+        } else if primitiveButtonStyle is PlainButtonStyle {
+            styleName = "plain"
         }
+        props["data-button-style"] = .attribute(name: "data-button-style", value: styleName)
         let children = [context.renderChild(label)]
         return VNode.element("button", props: props, children: children)
     }
