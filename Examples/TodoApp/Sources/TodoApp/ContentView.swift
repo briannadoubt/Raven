@@ -1878,6 +1878,7 @@ struct FormsExtraDemos: View {
                 LabelStyleParityDemo()
                 ProgressViewStyleParityDemo()
                 GroupBoxStyleParityDemo()
+                ListStyleParityDemo()
                 AsyncImageDemo()
                 TextEditorDemo()
                 TextInputStyleParityDemo()
@@ -2268,6 +2269,52 @@ struct GroupBoxStyleParityDemo: View {
                 }
                 .groupBoxStyle(.default)
             }
+        }
+    }
+}
+
+// MARK: - List Style Parity Demo
+
+@MainActor
+struct ListStyleParityDemo: View {
+    private let sampleItems = [
+        "Inbox",
+        "Today",
+        "Upcoming",
+    ]
+
+    var body: some View {
+        SectionCard(title: "ListStyle") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("SwiftUI parity: .default, .plain, .grouped, .inset, .insetGrouped, .sidebar")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                listPreview(title: "default", style: .default)
+                listPreview(title: "plain", style: .plain)
+                listPreview(title: "grouped", style: .grouped)
+                listPreview(title: "inset", style: .inset)
+                listPreview(title: "insetGrouped", style: .insetGrouped)
+                listPreview(title: "sidebar", style: .sidebar)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func listPreview(title: String, style: some ListStyle) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("listStyle(.\(title))")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            List(sampleItems, id: \.self) { item in
+                Text(item)
+                    .padding(6)
+                    .background(Color.secondarySystemBackground)
+                    .cornerRadius(6)
+            }
+            .listStyle(style)
+            .frame(height: 110)
         }
     }
 }
