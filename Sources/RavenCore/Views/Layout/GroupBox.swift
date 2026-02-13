@@ -93,6 +93,8 @@ public struct GroupBox<Label: View, Content: View>: View, PrimitiveView, Sendabl
     /// Flag indicating if a label is present
     private let hasLabel: Bool
 
+    @Environment(\.groupBoxStyle) private var groupBoxStyle
+
     // MARK: - Initializers
 
     /// Creates a group box with content and a custom label.
@@ -214,6 +216,11 @@ extension GroupBox where Label == Text {
 
 extension GroupBox: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        if !(groupBoxStyle is AutomaticGroupBoxStyle || groupBoxStyle is DefaultGroupBoxStyle) {
+            let styled = groupBoxStyle._makeBodyAny(configuration: _styleConfiguration)
+            return context.renderChild(styled)
+        }
+
         var children: [VNode] = []
 
         // Render label as legend if present
@@ -234,8 +241,10 @@ extension GroupBox: _CoordinatorRenderable {
         }
 
         // Create the fieldset properties
+        let styleVariant = groupBoxStyle is DefaultGroupBoxStyle ? "default" : "automatic"
         let fieldsetProps: [String: VProperty] = [
             "class": .attribute(name: "class", value: "raven-groupbox"),
+            "data-groupbox-style": .attribute(name: "data-groupbox-style", value: styleVariant),
             "display": .style(name: "display", value: "flex"),
             "flex-direction": .style(name: "flex-direction", value: "column"),
             "gap": .style(name: "gap", value: "8px"),
@@ -249,6 +258,14 @@ extension GroupBox: _CoordinatorRenderable {
             "fieldset",
             props: fieldsetProps,
             children: children
+        )
+    }
+
+    @MainActor
+    private var _styleConfiguration: GroupBoxStyleConfiguration {
+        GroupBoxStyleConfiguration(
+            label: label.map { AnyView($0) },
+            content: AnyView(content)
         )
     }
 }

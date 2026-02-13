@@ -1875,6 +1875,9 @@ struct FormsExtraDemos: View {
             VStack(spacing: 16) {
                 EditButtonDemo()
                 LabelDemo()
+                LabelStyleParityDemo()
+                ProgressViewStyleParityDemo()
+                GroupBoxStyleParityDemo()
                 AsyncImageDemo()
                 TextEditorDemo()
                 TextInputStyleParityDemo()
@@ -2244,6 +2247,31 @@ struct GroupBoxDemo: View {
     }
 }
 
+// MARK: - GroupBox Style Parity Demo
+
+@MainActor
+struct GroupBoxStyleParityDemo: View {
+    var body: some View {
+        SectionCard(title: "GroupBoxStyle") {
+            VStack(alignment: .leading, spacing: 10) {
+                GroupBox("Automatic") {
+                    Text("groupBoxStyle(.automatic)")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+                .groupBoxStyle(.automatic)
+
+                GroupBox("Default") {
+                    Text("groupBoxStyle(.default)")
+                        .font(.caption)
+                        .foregroundColor(Color.secondaryLabel)
+                }
+                .groupBoxStyle(.default)
+            }
+        }
+    }
+}
+
 // MARK: - ScrollView Demo
 
 @MainActor
@@ -2379,6 +2407,52 @@ struct LabelDemo: View {
                         .fill(Color.accent)
                         .frame(width: 12, height: 12)
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Label Style Parity Demo
+
+@MainActor
+struct LabelStyleParityDemo: View {
+    var body: some View {
+        SectionCard(title: "LabelStyle") {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Icon Only", systemImage: "star.fill")
+                    .labelStyle(.iconOnly)
+
+                Label("Title Only", systemImage: "star.fill")
+                    .labelStyle(.titleOnly)
+
+                Label("Title + Icon", systemImage: "star.fill")
+                    .labelStyle(.titleAndIcon)
+
+                Label("Default", systemImage: "star.fill")
+                    .labelStyle(.default)
+
+                Label("labelsHidden()", systemImage: "eye.slash")
+                    .labelsHidden()
+            }
+        }
+    }
+}
+
+// MARK: - ProgressView Style Parity Demo
+
+@MainActor
+struct ProgressViewStyleParityDemo: View {
+    var body: some View {
+        SectionCard(title: "ProgressViewStyle") {
+            VStack(alignment: .leading, spacing: 8) {
+                ProgressView(value: 0.3, total: 1.0)
+                    .progressViewStyle(.default)
+
+                ProgressView(value: 0.6, total: 1.0)
+                    .progressViewStyle(.linear)
+
+                ProgressView("Loading", value: 0.5, total: 1.0)
+                    .progressViewStyle(.circular)
             }
         }
     }
