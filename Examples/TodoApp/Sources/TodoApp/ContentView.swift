@@ -1304,6 +1304,7 @@ private struct DisplayTabAdditionalDemos: View {
         VStack(spacing: 16) {
             ScrollTargetDemo()
             ImageDemo()
+            ContentTransitionDemo()
             ContentUnavailableDemo()
             ShapesDemo()
         }
@@ -1466,6 +1467,28 @@ struct ContentUnavailableDemo: View {
             }
             .padding(8)
             .accessibilityIdentifier("content-unavailable-demo")
+        }
+    }
+}
+
+// MARK: - ContentTransition Demo
+
+@MainActor
+struct ContentTransitionDemo: View {
+    var body: some View {
+        SectionCard(title: "ContentTransition + DynamicTypeSize") {
+            VStack(spacing: 10) {
+                Text("Count: 42")
+                    .font(.title2)
+                    .contentTransition(.numericText())
+                    .dynamicTypeSize(.xLarge)
+                    .colorSchemeContrast(.increased)
+
+                Text("Uses .contentTransition(.numericText()), .dynamicTypeSize(.xLarge), and .colorSchemeContrast(.increased)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+            .accessibilityIdentifier("content-transition-demo")
         }
     }
 }

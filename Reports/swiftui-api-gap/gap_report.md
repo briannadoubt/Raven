@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T23:03:45.964158+00:00`
+Generated: `2026-02-13T23:10:08.021275+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,9 +10,9 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **3989**
 - Skipped symbols (currently unscored): **580**
-- Matched by Raven: **2086**
-- Missing in Raven: **1903**
-- Name-based coverage: **52.29%**
+- Matched by Raven: **2089**
+- Missing in Raven: **1900**
+- Name-based coverage: **52.37%**
 
 ### Missing by Declaration Kind
 
@@ -20,11 +20,11 @@ Target: `arm64-apple-ios26.2`
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
 | `Constructor` | 188 | 0 | 1238 |
-| `Enum` | 29 | 0 | 43 |
+| `Enum` | 27 | 0 | 43 |
 | `Func` | 557 | 168 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 35 | 0 | 66 |
-| `Struct` | 239 | 0 | 484 |
+| `Struct` | 238 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 101 | 249 | 380 |
 | `Var` | 727 | 163 | 964 |
@@ -65,7 +65,6 @@ Target: `arm64-apple-ios26.2`
 - `ButtonToggleStyle` (Struct, owner: `SwiftUI`)
 - `Cache` (Struct, owner: `GridLayout`)
 - `CodableRepresentation` (Struct, owner: `NavigationPath`)
-- `ColorSchemeContrast` (Enum, owner: `SwiftUI`)
 - `Components` (TypeAlias, owner: `DatePicker`)
 - `ContainerSizingOptions` (Enum, owner: `Subview`)
 - `Content` (Struct, owner: `ControlGroupStyleConfiguration`)
@@ -77,7 +76,6 @@ Target: `arm64-apple-ios26.2`
 - `Content` (TypeAlias, owner: `PreviewModifier`)
 - `Content` (Struct, owner: `TabContentBuilder`)
 - `ContentToolbarPlacement` (Struct, owner: `SwiftUI`)
-- `ContentTransition` (Struct, owner: `SwiftUI`)
 - `ControlWidget` (Protocol, owner: `SwiftUI`)
 - `ControlWidgetConfiguration` (Protocol, owner: `SwiftUI`)
 - `ControlWidgetConfigurationBuilder` (Struct, owner: `SwiftUI`)
@@ -110,7 +108,6 @@ Target: `arm64-apple-ios26.2`
 - `DropProposal` (Struct, owner: `SwiftUI`)
 - `DropSession` (Struct, owner: `SwiftUI`)
 - `DynamicTableRowContent` (Protocol, owner: `SwiftUI`)
-- `DynamicTypeSize` (Enum, owner: `SwiftUI`)
 - `DynamicViewContent` (Protocol, owner: `SwiftUI`)
 - `EditActions` (Struct, owner: `SwiftUI`)
 - `EditableCollectionContent` (Struct, owner: `SwiftUI`)
@@ -235,6 +232,9 @@ Target: `arm64-apple-ios26.2`
 - `PresentationSizing` (Protocol, owner: `SwiftUI`)
 - `PresentationSizingContext` (Struct, owner: `SwiftUI`)
 - `PresentationSizingRoot` (Struct, owner: `SwiftUI`)
+- `PresentedWindowContent` (Struct, owner: `SwiftUI`)
+- `PressFeedback` (Struct, owner: `SensoryFeedback`)
+- `Preview` (Struct, owner: `SwiftUI`)
 
 ## Missing High-Signal Named APIs (first 300)
 
