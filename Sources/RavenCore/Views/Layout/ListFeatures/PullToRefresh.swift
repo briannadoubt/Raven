@@ -136,9 +136,31 @@ enum RefreshState: Sendable {
 @MainActor
 public struct RefreshAction: Sendable {
     private let action: @Sendable @MainActor () async -> Void
+    private let syncAction: (@Sendable @MainActor () -> Void)?
 
     public init(_ action: @escaping @Sendable @MainActor () async -> Void) {
         self.action = action
+        self.syncAction = nil
+    }
+
+    public init(_ action: @escaping @Sendable @MainActor () -> Void) {
+        self.action = {
+            action()
+        }
+        self.syncAction = action
+    }
+
+    /// Executes refresh from synchronous contexts (for example, button handlers).
+    ///
+    /// SwiftUI requires `Task { await refresh?() }` from sync handlers. On current
+    /// Swift/WASM toolchains, nested `Task {}` from DOM callbacks can be unreliable,
+    /// so Raven provides this overload as a compatibility bridge.
+    public func callAsFunction() {
+        if let syncAction {
+            AsyncHostBridge.run(syncAction)
+            return
+        }
+        AsyncHostBridge.runAsync(action)
     }
 
     public func callAsFunction() async {
