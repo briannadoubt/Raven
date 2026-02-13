@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-13T08:33:50.824203+00:00`
+Generated: `2026-02-13T08:56:39.926486+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **4569**
 - Skipped symbols (currently unscored): **0**
-- Matched by Raven: **2096**
-- Missing in Raven: **2473**
-- Name-based coverage: **45.87%**
+- Matched by Raven: **2108**
+- Missing in Raven: **2461**
+- Name-based coverage: **46.14%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 191 | 0 | 1238 |
+| `Constructor` | 188 | 0 | 1238 |
 | `Enum` | 29 | 0 | 43 |
-| `Func` | 727 | 0 | 1366 |
+| `Func` | 726 | 0 | 1366 |
 | `Macro` | 3 | 0 | 3 |
-| `Protocol` | 36 | 0 | 66 |
-| `Struct` | 249 | 0 | 484 |
+| `Protocol` | 35 | 0 | 66 |
+| `Struct` | 245 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
 | `TypeAlias` | 350 | 0 | 380 |
-| `Var` | 864 | 0 | 964 |
+| `Var` | 861 | 0 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -321,7 +321,6 @@ Target: `arm64-apple-ios26.2`
 - `automatic` (owner: `NavigationBarDrawerDisplayMode`)
 - `automatic` (owner: `NavigationSplitViewVisibility`)
 - `automatic` (owner: `NavigationTransition`)
-- `automatic` (owner: `NavigationViewStyle`)
 - `automatic` (owner: `PaletteSelectionEffect`)
 - `automatic` (owner: `PickerStyle`)
 - `automatic` (owner: `PresentationAdaptation`)
@@ -532,12 +531,13 @@ Target: `arm64-apple-ios26.2`
 - `clipShape(_:)` (owner: `MatchedTransitionSourceConfiguration`)
 - `close` (owner: `ButtonRole`)
 - `codable` (owner: `NavigationPath`)
-- `columns` (owner: `NavigationViewStyle`)
 - `combine` (owner: `AccessibilityChildBehavior`)
 - `commandsRemoved()` (owner: `Scene`)
 - `commandsReplaced(content:)` (owner: `Scene`)
 - `compact` (owner: `ListSectionSpacing`)
 - `complete` (owner: `WritingToolsBehavior`)
+- `confirm` (owner: `ButtonRole`)
+- `confirmationAction` (owner: `ToolbarItemPlacement`)
 
 ## Operator-Like API Gap Summary
 
