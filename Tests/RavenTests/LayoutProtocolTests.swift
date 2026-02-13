@@ -181,7 +181,7 @@ struct LayoutProtocolTests {
         var cache = AnyLayoutCache()
         let subviews = LayoutSubviews._fromMeasured([_MeasuredLayoutSubview(size: CGSize(width: 10, height: 10))])
         let value = layout.explicitAlignment(
-            of: .center,
+            of: HorizontalAlignment.center,
             in: CGRect(x: 0, y: 0, width: 10, height: 10),
             proposal: .unspecified,
             subviews: subviews,
