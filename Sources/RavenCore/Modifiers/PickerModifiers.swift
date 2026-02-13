@@ -102,6 +102,18 @@ public struct MenuPickerStyle: PickerStyle {
     }
 }
 
+/// The default picker style.
+///
+/// SwiftUI exposes this as `.pickerStyle(.default)`. Raven resolves this to the
+/// same runtime rendering as the menu picker style.
+public struct DefaultPickerStyle: PickerStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
 // MARK: - Segmented Picker Style
 
 /// A picker style that displays options as a segmented control.
@@ -240,6 +252,18 @@ public struct InlinePickerStyle: PickerStyle {
     }
 }
 
+/// A picker style that presents options using navigation links where supported.
+///
+/// Raven currently falls back to the menu picker rendering while preserving API
+/// compatibility with SwiftUI.
+public struct NavigationLinkPickerStyle: PickerStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
 // MARK: - Style Modifier
 
 extension View {
@@ -281,6 +305,13 @@ extension PickerStyle where Self == MenuPickerStyle {
     }
 }
 
+extension PickerStyle where Self == DefaultPickerStyle {
+    /// The default picker style.
+    public static var `default`: DefaultPickerStyle {
+        DefaultPickerStyle()
+    }
+}
+
 extension PickerStyle where Self == SegmentedPickerStyle {
     /// A segmented picker style.
     ///
@@ -311,6 +342,15 @@ extension PickerStyle where Self == InlinePickerStyle {
     /// - Note: Currently falls back to menu style.
     public static var inline: InlinePickerStyle {
         InlinePickerStyle()
+    }
+}
+
+extension PickerStyle where Self == NavigationLinkPickerStyle {
+    /// A navigation-link picker style.
+    ///
+    /// - Note: Currently falls back to menu style.
+    public static var navigationLink: NavigationLinkPickerStyle {
+        NavigationLinkPickerStyle()
     }
 }
 

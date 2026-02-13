@@ -46,6 +46,29 @@ public struct CompactDatePickerStyle: DatePickerStyle {
     }
 }
 
+/// The default date picker style.
+///
+/// Raven currently resolves this to the same rendering as automatic style while
+/// preserving API parity with SwiftUI.
+public struct DefaultDatePickerStyle: DatePickerStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
+/// A graphical date picker style.
+///
+/// Raven currently applies a visual treatment optimized for full-date selection.
+public struct GraphicalDatePickerStyle: DatePickerStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
 extension DatePickerStyle where Self == AutomaticDatePickerStyle {
     /// The automatic date picker style.
     public static var automatic: AutomaticDatePickerStyle {
@@ -57,6 +80,20 @@ extension DatePickerStyle where Self == CompactDatePickerStyle {
     /// The compact date picker style.
     public static var compact: CompactDatePickerStyle {
         CompactDatePickerStyle()
+    }
+}
+
+extension DatePickerStyle where Self == DefaultDatePickerStyle {
+    /// The default date picker style.
+    public static var `default`: DefaultDatePickerStyle {
+        DefaultDatePickerStyle()
+    }
+}
+
+extension DatePickerStyle where Self == GraphicalDatePickerStyle {
+    /// A graphical date picker style.
+    public static var graphical: GraphicalDatePickerStyle {
+        GraphicalDatePickerStyle()
     }
 }
 

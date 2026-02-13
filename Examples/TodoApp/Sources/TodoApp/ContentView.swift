@@ -1873,16 +1873,24 @@ struct FormsExtraDemos: View {
             }
 
             VStack(spacing: 16) {
-                EditButtonDemo()
-                LabelDemo()
-                LabelStyleParityDemo()
-                ProgressViewStyleParityDemo()
-                GroupBoxStyleParityDemo()
-                ListStyleParityDemo()
-                AsyncImageDemo()
-                TextEditorDemo()
-                TextInputStyleParityDemo()
-                FormattedInputDemo()
+                VStack(spacing: 16) {
+                    EditButtonDemo()
+                    LabelDemo()
+                    ButtonStyleParityDemo()
+                    LabelStyleParityDemo()
+                    PickerStyleParityDemo()
+                    DatePickerStyleParityDemo()
+                }
+
+                VStack(spacing: 16) {
+                    ProgressViewStyleParityDemo()
+                    GroupBoxStyleParityDemo()
+                    ListStyleParityDemo()
+                    AsyncImageDemo()
+                    TextEditorDemo()
+                    TextInputStyleParityDemo()
+                    FormattedInputDemo()
+                }
             }
         }
     }
@@ -2315,6 +2323,106 @@ struct ListStyleParityDemo: View {
             }
             .listStyle(style)
             .frame(height: 110)
+        }
+    }
+}
+
+// MARK: - Button Style Parity Demo
+
+@MainActor
+struct ButtonStyleParityDemo: View {
+    var body: some View {
+        SectionCard(title: "ButtonStyle") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("SwiftUI parity: .plain, .borderless, .bordered, .borderedProminent")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                HStack(spacing: 8) {
+                    Button("Plain") { }
+                        .buttonStyle(.plain)
+
+                    Button("Borderless") { }
+                        .buttonStyle(.borderless)
+
+                    Button("Bordered") { }
+                        .buttonStyle(.bordered)
+
+                    Button("Prominent") { }
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Picker Style Parity Demo
+
+@MainActor
+struct PickerStyleParityDemo: View {
+    @State private var defaultSelection = "light"
+    @State private var menuSelection = "light"
+    @State private var navigationSelection = "light"
+
+    var body: some View {
+        SectionCard(title: "PickerStyle") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("SwiftUI parity: .default, .menu, .navigationLink")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                pickerRow(title: "default", selection: $defaultSelection, style: .default)
+                pickerRow(title: "menu", selection: $menuSelection, style: .menu)
+                pickerRow(title: "navigationLink", selection: $navigationSelection, style: .navigationLink)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pickerRow(title: String, selection: Binding<String>, style: some PickerStyle) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("pickerStyle(.\(title))")
+                .font(.caption)
+                .foregroundColor(Color.secondaryLabel)
+
+            Picker("Theme", selection: selection) {
+                Text("Light").tag("light")
+                Text("Dark").tag("dark")
+                Text("System").tag("system")
+            }
+            .pickerStyle(style)
+        }
+    }
+}
+
+// MARK: - DatePicker Style Parity Demo
+
+@MainActor
+struct DatePickerStyleParityDemo: View {
+    @State private var automaticDate = Date()
+    @State private var defaultDate = Date()
+    @State private var compactDate = Date()
+    @State private var graphicalDate = Date()
+
+    var body: some View {
+        SectionCard(title: "DatePickerStyle") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("SwiftUI parity: .automatic, .default, .compact, .graphical")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                DatePicker("Automatic", selection: $automaticDate, displayedComponents: .date)
+                    .datePickerStyle(.automatic)
+
+                DatePicker("Default", selection: $defaultDate, displayedComponents: .date)
+                    .datePickerStyle(.default)
+
+                DatePicker("Compact", selection: $compactDate, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+
+                DatePicker("Graphical", selection: $graphicalDate, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+            }
         }
     }
 }
