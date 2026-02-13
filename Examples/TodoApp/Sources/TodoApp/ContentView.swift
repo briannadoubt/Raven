@@ -102,6 +102,8 @@ final class ShowcaseStore: SwiftUI.ObservableObject {
     @SwiftUI.Published var commandProbeCount: Int = 0
     @SwiftUI.Published var commandProbeLastAction: String = "No command invoked yet."
     @SwiftUI.Published var commandProbeMessage: String = "Waiting for command action."
+    @SwiftUI.Published var refreshCounter: Int = 0
+    @SwiftUI.Published var lastRefreshAt: String = "Never"
     init() {
         setupPublished()
 
@@ -220,6 +222,8 @@ struct ContentView: View {
                             store.sliderValue = 50
                             store.stepperValue = 0
                             store.progressValue = 0.65
+                            store.refreshCounter = 0
+                            store.lastRefreshAt = "Never"
                         }
                     })
                     .navigationBarItems(NavigationBarItem(placement: .trailing) {
@@ -1064,7 +1068,7 @@ struct ControlsTab: View {
             ColorPickerDemo(store: store)
             DatePickerDemo(store: store)
             LabeledContentDemo()
-            RefreshableDemo()
+            RefreshableDemo(store: store)
         }
         .padding(16)
     }
@@ -1138,49 +1142,42 @@ struct LabeledContentDemo: View {
 
 @MainActor
 struct RefreshableDemo: View {
-    @State private var refreshCounter: Int = 0
-    @State private var lastRefreshAt: String = "Never"
+    let store: ShowcaseStore
 
     var body: some View {
         SectionCard(title: "Refreshable + RefreshAction") {
             RefreshableDemoContent(
-                refreshCounter: $refreshCounter,
-                lastRefreshAt: $lastRefreshAt
+                store: store
             )
             .environment(\.refresh, RefreshAction {
-                await performRefresh()
+                performRefresh()
             })
-            .refreshable {
-                await performRefresh()
-            }
         }
     }
 
-    private func performRefresh() async {
-        refreshCounter += 1
-        lastRefreshAt = "Updated #\(refreshCounter)"
+    private func performRefresh() {
+        store.refreshCounter += 1
+        store.lastRefreshAt = "Refreshed #\(store.refreshCounter)"
     }
 }
 
 @MainActor
 private struct RefreshableDemoContent: View {
     @Environment(\.refresh) private var refresh
-    @Binding var refreshCounter: Int
-    @Binding var lastRefreshAt: String
+    let store: ShowcaseStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Count: \(refreshCounter)")
-            Text("Last refresh: \(lastRefreshAt)")
+            Text("Count: \(store.refreshCounter)")
+            Text("Last refresh: \(store.lastRefreshAt)")
                 .font(.caption)
                 .foregroundColor(Color.secondaryLabel)
 
             HStack(spacing: 8) {
                 Button("Manual Refresh") {
-                    guard let refresh else { return }
-                    Task {
-                        await refresh()
-                    }
+                    store.refreshCounter += 1
+                    store.lastRefreshAt = "Manual trigger #\(store.refreshCounter)"
+                    refresh?()
                 }
                 .disabled(refresh == nil)
 

@@ -71,11 +71,15 @@ struct _RefreshableModifier: ViewModifier, Sendable {
     let action: @Sendable @MainActor () async -> Void
     @Environment(\.refreshConfiguration) private var configuration
 
+    @State private var pullOffset: CGFloat = 0
     @State private var isRefreshing = false
+    @State private var refreshState: RefreshState = .idle
 
     @MainActor
     func body(content: Content) -> some View {
         content
+        .offset(y: contentOffset)
+        .gesture(pullGesture)
         .environment(\.refresh, RefreshAction {
             await performRefreshIfNeeded()
         })
@@ -83,9 +87,55 @@ struct _RefreshableModifier: ViewModifier, Sendable {
             \.refreshProgress,
             RefreshProgress(
                 isRefreshing: isRefreshing,
-                pullProgress: isRefreshing ? 1 : 0
+                pullProgress: isRefreshing ? 1 : normalizedPullProgress
             )
         )
+    }
+
+    private var normalizedPullProgress: Double {
+        guard configuration.triggerDistance > 0 else { return 0 }
+        let progress = pullOffset / configuration.triggerDistance
+        return min(max(Double(progress), 0), 1)
+    }
+
+    private var contentOffset: CGFloat {
+        if isRefreshing {
+            return min(configuration.triggerDistance * 0.5, 50)
+        }
+        return pullOffset
+    }
+
+    private var pullGesture: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                guard !isRefreshing else { return }
+
+                let verticalPull = max(value.translation.height, 0)
+                if verticalPull <= 0 {
+                    pullOffset = 0
+                    refreshState = .idle
+                    return
+                }
+
+                let resistance = max(configuration.resistance, 1)
+                let limitedPull = verticalPull / resistance
+                let maxPull = configuration.triggerDistance * 1.5
+
+                pullOffset = min(limitedPull, maxPull)
+                refreshState = pullOffset >= configuration.triggerDistance ? .triggered : .pulling
+            }
+            .onEnded { _ in
+                guard !isRefreshing else { return }
+
+                let shouldRefresh = refreshState == .triggered
+                pullOffset = 0
+                refreshState = .idle
+
+                guard shouldRefresh else { return }
+                AsyncHostBridge.runAsync {
+                    await performRefreshIfNeeded()
+                }
+            }
     }
 
     /// Triggers the refresh action if one is not already in progress.
@@ -95,6 +145,7 @@ struct _RefreshableModifier: ViewModifier, Sendable {
         let refreshStart = Date()
 
         isRefreshing = true
+        refreshState = .refreshing
 
         // Execute the async refresh action
         await action()
@@ -107,6 +158,8 @@ struct _RefreshableModifier: ViewModifier, Sendable {
         }
 
         isRefreshing = false
+        refreshState = .idle
+        pullOffset = 0
     }
 }
 
@@ -136,9 +189,31 @@ enum RefreshState: Sendable {
 @MainActor
 public struct RefreshAction: Sendable {
     private let action: @Sendable @MainActor () async -> Void
+    private let syncAction: (@Sendable @MainActor () -> Void)?
 
     public init(_ action: @escaping @Sendable @MainActor () async -> Void) {
         self.action = action
+        self.syncAction = nil
+    }
+
+    public init(_ action: @escaping @Sendable @MainActor () -> Void) {
+        self.action = {
+            action()
+        }
+        self.syncAction = action
+    }
+
+    /// Executes refresh from synchronous contexts (for example, button handlers).
+    ///
+    /// SwiftUI requires `Task { await refresh?() }` from sync handlers. On current
+    /// Swift/WASM toolchains, nested `Task {}` from DOM callbacks can be unreliable,
+    /// so Raven provides this overload as a compatibility bridge.
+    public func callAsFunction() {
+        if let syncAction {
+            AsyncHostBridge.run(syncAction)
+            return
+        }
+        AsyncHostBridge.runAsync(action)
     }
 
     public func callAsFunction() async {
