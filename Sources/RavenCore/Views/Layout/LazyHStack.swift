@@ -105,6 +105,23 @@ extension LazyHStack: _CoordinatorRenderable {
             children = [contentNode]
         }
 
+        // Match HStack behavior: when a spacer is present, expand to fill the
+        // available width so the spacer can push sibling content apart.
+        func subtreeContainsSpacer(_ node: VNode) -> Bool {
+            if node.props["data-raven-spacer"] != nil {
+                return true
+            }
+            for child in node.children {
+                if subtreeContainsSpacer(child) { return true }
+            }
+            return false
+        }
+
+        if children.contains(where: subtreeContainsSpacer) {
+            props["align-self"] = .style(name: "align-self", value: "stretch")
+            props["min-width"] = .style(name: "min-width", value: "0")
+        }
+
         return VNode.element("div", props: props, children: children)
     }
 }
