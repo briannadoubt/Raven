@@ -207,11 +207,11 @@ private extension List {
             case .plain:
                 return "transparent"
             case .grouped:
-                return "var(--raven-list-grouped-bg, #f5f5f7)"
+                return "var(--raven-list-grouped-bg, var(--system-grouped-background))"
             case .insetGrouped:
-                return "var(--raven-list-inset-grouped-bg, #f2f2f7)"
+                return "var(--raven-list-inset-grouped-bg, var(--system-secondary-background))"
             case .sidebar:
-                return "var(--raven-list-sidebar-bg, #f7f7fa)"
+                return "var(--raven-list-sidebar-bg, var(--system-tertiary-background))"
             case .automatic, .default, .inset:
                 return "transparent"
             }
@@ -220,11 +220,11 @@ private extension List {
         var border: String {
             switch self {
             case .grouped:
-                return "1px solid rgba(0, 0, 0, 0.08)"
+                return "1px solid var(--system-separator)"
             case .insetGrouped:
-                return "1px solid rgba(0, 0, 0, 0.08)"
+                return "1px solid var(--system-separator)"
             case .sidebar:
-                return "1px solid rgba(0, 0, 0, 0.06)"
+                return "1px solid var(--system-separator)"
             case .automatic, .default, .plain, .inset:
                 return "none"
             }
