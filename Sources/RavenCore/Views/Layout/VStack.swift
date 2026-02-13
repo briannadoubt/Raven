@@ -182,18 +182,8 @@ public struct VStack<Content: View>: View, PrimitiveView, Sendable {
   ///
   /// - Returns: A VNode configured as a vertical flexbox container.
   @MainActor public func toVNode() -> VNode {
-    var props: [String: VProperty] = [
-      "display": .style(name: "display", value: "flex"),
-      "flex-direction": .style(name: "flex-direction", value: "column"),
-      // SwiftUI proposes the full available width to children. We approximate that
-      // by stretching items on the cross axis; alignment is applied per-child.
-      "align-items": .style(name: "align-items", value: "stretch"),
-    ]
-
-    // Add gap spacing if provided
-    if let spacing = spacing {
-      props["gap"] = .style(name: "gap", value: "\(spacing)px")
-    }
+    let layout = VStackLayout(alignment: alignment, spacing: spacing)
+    let props = layout._containerProps()
 
     // Return element with empty children - the RenderCoordinator will populate them
     return VNode.element(
@@ -206,75 +196,7 @@ public struct VStack<Content: View>: View, PrimitiveView, Sendable {
 
 extension VStack: _CoordinatorRenderable {
   @MainActor public func _render(with context: any _RenderContext) -> VNode {
-    var props: [String: VProperty] = [
-      "display": .style(name: "display", value: "flex"),
-      "flex-direction": .style(name: "flex-direction", value: "column"),
-      "align-items": .style(name: "align-items", value: "stretch"),
-    ]
-    if let spacing = spacing {
-      props["gap"] = .style(name: "gap", value: "\(spacing)px")
-    }
-    let contentNode = context.renderChild(content)
-    let rawChildren: [VNode]
-    if case .fragment = contentNode.type {
-      rawChildren = contentNode.children
-    } else {
-      rawChildren = [contentNode]
-    }
-
-    func subtreeContainsSpacer(_ node: VNode) -> Bool {
-      if node.props["data-raven-spacer"] != nil { return true }
-      return node.children.contains(where: subtreeContainsSpacer)
-    }
-
-    func subtreeContainsGeometryReader(_ node: VNode) -> Bool {
-      if node.props["data-geometry-reader"] != nil || node.props["data-raven-geometry-id"] != nil {
-        return true
-      }
-      return node.children.contains(where: subtreeContainsGeometryReader)
-    }
-
-    let justifyContent: String =
-      switch alignment {
-      case .leading: "flex-start"
-      case .center: "center"
-      case .trailing: "flex-end"
-      }
-
-    // Wrap each child in a full-width "proposal" row and use `justify-content`
-    // to apply the requested alignment without forcing every child to be full width.
-    let children: [VNode] = rawChildren.map { child in
-      let expands = subtreeContainsSpacer(child) || subtreeContainsGeometryReader(child)
-
-      let alignedChild: VNode
-      if expands {
-        alignedChild = VNode.element(
-          "div",
-          props: [
-            "flex": .style(name: "flex", value: "1 1 auto"),
-            "min-width": .style(name: "min-width", value: "0"),
-          ],
-          children: [child]
-        )
-      } else {
-        alignedChild = child
-      }
-
-      return VNode.element(
-        "div",
-        props: [
-          "display": .style(name: "display", value: "flex"),
-          "flex-direction": .style(name: "flex-direction", value: "row"),
-          "justify-content": .style(name: "justify-content", value: justifyContent),
-          // Stretch row to the VStack's cross-axis without introducing explicit
-          // percentage widths (which can force parents to become full-width).
-          "align-self": .style(name: "align-self", value: "stretch"),
-          "min-width": .style(name: "min-width", value: "0"),
-        ],
-        children: [alignedChild]
-      )
-    }
-
-    return VNode.element("div", props: props, children: children)
+    _LayoutContainer(layout: VStackLayout(alignment: alignment, spacing: spacing), content: content)
+      ._render(with: context)
   }
 }

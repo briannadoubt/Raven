@@ -193,16 +193,8 @@ public struct HStack<Content: View>: View, PrimitiveView, Sendable {
   ///
   /// - Returns: A VNode configured as a horizontal flexbox container.
   @MainActor public func toVNode() -> VNode {
-    var props: [String: VProperty] = [
-      "display": .style(name: "display", value: "flex"),
-      "flex-direction": .style(name: "flex-direction", value: "row"),
-      "align-items": .style(name: "align-items", value: alignment.cssValue),
-    ]
-
-    // Add gap spacing if provided
-    if let spacing = spacing {
-      props["gap"] = .style(name: "gap", value: "\(spacing)px")
-    }
+    let layout = HStackLayout(alignment: alignment, spacing: spacing)
+    let props = layout._containerProps()
 
     // Return element with empty children - the RenderCoordinator will populate them
     return VNode.element(
@@ -215,41 +207,7 @@ public struct HStack<Content: View>: View, PrimitiveView, Sendable {
 
 extension HStack: _CoordinatorRenderable {
   @MainActor public func _render(with context: any _RenderContext) -> VNode {
-    var props: [String: VProperty] = [
-      "display": .style(name: "display", value: "flex"),
-      "flex-direction": .style(name: "flex-direction", value: "row"),
-      "align-items": .style(name: "align-items", value: alignment.cssValue),
-    ]
-    if let spacing = spacing {
-      props["gap"] = .style(name: "gap", value: "\(spacing)px")
-    }
-    let contentNode = context.renderChild(content)
-    let children: [VNode]
-    if case .fragment = contentNode.type {
-      children = contentNode.children
-    } else {
-      children = [contentNode]
-    }
-
-    // SwiftUI behavior: an HStack containing a Spacer expands to take the full
-    // width proposal of its parent. In CSS flexbox, a flex item inside a VStack
-    // (align-items: center) will otherwise shrink-to-fit its content, preventing
-    // the Spacer from actually pushing siblings apart.
-    func subtreeContainsSpacer(_ node: VNode) -> Bool {
-      if node.props["data-raven-spacer"] != nil {
-        return true
-      }
-      for child in node.children {
-        if subtreeContainsSpacer(child) { return true }
-      }
-      return false
-    }
-
-    if children.contains(where: subtreeContainsSpacer) {
-      props["align-self"] = .style(name: "align-self", value: "stretch")
-      props["min-width"] = .style(name: "min-width", value: "0")
-    }
-
-    return VNode.element("div", props: props, children: children)
+    _LayoutContainer(layout: HStackLayout(alignment: alignment, spacing: spacing), content: content)
+      ._render(with: context)
   }
 }
