@@ -82,6 +82,11 @@ enum _LayoutTraitRegistry {
     }
 }
 
+@MainActor
+private final class _LayoutTraitTokenBox {
+    let id = UUID()
+}
+
 // MARK: - layoutPriority
 
 public struct _LayoutPriorityView<Content: View>: View, PrimitiveView, Sendable {
@@ -120,7 +125,7 @@ public struct _HorizontalAlignmentGuideView<Content: View>: View, PrimitiveView,
 
 extension _HorizontalAlignmentGuideView: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        let token = UUID()
+        let token = context.persistentState(create: { _LayoutTraitTokenBox() }).id
         _LayoutTraitRegistry.registerAlignment(token, guide: .horizontal(alignment, computeValue))
         let child = context.renderChild(content)
         return VNode.element("div", props: [
@@ -146,7 +151,7 @@ public struct _VerticalAlignmentGuideView<Content: View>: View, PrimitiveView, S
 
 extension _VerticalAlignmentGuideView: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        let token = UUID()
+        let token = context.persistentState(create: { _LayoutTraitTokenBox() }).id
         _LayoutTraitRegistry.registerAlignment(token, guide: .vertical(alignment, computeValue))
         let child = context.renderChild(content)
         return VNode.element("div", props: [
@@ -174,7 +179,7 @@ public struct _LayoutValueView<Content: View>: View, PrimitiveView, Sendable {
 
 extension _LayoutValueView: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        let token = UUID()
+        let token = context.persistentState(create: { _LayoutTraitTokenBox() }).id
         _LayoutTraitRegistry.registerLayoutValue(token, keyID: keyID, value: value)
         let child = context.renderChild(content)
         return VNode.element("div", props: [

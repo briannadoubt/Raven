@@ -408,7 +408,7 @@ final class _LayoutRenderController: @unchecked Sendable {
     private var resizeObserver: JSObject?
     private var resizeObserverClosure: JSClosure?
 
-    private var layoutID: String = ""
+    private var layoutConfigurationID: String = ""
     private var childCount = 0
 
     private(set) var childFrames: [CGRect] = []
@@ -421,9 +421,9 @@ final class _LayoutRenderController: @unchecked Sendable {
     var erasedLayout: AnyLayout = AnyLayout(HStackLayout())
     var erasedCache = AnyLayoutCache()
 
-    func configure(layout: AnyLayout, layoutID: String, childCount: Int) {
-        if self.layoutID != layoutID {
-            self.layoutID = layoutID
+    func configure(layout: AnyLayout, layoutConfigurationID: String, childCount: Int) {
+        if self.layoutConfigurationID != layoutConfigurationID {
+            self.layoutConfigurationID = layoutConfigurationID
             erasedCache = AnyLayoutCache()
             hasValidPlacement = false
             layoutDeltaAnimation = nil
@@ -474,15 +474,13 @@ final class _LayoutRenderController: @unchecked Sendable {
 
         attachResizeObserverIfAvailable(to: container)
 
-        guard let querySelectorAllFn = document.querySelectorAll.function else { return }
-        let nodeListResult = querySelectorAllFn(this: document, "\(selector) [data-raven-layout-child]")
-        let count = Int(nodeListResult.length.number ?? 0)
-        if count == 0 { return }
+        let childElements = directLayoutChildren(in: container)
+        let count = childElements.count
+        guard count > 0 else { return }
 
         var measured: [_MeasuredLayoutSubview] = []
         measured.reserveCapacity(count)
-        for index in 0..<count {
-            guard let element = nodeListResult[index].object else { continue }
+        for element in childElements {
             measured.append(measureSubview(element: element))
         }
 
@@ -511,6 +509,21 @@ final class _LayoutRenderController: @unchecked Sendable {
         if changed {
             renderScheduler?.scheduleRender()
         }
+    }
+
+    private func directLayoutChildren(in container: JSObject) -> [JSObject] {
+        guard let htmlCollection = container.children.object else { return [] }
+        let count = Int(htmlCollection.length.number ?? 0)
+        guard count > 0 else { return [] }
+
+        var children: [JSObject] = []
+        children.reserveCapacity(count)
+        for index in 0..<count {
+            guard let element = htmlCollection[index].object else { continue }
+            guard element.getAttribute?("data-raven-layout-child").string != nil else { continue }
+            children.append(element)
+        }
+        return children
     }
 
     private func measureSubview(element: JSObject) -> _MeasuredLayoutSubview {
@@ -692,11 +705,8 @@ extension _LayoutContainer: _CoordinatorRenderable {
         controller.captureAnimationContext(AnimationContext.current)
 
         let erased = AnyLayout(layout)
-        controller.configure(
-            layout: erased,
-            layoutID: String(describing: L.self),
-            childCount: children.count
-        )
+        let layoutConfigurationID = "\(String(describing: L.self))|\(String(reflecting: layout))"
+        controller.configure(layout: erased, layoutConfigurationID: layoutConfigurationID, childCount: children.count)
         controller.startIfNeeded()
 
         if controller.hasValidPlacement, controller.childFrames.count == children.count {
