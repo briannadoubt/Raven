@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SwiftUI
 @testable import RavenCore
@@ -5,33 +6,33 @@ import Testing
 @MainActor
 @Suite struct StyleAndRoleParityTests {
     @Test func primitiveButtonStyleStaticsCompile() {
-        let _ = PrimitiveButtonStyle.automatic
-        let _ = PrimitiveButtonStyle.glass
-        let _ = PrimitiveButtonStyle.glass(.prominent)
-        let _ = PrimitiveButtonStyle.glassProminent
+        let _ = AutomaticButtonStyle()
+        let _ = GlassButtonStyle()
+        let _ = GlassButtonStyle(prominence: .prominent)
+        let _ = GlassProminentButtonStyle()
         #expect(true)
     }
 
     @Test func toggleStyleStaticsCompile() {
-        let _ = ToggleStyle.automatic
-        let _ = ToggleStyle.button
-        let _ = ToggleStyle.switch
+        let _ = DefaultToggleStyle()
+        let _ = ButtonToggleStyle()
+        let _ = SwitchToggleStyle()
         #expect(true)
     }
 
     @Test func gaugeStyleStaticsCompile() {
-        let _ = GaugeStyle.automatic
-        let _ = GaugeStyle.accessoryCircular
-        let _ = GaugeStyle.accessoryCircularCapacity
-        let _ = GaugeStyle.accessoryLinear
-        let _ = GaugeStyle.accessoryLinearCapacity
+        let _ = DefaultGaugeStyle()
+        let _ = AccessoryCircularGaugeStyle()
+        let _ = AccessoryCircularCapacityGaugeStyle()
+        let _ = AccessoryLinearGaugeStyle()
+        let _ = AccessoryLinearCapacityGaugeStyle()
         #expect(true)
     }
 
     @Test func textAndMenuAutomaticStylesCompile() {
-        let _ = TextFieldStyle.automatic
-        let _ = MenuStyle.automatic
-        let _ = MenuStyle.borderlessButton
+        let _ = DefaultTextFieldStyle()
+        let _ = DefaultMenuStyle()
+        let _ = BorderlessButtonMenuStyle()
         #expect(true)
     }
 
@@ -125,12 +126,9 @@ import Testing
         let _ = WritingToolsBehavior.automatic
         let _ = PresentationBackgroundInteraction.automatic
         let _ = PresentationContentInteraction.automatic
-        let _ = (any PresentationSizing).self
-        let _ = PresentationSizing.automatic
-        let _ = (any CustomHoverEffect).self
-        let _ = CustomHoverEffect.automatic
-        let _ = (any NavigationTransition).self
-        let _ = NavigationTransition.automatic
+        let _ = AutomaticPresentationSizing()
+        let _ = AutomaticHoverEffect()
+        let _ = AutomaticNavigationTransition()
 
         let inputPose = InputDevicePose(altitude: 1.0, azimuth: 2.0)
         let hoverPose = PencilHoverPose(altitude: 1.0, azimuth: 2.0, anchor: .center)
