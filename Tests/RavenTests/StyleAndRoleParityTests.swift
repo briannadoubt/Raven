@@ -8,7 +8,7 @@ import Testing
     @Test func primitiveButtonStyleStaticsCompile() {
         let _ = AutomaticButtonStyle()
         let _ = GlassButtonStyle()
-        let _ = GlassButtonStyle(prominence: .prominent)
+        let _ = GlassButtonStyle(prominent: true)
         let _ = GlassProminentButtonStyle()
         #expect(true)
     }
