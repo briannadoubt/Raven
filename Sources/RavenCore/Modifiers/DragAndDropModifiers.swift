@@ -122,6 +122,87 @@ extension View {
     }
 }
 
+public struct _OnDropDelegateView<Content: View, Delegate: DropDelegate>: View, PrimitiveView, _CoordinatorRenderable, Sendable {
+    public typealias Body = Never
+
+    let content: Content
+    let allowedTypes: [UTType]
+    let delegate: Delegate
+
+    @MainActor public func toVNode() -> VNode {
+        VNode.element("div", props: [:], children: [])
+    }
+
+    @MainActor public func _render(with context: any _RenderContext) -> VNode {
+        func buildDropInfo(_ event: JSValue) -> DropInfo {
+            var items: [DropItem] = []
+            if let text = DragDropJS.getPlainText(event), !text.isEmpty {
+                items.append(.text(text))
+            }
+            for file in DragDropJS.files(event) {
+                items.append(.file(file))
+            }
+            return DropInfo(location: DragDropJS.location(event), items: items)
+        }
+
+        let dragOverID = context.registerInputHandler { event in
+            DragDropJS.preventDefault(event)
+            let info = buildDropInfo(event)
+            guard info.hasItemsConforming(to: allowedTypes), delegate.validateDrop(info: info) else {
+                return
+            }
+            _ = delegate.dropUpdated(info: info)
+        }
+
+        let dragEnterID = context.registerInputHandler { event in
+            let info = buildDropInfo(event)
+            guard info.hasItemsConforming(to: allowedTypes), delegate.validateDrop(info: info) else {
+                return
+            }
+            delegate.dropEntered(info: info)
+        }
+
+        let dragLeaveID = context.registerInputHandler { event in
+            let info = buildDropInfo(event)
+            delegate.dropExited(info: info)
+        }
+
+        let dropID = context.registerInputHandler { event in
+            DragDropJS.preventDefault(event)
+            DragDropJS.stopPropagation(event)
+            let info = buildDropInfo(event)
+            guard info.hasItemsConforming(to: allowedTypes), delegate.validateDrop(info: info) else {
+                return
+            }
+            _ = delegate.performDrop(info: info)
+        }
+
+        let props: [String: VProperty] = [
+            "onDragover": .eventHandler(event: "dragover", handlerID: dragOverID),
+            "onDragenter": .eventHandler(event: "dragenter", handlerID: dragEnterID),
+            "onDragleave": .eventHandler(event: "dragleave", handlerID: dragLeaveID),
+            "onDrop": .eventHandler(event: "drop", handlerID: dropID),
+        ]
+
+        let contentNode = context.renderChild(content)
+        return VNode.element("div", props: props, children: [contentNode])
+    }
+}
+
+extension View {
+    /// Adds a drop delegate to this view.
+    @MainActor public func onDrop<Delegate: DropDelegate>(
+        of supportedContentTypes: [UTType],
+        delegate: Delegate
+    ) -> _OnDropDelegateView<Self, Delegate> {
+        _OnDropDelegateView(
+            content: self,
+            allowedTypes: supportedContentTypes,
+            delegate: delegate
+        )
+    }
+}
+
 // MARK: - Drop Destination (alias)
 
 extension View {

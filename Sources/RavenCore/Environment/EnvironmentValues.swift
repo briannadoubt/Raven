@@ -276,3 +276,57 @@ extension EnvironmentValues {
         set { self[KeyboardTypeKey.self] = newValue }
     }
 }
+
+// MARK: - Accessibility
+
+private struct AccessibilityAssistiveAccessEnabledKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+private struct AccessibilityLargeContentViewerEnabledKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+private struct AccessibilityQuickActionsEnabledKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+private struct AccessibilitySwitchControlEnabledKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+private struct AccessibilityVoiceOverEnabledKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+    /// Whether Assistive Access is currently enabled.
+    public var accessibilityAssistiveAccessEnabled: Bool {
+        get { self[AccessibilityAssistiveAccessEnabledKey.self] }
+        set { self[AccessibilityAssistiveAccessEnabledKey.self] = newValue }
+    }
+
+    /// Whether Large Content Viewer is currently enabled.
+    public var accessibilityLargeContentViewerEnabled: Bool {
+        get { self[AccessibilityLargeContentViewerEnabledKey.self] }
+        set { self[AccessibilityLargeContentViewerEnabledKey.self] = newValue }
+    }
+
+    /// Whether accessibility quick actions are currently enabled.
+    public var accessibilityQuickActionsEnabled: Bool {
+        get { self[AccessibilityQuickActionsEnabledKey.self] }
+        set { self[AccessibilityQuickActionsEnabledKey.self] = newValue }
+    }
+
+    /// Whether Switch Control is currently enabled.
+    public var accessibilitySwitchControlEnabled: Bool {
+        get { self[AccessibilitySwitchControlEnabledKey.self] }
+        set { self[AccessibilitySwitchControlEnabledKey.self] = newValue }
+    }
+
+    /// Whether VoiceOver is currently enabled.
+    public var accessibilityVoiceOverEnabled: Bool {
+        get { self[AccessibilityVoiceOverEnabledKey.self] }
+        set { self[AccessibilityVoiceOverEnabledKey.self] = newValue }
+    }
+}

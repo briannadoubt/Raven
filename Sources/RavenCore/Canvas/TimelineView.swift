@@ -368,6 +368,25 @@ public protocol TimelineSchedule: Sendable {
     func entries(from startDate: Date, mode: TimelineScheduleMode) -> Entries
 }
 
+extension TimelineSchedule where Self == AnimationTimelineSchedule {
+    /// A schedule that updates with animation frames.
+    public static var animation: AnimationTimelineSchedule {
+        AnimationTimelineSchedule()
+    }
+
+    /// A schedule that updates with animation frames.
+    ///
+    /// Parameters are accepted for SwiftUI API parity and currently ignored.
+    public static func animation(
+        minimumInterval: TimeInterval? = nil,
+        paused: Bool = false
+    ) -> AnimationTimelineSchedule {
+        _ = minimumInterval
+        _ = paused
+        return AnimationTimelineSchedule()
+    }
+}
+
 /// The mode for timeline schedule entries.
 public enum TimelineScheduleMode: Sendable {
     /// Request entries for normal operation.

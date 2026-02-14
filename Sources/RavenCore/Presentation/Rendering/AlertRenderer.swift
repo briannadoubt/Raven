@@ -247,6 +247,10 @@ public struct AlertRenderer: Sendable {
             switch role {
             case .cancel:
                 buttonClasses.append("raven-alert-button-cancel")
+            case .close:
+                buttonClasses.append("raven-alert-button-cancel")
+            case .confirm:
+                buttonClasses.append("raven-alert-button-confirm")
             case .destructive:
                 buttonClasses.append("raven-alert-button-destructive")
             }

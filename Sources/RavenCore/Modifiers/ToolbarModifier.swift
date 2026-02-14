@@ -29,6 +29,9 @@ public enum ToolbarItemPlacement: Sendable, Hashable {
     case cancellationAction
 }
 
+/// SwiftUI-compatible alias for toolbar placement.
+public typealias ToolbarPlacement = ToolbarItemPlacement
+
 /// Defines how a `ToolbarSpacer` consumes space in toolbar layouts.
 public enum ToolbarSpacerSizing: Sendable, Hashable {
     /// Expands to consume available toolbar space.

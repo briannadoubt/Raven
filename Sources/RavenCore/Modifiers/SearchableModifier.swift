@@ -3,6 +3,12 @@ import JavaScriptKit
 
 // MARK: - Search Field Placement
 
+/// Display modes for navigation-bar drawer search placement.
+public enum NavigationBarDrawerDisplayMode: Sendable, Hashable {
+    case automatic
+    case always
+}
+
 /// The placement of a search field in the user interface.
 ///
 /// Search field placement affects where the search bar appears in the view hierarchy
@@ -49,6 +55,17 @@ public enum SearchFieldPlacement: Sendable, Hashable {
     ///
     /// The search field appears inline within toolbar content.
     case toolbar
+
+    /// Place the search field in the principal toolbar position.
+    case toolbarPrincipal
+
+    /// Navigation bar drawer placement with an explicit display mode.
+    public static func navigationBarDrawer(
+        displayMode: NavigationBarDrawerDisplayMode
+    ) -> SearchFieldPlacement {
+        _ = displayMode
+        return .navigationBarDrawer
+    }
 }
 
 // MARK: - Searchable View
@@ -364,7 +381,7 @@ public struct _SearchableView<Content: View, Suggestions: View>: View, Primitive
         ]
 
         switch placement {
-        case .automatic, .navigationBarDrawer:
+        case .automatic, .navigationBarDrawer, .toolbarPrincipal:
             containerStyles["padding"] = .style(name: "padding", value: "12px")
             containerStyles["background"] = .style(name: "background", value: "#f9fafb")
             containerStyles["border-bottom"] = .style(name: "border-bottom", value: "1px solid #e5e7eb")

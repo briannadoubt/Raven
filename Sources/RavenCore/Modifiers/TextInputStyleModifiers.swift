@@ -46,6 +46,11 @@ public struct RoundedBorderTextFieldStyle: TextFieldStyle {
 }
 
 extension TextFieldStyle where Self == DefaultTextFieldStyle {
+    /// The automatic text field style.
+    public static var automatic: DefaultTextFieldStyle {
+        DefaultTextFieldStyle()
+    }
+
     /// The default text field style.
     public static var `default`: DefaultTextFieldStyle {
         DefaultTextFieldStyle()

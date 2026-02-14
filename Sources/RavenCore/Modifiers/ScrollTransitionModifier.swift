@@ -59,18 +59,35 @@ public enum ScrollTransitionPhase: Equatable, Sendable {
 
 /// Configuration for a scroll transition effect.
 ///
-/// This internal structure stores the configuration for how scroll transitions
+/// This structure stores the configuration for how scroll transitions
 /// should be applied, including the axis constraints and transition closure.
-struct ScrollTransitionConfiguration: Sendable {
+public struct ScrollTransitionConfiguration: Sendable {
     /// The axis to which the transition applies, if constrained.
-    let axis: Axis?
+    public let axis: Axis?
 
     /// A unique identifier for this transition configuration.
-    let id: UUID
+    public let id: UUID
 
-    init(axis: Axis?) {
+    /// Whether the transition should be treated as animated.
+    public let animated: Bool
+
+    public init(axis: Axis?, animated: Bool = true) {
         self.axis = axis
         self.id = UUID()
+        self.animated = animated
+    }
+
+    /// Returns a copy with updated `animated` behavior.
+    public func animated(_ isAnimated: Bool) -> ScrollTransitionConfiguration {
+        ScrollTransitionConfiguration(axis: axis, animated: isAnimated)
+    }
+
+    /// Returns a copy with animation configuration applied.
+    ///
+    /// The concrete `Animation` value is accepted for API parity and currently
+    /// records only that a transition should be animated.
+    public func animation(_ animation: Animation?) -> ScrollTransitionConfiguration {
+        ScrollTransitionConfiguration(axis: axis, animated: animation != nil)
     }
 }
 

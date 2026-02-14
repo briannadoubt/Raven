@@ -1305,6 +1305,7 @@ private struct DisplayTabAdditionalDemos: View {
             ScrollTargetDemo()
             ImageDemo()
             ContentTransitionDemo()
+            HoverAndDropDemo()
             ContentUnavailableDemo()
             ShapesDemo()
         }
@@ -1489,6 +1490,102 @@ struct ContentTransitionDemo: View {
                     .foregroundColor(Color.secondaryLabel)
             }
             .accessibilityIdentifier("content-transition-demo")
+        }
+    }
+}
+
+// MARK: - Hover / Drop Demo
+
+@MainActor
+private struct HoverAndDropDemo: View {
+    private struct DemoDropDelegate: DropDelegate {
+        let onEvent: @MainActor (String) -> Void
+
+        @MainActor func validateDrop(info: DropInfo) -> Bool {
+            info.hasItemsConforming(to: [.plainText, .text])
+        }
+
+        @MainActor func dropEntered(info: DropInfo) {
+            _ = info
+            onEvent("drop entered")
+        }
+
+        @MainActor func dropExited(info: DropInfo) {
+            _ = info
+            onEvent("drop exited")
+        }
+
+        @MainActor func dropUpdated(info: DropInfo) -> DropProposal? {
+            _ = info
+            onEvent("drop updated")
+            return DropProposal(operation: .copy)
+        }
+
+        @MainActor func performDrop(info: DropInfo) -> Bool {
+            let textItems = info.itemProviders(for: [.plainText, .text]).compactMap { item -> String? in
+                if case let .text(value) = item { return value }
+                return nil
+            }
+            if let first = textItems.first, !first.isEmpty {
+                onEvent("dropped text: \(first)")
+            } else {
+                onEvent("dropped \(info.items.count) item(s)")
+            }
+            return true
+        }
+    }
+
+    @State private var isHovering = false
+    @State private var hoverPointText = "none"
+    @State private var dropStatusText = "No drop event yet"
+
+    var body: some View {
+        SectionCard(title: "Hover + DropDelegate") {
+            VStack(spacing: 10) {
+                Text("Hover target")
+                    .padding(8)
+                    .background(Color.secondarySystemBackground)
+                    .cornerRadius(6)
+                    .onHover { inside in
+                        if inside {
+                            isHovering = true
+                        }
+                    }
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case let .active(point):
+                            isHovering = true
+                            hoverPointText = "\(Int(point.x)), \(Int(point.y))"
+                        case .ended:
+                            isHovering = false
+                        }
+                    }
+                    .accessibilityIdentifier("hover-target")
+
+                Text("Drop target")
+                    .padding(8)
+                    .background(Color.secondarySystemBackground)
+                    .cornerRadius(6)
+                    .onDrop(of: [.plainText], delegate: DemoDropDelegate { message in
+                        dropStatusText = message
+                    })
+                    .accessibilityIdentifier("drop-target")
+
+                Text("Hovering: \(isHovering ? "yes" : "no"), point: \(hoverPointText)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+                    .accessibilityIdentifier("hover-status")
+
+                Text("Drop status: \(dropStatusText)")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+                    .accessibilityIdentifier("drop-status")
+
+                Text("Uses .onHover, .onContinuousHover, and delegate-based .onDrop")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+            }
+            .accessibilityIdentifier("hover-drop-demo")
         }
     }
 }
@@ -2781,6 +2878,7 @@ struct TextEditorDemo: View {
 
 @MainActor
 struct TextInputStyleParityDemo: View {
+    @State private var automaticFieldText = "Automatic style"
     @State private var defaultFieldText = "Default style"
     @State private var plainFieldText = "Plain style"
     @State private var roundedFieldText = "Rounded style"
@@ -2789,6 +2887,9 @@ struct TextInputStyleParityDemo: View {
     var body: some View {
         SectionCard(title: "Text Input Styles") {
             VStack(alignment: .leading, spacing: 10) {
+                TextField("AutomaticTextFieldStyle", text: $automaticFieldText)
+                    .textFieldStyle(.automatic)
+
                 TextField("DefaultTextFieldStyle", text: $defaultFieldText)
                     .textFieldStyle(.default)
 
@@ -2802,13 +2903,14 @@ struct TextInputStyleParityDemo: View {
                     .textEditorStyle(.plain)
                     .frame(height: 72)
 
-                Text("Supports .default, .plain, .roundedBorder, and textEditorStyle(.plain)")
+                Text("Supports .automatic, .default, .plain, .roundedBorder, and textEditorStyle(.plain)")
                     .font(.caption)
                     .foregroundColor(Color.secondaryLabel)
             }
         }
     }
 }
+
 
 // MARK: - Formatted Input Demo
 
@@ -3085,6 +3187,7 @@ struct EffectsTab: View {
             VisualEffectsDemo()
             TransformDemo()
             TimelineScheduleDemo()
+            HighSignalTypeParityDemo()
             EquatableAndModifierDemo()
         }
         .padding(16)
@@ -3097,7 +3200,7 @@ struct EffectsTab: View {
 private struct TimelineScheduleDemo: View {
     var body: some View {
         SectionCard(title: "Timeline Schedule") {
-            TimelineView<AnyView>(AnimationTimelineSchedule()) { (context: TimelineView<AnyView>.Context) in
+            TimelineView<AnyView>(.animation(minimumInterval: 0.25, paused: false)) { (context: TimelineView<AnyView>.Context) in
                 let ticks = Int(context.date.timeIntervalSince1970 * 10)
                 // Type-erase the built content so TimelineView can infer its generic Content type
                 // without needing to name the concrete, modifier-wrapped type.
@@ -3108,6 +3211,28 @@ private struct TimelineScheduleDemo: View {
                 )
             }
             .frame(height: 32)
+        }
+    }
+}
+
+// MARK: - High-Signal Type Parity Demo
+
+@MainActor
+private struct HighSignalTypeParityDemo: View {
+    var body: some View {
+        SectionCard(title: "High-Signal Parity Types") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("DatePicker.Components alias and TimelineSchedule.animation API compile in-app.")
+                    .font(.caption)
+                    .foregroundColor(.secondaryLabel)
+
+                let _: DatePicker.Components = [.date]
+                let _: AnimationTimelineSchedule = .animation(minimumInterval: 0.25, paused: false)
+
+                Text("Compile probe active for owner-qualified aliases and schedule statics.")
+                    .font(.caption2)
+                    .foregroundColor(.secondaryLabel)
+            }
         }
     }
 }
