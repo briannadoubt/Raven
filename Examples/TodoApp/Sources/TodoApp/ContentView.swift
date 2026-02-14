@@ -2126,6 +2126,7 @@ struct FormsExtraDemos: View {
                     ProgressViewStyleParityDemo()
                     GroupBoxStyleParityDemo()
                     ListStyleParityDemo()
+                    TabViewStyleParityDemo()
                     AsyncImageDemo()
                     TextEditorDemo()
                     TextInputStyleParityDemo()
@@ -2643,6 +2644,7 @@ struct DatePickerStyleParityDemo: View {
     @State private var defaultDate = Date()
     @State private var compactDate = Date()
     @State private var graphicalDate = Date()
+    @State private var wheelDate = Date()
 
     var body: some View {
         SectionCard(title: "DatePickerStyle") {
@@ -2662,6 +2664,42 @@ struct DatePickerStyleParityDemo: View {
 
                 DatePicker("Graphical", selection: $graphicalDate, displayedComponents: .date)
                     .datePickerStyle(.graphical)
+
+                DatePicker("Wheel", selection: $wheelDate, displayedComponents: .date)
+                    .datePickerStyle(.wheel)
+            }
+        }
+    }
+}
+
+// MARK: - TabView Style Parity Demo
+
+@MainActor
+struct TabViewStyleParityDemo: View {
+    @State private var topSelection = 0
+    @State private var bottomSelection = 0
+
+    var body: some View {
+        SectionCard(title: "TabViewStyle (Adaptable)") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("SwiftUI parity: .tabBarOnly + .sidebarAdaptable + defaultAdaptableTabBarPlacement")
+                    .font(.caption)
+                    .foregroundColor(Color.secondaryLabel)
+
+                TabView(selection: $topSelection) {
+                    SwiftUI.Tab("Home", systemImage: "house", value: 0) { Text("Top placement").padding(6) }
+                    SwiftUI.Tab("Tasks", systemImage: "checkmark.circle", value: 1) { Text("Top placement").padding(6) }
+                }
+                .defaultAdaptableTabBarPlacement(.topBar)
+                .tabViewStyle(.sidebarAdaptable)
+                .frame(height: 110)
+
+                TabView(selection: $bottomSelection) {
+                    SwiftUI.Tab("Inbox", systemImage: "tray", value: 0) { Text("Bottom placement").padding(6) }
+                    SwiftUI.Tab("Archive", systemImage: "archivebox", value: 1) { Text("Bottom placement").padding(6) }
+                }
+                .tabViewStyle(.tabBarOnly(placement: .bottomBar))
+                .frame(height: 110)
             }
         }
     }

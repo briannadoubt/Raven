@@ -662,8 +662,25 @@ extension TabViewContainer: _CoordinatorRenderable {
 
         // Tab bar container
         let style = EnvironmentValues._current.tabViewStyle
+        let defaultAdaptablePlacement = EnvironmentValues._current.defaultAdaptableTabBarPlacement
+        let tabBarPosition: TabBarPosition = {
+            guard let adaptableStyle = style as? SidebarAdaptableTabViewStyle else {
+                return style.tabBarPosition
+            }
+            let resolvedPlacement = adaptableStyle.placement == .automatic
+                ? defaultAdaptablePlacement
+                : adaptableStyle.placement
+            switch resolvedPlacement {
+            case .automatic:
+                return adaptableStyle.tabBarPosition
+            case .topBar:
+                return .top
+            case .bottomBar:
+                return .bottom
+            }
+        }()
 
-        let tabBarBorderStyle: (name: String, value: String)? = switch style.tabBarPosition {
+        let tabBarBorderStyle: (name: String, value: String)? = switch tabBarPosition {
         case .top:
             (name: "border-bottom", value: "1px solid var(--system-separator, #e0e0e0)")
         case .bottom:
@@ -672,7 +689,7 @@ extension TabViewContainer: _CoordinatorRenderable {
             nil
         }
 
-        let stickyEdgeStyle: (name: String, value: String)? = switch style.tabBarPosition {
+        let stickyEdgeStyle: (name: String, value: String)? = switch tabBarPosition {
         case .top:
             (name: "top", value: "0")
         case .bottom:
@@ -730,7 +747,7 @@ extension TabViewContainer: _CoordinatorRenderable {
         )
 
         // 6. Return container with tab bar positioned per style.
-        let children: [VNode] = switch (style.showsTabBar, style.tabBarPosition) {
+        let children: [VNode] = switch (style.showsTabBar, tabBarPosition) {
         case (false, _), (_, .none):
             [contentArea]
         case (true, .top):
