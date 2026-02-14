@@ -350,6 +350,27 @@ public struct DatePicker: View, PrimitiveView, Sendable {
             "font-size": .style(name: "font-size", value: "14px"),
         ]
 
+        if datePickerStyle is CompactDatePickerStyle {
+            props["padding"] = .style(name: "padding", value: "6px 8px")
+            props["font-size"] = .style(name: "font-size", value: "13px")
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "compact")
+        } else if datePickerStyle is GraphicalDatePickerStyle {
+            props["padding"] = .style(name: "padding", value: "10px")
+            props["font-size"] = .style(name: "font-size", value: "14px")
+            props["border-radius"] = .style(name: "border-radius", value: "10px")
+            props["background-color"] = .style(name: "background-color", value: "var(--system-secondary-background)")
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "graphical")
+        } else if datePickerStyle is WheelDatePickerStyle {
+            props["padding"] = .style(name: "padding", value: "6px")
+            props["font-size"] = .style(name: "font-size", value: "13px")
+            props["border-radius"] = .style(name: "border-radius", value: "999px")
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "wheel")
+        } else if datePickerStyle is DefaultDatePickerStyle {
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "default")
+        } else {
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "automatic")
+        }
+
         // Add min/max constraints based on date range
         switch dateRange {
         case .unlimited:
@@ -534,6 +555,11 @@ extension DatePicker: _CoordinatorRenderable {
             props["border-radius"] = .style(name: "border-radius", value: "10px")
             props["background-color"] = .style(name: "background-color", value: "var(--system-secondary-background)")
             props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "graphical")
+        } else if datePickerStyle is WheelDatePickerStyle {
+            props["padding"] = .style(name: "padding", value: "6px")
+            props["font-size"] = .style(name: "font-size", value: "13px")
+            props["border-radius"] = .style(name: "border-radius", value: "999px")
+            props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "wheel")
         } else if datePickerStyle is DefaultDatePickerStyle {
             props["data-date-picker-style"] = .attribute(name: "data-date-picker-style", value: "default")
         } else {

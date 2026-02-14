@@ -7,6 +7,21 @@ import Foundation
 /// using a single web-first presentation, so this type is provided for source
 /// compatibility only.
 public struct AdaptableTabBarPlacement: Sendable, Hashable {
-    @MainActor public init() {}
-}
+    public let value: TabBarPlacement
 
+    public init(_ value: TabBarPlacement = .automatic) {
+        self.value = value
+    }
+
+    public static var automatic: AdaptableTabBarPlacement {
+        AdaptableTabBarPlacement(.automatic)
+    }
+
+    public static var topBar: AdaptableTabBarPlacement {
+        AdaptableTabBarPlacement(.topBar)
+    }
+
+    public static var bottomBar: AdaptableTabBarPlacement {
+        AdaptableTabBarPlacement(.bottomBar)
+    }
+}

@@ -69,6 +69,17 @@ public struct GraphicalDatePickerStyle: DatePickerStyle {
     }
 }
 
+/// A wheel-style date picker.
+///
+/// Raven maps this to native HTML date input controls while exposing the SwiftUI API.
+public struct WheelDatePickerStyle: DatePickerStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
 extension DatePickerStyle where Self == AutomaticDatePickerStyle {
     /// The automatic date picker style.
     public static var automatic: AutomaticDatePickerStyle {
@@ -94,6 +105,13 @@ extension DatePickerStyle where Self == GraphicalDatePickerStyle {
     /// A graphical date picker style.
     public static var graphical: GraphicalDatePickerStyle {
         GraphicalDatePickerStyle()
+    }
+}
+
+extension DatePickerStyle where Self == WheelDatePickerStyle {
+    /// A wheel-style date picker.
+    public static var wheel: WheelDatePickerStyle {
+        WheelDatePickerStyle()
     }
 }
 

@@ -1,6 +1,6 @@
 # SwiftUI API Gap Report
 
-Generated: `2026-02-14T03:51:32.590106+00:00`
+Generated: `2026-02-14T05:30:03.820727+00:00`
 Source module: `SwiftUI` via `swift-api-digester`
 SDK: `iphoneos`
 Target: `arm64-apple-ios26.2`
@@ -10,24 +10,24 @@ Target: `arm64-apple-ios26.2`
 - SwiftUI symbols analyzed: **4569**
 - Scoreable symbols: **3989**
 - Skipped symbols (currently unscored): **580**
-- Matched by Raven: **2484**
-- Missing in Raven: **1505**
-- Name-based coverage: **62.27%**
+- Matched by Raven: **2507**
+- Missing in Raven: **1482**
+- Name-based coverage: **62.85%**
 
 ### Missing by Declaration Kind
 
 | Decl Kind | Missing | Skipped | Total |
 | --- | ---: | ---: | ---: |
 | `Class` | 5 | 0 | 5 |
-| `Constructor` | 173 | 0 | 1238 |
+| `Constructor` | 170 | 0 | 1238 |
 | `Enum` | 25 | 0 | 43 |
-| `Func` | 466 | 168 | 1366 |
+| `Func` | 464 | 168 | 1366 |
 | `Macro` | 3 | 0 | 3 |
 | `Protocol` | 30 | 0 | 66 |
-| `Struct` | 182 | 0 | 484 |
+| `Struct` | 174 | 0 | 484 |
 | `Subscript` | 19 | 0 | 20 |
-| `TypeAlias` | 97 | 249 | 380 |
-| `Var` | 505 | 163 | 964 |
+| `TypeAlias` | 93 | 249 | 380 |
+| `Var` | 499 | 163 | 964 |
 
 ## Missing High-Signal UI Components (first 200)
 
@@ -52,7 +52,6 @@ Target: `arm64-apple-ios26.2`
 - `AttributedTextSelection` (Struct, owner: `SwiftUI`)
 - `Attributes` (Struct, owner: `AttributedTextSelection`)
 - `BackgroundTask` (Struct, owner: `SwiftUI`)
-- `Cache` (Struct, owner: `GridLayout`)
 - `CodableRepresentation` (Struct, owner: `NavigationPath`)
 - `ContainerSizingOptions` (Enum, owner: `Subview`)
 - `Content` (Struct, owner: `ControlGroupStyleConfiguration`)
@@ -91,7 +90,6 @@ Target: `arm64-apple-ios26.2`
 - `DynamicViewContent` (Protocol, owner: `SwiftUI`)
 - `EditActions` (Struct, owner: `SwiftUI`)
 - `EditableCollectionContent` (Struct, owner: `SwiftUI`)
-- `Element` (Struct, owner: `IndexedIdentifierCollection`)
 - `EmptyControlWidgetConfiguration` (Struct, owner: `SwiftUI`)
 - `EmptyControlWidgetTemplate` (Struct, owner: `SwiftUI`)
 - `EmptyMatchedTransitionSourceConfiguration` (Struct, owner: `SwiftUI`)
@@ -121,11 +119,6 @@ Target: `arm64-apple-ios26.2`
 - `HighlightHoverEffect` (Struct, owner: `SwiftUI`)
 - `Icon` (Struct, owner: `LabelStyleConfiguration`)
 - `ImageRenderer` (Class, owner: `SwiftUI`)
-- `Index` (TypeAlias, owner: `FetchedResults`)
-- `Index` (TypeAlias, owner: `IndexedIdentifierCollection`)
-- `Index` (TypeAlias, owner: `Section`)
-- `Index` (TypeAlias, owner: `SectionedFetchResults`)
-- `Index` (Struct, owner: `SpatialEventCollection`)
 - `IndexViewStyle` (Protocol, owner: `SwiftUI`)
 - `IndexedIdentifierCollection` (Struct, owner: `SwiftUI`)
 - `Indices` (Enum, owner: `AttributedTextSelection`)
@@ -144,7 +137,6 @@ Target: `arm64-apple-ios26.2`
 - `LabeledToolbarItemGroupContent` (Struct, owner: `SwiftUI`)
 - `LayoutOptions` (TypeAlias, owner: `UIViewControllerRepresentable`)
 - `LayoutOptions` (TypeAlias, owner: `UIViewRepresentable`)
-- `LayoutSubview` (Struct, owner: `SwiftUI`)
 - `LegibilityWeight` (Enum, owner: `SwiftUI`)
 - `LiftHoverEffect` (Struct, owner: `SwiftUI`)
 - `LimitedAvailabilityConfiguration` (Struct, owner: `SwiftUI`)
@@ -228,13 +220,21 @@ Target: `arm64-apple-ios26.2`
 - `SelectionFeedback` (Struct, owner: `SensoryFeedback`)
 - `SelectionShapeStyle` (Struct, owner: `SwiftUI`)
 - `SharePreview` (Struct, owner: `SwiftUI`)
-- `SidebarAdaptableTabViewStyle` (Struct, owner: `SwiftUI`)
 - `SidebarCommands` (Struct, owner: `SwiftUI`)
 - `SidebarRowSize` (Enum, owner: `SwiftUI`)
 - `SliderTickContent` (Protocol, owner: `SwiftUI`)
 - `SliderTickContentForEach` (Struct, owner: `SwiftUI`)
 - `SpacerSizing` (Struct, owner: `SwiftUI`)
 - `SpatialEventCollection` (Struct, owner: `SwiftUI`)
+- `SpatialEventGesture` (Struct, owner: `SwiftUI`)
+- `SpringLoadingBehavior` (Struct, owner: `SwiftUI`)
+- `StringLiteralType` (TypeAlias, owner: `PreviewDevice`)
+- `SubSequence` (TypeAlias, owner: `FetchedResults`)
+- `SubSequence` (TypeAlias, owner: `IndexedIdentifierCollection`)
+- `SubSequence` (TypeAlias, owner: `Section`)
+- `SubSequence` (TypeAlias, owner: `SectionedFetchResults`)
+- `SubSequence` (TypeAlias, owner: `SpatialEventCollection`)
+- `SubmitTriggers` (Struct, owner: `SwiftUI`)
 
 ## Missing High-Signal Named APIs (first 300)
 
@@ -253,7 +253,6 @@ Target: `arm64-apple-ios26.2`
 - `animate(changes:completion:)` (owner: `UIViewRepresentableContext`)
 - `appRefresh(_:)` (owner: `BackgroundTask`)
 - `attributes(in:)` (owner: `AttributedTextSelection`)
-- `automatic` (owner: `AdaptableTabBarPlacement`)
 - `automatic` (owner: `Localization`)
 - `automatic` (owner: `MenuActionDismissBehavior`)
 - `automatic` (owner: `PaletteSelectionEffect`)
@@ -276,7 +275,6 @@ Target: `arm64-apple-ios26.2`
 - `base` (owner: `DocumentBaseBox`)
 - `base` (owner: `GestureStateGesture`)
 - `boldText` (owner: `AccessibilitySystemRotor`)
-- `bottomBar` (owner: `TabBarPlacement`)
 - `bottomBar` (owner: `ToolbarPlacement`)
 - `buildBlock(_:)` (owner: `AccessibilityRotorContentBuilder`)
 - `buildBlock(_:)` (owner: `ControlWidgetConfigurationBuilder`)
@@ -407,7 +405,6 @@ Target: `arm64-apple-ios26.2`
 - `default` (owner: `Set`)
 - `default` (owner: `ToolbarCustomizationBehavior`)
 - `defaultAction` (owner: `KeyboardShortcut`)
-- `defaultAdaptableTabBarPlacement(_:)` (owner: `View`)
 - `defaultAppStorage(_:)` (owner: `Scene`)
 - `defaultAppStorage(_:)` (owner: `View`)
 - `defaultCustomization()` (owner: `CustomizableToolbarContent`)
@@ -538,6 +535,9 @@ Target: `arm64-apple-ios26.2`
 - `home` (owner: `KeyEquivalent`)
 - `horizontalScrollBounceBehavior` (owner: `EnvironmentValues`)
 - `horizontalScrollIndicatorVisibility` (owner: `EnvironmentValues`)
+- `horizontalSpacing` (owner: `GridLayout`)
+- `hoverEffectDisabled(_:)` (owner: `CustomHoverEffect`)
+- `hoverPose` (owner: `PencilDoubleTapGestureValue`)
 
 ## Operator-Like API Gap Summary
 
