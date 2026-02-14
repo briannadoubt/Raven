@@ -208,12 +208,7 @@ public struct ZStack<Content: View>: View, PrimitiveView, Sendable {
     ///
     /// - Returns: A VNode configured as a layered container.
     @MainActor public func toVNode() -> VNode {
-        let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue)
-        ]
+        let props = ZStackLayout(alignment: alignment)._containerProps()
 
         // Return element with empty children - the RenderCoordinator will populate them
         return VNode.element(
@@ -226,25 +221,7 @@ public struct ZStack<Content: View>: View, PrimitiveView, Sendable {
 
 extension ZStack: _CoordinatorRenderable {
     @MainActor public func _render(with context: any _RenderContext) -> VNode {
-        let props: [String: VProperty] = [
-            "display": .style(name: "display", value: "grid"),
-            "grid-template-columns": .style(name: "grid-template-columns", value: "1fr"),
-            "grid-template-rows": .style(name: "grid-template-rows", value: "1fr"),
-            "place-items": .style(name: "place-items", value: alignment.cssValue)
-        ]
-        let contentNode = context.renderChild(content)
-        let rawChildren: [VNode]
-        if case .fragment = contentNode.type {
-            rawChildren = contentNode.children
-        } else {
-            rawChildren = [contentNode]
-        }
-        let children = rawChildren.map { child in
-            VNode.element("div", props: [
-                "grid-row": .style(name: "grid-row", value: "1 / -1"),
-                "grid-column": .style(name: "grid-column", value: "1 / -1")
-            ], children: [child])
-        }
-        return VNode.element("div", props: props, children: children)
+        _LayoutContainer(layout: ZStackLayout(alignment: alignment), content: content)
+            ._render(with: context)
     }
 }
