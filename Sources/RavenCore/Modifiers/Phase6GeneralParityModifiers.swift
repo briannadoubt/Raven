@@ -12,6 +12,11 @@ public struct SensoryFeedback: Sendable, Hashable {
     public static let error = SensoryFeedback("error")
     public static let selection = SensoryFeedback("selection")
     public static let impact = SensoryFeedback("impact")
+
+    /// Alignment hint for compatibility with newer SwiftUI sensory APIs.
+    public var alignment: Alignment {
+        .center
+    }
 }
 
 public struct PresentationAdaptation: Sendable, Hashable {

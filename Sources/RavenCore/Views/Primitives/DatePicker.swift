@@ -167,6 +167,7 @@ import Foundation
 /// to a VNode without further composition.
 public struct DatePicker: View, PrimitiveView, Sendable {
     public typealias Body = Never
+    public typealias Components = DatePickerComponents
 
     @Environment(\.datePickerStyle) private var datePickerStyle
 

@@ -65,7 +65,7 @@ public struct GridItem: Sendable, Hashable {
     /// The spacing to the next item.
     ///
     /// If `nil`, the grid uses the spacing parameter passed to its initializer.
-    /// Note: Per-item alignment is not currently supported in CSS Grid layout.
+    public let alignment: Alignment?
 
     /// Creates a grid item with the specified size and spacing.
     ///
@@ -74,10 +74,20 @@ public struct GridItem: Sendable, Hashable {
     ///   - spacing: The spacing to the next item, or `nil` to use the grid's spacing.
     public init(
         _ size: Size = .flexible(),
-        spacing: Double? = nil
+        spacing: Double? = nil,
+        alignment: Alignment? = nil
     ) {
         self.size = size
         self.spacing = spacing
+        self.alignment = alignment
+    }
+
+    /// Backward-compatible initializer retained for existing call sites.
+    public init(
+        _ size: Size = .flexible(),
+        spacing: Double? = nil
+    ) {
+        self.init(size, spacing: spacing, alignment: nil)
     }
 
     /// Convert this grid item to a CSS grid template value.

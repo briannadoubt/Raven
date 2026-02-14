@@ -7,10 +7,12 @@ import Foundation
 @MainActor
 public struct SubscriptionView<Content: View>: View, Sendable {
     private let content: Content
+    public let action: (@MainActor @Sendable () -> Void)?
 
     /// Creates a subscription view with custom content.
     @MainActor public init(@ViewBuilder content: () -> Content) {
         self.content = content()
+        self.action = nil
     }
 
     @MainActor public var body: some View {
@@ -27,6 +29,7 @@ extension SubscriptionView where Content == _DefaultSubscriptionContent {
     /// Creates a subscription view with default marketing copy.
     @MainActor public init() {
         self.content = _DefaultSubscriptionContent()
+        self.action = nil
     }
 }
 

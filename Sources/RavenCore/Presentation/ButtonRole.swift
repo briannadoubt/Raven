@@ -54,6 +54,12 @@ public enum ButtonRole: Sendable, Hashable {
     /// ```
     case cancel
 
+    /// A close button that dismisses presented content.
+    case close
+
+    /// A confirm button that affirms a primary action.
+    case confirm
+
     /// A destructive button that performs a potentially harmful action.
     ///
     /// Destructive buttons are often styled in red to indicate that the action

@@ -385,6 +385,36 @@ public struct SwitchToggleStyle: ToggleStyle {
     }
 }
 
+/// A toggle style that renders with button-like semantics.
+public struct ButtonToggleStyle: ToggleStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
+extension ToggleStyle where Self == DefaultToggleStyle {
+    /// The default automatic toggle style.
+    public static var automatic: DefaultToggleStyle {
+        DefaultToggleStyle()
+    }
+}
+
+extension ToggleStyle where Self == ButtonToggleStyle {
+    /// A button-like toggle style.
+    public static var button: ButtonToggleStyle {
+        ButtonToggleStyle()
+    }
+}
+
+extension ToggleStyle where Self == SwitchToggleStyle {
+    /// A switch-style toggle.
+    public static var `switch`: SwitchToggleStyle {
+        SwitchToggleStyle()
+    }
+}
+
 // MARK: - Toggle Style Environment
 
 /// Environment key for toggle style.

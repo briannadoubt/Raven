@@ -32,6 +32,23 @@ API_DECL_KINDS = {"Func", "Var", "Subscript", "Constructor", "Macro"}
 TARGET_DECL_KINDS = TYPE_DECL_KINDS | API_DECL_KINDS
 SCORABLE_DECL_KINDS = TARGET_DECL_KINDS
 
+NOISE_TYPEALIASES = {
+    "Body",
+    "AnimatableData",
+    "ArrayLiteralElement",
+    "RawValue",
+    "Element",
+    "Iterator",
+    "AllCases",
+}
+
+NOISE_MEMBERS = {
+    "body",
+    "hash",
+    "hashValue",
+    "rawValue",
+}
+
 
 @dataclasses.dataclass(frozen=True)
 class SwiftUISymbol:
@@ -58,6 +75,20 @@ def is_named_api(sym: SwiftUISymbol) -> bool:
 
 def qualified_member(owner: str, member: str) -> str:
     return f"{owner}.{member}" if owner else member
+
+
+def is_actionable_symbol(sym: SwiftUISymbol) -> bool:
+    """Exclude known noisy protocol/synthesis symbols from parity scoring."""
+    if sym.decl_kind not in SCORABLE_DECL_KINDS:
+        return False
+    if sym.decl_kind == "TypeAlias" and sym.name in NOISE_TYPEALIASES:
+        return False
+    if sym.decl_kind in {"Func", "Var"} and sym.name in NOISE_MEMBERS:
+        return False
+    # Operator-like overloads are rarely actionable in parity planning.
+    if sym.decl_kind == "Func" and not is_named_api(sym):
+        return False
+    return True
 
 
 def run(cmd: list[str], cwd: pathlib.Path | None = None) -> str:
@@ -268,10 +299,15 @@ def discover_scannable_target_names(repo_root: pathlib.Path, targets: dict[str, 
 
 def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
     public_type_pat = re.compile(r"\bpublic\s+(?:final\s+)?(?:struct|class|enum|protocol|actor|typealias)\s+([A-Za-z_][A-Za-z0-9_]*)")
-    type_or_extension_pat = re.compile(r"\b(?:public\s+)?(?:final\s+)?(?:struct|class|enum|protocol|actor|extension)\s+([A-Za-z_][A-Za-z0-9_]*)")
+    type_or_extension_pat = re.compile(r"\b((?:public\s+)?(?:final\s+)?(?:struct|class|enum|protocol|actor|extension))\s+([A-Za-z_][A-Za-z0-9_]*)")
+    public_typealias_pat = re.compile(r"\bpublic\s+typealias\s+([A-Za-z_][A-Za-z0-9_]*)\b")
     # Capture public function names regardless of generic clauses or multiline parameter lists.
-    func_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|mutating\s+|nonmutating\s+|override\s+|convenience\s+|required\s+|final\s+)*func\s+([A-Za-z_][A-Za-z0-9_]*)\b")
-    var_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|private\(set\)\s+|internal\(set\)\s+)*var\s+([A-Za-z_][A-Za-z0-9_]*)\b")
+    func_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|mutating\s+|nonmutating\s+|override\s+|convenience\s+|required\s+|final\s+)*func\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\b")
+    protocol_func_pat = re.compile(r"\b(?:static\s+|class\s+|mutating\s+|nonmutating\s+)*func\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\b")
+    var_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|private\(set\)\s+|internal\(set\)\s+)*var\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\b")
+    let_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+)*let\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\b")
+    protocol_var_pat = re.compile(r"\b(?:static\s+|class\s+)?var\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\s*:")
+    enum_case_pat = re.compile(r"^\s*(?:public\s+)?(?:indirect\s+)?case\s+(.+)$")
     subscript_pat = re.compile(r"\bpublic\s+(?:static\s+|class\s+|final\s+)*subscript\b")
     init_pat = re.compile(r"\bpublic\s+(?:convenience\s+|required\s+|override\s+)*init\b")
 
@@ -283,10 +319,10 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
     qualified_var_names: set[str] = set()
     constructor_owners: set[str] = set()
 
-    def owner_from_stack(stack: list[tuple[str, int]]) -> str:
+    def owner_from_stack(stack: list[tuple[str, int, bool, bool]]) -> str:
         if not stack:
             return ""
-        return ".".join(name for name, _ in stack)
+        return ".".join(name for name, _, _, _ in stack)
 
     targets = parse_target_manifest(root)
     target_names = discover_scannable_target_names(root, targets)
@@ -313,9 +349,11 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
 
         # Track type/extension lexical scopes with brace depth.
         brace_depth = 0
-        type_stack: list[tuple[str, int]] = []
+        type_stack: list[tuple[str, int, bool, bool]] = []
         pending_scope_name: str | None = None
         pending_scope_is_public_type = False
+        pending_scope_is_public_protocol = False
+        pending_scope_is_public_enum = False
 
         for raw_line in lines:
             line = raw_line.split("//", 1)[0]
@@ -326,34 +364,83 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
             # Track declaration-scoped owner context.
             decl = type_or_extension_pat.search(line)
             if decl:
-                scope_name = decl.group(1)
+                decl_head = decl.group(1)
+                scope_name = decl.group(2)
                 is_public_type = public_type_pat.search(line) is not None
+                is_public_protocol = bool(re.search(r"\bpublic\s+protocol\b", decl_head))
+                is_public_enum = bool(re.search(r"\bpublic\s+enum\b", decl_head))
                 if "{" in line:
                     future_depth = brace_depth + line.count("{") - line.count("}")
                     if future_depth > brace_depth:
-                        type_stack.append((scope_name, future_depth))
+                        type_stack.append((scope_name, future_depth, is_public_protocol, is_public_enum))
                     if is_public_type and not scope_name.startswith("_"):
                         type_names.add(scope_name)
                         qualified_type_names.add(owner_from_stack(type_stack))
                     pending_scope_name = None
                     pending_scope_is_public_type = False
+                    pending_scope_is_public_protocol = False
+                    pending_scope_is_public_enum = False
                 else:
                     pending_scope_name = scope_name
                     pending_scope_is_public_type = is_public_type
+                    pending_scope_is_public_protocol = is_public_protocol
+                    pending_scope_is_public_enum = is_public_enum
 
             owner = owner_from_stack(type_stack)
+            in_public_protocol = bool(type_stack and type_stack[-1][2])
+            in_public_enum = bool(type_stack and type_stack[-1][3])
+
+            # `typealias` declarations are not lexical scopes, so capture them explicitly.
+            # This ensures nested aliases like `DatePicker.Components` are represented.
+            for m in public_typealias_pat.finditer(line):
+                name = m.group(1)
+                if not name.startswith("_"):
+                    type_names.add(name)
+                    if owner:
+                        qualified_type_names.add(qualified_member(owner, name))
 
             for m in func_pat.finditer(line):
                 name = m.group(1)
                 if not name.startswith("_"):
                     func_names.add(name)
                     qualified_func_names.add(qualified_member(owner or "GLOBAL", name))
+            if in_public_protocol:
+                for m in protocol_func_pat.finditer(line):
+                    name = m.group(1)
+                    if not name.startswith("_"):
+                        func_names.add(name)
+                        qualified_func_names.add(qualified_member(owner or "GLOBAL", name))
 
             for m in var_pat.finditer(line):
                 name = m.group(1)
                 if not name.startswith("_"):
                     var_names.add(name)
                     qualified_var_names.add(qualified_member(owner or "GLOBAL", name))
+            for m in let_pat.finditer(line):
+                name = m.group(1)
+                if not name.startswith("_"):
+                    var_names.add(name)
+                    qualified_var_names.add(qualified_member(owner or "GLOBAL", name))
+            if in_public_protocol:
+                for m in protocol_var_pat.finditer(line):
+                    name = m.group(1)
+                    if not name.startswith("_"):
+                        var_names.add(name)
+                        qualified_var_names.add(qualified_member(owner or "GLOBAL", name))
+            if in_public_enum:
+                enum_case_match = enum_case_pat.search(line)
+                if enum_case_match:
+                    case_clause = enum_case_match.group(1)
+                    for piece in case_clause.split(","):
+                        candidate = piece.strip()
+                        if candidate.startswith("indirect "):
+                            candidate = candidate[len("indirect "):].strip()
+                        m = re.match(r"([A-Za-z_][A-Za-z0-9_]*)", candidate)
+                        if m:
+                            name = m.group(1)
+                            if not name.startswith("_"):
+                                var_names.add(name)
+                                qualified_var_names.add(qualified_member(owner or "GLOBAL", name))
 
             if init_pat.search(line) and owner:
                 constructor_owners.add(owner)
@@ -364,12 +451,14 @@ def scan_raven_sources(root: pathlib.Path) -> dict[str, Any]:
             if pending_scope_name and opens > 0:
                 future_depth = brace_depth + opens - closes
                 if future_depth > brace_depth:
-                    type_stack.append((pending_scope_name, future_depth))
+                    type_stack.append((pending_scope_name, future_depth, pending_scope_is_public_protocol, pending_scope_is_public_enum))
                 if pending_scope_is_public_type and not pending_scope_name.startswith("_"):
                     type_names.add(pending_scope_name)
                     qualified_type_names.add(owner_from_stack(type_stack))
                 pending_scope_name = None
                 pending_scope_is_public_type = False
+                pending_scope_is_public_protocol = False
+                pending_scope_is_public_enum = False
 
             brace_depth += opens - closes
             while type_stack and brace_depth < type_stack[-1][1]:
@@ -467,7 +556,7 @@ def is_component_candidate_type(sym: SwiftUISymbol, owner: str) -> bool:
 
 
 def match_symbol(sym: SwiftUISymbol, raven: dict[str, Any]) -> bool | None:
-    if sym.decl_kind not in SCORABLE_DECL_KINDS:
+    if not is_actionable_symbol(sym):
         return None
     owner = owner_context(sym)
     if sym.decl_kind in TYPE_DECL_KINDS:

@@ -17,6 +17,7 @@ import JavaScriptKit
 ///
 /// - ``DefaultMenuStyle``: Standard dropdown menu (default)
 /// - ``ButtonMenuStyle``: Menu styled as a button
+/// - ``BorderlessButtonMenuStyle``: Menu styled as a borderless button
 ///
 /// ## Example
 ///
@@ -145,6 +146,22 @@ public struct ButtonMenuStyle: MenuStyle {
     }
 }
 
+// MARK: - Borderless Button Menu Style
+
+/// A menu style that renders menu triggers as borderless controls.
+///
+/// On the web, this currently shares behavior with ``ButtonMenuStyle`` while
+/// preserving SwiftUI-compatible API surface.
+public struct BorderlessButtonMenuStyle: MenuStyle {
+    /// Creates a borderless button menu style.
+    public init() {}
+
+    /// Creates the borderless button menu appearance.
+    @MainActor public func makeBody(configuration: Configuration) -> some View {
+        configuration.content
+    }
+}
+
 // MARK: - Style Modifier
 
 extension View {
@@ -178,6 +195,11 @@ extension View {
 // MARK: - Convenience Extensions
 
 extension MenuStyle where Self == DefaultMenuStyle {
+    /// The automatic menu style.
+    public static var automatic: DefaultMenuStyle {
+        DefaultMenuStyle()
+    }
+
     /// The default menu style.
     ///
     /// Displays a standard dropdown menu.
@@ -192,6 +214,15 @@ extension MenuStyle where Self == ButtonMenuStyle {
     /// Displays the menu as a button.
     public static var button: ButtonMenuStyle {
         ButtonMenuStyle()
+    }
+}
+
+extension MenuStyle where Self == BorderlessButtonMenuStyle {
+    /// A borderless button menu style.
+    ///
+    /// Displays menu triggers using borderless button semantics.
+    public static var borderlessButton: BorderlessButtonMenuStyle {
+        BorderlessButtonMenuStyle()
     }
 }
 

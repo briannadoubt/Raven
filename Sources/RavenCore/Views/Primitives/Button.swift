@@ -361,6 +361,43 @@ public struct PlainButtonStyle: PrimitiveButtonStyle {
     }
 }
 
+/// The default primitive button style used when no explicit style is chosen.
+public struct AutomaticButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+/// A translucent "glass" primitive button style placeholder.
+public struct GlassButtonStyle: PrimitiveButtonStyle {
+    public let prominent: Bool
+
+    public init(prominent: Bool = false) {
+        self.prominent = prominent
+    }
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+/// A prominent variant of the glass button style.
+public struct GlassProminentButtonStyle: PrimitiveButtonStyle {
+    public init() {}
+
+    @MainActor public func makeBody(configuration: PrimitiveButtonStyleConfiguration) -> some View {
+        configuration.label
+    }
+}
+
+/// Configuration for glass style variants.
+public enum GlassButtonStyleVariant: Sendable, Hashable {
+    case regular
+    case prominent
+}
+
 extension PrimitiveButtonStyle where Self == BorderedButtonStyle {
     /// A bordered button style.
     public static var bordered: BorderedButtonStyle {
@@ -386,6 +423,32 @@ extension PrimitiveButtonStyle where Self == PlainButtonStyle {
     /// A plain button style.
     public static var plain: PlainButtonStyle {
         PlainButtonStyle()
+    }
+}
+
+extension PrimitiveButtonStyle where Self == AutomaticButtonStyle {
+    /// The default primitive button style.
+    public static var automatic: AutomaticButtonStyle {
+        AutomaticButtonStyle()
+    }
+}
+
+extension PrimitiveButtonStyle where Self == GlassButtonStyle {
+    /// A translucent glass style.
+    public static var glass: GlassButtonStyle {
+        GlassButtonStyle()
+    }
+
+    /// A translucent glass style with a variant selector.
+    public static func glass(_ variant: GlassButtonStyleVariant) -> GlassButtonStyle {
+        GlassButtonStyle(prominent: variant == .prominent)
+    }
+}
+
+extension PrimitiveButtonStyle where Self == GlassProminentButtonStyle {
+    /// A prominent translucent glass style.
+    public static var glassProminent: GlassProminentButtonStyle {
+        GlassProminentButtonStyle()
     }
 }
 
@@ -423,6 +486,39 @@ extension View {
     /// Sets a primitive style for buttons within this view.
     @MainActor public func buttonStyle(_ style: some PrimitiveButtonStyle) -> some View {
         environment(\.primitiveButtonStyle, style)
+    }
+}
+
+// MARK: - Static Convenience Constructors
+
+extension Button where Label == Text {
+    /// Creates a cancel-role button with no action.
+    @MainActor public static func cancel(_ title: String) -> Button<Text> {
+        Button(title, role: .cancel, action: {})
+    }
+
+    /// Creates a cancel-role button with an action.
+    @MainActor public static func cancel(
+        _ title: String,
+        action: @escaping @Sendable @MainActor () -> Void
+    ) -> Button<Text> {
+        Button(title, role: .cancel, action: action)
+    }
+
+    /// Creates a default-role button with an action.
+    @MainActor public static func `default`(
+        _ title: String,
+        action: @escaping @Sendable @MainActor () -> Void
+    ) -> Button<Text> {
+        Button(title, action: action)
+    }
+
+    /// Creates a destructive-role button with an action.
+    @MainActor public static func destructive(
+        _ title: String,
+        action: @escaping @Sendable @MainActor () -> Void
+    ) -> Button<Text> {
+        Button(title, role: .destructive, action: action)
     }
 }
 

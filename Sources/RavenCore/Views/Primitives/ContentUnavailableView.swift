@@ -405,5 +405,20 @@ extension ContentUnavailableView where Description == Text, Actions == EmptyView
             description: Text("Try a different search term.")
         )
     }
-}
 
+    /// A search empty-state tailored to a specific query.
+    ///
+    /// - Parameter text: The user's search query.
+    /// - Returns: A composed search-empty-state view.
+    @MainActor public static func search(text: String) -> some View {
+        SearchUnavailableContent(text: text)
+    }
+
+    /// A search empty-state tailored to a localized query value.
+    ///
+    /// - Parameter text: The user's localized search query.
+    /// - Returns: A composed search-empty-state view.
+    @MainActor public static func search(text: LocalizedStringKey) -> some View {
+        SearchUnavailableContent(text: text.stringValue)
+    }
+}

@@ -44,6 +44,111 @@ public enum DropItem: Sendable, Hashable {
     case file(DroppedFile)
 }
 
+/// The operation proposed for a drop.
+public enum DropOperation: Sendable, Hashable {
+    case cancel
+    case forbidden
+    case copy
+    case move
+}
+
+/// A proposal describing how a drop should be handled.
+public struct DropProposal: Sendable, Hashable {
+    public var operation: DropOperation
+    public var operationOutsideApplication: DropOperation
+
+    public init(operation: DropOperation) {
+        self.operation = operation
+        self.operationOutsideApplication = operation
+    }
+
+    public init(operation: DropOperation, operationOutsideApplication: DropOperation) {
+        self.operation = operation
+        self.operationOutsideApplication = operationOutsideApplication
+    }
+}
+
+extension DropProposal: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        "DropProposal(operation: \(operation), operationOutsideApplication: \(operationOutsideApplication))"
+    }
+}
+
+/// Information about an in-progress or completed drop.
+public struct DropInfo: Sendable, Hashable {
+    public let location: CGPoint
+    public let items: [DropItem]
+
+    public init(location: CGPoint, items: [DropItem]) {
+        self.location = location
+        self.items = items
+    }
+
+    public func hasItemsConforming(to contentTypes: [UTType]) -> Bool {
+        // Current web implementation supports plain text and files.
+        for item in items {
+            switch item {
+            case .text:
+                if contentTypes.contains(.plainText) || contentTypes.contains(.text) {
+                    return true
+                }
+            case let .file(file):
+                if contentTypes.contains(.item) || contentTypes.contains(.data) {
+                    return true
+                }
+                if contentTypes.contains(where: { file.type.contains($0.identifier) }) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    public func itemProviders(for contentTypes: [UTType]) -> [DropItem] {
+        guard !contentTypes.isEmpty else { return items }
+        return items.filter { item in
+            switch item {
+            case .text:
+                return contentTypes.contains(.plainText) || contentTypes.contains(.text)
+            case let .file(file):
+                if contentTypes.contains(.item) || contentTypes.contains(.data) {
+                    return true
+                }
+                return contentTypes.contains(where: { file.type.contains($0.identifier) })
+            }
+        }
+    }
+}
+
+/// Delegate for advanced drop interactions.
+public protocol DropDelegate {
+    @MainActor func validateDrop(info: DropInfo) -> Bool
+    @MainActor func dropEntered(info: DropInfo)
+    @MainActor func dropExited(info: DropInfo)
+    @MainActor func dropUpdated(info: DropInfo) -> DropProposal?
+    @MainActor func performDrop(info: DropInfo) -> Bool
+}
+
+extension DropDelegate {
+    @MainActor public func validateDrop(info: DropInfo) -> Bool {
+        _ = info
+        return true
+    }
+
+    @MainActor public func dropUpdated(info: DropInfo) -> DropProposal? {
+        _ = info
+        return nil
+    }
+
+    @MainActor public func dropEntered(info: DropInfo) {
+        _ = info
+    }
+
+    @MainActor public func dropExited(info: DropInfo) {
+        _ = info
+    }
+}
+
 @MainActor
 internal enum DragDropJS {
     static func preventDefault(_ event: JSValue) {
@@ -88,5 +193,13 @@ internal enum DragDropJS {
         }
         return out
     }
-}
 
+    static func location(_ event: JSValue) -> CGPoint {
+        guard let obj = event.object else {
+            return .zero
+        }
+        let x = Double(obj.clientX.number ?? 0)
+        let y = Double(obj.clientY.number ?? 0)
+        return CGPoint(x: x, y: y)
+    }
+}
