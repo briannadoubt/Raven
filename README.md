@@ -1,3 +1,5 @@
+# NOTE: This repo has been archived because it quickly turned into slop. We are actively working on something better and hopefully worth sharing in the future (soon, hopefully!).
+
 # Raven
 
 <div align="center">
