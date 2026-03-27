@@ -54,6 +54,16 @@ public enum TabBarPosition: Sendable {
     case none
 }
 
+/// The preferred placement for an adaptable tab bar presentation.
+public enum TabBarPlacement: Sendable, Hashable {
+    /// Let the runtime choose a placement.
+    case automatic
+    /// Prefer a top tab bar.
+    case topBar
+    /// Prefer a bottom tab bar.
+    case bottomBar
+}
+
 // MARK: - Automatic Tab View Style
 
 /// A platform-appropriate tab view style.
@@ -196,6 +206,60 @@ public struct PageTabViewStyle: TabViewStyle {
     }
 }
 
+/// A tab style that always renders a visible tab bar.
+public struct TabBarOnlyTabViewStyle: TabViewStyle {
+    public let placement: TabBarPlacement
+
+    public var tabBarPosition: TabBarPosition {
+        switch placement {
+        case .automatic:
+            #if os(WASI)
+            .top
+            #else
+            .bottom
+            #endif
+        case .topBar:
+            .top
+        case .bottomBar:
+            .bottom
+        }
+    }
+
+    public var isSwipeable: Bool { false }
+    public var showsTabBar: Bool { true }
+
+    public init(placement: TabBarPlacement = .automatic) {
+        self.placement = placement
+    }
+}
+
+/// A style that adapts tab chrome for larger layouts.
+public struct SidebarAdaptableTabViewStyle: TabViewStyle {
+    public let placement: TabBarPlacement
+
+    public var tabBarPosition: TabBarPosition {
+        switch placement {
+        case .automatic:
+            #if os(WASI)
+            .top
+            #else
+            .bottom
+            #endif
+        case .topBar:
+            .top
+        case .bottomBar:
+            .bottom
+        }
+    }
+
+    public var isSwipeable: Bool { false }
+    public var showsTabBar: Bool { true }
+
+    public init(placement: TabBarPlacement = .automatic) {
+        self.placement = placement
+    }
+}
+
 // MARK: - Page Index Display Mode
 
 /// The display mode for page indices in a page-style tab view.
@@ -220,6 +284,17 @@ extension EnvironmentValues {
     internal var tabViewStyle: any TabViewStyle {
         get { self[TabViewStyleKey.self] }
         set { self[TabViewStyleKey.self] = newValue }
+    }
+}
+
+private struct DefaultAdaptableTabBarPlacementKey: EnvironmentKey {
+    static let defaultValue: TabBarPlacement = .automatic
+}
+
+extension EnvironmentValues {
+    internal var defaultAdaptableTabBarPlacement: TabBarPlacement {
+        get { self[DefaultAdaptableTabBarPlacementKey.self] }
+        set { self[DefaultAdaptableTabBarPlacementKey.self] = newValue }
     }
 }
 
@@ -263,6 +338,11 @@ extension View {
     /// - ``PageTabViewStyle``
     @MainActor public func tabViewStyle<S: TabViewStyle>(_ style: S) -> some View {
         environment(\.tabViewStyle, style)
+    }
+
+    /// Sets the default placement used by adaptable tab bar styles in this subtree.
+    @MainActor public func defaultAdaptableTabBarPlacement(_ placement: TabBarPlacement) -> some View {
+        environment(\.defaultAdaptableTabBarPlacement, placement)
     }
 }
 
@@ -319,5 +399,29 @@ extension TabViewStyle where Self == PageTabViewStyle {
     /// A page-style tab view with automatic page indicator display.
     public static var page: PageTabViewStyle {
         PageTabViewStyle()
+    }
+}
+
+extension TabViewStyle where Self == TabBarOnlyTabViewStyle {
+    /// A style that always displays tab bar chrome.
+    public static func tabBarOnly(placement: TabBarPlacement = .automatic) -> TabBarOnlyTabViewStyle {
+        TabBarOnlyTabViewStyle(placement: placement)
+    }
+
+    /// A tab-bar-only style using automatic placement.
+    public static var tabBarOnly: TabBarOnlyTabViewStyle {
+        TabBarOnlyTabViewStyle()
+    }
+}
+
+extension TabViewStyle where Self == SidebarAdaptableTabViewStyle {
+    /// A style that adapts tab bar placement for sidebar-like layouts.
+    public static func sidebarAdaptable(placement: TabBarPlacement = .automatic) -> SidebarAdaptableTabViewStyle {
+        SidebarAdaptableTabViewStyle(placement: placement)
+    }
+
+    /// A sidebar-adaptable style using automatic placement.
+    public static var sidebarAdaptable: SidebarAdaptableTabViewStyle {
+        SidebarAdaptableTabViewStyle()
     }
 }
